@@ -93,4 +93,9 @@
   --color-secondary-foreground: #ffffff;
   --color-destructive: var(--red);
   --color-muted: var(--bg-secondary);
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #0f172a;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
+  --color-ring: var(--blue);
 }

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CVMind AI Copilot</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="popup-header">
+      <div class="brand">
+        <div class="brand-sparkle">✨</div>
+        <div class="brand-text">
+          <span class="brand-title">CVMind AI</span>
+          <span class="brand-subtitle">Auto Apply Copilot</span>
+        </div>
+      </div>
+      <div class="status-badge" id="conn-badge">Online</div>
+    </header>
+
+    <!-- Profile Snippet -->
+    <section class="profile-card" id="profile-card">
+      <div class="profile-avatar" id="user-avatar">MT</div>
+      <div class="profile-details">
+        <div class="profile-name" id="user-name">Manav Tiwari</div>
+        <div class="profile-role" id="user-role">Full Stack & AI Engineer</div>
+      </div>
+      <div class="profile-sync-icon" title="Synced with CVMind">✓</div>
+    </section>
+
+    <!-- Active Tab Status -->
+    <section class="tab-status-card">
+      <div class="tab-status-header">
+        <span class="section-label">Active Page</span>
+        <span class="detect-pill" id="page-detect-status">Scanning...</span>
+      </div>
+      <div class="job-meta">
+        <div class="job-title-display" id="tab-job-title">Job Application Page</div>
+        <div class="job-match-badge" id="tab-job-match">89% Match</div>
+      </div>
+    </section>
+
+    <!-- Actions -->
+    <section class="action-section">
+      <button class="primary-btn" id="btn-popup-autofill">
+        <span>⚡ 1-Click Autofill Form</span>
+      </button>
+      <button class="secondary-btn" id="btn-popup-open-drawer">
+        <span>Open Floating Copilot Drawer</span>
+      </button>
+    </section>
+
+    <!-- Quick Stats -->
+    <section class="quick-stats">
+      <div class="stat-box">
+        <span class="stat-num" id="stat-applied">7</span>
+        <span class="stat-name">Applied</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-num" id="stat-matches">42</span>
+        <span class="stat-name">Matches</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-num" id="stat-ready">18</span>
+        <span class="stat-name">Ready</span>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="popup-footer">
+      <a href="http://localhost:5173/auto-apply" target="_blank" class="footer-btn">Open Web Dashboard ↗</a>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

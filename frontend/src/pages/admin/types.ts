@@ -5,6 +5,7 @@ export interface AdminUser {
   name: string;
   email: string;
   isGoogleUser: boolean;
+  provider: string;
   status: UserStatus;
   statusReason: string;
   statusUpdatedAt: string | null;

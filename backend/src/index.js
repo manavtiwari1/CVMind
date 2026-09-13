@@ -2,6 +2,8 @@ import 'dotenv/config';
 import crypto from 'crypto';
 import express from 'express';
 import autoApplyRouter from './routes/autoApply.js';
+import companyRouter from './routes/company.js';
+import codeRouter from './routes/code.js';
 import cors from 'cors';
 import multer from 'multer';
 import bcrypt from 'bcryptjs';
@@ -572,6 +574,208 @@ apiRouter.get('/api/auth/account-status', async (req, res) => {
     return res.json({ status: 'active', active: true });
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Status check failed.' });
+  }
+});
+
+// ── GitHub & LinkedIn OAuth (server-side code exchange) ──────────────────────
+const ALLOWED_OAUTH_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'https://www.cvmind.online',
+  'https://cvmind.online'
+];
+
+// Short-lived anti-CSRF state store: state -> { origin, expires }
+const oauthStateStore = new Map();
+
+function createOAuthState(origin) {
+  // Purge expired states opportunistically
+  for (const [key, entry] of oauthStateStore) {
+    if (Date.now() > entry.expires) oauthStateStore.delete(key);
+  }
+  const state = crypto.randomBytes(24).toString('hex');
+  oauthStateStore.set(state, { origin, expires: Date.now() + 10 * 60 * 1000 });
+  return state;
+}
+
+function consumeOAuthState(state) {
+  const entry = oauthStateStore.get(state || '');
+  if (!entry) return null;
+  oauthStateStore.delete(state);
+  if (Date.now() > entry.expires) return null;
+  return entry;
+}
+
+function resolveOAuthOrigin(req) {
+  const requested = String(req.query.origin || '');
+  if (ALLOWED_OAUTH_ORIGINS.includes(requested)) return requested;
+  return process.env.FRONTEND_URL || 'https://www.cvmind.online';
+}
+
+function getBackendBaseUrl(req) {
+  return process.env.BACKEND_PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
+}
+
+function redirectWithAuthError(res, origin, message) {
+  return res.redirect(`${origin}/?authError=${encodeURIComponent(message)}`);
+}
+
+// Shared: find/create the user, enforce moderation status, log the login,
+// then hand the session payload back to the SPA via a query param.
+async function completeOAuthLogin(req, res, origin, { email, name, avatar, provider }) {
+  if (!email) {
+    return redirectWithAuthError(res, origin, `Your ${provider} account has no verified email address.`);
+  }
+
+  let user = await findUserByEmail(email);
+  if (!user) {
+    const salt = await bcrypt.genSalt(10);
+    const mockPasswordHash = await bcrypt.hash(`oauth-${provider}-` + Math.random().toString(36), salt);
+    user = await createUser({
+      email,
+      name: name || email.split('@')[0],
+      password: mockPasswordHash,
+      isGoogleUser: true, // OAuth account — no usable password
+      provider
+    });
+    sendWelcomeEmail(user.email, user.name, origin);
+  }
+
+  const blockError = getAccountBlockError(user);
+  if (blockError) {
+    return redirectWithAuthError(res, origin, blockError.error);
+  }
+
+  await saveLoginLog({ email: user.email, name: user.name, provider });
+
+  const isPaid = await isUserPaid(user);
+  const userPayload = {
+    id: user.id || user._id,
+    name: user.name,
+    email: user.email,
+    avatar: avatar || '',
+    isGoogleUser: user.isGoogleUser || false
+  };
+  if (isPaid) {
+    userPayload.plan = 'pro';
+    userPayload.isPro = true;
+    userPayload.isPaid = true;
+  }
+
+  const encoded = Buffer.from(JSON.stringify(userPayload)).toString('base64url');
+  return res.redirect(`${origin}/?oauthUser=${encoded}`);
+}
+
+// Step 1 (GitHub): send the user to GitHub's consent screen
+apiRouter.get('/api/auth/github', (req, res) => {
+  const origin = resolveOAuthOrigin(req);
+  const clientId = process.env.GITHUB_CLIENT_ID;
+  if (!clientId || !process.env.GITHUB_CLIENT_SECRET) {
+    return redirectWithAuthError(res, origin, 'GitHub login is not configured yet.');
+  }
+  const state = createOAuthState(origin);
+  const redirectUri = `${getBackendBaseUrl(req)}/api/auth/github/callback`;
+  const url = `https://github.com/login/oauth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent('read:user user:email')}&state=${state}`;
+  return res.redirect(url);
+});
+
+// Step 2 (GitHub): exchange the code, fetch the profile, sign the user in
+apiRouter.get('/api/auth/github/callback', async (req, res) => {
+  const stateEntry = consumeOAuthState(req.query.state);
+  const origin = stateEntry?.origin || process.env.FRONTEND_URL || 'https://www.cvmind.online';
+  if (!stateEntry) return redirectWithAuthError(res, origin, 'GitHub sign-in session expired. Please try again.');
+  if (!req.query.code) return redirectWithAuthError(res, origin, 'GitHub sign-in was cancelled.');
+
+  try {
+    const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        code: req.query.code
+      })
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenData.access_token) throw new Error(tokenData.error_description || 'Token exchange failed');
+
+    const ghHeaders = { 'Authorization': `Bearer ${tokenData.access_token}`, 'Accept': 'application/vnd.github+json', 'User-Agent': 'CVMind' };
+    const profileRes = await fetch('https://api.github.com/user', { headers: ghHeaders });
+    const profile = await profileRes.json();
+
+    let email = profile.email || '';
+    if (!email) {
+      const emailsRes = await fetch('https://api.github.com/user/emails', { headers: ghHeaders });
+      const emails = await emailsRes.json();
+      if (Array.isArray(emails)) {
+        const primary = emails.find(e => e.primary && e.verified) || emails.find(e => e.verified);
+        email = primary?.email || '';
+      }
+    }
+
+    return await completeOAuthLogin(req, res, origin, {
+      email,
+      name: profile.name || profile.login,
+      avatar: profile.avatar_url || '',
+      provider: 'github'
+    });
+  } catch (err) {
+    console.error('GitHub OAuth Error:', err);
+    return redirectWithAuthError(res, origin, 'GitHub authentication failed. Please try again.');
+  }
+});
+
+// Step 1 (LinkedIn): send the user to LinkedIn's consent screen (OpenID Connect)
+apiRouter.get('/api/auth/linkedin', (req, res) => {
+  const origin = resolveOAuthOrigin(req);
+  const clientId = process.env.LINKEDIN_CLIENT_ID;
+  if (!clientId || !process.env.LINKEDIN_CLIENT_SECRET) {
+    return redirectWithAuthError(res, origin, 'LinkedIn login is not configured yet.');
+  }
+  const state = createOAuthState(origin);
+  const redirectUri = `${getBackendBaseUrl(req)}/api/auth/linkedin/callback`;
+  const url = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent('openid profile email')}&state=${state}`;
+  return res.redirect(url);
+});
+
+// Step 2 (LinkedIn): exchange the code, fetch userinfo, sign the user in
+apiRouter.get('/api/auth/linkedin/callback', async (req, res) => {
+  const stateEntry = consumeOAuthState(req.query.state);
+  const origin = stateEntry?.origin || process.env.FRONTEND_URL || 'https://www.cvmind.online';
+  if (!stateEntry) return redirectWithAuthError(res, origin, 'LinkedIn sign-in session expired. Please try again.');
+  if (!req.query.code) return redirectWithAuthError(res, origin, 'LinkedIn sign-in was cancelled.');
+
+  try {
+    const redirectUri = `${getBackendBaseUrl(req)}/api/auth/linkedin/callback`;
+    const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: String(req.query.code),
+        client_id: process.env.LINKEDIN_CLIENT_ID,
+        client_secret: process.env.LINKEDIN_CLIENT_SECRET,
+        redirect_uri: redirectUri
+      })
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenData.access_token) throw new Error(tokenData.error_description || 'Token exchange failed');
+
+    const profileRes = await fetch('https://api.linkedin.com/v2/userinfo', {
+      headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+    });
+    const profile = await profileRes.json();
+
+    return await completeOAuthLogin(req, res, origin, {
+      email: profile.email || '',
+      name: profile.name || '',
+      avatar: profile.picture || '',
+      provider: 'linkedin'
+    });
+  } catch (err) {
+    console.error('LinkedIn OAuth Error:', err);
+    return redirectWithAuthError(res, origin, 'LinkedIn authentication failed. Please try again.');
   }
 });
 
@@ -2170,6 +2374,10 @@ app.use('/_/backend', apiRouter);
 app.use('/', apiRouter);
 app.use('/api/auto-apply', autoApplyRouter);
 app.use('/_/backend/api/auto-apply', autoApplyRouter);
+app.use('/api/company', companyRouter);
+app.use('/_/backend/api/company', companyRouter);
+app.use('/api/code', codeRouter);
+app.use('/_/backend/api/code', codeRouter);
 
 // Handle 404
 app.use((req, res) => {

@@ -12,7 +12,7 @@
 
 /* ── Shared layout ── */
 .rbl-section-inner {
-  max-width: 1200px;
+  max-width: 1560px;
   margin: 0 auto;
   padding: 0 2rem;
 }
@@ -78,7 +78,7 @@
 .rbl-hero-inner {
   position: relative;
   z-index: 1;
-  max-width: 1200px;
+  max-width: 1560px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -488,7 +488,7 @@
 }
 
 .rbl-tools-inner {
-  max-width: 1200px;
+  max-width: 1560px;
   margin: 0 auto;
   display: flex;
   align-items: center;

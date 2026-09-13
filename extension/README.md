@@ -1,49 +1,35 @@
-# CVmind AI Autofill Helper — Chrome Extension Setup Guide
+# CVMind AI — Auto Apply Copilot (Chrome Extension v1.0)
 
-Is guide me bataya gaya hai ki aap is Chrome Extension ko developer mode me apne browser par kaise load aur test kar sakte hain.
-
----
-
-## English Instructions
-
-### Step 1: Install the Extension
-1. Open Google Chrome.
-2. Go to URL: `chrome://extensions/`
-3. Toggle the **"Developer mode"** switch in the top right corner to **ON**.
-4. Click the **"Load unpacked"** button in the top left corner.
-5. Select the `extension` folder located inside your project directory:
-   `E:\My Webs\AI Resume Checker\extension`
-
-### Step 2: Sync Profile Data
-1. Start your local dev server: `npm run dev` on the frontend.
-2. Open `http://localhost:5173/` in Chrome and log in to your account.
-3. Click on the extension icon in your Chrome toolbar (the puzzle piece) and click **"CVmind AI Autofill Helper"**.
-4. Click the **"Sync from Tab"** button. The popup will automatically retrieve your profile details and display them!
-
-### Step 3: Test Autofill on Job Portals
-1. Open any job application page (e.g. Greenhouse, Lever, LinkedIn Apply, Indeed Apply, Naukri.com, etc.).
-2. You will see a floating pill button in the bottom right corner: **"✨ Autofill with CVmind"**.
-3. Click the button to automatically fill in your Name, Email, Phone, LinkedIn URL, GitHub URL, and other candidate details!
+A powerful Manifest V3 browser extension that brings CVMind's career intelligence directly into job application workflows.
 
 ---
 
-## Hindi / Hinglish Instructions
+## 🚀 Quick Setup (30 Seconds)
 
-### Step 1: Extension Kaise Install Karein
-1. Apne Google Chrome browser ko open karein.
-2. Address bar me `chrome://extensions/` type karke enter dabayein.
-3. Top right corner me **"Developer mode"** switch ko **ON** karein.
-4. Top left corner me **"Load unpacked"** button par click karein.
-5. Apne project folder ke andar wale `extension` folder ko select karein:
-   `E:\My Webs\AI Resume Checker\extension`
+1. Open **Google Chrome** (or Edge / Brave / Chromium browser).
+2. Navigate to: `chrome://extensions/`
+3. Enable **Developer mode** in the top-right corner.
+4. Click **Load unpacked** and select this directory:
+   `f:\AI Resume Checker\extension`
+5. The **CVMind AI Copilot** extension is now active!
 
-### Step 2: Profile Sync Kaise Karein
-1. Apni website ko chalayein (`npm run dev` in frontend).
-2. Chrome me `http://localhost:5173/` open karke apne account me login karein.
-3. Chrome toolbar me extensions (puzzle icon) par click karke **"CVmind AI Autofill Helper"** open karein.
-4. **"Sync from Tab"** button par click karein. Extension website se aapka profile automatically fetch kar lega!
+---
 
-### Step 3: Job Form Kaise Fill Karein
-1. Kisi bhi standard job board (Greenhouse, Lever, LinkedIn, Indeed) ke apply page ko open karein.
-2. Screen ke bottom right corner me ek floating button dikhega: **"✨ Autofill with CVmind"**.
-3. Us par click karte hi aapka Name, Email, Contact, LinkedIn/GitHub links automatically form me fill ho jayenge!
+## 🌟 Key Features
+
+1. **Intelligent Application Detector**: Automatically identifies job application pages (Greenhouse, Lever, Workday, LinkedIn, Indeed, Naukri, or custom company career portals).
+2. **Floating AI Copilot Badge & Drawer**: Injects a sleek, draggable widget directly into the job page without interfering with standard layout.
+3. **1-Click Form Autofill**: Instantly maps candidate profile data (Name, Email, Phone, Socials, Education, Experience, Skills) to matching input fields.
+4. **AI-Powered Open-Ended Answering**: Generates tailored, high-converting answers for questions like *"Why should we hire you?"* or *"Describe a challenging project"*.
+5. **Human-in-the-Loop Safety**: Prompts explicit user review for sensitive fields (Visa sponsorship, Relocation, Salary expectations).
+6. **Real-time Application Tracker**: Seamlessly tracks completed applications directly back to the CVMind Auto Apply Kanban Dashboard.
+
+---
+
+## 🎯 Interactive Demo Sandbox
+
+To test the extension immediately in a controlled environment:
+1. Start CVMind Web App: `npm run dev`
+2. Open: `http://localhost:5173/auto-apply`
+3. Click the **"Launch Live Demo Application Sandbox"** button.
+4. Observe the CVMind Copilot badge float into view, click **Autofill Application**, and review the AI-generated answers!

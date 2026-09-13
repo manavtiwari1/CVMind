@@ -1,38 +1,46 @@
 {
   "manifest_version": 3,
-  "name": "CVmind AI Autofill Helper",
+  "name": "CVMind AI — Auto Apply Copilot",
   "version": "1.0.0",
-  "description": "Autofills job application forms on LinkedIn, Indeed, Naukri, WorkIndia, Greenhouse, Lever, and corporate sites using your CVmind profile.",
+  "description": "AI-powered career agent that analyzes job applications, scores match relevance, and assists with intelligent autofill & answer generation.",
   "permissions": [
     "activeTab",
     "storage",
     "scripting"
   ],
   "host_permissions": [
+    "http://localhost:5000/*",
     "http://localhost:5173/*",
-    "https://*.linkedin.com/*",
-    "https://*.indeed.com/*",
-    "https://*.naukri.com/*",
-    "https://*.workindia.in/*",
-    "https://*.greenhouse.io/*",
-    "https://*.lever.co/*"
+    "https://*/*",
+    "http://*/*"
   ],
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup/popup.html",
+    "default_title": "CVMind Auto Apply Copilot",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background/service_worker.js"
   },
   "content_scripts": [
     {
-      "matches": [
-        "https://*.linkedin.com/*",
-        "https://*.indeed.com/*",
-        "https://*.naukri.com/*",
-        "https://*.workindia.in/*",
-        "https://*.greenhouse.io/*",
-        "https://*.lever.co/*"
-      ],
-      "js": ["content.js"],
-      "css": ["content.css"],
+      "matches": ["<all_urls>"],
+      "js": ["content/content.js"],
+      "css": ["content/content.css"],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/*",
+        "popup/*"
+      ],
+      "matches": ["<all_urls>"]
     }
   ]
 }
