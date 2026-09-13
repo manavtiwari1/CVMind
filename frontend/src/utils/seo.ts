@@ -154,6 +154,16 @@ const PAGE_SEO: Record<string, PageSEO> = {
     description: "CV Mind's Auto Apply Agent finds matching jobs and applies on your behalf with a tailored resume and cover letter. Coming soon.",
     keywords: 'Auto Apply, AI Job Application, Automated Job Applying, Job Application Agent',
   },
+  code: {
+    title: 'CVmind Code - AI Coding Judge, Practice & Career Assessments | CV Mind',
+    description: 'Master Data Structures & Algorithms with an in-browser isolated code judge, 6-tier progressive AI assistance, contests, and standardized skill scores that recruiters verify.',
+    keywords: 'Coding Practice, LeetCode Alternative, Coding Judge, AI Code Assistant, DSA Practice, Coding Assessments, Interview Preparation, Coding Profile',
+  },
+  'cvmind-code': {
+    title: 'CVmind Code - AI Coding Judge, Practice & Career Assessments | CV Mind',
+    description: 'Master Data Structures & Algorithms with an in-browser isolated code judge, 6-tier progressive AI assistance, contests, and standardized skill scores that recruiters verify.',
+    keywords: 'Coding Practice, LeetCode Alternative, Coding Judge, AI Code Assistant, DSA Practice, Coding Assessments, Interview Preparation, Coding Profile',
+  },
 };
 
 // Blog articles register their own SEO from the central registry.

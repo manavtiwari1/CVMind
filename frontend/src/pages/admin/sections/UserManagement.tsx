@@ -218,8 +218,16 @@ function AllUsers({ users, loading, error, api, onRefresh }: {
                   </td>
                   <td style={{ color: 'var(--text-2)' }}>{u.email}</td>
                   <td>
-                    <span className={`provider-badge ${u.isGoogleUser ? 'badge-google' : 'badge-password'}`}>
-                      {u.isGoogleUser ? 'Google OAuth' : 'Password Auth'}
+                    <span className={`provider-badge ${
+                      u.provider === 'google' ? 'badge-google'
+                      : u.provider === 'github' ? 'badge-github'
+                      : u.provider === 'linkedin' ? 'badge-linkedin'
+                      : 'badge-password'
+                    }`}>
+                      {u.provider === 'google' ? 'Google OAuth'
+                        : u.provider === 'github' ? 'GitHub OAuth'
+                        : u.provider === 'linkedin' ? 'LinkedIn OAuth'
+                        : 'Password Auth'}
                     </span>
                   </td>
                   <td className="mono" style={{ color: 'var(--text-3)', fontSize: '0.78rem' }}>
@@ -533,8 +541,8 @@ function LoginSessions({ stats }: { stats: AdminStats }) {
             </thead>
             <tbody>
               {logins.map(u => {
-                const providerLabel = u.provider === 'google' ? 'Google OAuth' : u.provider === 'github' ? 'GitHub OAuth' : u.provider === 'signup' ? 'New Sign Up' : 'Password Auth';
-                const badgeCls = u.provider === 'google' ? 'badge-google' : u.provider === 'github' ? 'badge-github' : u.provider === 'signup' ? 'badge-signup' : 'badge-password';
+                const providerLabel = u.provider === 'google' ? 'Google OAuth' : u.provider === 'github' ? 'GitHub OAuth' : u.provider === 'linkedin' ? 'LinkedIn OAuth' : u.provider === 'signup' ? 'New Sign Up' : 'Password Auth';
+                const badgeCls = u.provider === 'google' ? 'badge-google' : u.provider === 'github' ? 'badge-github' : u.provider === 'linkedin' ? 'badge-linkedin' : u.provider === 'signup' ? 'badge-signup' : 'badge-password';
                 return (
                   <tr key={u.id}>
                     <td className="bold">{u.name}</td>

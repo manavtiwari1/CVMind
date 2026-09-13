@@ -5,3 +5,5 @@ dist/
 .env
 .env.local
 backend/data/
+scratch/
+__pycache__/

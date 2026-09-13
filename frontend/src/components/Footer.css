@@ -43,10 +43,10 @@
 }
 
 .footer-logo-img {
-  height: 2.6rem;
+  height: 3.8rem;
   width: auto;
   object-fit: contain;
-  opacity: 0.9;
+  opacity: 0.95;
   transition: opacity var(--t-fast);
 }
 

@@ -10,12 +10,9 @@ import {
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  NavigationMenuPopup,
-  NavigationMenuPositioner,
   NavigationMenuTrigger,
-  NavigationMenuArrow,
-} from './ui/navigation-menu-1';
-import cvmindLogo from '../assets/cvmind_logo_transparent.png';
+} from './ui/navigation-menu';
+import cvmindIcon from '../assets/cvmind_icon.png';
 import './Navbar.css';
 
 interface NavbarProps {
@@ -295,13 +292,13 @@ export default function Navbar({
 
         {/* Brand / Logo */}
         <div className="navbar-brand" onClick={() => go('home')}>
-          <img src={cvmindLogo} alt="CV Mind" className="navbar-logo-img" />
-          <span className="navbar-brand-name">CV Mind</span>
+          <img src={cvmindIcon} alt="CVMind" className="navbar-logo-img" />
+          <span className="navbar-brand-name">CVMind</span>
         </div>
 
         {/* Center Navigation — Enhancv style: 4 clean items */}
         <div className="navbar-nav" style={{ display: 'flex', alignItems: 'center' }}>
-          <NavigationMenu>
+          <NavigationMenu viewport={false}>
             <NavigationMenuList>
 
               {/* 1. Resume ▾ */}
@@ -354,6 +351,13 @@ export default function Navbar({
                         <div className="font-medium">Interview Prep AI</div>
                         <div className="text-muted-foreground">Behavioral & STAR coaching.</div>
                       </NavigationMenuLink>
+                      <NavigationMenuLink render={<button onClick={() => go('code')} />}>
+                        <div className="font-medium" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          CVMind Code
+                          <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '1px 6px', borderRadius: '99px', background: 'linear-gradient(135deg,#10b981,#06b6d4)', color: '#fff', letterSpacing: '0.04em' }}>NEW</span>
+                        </div>
+                        <div className="text-muted-foreground">DSA practice, AI code judge & assessments.</div>
+                      </NavigationMenuLink>
                       <NavigationMenuLink render={<button onClick={() => go('voice-prep')} />}>
                         <div className="font-medium">Voice Practice AI</div>
                         <div className="text-muted-foreground">Real-time speaking feedback.</div>
@@ -379,7 +383,7 @@ export default function Navbar({
                       <NavigationMenuLink render={<button onClick={() => go('auto-apply')} />}>
                         <div className="font-medium" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           Auto Apply Agent
-                          <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '1px 6px', borderRadius: '99px', background: 'linear-gradient(135deg,#bf5af2,#ff9f0a)', color: '#fff', letterSpacing: '0.04em' }}>SOON</span>
+                          <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '1px 6px', borderRadius: '99px', background: 'linear-gradient(135deg,#10b981,#34d399)', color: '#fff', letterSpacing: '0.04em' }}>UNLOCKED</span>
                         </div>
                         <div className="text-muted-foreground">AI applies to jobs for you automatically.</div>
                       </NavigationMenuLink>
@@ -449,23 +453,42 @@ export default function Navbar({
                     <div className="nav-menu-column">
                       <span className="nav-menu-column-header">More</span>
                       <NavigationMenuLink render={<button onClick={() => go('blog')} />}>
-                        <div className="font-medium">Blog</div>
+                        <div className="font-medium">Blog & Articles</div>
                       </NavigationMenuLink>
                       <NavigationMenuLink render={<button onClick={() => go('privacy')} />}>
-                        <div className="font-medium">Privacy</div>
+                        <div className="font-medium">Privacy Policy</div>
                       </NavigationMenuLink>
                     </div>
                   </div>
                 </NavigationMenuContent>
               </NavigationMenuItem>
 
-            </NavigationMenuList>
+              {/* 5. CVmind Code */}
+              <NavigationMenuItem>
+                <button
+                  onClick={() => go('code')}
+                  className={`nav-link${['code', 'cvmind-code'].includes(currentPage) ? ' active' : ''}`}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: 'transparent', border: 'none' }}
+                >
+                  <span style={{ fontWeight: 600 }}>CVMind Code</span>
+                </button>
+              </NavigationMenuItem>
 
-            <NavigationMenuPositioner>
-              <NavigationMenuPopup>
-                <NavigationMenuArrow />
-              </NavigationMenuPopup>
-            </NavigationMenuPositioner>
+              {/* 6. Company Portal (For Employers) */}
+              <NavigationMenuItem>
+                <button
+                  onClick={() => go('company-portal')}
+                  className={`nav-link${currentPage === 'company-portal' ? ' active' : ''}`}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: 'transparent', border: 'none' }}
+                >
+                  <span>Company Portal</span>
+                  <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '2px 7px', borderRadius: '99px', background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff', letterSpacing: '0.04em' }}>
+                    EMPLOYERS
+                  </span>
+                </button>
+              </NavigationMenuItem>
+
+            </NavigationMenuList>
           </NavigationMenu>
         </div>
 

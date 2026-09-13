@@ -1,0 +1,386 @@
+/* CVMind Auto Apply Copilot — Content Script CSS */
+
+#cvmind-copilot-root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  color: #f1f5f9 !important;
+  z-index: 2147483647 !important;
+  position: relative !important;
+  text-align: left !important;
+  box-sizing: border-box !important;
+}
+
+#cvmind-copilot-root * {
+  box-sizing: border-box !important;
+  font-family: inherit !important;
+}
+
+/* ──────────────── Floating Badge ──────────────── */
+#cvmind-floating-badge {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  background: rgba(15, 23, 42, 0.92) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(41, 151, 255, 0.3) !important;
+  padding: 8px 14px !important;
+  border-radius: 9999px !important;
+  cursor: pointer !important;
+  z-index: 2147483647 !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  user-select: none !important;
+}
+
+#cvmind-floating-badge:hover {
+  transform: translateY(-2px) scale(1.03) !important;
+  border-color: rgba(56, 189, 248, 0.7) !important;
+  box-shadow: 0 14px 30px -4px rgba(0, 0, 0, 0.6), 0 0 20px rgba(41, 151, 255, 0.45) !important;
+}
+
+.cvmind-badge-pulse {
+  position: absolute !important;
+  top: 4px !important;
+  left: 4px !important;
+  width: 10px !important;
+  height: 10px !important;
+  background: #30d158 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 0 8px #30d158 !important;
+  animation: cvmind-pulse 2s infinite !important;
+}
+
+@keyframes cvmind-pulse {
+  0% { transform: scale(0.95); opacity: 0.9; }
+  50% { transform: scale(1.3); opacity: 0.4; }
+  100% { transform: scale(0.95); opacity: 0.9; }
+}
+
+.cvmind-badge-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #38bdf8 !important;
+}
+
+.cvmind-badge-label {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.cvmind-badge-title {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  line-height: 1.2 !important;
+}
+
+.cvmind-badge-match {
+  font-size: 11px !important;
+  color: #34d399 !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+}
+
+/* ──────────────── Slide-Over Drawer ──────────────── */
+#cvmind-copilot-drawer {
+  position: fixed !important;
+  top: 16px !important;
+  right: 16px !important;
+  bottom: 16px !important;
+  width: 380px !important;
+  max-width: calc(100vw - 32px) !important;
+  background: rgba(15, 23, 42, 0.96) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease !important;
+}
+
+.cvmind-drawer-closed {
+  transform: translateX(420px) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.cvmind-drawer-open {
+  transform: translateX(0) !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Header */
+.cvmind-drawer-header {
+  padding: 16px 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(30, 41, 59, 0.4) !important;
+}
+
+.cvmind-header-left {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+
+.cvmind-logo-pill {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.02em !important;
+}
+
+.cvmind-app-detect-tag {
+  font-size: 11px !important;
+  color: #38bdf8 !important;
+  font-weight: 500 !important;
+}
+
+.cvmind-close-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: none !important;
+  color: #94a3b8 !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s !important;
+}
+
+.cvmind-close-btn:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+/* Match Score Banner */
+.cvmind-match-banner {
+  padding: 14px 20px !important;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(16, 185, 129, 0.15)) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.cvmind-match-info {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 8px !important;
+}
+
+.cvmind-match-role {
+  font-weight: 600 !important;
+  color: #e2e8f0 !important;
+  font-size: 13px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 250px !important;
+}
+
+.cvmind-match-pct {
+  font-weight: 800 !important;
+  color: #34d399 !important;
+  font-size: 16px !important;
+}
+
+.cvmind-progress-track {
+  width: 100% !important;
+  height: 6px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 9999px !important;
+  overflow: hidden !important;
+  margin-bottom: 8px !important;
+}
+
+.cvmind-progress-fill {
+  height: 100% !important;
+  background: linear-gradient(90deg, #2563eb, #34d399) !important;
+  border-radius: 9999px !important;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.cvmind-breakdown-chips {
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+}
+
+/* Body & Cards */
+.cvmind-drawer-body {
+  padding: 16px 20px !important;
+  flex: 1 !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+}
+
+.cvmind-section-card {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 14px !important;
+  padding: 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.cvmind-card-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+.cvmind-card-title {
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  color: #ffffff !important;
+}
+
+.cvmind-fields-count, .cvmind-card-badge {
+  font-size: 11px !important;
+  color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.12) !important;
+  padding: 2px 8px !important;
+  border-radius: 9999px !important;
+  font-weight: 600 !important;
+}
+
+.cvmind-card-desc {
+  font-size: 12px !important;
+  color: #94a3b8 !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+/* Buttons */
+.cvmind-primary-btn {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 10px 14px !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  margin-top: 4px !important;
+}
+
+.cvmind-primary-btn:hover {
+  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+  transform: translateY(-1px) !important;
+}
+
+.cvmind-secondary-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  padding: 8px 12px !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.cvmind-secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+}
+
+/* QA Box */
+.cvmind-qa-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.cvmind-qa-item {
+  background: rgba(15, 23, 42, 0.7) !important;
+  border-radius: 10px !important;
+  padding: 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.cvmind-qa-q {
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  color: #cbd5e1 !important;
+  margin-bottom: 4px !important;
+}
+
+.cvmind-qa-a {
+  font-size: 12px !important;
+  color: #94a3b8 !important;
+  line-height: 1.4 !important;
+  margin-bottom: 6px !important;
+}
+
+.cvmind-copy-btn {
+  background: rgba(56, 189, 248, 0.15) !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+  color: #38bdf8 !important;
+  font-size: 11px !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+}
+
+.cvmind-copy-btn:hover {
+  background: rgba(56, 189, 248, 0.25) !important;
+}
+
+/* Sensitive Warning Card */
+.cvmind-sensitive-card {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+/* Footer */
+.cvmind-drawer-footer {
+  padding: 12px 20px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(15, 23, 42, 0.4) !important;
+  text-align: center !important;
+}
+
+.cvmind-footer-link {
+  color: #38bdf8 !important;
+  font-size: 12px !important;
+  text-decoration: none !important;
+  font-weight: 600 !important;
+}
+
+.cvmind-footer-link:hover {
+  text-decoration: underline !important;
+}
+
+/* ──────────────── Input Autofill Glowing Highlight ──────────────── */
+.cvmind-autofilled-highlight {
+  outline: 2px solid #38bdf8 !important;
+  background-color: rgba(56, 189, 248, 0.1) !important;
+  transition: all 0.3s ease !important;
+}
