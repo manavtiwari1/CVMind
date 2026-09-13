@@ -23,7 +23,7 @@ CV Mind is a state-of-the-art, premium SPA tool designed to parse, analyze, and 
 
 ---
 
-## ⚙️ Setup & Installation
+### ⚙️ Setup & Installation
 
 ### 1. Prerequisites
 *   Node.js (v18+)
