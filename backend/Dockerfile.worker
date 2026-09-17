@@ -1,0 +1,27 @@
+# Agent queue worker: parses resumes and jobs, scores, tailors, renders PDFs and fills forms.
+# The API can run serverless, but this cannot — it polls a queue and drives a real browser.
+#
+# Build from the REPOSITORY ROOT, not from backend/:
+#   docker build -f backend/Dockerfile.worker -t cvmind-worker .
+#
+# The image tag must match the installed playwright version (package.json: playwright ^1.61.1),
+# otherwise Playwright refuses to start against a mismatched browser build.
+FROM mcr.microsoft.com/playwright:v1.61.1-noble
+
+WORKDIR /app
+
+COPY backend/package.json backend/package-lock.json ./backend/
+RUN cd backend && npm ci --omit=dev
+
+# adapters/base.js reads these two files from disk at import time so the server and the
+# browser extension fill forms with identical code. Without them the worker crashes on boot.
+COPY extension/shared ./extension/shared
+COPY backend/src ./backend/src
+
+WORKDIR /app/backend
+ENV NODE_ENV=production
+
+# Required at runtime: MONGODB_URI, GEMINI_API_KEY, AUTH_SECRET.
+# Optional: AGENT_SERVER_ADAPTERS (default greenhouse,lever,workday),
+#           GEMINI_MODEL, GEMINI_EMBED_MODEL, AGENT_*_CONCURRENCY.
+CMD ["node", "src/worker.js"]

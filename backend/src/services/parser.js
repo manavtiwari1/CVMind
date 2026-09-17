@@ -120,6 +120,34 @@ export async function parseDocx(buffer) {
   }
 }
 
+const NAMED_ENTITIES = { nbsp: ' ', lt: '<', gt: '>', quot: '"', apos: "'", bull: '•', ndash: '–', mdash: '—', middot: '·', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“', hellip: '…' };
+
+/**
+ * Converts saved resume HTML into plain text that keeps line and bullet structure,
+ * so an AI parser can still tell sections, roles and bullets apart.
+ * @param {string} html - Resume HTML (e.g. a CVMind builder document)
+ * @returns {string} - Structured plain text
+ */
+export function htmlToStructuredText(html) {
+  return String(html || '')
+    .replace(/<(script|style|head|noscript)[^>]*>[\s\S]*?<\/\1>/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<li[^>]*>/gi, '\n• ')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|h[1-6]|tr|li|ul|ol|section|header|footer|table|article|aside)>/gi, '\n')
+    .replace(/<\/(td|th)>/gi, ' | ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number(dec)))
+    .replace(/&([a-z]+);/gi, (entity, name) => NAMED_ENTITIES[name.toLowerCase()] ?? entity)
+    .replace(/&amp;/g, '&')
+    .split('\n')
+    .map((line) => line.replace(/[ \t\f\v ]+/g, ' ').replace(/(\s*\|\s*)+$/, '').trim())
+    // Blank lines come from markup indentation, not the resume, and would split bullet lists apart
+    .filter(Boolean)
+    .join('\n');
+}
+
 /**
  * Parses a plain text buffer.
  * @param {Buffer} buffer - The text file buffer

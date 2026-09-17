@@ -112,21 +112,30 @@ export default function App() {
 
     const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
 
+    const signOut = (message: string) => {
+      localStorage.removeItem('cvmind_logged_in');
+      localStorage.removeItem('cvmind_user');
+      setIsLoggedIn(false);
+      setCurrentPageState('home');
+      const params = new URLSearchParams(window.location.search);
+      params.set('authError', message);
+      window.history.replaceState({}, '', window.location.pathname + `?${params.toString()}`);
+      setShowAuthModal(true);
+    };
+
     const checkAccountStatus = () => {
       const user = JSON.parse(localStorage.getItem('cvmind_user') || '{}');
       if (!user?.email) return;
+      // Sessions from before signed tokens existed can't call protected APIs — sign in once more
+      if (!user.token) {
+        signOut('Please sign in again to continue.');
+        return;
+      }
       fetch(`${base}/api/auth/account-status?email=${encodeURIComponent(user.email)}`)
         .then(r => r.json())
         .then(d => {
           if (d && d.active === false) {
-            localStorage.removeItem('cvmind_logged_in');
-            localStorage.removeItem('cvmind_user');
-            setIsLoggedIn(false);
-            setCurrentPageState('home');
-            const params = new URLSearchParams(window.location.search);
-            params.set('authError', d.message || 'Your account access has been restricted.');
-            window.history.replaceState({}, '', window.location.pathname + `?${params.toString()}`);
-            setShowAuthModal(true);
+            signOut(d.message || 'Your account access has been restricted.');
           }
         })
         .catch(() => {}); // network/offline — never sign the user out on errors

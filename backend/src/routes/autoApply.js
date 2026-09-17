@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getCentralJobs, saveCentralApplication, getCandidateApplications } from '../db.js';
+import { requireUser, requireSelf } from '../services/authToken.js';
 import { scrapeJobFromUrl, parseJobContent } from '../services/jobScraper.js';
 import { fetchLiveAtsJobs } from '../services/atsCrawler.js';
 
@@ -103,7 +104,7 @@ function callGemini(prompt, apiKey) {
 }
 
 // ── POST /api/auto-apply/profile ───────────────────────────────────────────────
-router.post('/profile', async (req, res) => {
+router.post('/profile', requireUser, async (req, res) => {
   const { resumeText } = req.body || {};
   const apiKey = req.headers['x-gemini-key'] || null;
   if (!resumeText || resumeText.trim().length < 50)
@@ -147,7 +148,7 @@ ${resumeText.substring(0, 4000)}`;
 });
 
 // ── GET /api/auto-apply/profile/:userId ───────────────────────────────────────
-router.get('/profile/:userId', (req, res) => {
+router.get('/profile/:userId', requireSelf(), (req, res) => {
   const { userId } = req.params;
   const profiles = readProfiles();
   const userProfile = profiles[userId] || null;
@@ -155,9 +156,10 @@ router.get('/profile/:userId', (req, res) => {
 });
 
 // ── POST /api/auto-apply/profile/save ─────────────────────────────────────────
-router.post('/profile/save', (req, res) => {
-  const { userId, profile } = req.body || {};
-  if (!userId || !profile) return res.status(400).json({ error: 'userId and profile are required.' });
+router.post('/profile/save', requireUser, (req, res) => {
+  const { profile } = req.body || {};
+  const userId = req.auth.sub;
+  if (!profile) return res.status(400).json({ error: 'profile is required.' });
   const profiles = readProfiles();
   profiles[userId] = {
     ...profile,
@@ -260,7 +262,7 @@ router.post('/jobs', async (req, res) => {
 });
 
 // ── POST /api/auto-apply/tailor-for-job ───────────────────────────────────────
-router.post('/tailor-for-job', async (req, res) => {
+router.post('/tailor-for-job', requireUser, async (req, res) => {
   const { resumeText, job } = req.body || {};
   const apiKey = req.headers['x-gemini-key'] || null;
   if (!resumeText || !job)
@@ -294,7 +296,7 @@ Return ONLY valid JSON:
 });
 
 // ── POST /api/auto-apply/cover-letter ─────────────────────────────────────────
-router.post('/cover-letter', async (req, res) => {
+router.post('/cover-letter', requireUser, async (req, res) => {
   const { resumeText, job, candidateProfile } = req.body || {};
   const apiKey = req.headers['x-gemini-key'] || null;
   if (!job) return res.status(400).json({ error: 'Job details are required.' });
@@ -329,7 +331,7 @@ Return ONLY valid JSON:
 });
 
 // ── POST /api/auto-apply/answer ───────────────────────────────────────────────
-router.post('/answer', async (req, res) => {
+router.post('/answer', requireUser, async (req, res) => {
   const { question, candidateProfile, job } = req.body || {};
   const apiKey = req.headers['x-gemini-key'] || null;
   if (!question) return res.status(400).json({ error: 'Question is required.' });
@@ -357,9 +359,11 @@ Return ONLY valid JSON:
 });
 
 // ── POST /api/auto-apply/apply ─────────────────────────────────────────────────
-router.post('/apply', async (req, res) => {
-  const { userId, candidateName, candidateEmail, job, tailoredResume, coverLetter, matchScore, mode, notes } = req.body || {};
-  if (!userId || !job) return res.status(400).json({ error: 'userId and job are required.' });
+router.post('/apply', requireUser, async (req, res) => {
+  const { candidateName, candidateEmail, job, tailoredResume, coverLetter, matchScore, mode, notes } = req.body || {};
+  // Owner always comes from the signed token, never the request body
+  const userId = req.auth.sub;
+  if (!job) return res.status(400).json({ error: 'job is required.' });
 
   const appRecord = {
     id: `CVM-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -367,7 +371,7 @@ router.post('/apply', async (req, res) => {
     companyId: job.companyId || 'comp_cvmind',
     candidateId: String(userId),
     candidateName: candidateName || 'Candidate',
-    candidateEmail: candidateEmail || (String(userId).includes('@') ? userId : 'candidate@cvmind.online'),
+    candidateEmail: candidateEmail || req.auth.email || 'candidate@cvmind.online',
     resumeText: tailoredResume || '',
     coverLetter: coverLetter || '',
     matchScore: matchScore || job.matchScore || 88,
@@ -418,11 +422,11 @@ router.post('/apply', async (req, res) => {
 });
 
 // ── PATCH /api/auto-apply/applications/:appId ──────────────────────────────────
-router.patch('/applications/:appId', async (req, res) => {
+router.patch('/applications/:appId', requireUser, async (req, res) => {
   const { appId } = req.params;
   const { status, notes } = req.body || {};
   const apps = readApps();
-  const idx = apps.findIndex(a => a.id === appId);
+  const idx = apps.findIndex(a => a.id === appId && a.userId === req.auth.sub);
   if (idx === -1) return res.status(404).json({ error: 'Application not found.' });
   if (status) apps[idx].status = status;
   if (notes !== undefined) apps[idx].notes = notes;
@@ -432,21 +436,23 @@ router.patch('/applications/:appId', async (req, res) => {
 });
 
 // ── DELETE /api/auto-apply/applications/:appId ─────────────────────────────────
-router.delete('/applications/:appId', async (req, res) => {
+router.delete('/applications/:appId', requireUser, async (req, res) => {
   const { appId } = req.params;
   const apps = readApps();
-  const filtered = apps.filter(a => a.id !== appId);
-  writeApps(filtered);
+  const idx = apps.findIndex(a => a.id === appId && a.userId === req.auth.sub);
+  if (idx === -1) return res.status(404).json({ error: 'Application not found.' });
+  apps.splice(idx, 1);
+  writeApps(apps);
   return res.json({ success: true });
 });
 
 // ── GET /api/auto-apply/applications/:userId ───────────────────────────────────
-router.get('/applications/:userId', async (req, res) => {
+router.get('/applications/:userId', requireSelf(), async (req, res) => {
   const { userId } = req.params;
   
   let centralApps = [];
   try {
-    centralApps = await getCandidateApplications(userId);
+    centralApps = await getCandidateApplications(req.auth.email);
   } catch (err) {
     console.error('Fetch central candidate apps error:', err);
   }
@@ -496,7 +502,7 @@ router.get('/applications/:userId', async (req, res) => {
 });
 
 // ── POST /api/auto-apply/scrape-job ───────────────────────────────────────────
-router.post('/scrape-job', async (req, res) => {
+router.post('/scrape-job', requireUser, async (req, res) => {
   const { url } = req.body || {};
   const apiKey = req.headers['x-gemini-key'] || null;
 
@@ -514,7 +520,7 @@ router.post('/scrape-job', async (req, res) => {
 });
 
 // ── POST /api/auto-apply/analyze-page ───────────────────────────────────────────
-router.post('/analyze-page', async (req, res) => {
+router.post('/analyze-page', requireUser, async (req, res) => {
   const { url = '', pageTitle = '', textContent = '', profile = null } = req.body || {};
   const apiKey = req.headers['x-gemini-key'] || null;
 
@@ -566,7 +572,7 @@ router.post('/analyze-page', async (req, res) => {
 });
 
 // ── POST /api/auto-apply/map-fields ─────────────────────────────────────────────
-router.post('/map-fields', async (req, res) => {
+router.post('/map-fields', requireUser, async (req, res) => {
   const { fields = [], profile = {}, job = {} } = req.body || {};
   const apiKey = req.headers['x-gemini-key'] || null;
 
@@ -712,13 +718,9 @@ Return ONLY valid JSON:
 });
 
 // ── POST /api/auto-apply/extension-sync ─────────────────────────────────────────
-router.post('/extension-sync', async (req, res) => {
-  const { userId } = req.body || {};
+router.post('/extension-sync', requireUser, async (req, res) => {
   try {
-    let recentApps = [];
-    if (userId) {
-      recentApps = readApps().filter(a => a.userId === String(userId)).slice(-5);
-    }
+    const recentApps = readApps().filter(a => a.userId === String(req.auth.sub)).slice(-5);
     return res.json({
       success: true,
       data: {

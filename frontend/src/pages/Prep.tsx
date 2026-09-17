@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import SkeletonLoader from '../components/SkeletonLoader';
 import './Prep.css';
+import { authFetch } from '../lib/authFetch';
 
 interface PrepQuestion {
   category: string;
@@ -153,7 +154,7 @@ export default function Prep({ customApiKey, resumeText, setResumeText, setCurre
         evaluations: currentEvaluations
       };
 
-      const response = await fetch(`${baseUrl}/api/user/work`, {
+      const response = await authFetch(`${baseUrl}/api/user/work`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

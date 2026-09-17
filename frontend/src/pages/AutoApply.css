@@ -898,10 +898,20 @@
   gap: 12px;
 }
 
+/* Sits inside .aa-profile-hub-card, which has a dark background, so the light fallback is correct here */
 .aa-profile-hub-title {
   font-size: 1.4rem;
   font-weight: 800;
   color: var(--text, #ffffff);
+  margin: 0 0 4px;
+}
+
+/* The agent tabs render straight onto the light page, not inside the dark card,
+   so they need their own heading colour rather than borrowing the hub's */
+.aa-agent-tab-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text, #0f172a);
   margin: 0 0 4px;
 }
 

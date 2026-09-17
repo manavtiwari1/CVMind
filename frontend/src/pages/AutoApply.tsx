@@ -10,6 +10,12 @@ import {
   Puzzle, Play, ShieldAlert, Save, Check
 } from 'lucide-react';
 import './AutoApply.css';
+import { authFetch } from '../lib/authFetch';
+import ResumeTab from './autoApply/ResumeTab';
+import PreferencesTab from './autoApply/PreferencesTab';
+import ApplicationsTab from './autoApply/ApplicationsTab';
+import { getPreferences, listResumes } from '../lib/agentApi';
+import { getSessionToken } from '../lib/authFetch';
 
 interface AutoApplyProps {
   customApiKey: string;
@@ -17,7 +23,7 @@ interface AutoApplyProps {
   setResumeText?: (text: string) => void;
 }
 
-type View = 'landing' | 'wizard' | 'jobs' | 'tracker' | 'sandbox' | 'profile';
+type View = 'landing' | 'wizard' | 'jobs' | 'tracker' | 'sandbox' | 'profile' | 'resumes' | 'preferences' | 'applications';
 type WizardStep = 1 | 2 | 3;
 type AppStatus = 'Applied' | 'Pending' | 'Interview' | 'Assessment' | 'Rejected' | 'Offer' | 'Saved';
 
@@ -110,6 +116,20 @@ function CompanyLogo({ domain, company }: { domain: string; company: string }) {
 
 export default function AutoApply({ customApiKey, resumeText: initialResumeText = '', setResumeText: setGlobalResumeText }: AutoApplyProps) {
   const [view, setView] = useState<View>('landing');
+  // Resume to open in Agent Resumes when the user clicks Edit next to a job's resume
+  const [editResumeId, setEditResumeId] = useState<string | null>(null);
+
+  // A resume the agent already has (e.g. uploaded in the Resume Checker) leaves only preferences to set up
+  useEffect(() => {
+    if (!getSessionToken()) return;
+    let cancelled = false;
+    Promise.all([listResumes(), getPreferences()])
+      .then(([resumes, { exists }]) => {
+        if (!cancelled && resumes.length > 0 && !exists) setView(v => (v === 'landing' ? 'preferences' : v));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
   const [step, setStep] = useState<WizardStep>(1);
   const [resumeText, setResumeText] = useState(initialResumeText);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
@@ -225,7 +245,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
   useEffect(() => {
     const fetchSavedProfile = async () => {
       try {
-        const res = await fetch(`${API}/api/auto-apply/profile/${userId}`);
+        const res = await authFetch(`${API}/api/auto-apply/profile/${userId}`);
         const data = await res.json();
         if (data.success && data.data) {
           setProfile(data.data);
@@ -257,7 +277,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
 
   const loadApplications = async () => {
     try {
-      const r = await fetch(`${API}/api/auto-apply/applications/${userId}`);
+      const r = await authFetch(`${API}/api/auto-apply/applications/${userId}`);
       const d = await r.json();
       if (d.success) setApplications(d.data);
     } catch { }
@@ -276,7 +296,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
     localStorage.setItem('cvmind_candidate_profile', JSON.stringify(updatedProfile));
 
     try {
-      await fetch(`${API}/api/auto-apply/profile/save`, {
+      await authFetch(`${API}/api/auto-apply/profile/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, profile: updatedProfile })
@@ -309,7 +329,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
     if (!resumeFile && !resumeText) { setError('Please upload your resume (PDF or DOCX).'); return; }
     setLoading(true); setLoadingMsg('Analyzing your resume with AI…'); setError('');
     try {
-      const r = await fetch(`${API}/api/auto-apply/profile`, {
+      const r = await authFetch(`${API}/api/auto-apply/profile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(customApiKey ? { 'x-gemini-key': customApiKey } : {}) },
         body: JSON.stringify({ resumeText })
@@ -346,7 +366,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
       localStorage.setItem('cvmind_candidate_profile', JSON.stringify(initialForm));
       
       // Save directly to backend
-      fetch(`${API}/api/auto-apply/profile/save`, {
+      authFetch(`${API}/api/auto-apply/profile/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, profile: initialForm })
@@ -360,7 +380,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
   const discoverJobs = async () => {
     setView('jobs'); setLoading(true); setLoadingMsg('Discovering matching jobs…');
     try {
-      const r = await fetch(`${API}/api/auto-apply/jobs`, {
+      const r = await authFetch(`${API}/api/auto-apply/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ skills: profile?.skills || profileForm.skills || [], roles: preferences.roles, locations: preferences.locations, remote: preferences.remote, industry: preferences.industry })
@@ -377,7 +397,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
     if (!scrapeUrlInput.trim()) return;
     setIsScrapingUrl(true);
     try {
-      const res = await fetch(`${API}/api/auto-apply/scrape-job`, {
+      const res = await authFetch(`${API}/api/auto-apply/scrape-job`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(customApiKey ? { 'x-gemini-key': customApiKey } : {}) },
         body: JSON.stringify({ url: scrapeUrlInput.trim() })
@@ -447,7 +467,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
     // Request AI answer for open-ended question based on user profile
     let generatedAnswer = `With my background in ${(p.skills || ['software engineering']).slice(0, 3).join(', ')} and practical project experience, I am confident in delivering high quality, reliable software for ABC Technologies.`;
     try {
-      const ar = await fetch(`${API}/api/auto-apply/answer`, {
+      const ar = await authFetch(`${API}/api/auto-apply/answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(customApiKey ? { 'x-gemini-key': customApiKey } : {}) },
         body: JSON.stringify({
@@ -502,7 +522,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
         matchScore: 91
       };
 
-      const res = await fetch(`${API}/api/auto-apply/apply`, {
+      const res = await authFetch(`${API}/api/auto-apply/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(appRecord)
@@ -552,7 +572,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
       // Step 1 — tailor resume
       updateModalStep(1, 'running');
       try {
-        const tr = await fetch(`${API}/api/auto-apply/tailor-for-job`, {
+        const tr = await authFetch(`${API}/api/auto-apply/tailor-for-job`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...(customApiKey ? { 'x-gemini-key': customApiKey } : {}) },
           body: JSON.stringify({ resumeText, job })
@@ -565,7 +585,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
       // Step 2 — cover letter
       updateModalStep(2, 'running');
       try {
-        const cr = await fetch(`${API}/api/auto-apply/cover-letter`, {
+        const cr = await authFetch(`${API}/api/auto-apply/cover-letter`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...(customApiKey ? { 'x-gemini-key': customApiKey } : {}) },
           body: JSON.stringify({ resumeText, job, candidateProfile: profile || profileForm })
@@ -583,7 +603,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
       // Step 4 — save application
       updateModalStep(4, 'running');
       const activeProf = profile || profileForm;
-      const ar = await fetch(`${API}/api/auto-apply/apply`, {
+      const ar = await authFetch(`${API}/api/auto-apply/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -617,7 +637,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
   const handleTailor = async (job: JobMatch) => {
     setLoading(true); setLoadingMsg('Tailoring resume for this job…');
     try {
-      const r = await fetch(`${API}/api/auto-apply/tailor-for-job`, {
+      const r = await authFetch(`${API}/api/auto-apply/tailor-for-job`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(customApiKey ? { 'x-gemini-key': customApiKey } : {}) },
         body: JSON.stringify({ resumeText, job })
@@ -632,7 +652,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
   const handleCoverLetter = async (job: JobMatch) => {
     setLoading(true); setLoadingMsg('Writing personalized cover letter…');
     try {
-      const r = await fetch(`${API}/api/auto-apply/cover-letter`, {
+      const r = await authFetch(`${API}/api/auto-apply/cover-letter`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(customApiKey ? { 'x-gemini-key': customApiKey } : {}) },
         body: JSON.stringify({ resumeText, job, candidateProfile: profile || profileForm })
@@ -648,7 +668,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
     if (!answerQuestion.trim()) return;
     setLoading(true); setLoadingMsg('Generating AI answer…');
     try {
-      const r = await fetch(`${API}/api/auto-apply/answer`, {
+      const r = await authFetch(`${API}/api/auto-apply/answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(customApiKey ? { 'x-gemini-key': customApiKey } : {}) },
         body: JSON.stringify({ question: answerQuestion, candidateProfile: profile || profileForm, job })
@@ -662,7 +682,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
 
   const updateAppStatus = async (appId: string, status: AppStatus) => {
     try {
-      await fetch(`${API}/api/auto-apply/applications/${appId}`, {
+      await authFetch(`${API}/api/auto-apply/applications/${appId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
@@ -673,7 +693,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
 
   const deleteApp = async (appId: string) => {
     try {
-      await fetch(`${API}/api/auto-apply/applications/${appId}`, { method: 'DELETE' });
+      await authFetch(`${API}/api/auto-apply/applications/${appId}`, { method: 'DELETE' });
       setApplications(prev => prev.filter(a => a.id !== appId));
     } catch { }
   };
@@ -708,6 +728,15 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
         </button>
         <button className={`aa-nav-btn ${view === 'profile' ? 'active' : ''}`} onClick={() => setView('profile')}>
           <User size={15} /> 👤 My Career Profile {profile?.name && `(${profile.name.split(' ')[0]})`}
+        </button>
+        <button className={`aa-nav-btn ${view === 'resumes' ? 'active' : ''}`} onClick={() => setView('resumes')}>
+          <FileText size={15} /> Agent Resumes
+        </button>
+        <button className={`aa-nav-btn ${view === 'preferences' ? 'active' : ''}`} onClick={() => setView('preferences')}>
+          <Target size={15} /> Job Preferences
+        </button>
+        <button className={`aa-nav-btn ${view === 'applications' ? 'active' : ''}`} onClick={() => setView('applications')}>
+          <Briefcase size={15} /> Agent Applications
         </button>
         <button className={`aa-nav-btn ${view === 'jobs' ? 'active' : ''}`} onClick={() => { if (!jobs.length) discoverJobs(); else setView('jobs'); }}>
           <Search size={15} /> Job Matches {jobs.length > 0 && `(${jobs.length})`}
@@ -974,6 +1003,36 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
       </div>
     );
   };
+
+  // ── AGENT APPLICATIONS VIEW (paste a job, see fit score, approve or skip) ───
+  if (view === 'applications') {
+    return (
+      <div className="aa-profile-hub-page">
+        {renderTopNavBar()}
+        <ApplicationsTab onEditResume={id => { setEditResumeId(id); setView('resumes'); }} />
+      </div>
+    );
+  }
+
+  // ── JOB PREFERENCES VIEW (persisted agent preferences) ──────────────────────
+  if (view === 'preferences') {
+    return (
+      <div className="aa-profile-hub-page">
+        {renderTopNavBar()}
+        <PreferencesTab seed={preferences} />
+      </div>
+    );
+  }
+
+  // ── AGENT RESUMES VIEW (structured profiles used by the apply agent) ────────
+  if (view === 'resumes') {
+    return (
+      <div className="aa-profile-hub-page">
+        {renderTopNavBar()}
+        <ResumeTab key={editResumeId ?? 'default'} initialSelectedId={editResumeId} />
+      </div>
+    );
+  }
 
   // ── DEDICATED PROFILE HUB VIEW ─────────────────────────────────────────────
   if (view === 'profile') {

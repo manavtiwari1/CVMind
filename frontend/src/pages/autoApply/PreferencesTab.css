@@ -1,0 +1,15 @@
+/* ── Auto Apply — Job preferences tab (layout classes shared from ResumeTab.css) ── */
+.aa-pref-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.aa-pref-option {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 99px; cursor: pointer; font-size: 0.84rem;
+  border: 1px solid var(--border, #e2e8f0); background: var(--surface, #fff); color: var(--text, #0f172a);
+}
+.aa-pref-option input { margin: 0; }
+.aa-pref-option.active { border-color: #2997ff; background: rgba(41,151,255,0.08); }
+.aa-pref-row { display: grid; grid-template-columns: minmax(140px, 1fr) auto auto auto; gap: 10px; align-items: center; }
+.aa-pref-row .aa-resume-check { padding-bottom: 0; }
+.aa-pref-add { align-self: flex-start; }
+
+@media (max-width: 640px) {
+  .aa-pref-row { grid-template-columns: 1fr auto; }
+}

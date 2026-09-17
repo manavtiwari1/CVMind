@@ -8,7 +8,6 @@
 </head>
 <body>
   <div class="popup-container">
-    <!-- Header -->
     <header class="popup-header">
       <div class="brand">
         <div class="brand-sparkle">✨</div>
@@ -17,60 +16,56 @@
           <span class="brand-subtitle">Auto Apply Copilot</span>
         </div>
       </div>
-      <div class="status-badge" id="conn-badge">Online</div>
+      <div class="status-badge" id="conn-badge">Checking…</div>
     </header>
 
-    <!-- Profile Snippet -->
-    <section class="profile-card" id="profile-card">
-      <div class="profile-avatar" id="user-avatar">MT</div>
+    <!-- Not connected: pair with a code from the CVMind web app -->
+    <section class="profile-card" id="pair-section" hidden>
       <div class="profile-details">
-        <div class="profile-name" id="user-name">Manav Tiwari</div>
-        <div class="profile-role" id="user-role">Full Stack & AI Engineer</div>
+        <div class="profile-name">Connect this browser</div>
+        <div class="profile-role">In CVMind, open Job Preferences and create a connection code.</div>
+        <input class="pair-input" id="pair-code" maxlength="9" placeholder="XXXX-XXXX" autocomplete="off" spellcheck="false">
+        <button class="primary-btn" id="btn-pair"><span>Connect</span></button>
+        <div class="pair-error" id="pair-error" hidden></div>
       </div>
-      <div class="profile-sync-icon" title="Synced with CVMind">✓</div>
     </section>
 
-    <!-- Active Tab Status -->
-    <section class="tab-status-card">
+    <!-- Connected -->
+    <section class="profile-card" id="connected-section" hidden>
+      <div class="profile-avatar" id="user-avatar">CV</div>
+      <div class="profile-details">
+        <div class="profile-name" id="device-name">This browser</div>
+        <div class="profile-role" id="account-email">Connected to CVMind</div>
+      </div>
+      <button class="link-btn" id="btn-unpair" title="Disconnect this browser">Disconnect</button>
+    </section>
+
+    <section class="tab-status-card" id="page-section" hidden>
       <div class="tab-status-header">
-        <span class="section-label">Active Page</span>
-        <span class="detect-pill" id="page-detect-status">Scanning...</span>
+        <span class="section-label">This page</span>
+        <span class="detect-pill" id="page-detect-status">Checking…</span>
       </div>
       <div class="job-meta">
-        <div class="job-title-display" id="tab-job-title">Job Application Page</div>
-        <div class="job-match-badge" id="tab-job-match">89% Match</div>
+        <div class="job-title-display" id="tab-job-title">—</div>
+        <div class="job-match-badge" id="tab-job-match" hidden></div>
       </div>
     </section>
 
-    <!-- Actions -->
-    <section class="action-section">
-      <button class="primary-btn" id="btn-popup-autofill">
-        <span>⚡ 1-Click Autofill Form</span>
-      </button>
-      <button class="secondary-btn" id="btn-popup-open-drawer">
-        <span>Open Floating Copilot Drawer</span>
-      </button>
+    <section class="action-section" id="action-section" hidden>
+      <button class="primary-btn" id="btn-popup-autofill"><span>⚡ Fill this application</span></button>
+      <button class="secondary-btn" id="btn-popup-track"><span>＋ Add this job to CVMind</span></button>
+      <div class="pair-error" id="action-error" hidden></div>
     </section>
 
-    <!-- Quick Stats -->
-    <section class="quick-stats">
-      <div class="stat-box">
-        <span class="stat-num" id="stat-applied">7</span>
-        <span class="stat-name">Applied</span>
-      </div>
-      <div class="stat-box">
-        <span class="stat-num" id="stat-matches">42</span>
-        <span class="stat-name">Matches</span>
-      </div>
-      <div class="stat-box">
-        <span class="stat-num" id="stat-ready">18</span>
-        <span class="stat-name">Ready</span>
-      </div>
-    </section>
+    <details class="advanced">
+      <summary>Advanced</summary>
+      <label class="advanced-label" for="api-base">CVMind server</label>
+      <input class="pair-input" id="api-base" spellcheck="false" autocomplete="off">
+      <button class="secondary-btn" id="btn-save-api"><span>Save server</span></button>
+    </details>
 
-    <!-- Footer -->
     <footer class="popup-footer">
-      <a href="http://localhost:5173/auto-apply" target="_blank" class="footer-btn">Open Web Dashboard ↗</a>
+      <a href="https://www.cvmind.online/auto-apply" target="_blank" rel="noopener" class="footer-btn">Open CVMind dashboard ↗</a>
     </footer>
   </div>
 

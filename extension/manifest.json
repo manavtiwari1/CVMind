@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "CVMind AI — Auto Apply Copilot",
-  "version": "1.0.0",
-  "description": "AI-powered career agent that analyzes job applications, scores match relevance, and assists with intelligent autofill & answer generation.",
+  "version": "1.1.0",
+  "description": "Fills job applications from your CVMind profile, flags answers to check, and tracks what you applied to. It never submits for you.",
   "permissions": [
     "activeTab",
     "storage",
@@ -10,9 +10,12 @@
   ],
   "host_permissions": [
     "http://localhost:5000/*",
-    "http://localhost:5173/*",
-    "https://*/*",
-    "http://*/*"
+    "https://cvmindai-backend.onrender.com/*",
+    "https://boards.greenhouse.io/*",
+    "https://job-boards.greenhouse.io/*",
+    "https://jobs.lever.co/*",
+    "https://jobs.eu.lever.co/*",
+    "https://*.myworkdayjobs.com/*"
   ],
   "action": {
     "default_popup": "popup/popup.html",
@@ -28,19 +31,28 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content/content.js"],
+      "matches": [
+        "https://boards.greenhouse.io/*",
+        "https://job-boards.greenhouse.io/*",
+        "https://jobs.lever.co/*",
+        "https://jobs.eu.lever.co/*",
+        "https://*.myworkdayjobs.com/*"
+      ],
+      "js": ["shared/formScanner.js", "shared/formFiller.js", "content/content.js"],
       "css": ["content/content.css"],
       "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": [
-        "icons/*",
-        "popup/*"
-      ],
-      "matches": ["<all_urls>"]
+      "resources": ["icons/*"],
+      "matches": [
+        "https://boards.greenhouse.io/*",
+        "https://job-boards.greenhouse.io/*",
+        "https://jobs.lever.co/*",
+        "https://jobs.eu.lever.co/*",
+        "https://*.myworkdayjobs.com/*"
+      ]
     }
   ]
 }

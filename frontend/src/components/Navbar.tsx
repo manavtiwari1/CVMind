@@ -13,7 +13,8 @@ import {
   NavigationMenuTrigger,
 } from './ui/navigation-menu';
 import cvmindIcon from '../assets/cvmind_icon.png';
-import './Navbar.css';
+import './Navbar.css';
+import { authFetch } from '../lib/authFetch';
 
 interface NavbarProps {
   currentPage: string;
@@ -147,7 +148,7 @@ export default function Navbar({
     const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
 
     try {
-      const response = await fetch(`${baseUrl}/api/user/profile`, {
+      const response = await authFetch(`${baseUrl}/api/user/profile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -161,6 +162,7 @@ export default function Navbar({
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to update profile');
 
+      // Response includes a fresh session token for the updated account
       localStorage.setItem('cvmind_user', JSON.stringify(data.user));
       setUser(data.user);
       setModalSuccess('Profile updated successfully!');
@@ -193,7 +195,7 @@ export default function Navbar({
     const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
 
     try {
-      const response = await fetch(`${baseUrl}/api/user/password`, {
+      const response = await authFetch(`${baseUrl}/api/user/password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -232,7 +234,7 @@ export default function Navbar({
     const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
 
     try {
-      const response = await fetch(`${baseUrl}/api/user/work/${userId}`);
+      const response = await authFetch(`${baseUrl}/api/user/work/${userId}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to fetch works');
 
@@ -251,7 +253,7 @@ export default function Navbar({
     const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
 
     try {
-      const response = await fetch(`${baseUrl}/api/user/work/${userId}/${workId}`, {
+      const response = await authFetch(`${baseUrl}/api/user/work/${userId}/${workId}`, {
         method: 'DELETE'
       });
       const data = await response.json();
@@ -273,7 +275,7 @@ export default function Navbar({
     setDeleteError('');
     const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
     try {
-      const res = await fetch(`${baseUrl}/api/user/${userId}`, { method: 'DELETE' });
+      const res = await authFetch(`${baseUrl}/api/user/${userId}`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to delete account.');
       setActiveModal(null);
