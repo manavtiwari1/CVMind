@@ -1,0 +1,12 @@
+/* ── Auto Apply — tailored resume & cover letter preview ───────────── */
+.aa-tailored { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 12px; border: 1px solid var(--border, #e2e8f0); background: var(--surface, #fff); }
+.aa-tailored-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+.aa-tailored-head .aa-score-subtitle { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.aa-tailored textarea { resize: vertical; font-family: inherit; }
+.aa-tailored-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 14px; }
+.aa-tailored-changes { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; font-size: 0.84rem; color: var(--text-muted, #64748b); }
+.aa-tailored-toggle { display: flex; justify-content: flex-end; }
+.aa-tailored-toggle .aa-resume-check { padding-bottom: 0; }
+.aa-tailored-original { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 2px; font-size: 0.8rem; color: var(--text-muted, #94a3b8); }
+.aa-tailored-original li { text-decoration: line-through; text-decoration-color: rgba(148,163,184,0.6); }
+.aa-tailored-letter { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border, #e2e8f0); }

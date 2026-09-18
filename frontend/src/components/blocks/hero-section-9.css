@@ -19,9 +19,9 @@
   grid-template-columns: 1fr 1fr;
   align-items: center;
   gap: 3rem;
-  max-width: 1280px;
+  max-width: 1560px;
   margin: 0 auto;
-  padding: 5rem 3rem 4rem;
+  padding: 4rem 3rem 3.5rem;
   overflow: hidden;
   background: transparent;
 }
@@ -550,7 +550,7 @@
 }
 
 .hero9-partners-inner {
-  max-width: 1280px;
+  max-width: 1560px;
   margin: 0 auto;
   padding: 0 3rem;
   text-align: center;

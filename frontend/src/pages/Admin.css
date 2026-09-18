@@ -1187,6 +1187,7 @@
 .badge-signup   { background: var(--grn-d); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
 .badge-password { background: var(--purp-d); color: var(--purple); border: 1px solid rgba(139,114,245,0.2); }
 .badge-reset    { background: var(--amb-d); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+.badge-linkedin { background: rgba(10,102,194,0.12); color: #4a9fe8; border: 1px solid rgba(10,102,194,0.3); }
 
 .kw-pill {
   display: inline-block;

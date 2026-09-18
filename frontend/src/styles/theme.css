@@ -55,7 +55,7 @@
   --shadow-glow: 0 0 40px rgba(45,192,141,0.12), 0 0 80px rgba(45,192,141,0.06);
 
   /* Layout */
-  --max-width:    1200px;
+  --max-width:    1560px;
   --radius-sm:    8px;
   --radius-md:    14px;
   --radius-lg:    22px;
@@ -204,9 +204,10 @@ a:hover { opacity: 0.75; }
   width: 100%;
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 7rem 2rem 4rem;
+  padding: 5.5rem 2.5rem 3.5rem;
   position: relative;
   z-index: 1;
+  box-sizing: border-box;
 }
 
 /* ════ Glass Card ══════════════════════════════════════════════ */
@@ -652,6 +653,14 @@ textarea.form-input {
 .dashboard-shell .main-content {
   max-width: none;
   padding: 0;
+}
+
+/* ════ CVmind Code full-bleed shell override ═══════════════════ */
+.code-shell .main-content {
+  max-width: 100%;
+  width: 100%;
+  padding: 64px 0 0 0;
+  margin: 0;
 }
 
 /* ════ Responsive ════════════════════════════════════════════════ */

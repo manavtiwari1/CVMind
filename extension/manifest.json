@@ -1,38 +1,58 @@
 {
   "manifest_version": 3,
-  "name": "CVmind AI Autofill Helper",
-  "version": "1.0.0",
-  "description": "Autofills job application forms on LinkedIn, Indeed, Naukri, WorkIndia, Greenhouse, Lever, and corporate sites using your CVmind profile.",
+  "name": "CVMind AI — Auto Apply Copilot",
+  "version": "1.1.0",
+  "description": "Fills job applications from your CVMind profile, flags answers to check, and tracks what you applied to. It never submits for you.",
   "permissions": [
     "activeTab",
     "storage",
     "scripting"
   ],
   "host_permissions": [
-    "http://localhost:5173/*",
-    "https://*.linkedin.com/*",
-    "https://*.indeed.com/*",
-    "https://*.naukri.com/*",
-    "https://*.workindia.in/*",
-    "https://*.greenhouse.io/*",
-    "https://*.lever.co/*"
+    "http://localhost:5000/*",
+    "https://cvmindai-backend.onrender.com/*",
+    "https://boards.greenhouse.io/*",
+    "https://job-boards.greenhouse.io/*",
+    "https://jobs.lever.co/*",
+    "https://jobs.eu.lever.co/*",
+    "https://*.myworkdayjobs.com/*"
   ],
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup/popup.html",
+    "default_title": "CVMind Auto Apply Copilot",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background/service_worker.js"
   },
   "content_scripts": [
     {
       "matches": [
-        "https://*.linkedin.com/*",
-        "https://*.indeed.com/*",
-        "https://*.naukri.com/*",
-        "https://*.workindia.in/*",
-        "https://*.greenhouse.io/*",
-        "https://*.lever.co/*"
+        "https://boards.greenhouse.io/*",
+        "https://job-boards.greenhouse.io/*",
+        "https://jobs.lever.co/*",
+        "https://jobs.eu.lever.co/*",
+        "https://*.myworkdayjobs.com/*"
       ],
-      "js": ["content.js"],
-      "css": ["content.css"],
+      "js": ["shared/formScanner.js", "shared/formFiller.js", "content/content.js"],
+      "css": ["content/content.css"],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*"],
+      "matches": [
+        "https://boards.greenhouse.io/*",
+        "https://job-boards.greenhouse.io/*",
+        "https://jobs.lever.co/*",
+        "https://jobs.eu.lever.co/*",
+        "https://*.myworkdayjobs.com/*"
+      ]
     }
   ]
 }

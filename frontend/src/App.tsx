@@ -33,10 +33,12 @@ import RefundPolicy from './pages/RefundPolicy';
 import Disclaimer from './pages/Disclaimer';
 import Proofreading from './pages/Proofreading';
 import AutoApply from './pages/AutoApply';
+import CompanyPortal from './pages/CompanyPortal';
 import CareerCopilot from './pages/CareerCopilot';
 import ArticleAtsResume from './pages/ArticleAtsResume';
 import CopyrightPolicy from './pages/CopyrightPolicy';
 import ArticlePage from './pages/ArticlePage';
+import CVmindCode from './pages/code/CVmindCode';
 import { ARTICLES } from './data/articles';
 import DigitalSerenityBackground from './components/DigitalSerenityBackground';
 import TawkChat from './components/TawkChat';
@@ -53,7 +55,7 @@ export default function App() {
       return 'portfolio';
     }
     const urlPage = pathname.replace(/^\//, '');
-    const validPages = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'career-copilot', 'copyright-policy', ...ARTICLES.map(a => a.slug)];
+    const validPages = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'career-copilot', 'copyright-policy', ...ARTICLES.map(a => a.slug)];
     if (urlPage && validPages.includes(urlPage)) {
       return urlPage;
     }
@@ -91,9 +93,6 @@ export default function App() {
   });
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [resumeText, setResumeText] = useState<string>('');
-  const [hasAutoApplyAccess, setHasAutoApplyAccess] = useState<boolean>(() => {
-    return localStorage.getItem('cvmind_aa_access') === 'true';
-  });
 
   // Authentication State
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
@@ -103,16 +102,7 @@ export default function App() {
   const [loadedWork, setLoadedWork] = useState<any>(null);
 
   useEffect(() => {
-    const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
-    if (!isLoggedIn) {
-      setHasAutoApplyAccess(false); localStorage.removeItem('cvmind_aa_access');
-      localStorage.removeItem('cvmind_cc_access');
-      return;
-    }
-    const user = JSON.parse(localStorage.getItem('cvmind_user') || '{}');
-    if (!user?.email) return;
-    fetch(`${base}/api/auto-apply/check-access?email=${encodeURIComponent(user.email)}`)
-      .then(r => r.json()).then(d => { setHasAutoApplyAccess(!!d.hasAccess); localStorage.setItem('cvmind_aa_access', d.hasAccess ? 'true' : 'false'); }).catch(() => {});
+    localStorage.setItem('cvmind_aa_access', 'true');
   }, [isLoggedIn]);
 
   // Enforce moderation on existing sessions — banned/suspended/deleted users
@@ -122,21 +112,30 @@ export default function App() {
 
     const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
 
+    const signOut = (message: string) => {
+      localStorage.removeItem('cvmind_logged_in');
+      localStorage.removeItem('cvmind_user');
+      setIsLoggedIn(false);
+      setCurrentPageState('home');
+      const params = new URLSearchParams(window.location.search);
+      params.set('authError', message);
+      window.history.replaceState({}, '', window.location.pathname + `?${params.toString()}`);
+      setShowAuthModal(true);
+    };
+
     const checkAccountStatus = () => {
       const user = JSON.parse(localStorage.getItem('cvmind_user') || '{}');
       if (!user?.email) return;
+      // Sessions from before signed tokens existed can't call protected APIs — sign in once more
+      if (!user.token) {
+        signOut('Please sign in again to continue.');
+        return;
+      }
       fetch(`${base}/api/auth/account-status?email=${encodeURIComponent(user.email)}`)
         .then(r => r.json())
         .then(d => {
           if (d && d.active === false) {
-            localStorage.removeItem('cvmind_logged_in');
-            localStorage.removeItem('cvmind_user');
-            setIsLoggedIn(false);
-            setCurrentPageState('home');
-            const params = new URLSearchParams(window.location.search);
-            params.set('authError', d.message || 'Your account access has been restricted.');
-            window.history.replaceState({}, '', window.location.pathname + `?${params.toString()}`);
-            setShowAuthModal(true);
+            signOut(d.message || 'Your account access has been restricted.');
           }
         })
         .catch(() => {}); // network/offline — never sign the user out on errors
@@ -243,6 +242,38 @@ export default function App() {
 
     handleGoogleRedirect();
   }, []);
+
+  // Handle GitHub/LinkedIn OAuth Redirect Callback (backend sends ?oauthUser= / ?authError=)
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+
+    if (searchParams.get('authError')) {
+      // AuthModal reads and clears the param itself to show the message
+      setShowAuthModal(true);
+      return;
+    }
+
+    const encoded = searchParams.get('oauthUser');
+    if (!encoded) return;
+
+    searchParams.delete('oauthUser');
+    const qs = searchParams.toString();
+    window.history.replaceState({}, document.title, window.location.pathname + (qs ? `?${qs}` : ''));
+
+    try {
+      const bytes = Uint8Array.from(atob(encoded.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+      const user = JSON.parse(new TextDecoder().decode(bytes));
+      if (!user?.email) throw new Error('Invalid OAuth payload');
+
+      localStorage.setItem('cvmind_logged_in', 'true');
+      localStorage.setItem('cvmind_user', JSON.stringify(user));
+      setIsLoggedIn(true);
+      setCurrentPage('dashboard');
+    } catch (err) {
+      console.error('OAuth Redirect Auth Error:', err);
+    }
+  }, []);
+
 
   const handleSignOut = () => {
     localStorage.removeItem('cvmind_logged_in');
@@ -421,18 +452,18 @@ export default function App() {
         return <Proofreading customApiKey={customApiKey} />;
       case 'career-copilot':
         return <CareerCopilot customApiKey={customApiKey} resumeText={resumeText} setResumeText={setResumeText} />;
-      case 'auto-apply':
-        return hasAutoApplyAccess ? (
-          <AutoApply customApiKey={customApiKey} resumeText={resumeText} setResumeText={setResumeText} />
-        ) : (
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:'70vh',gap:'18px',textAlign:'center',padding:'40px 24px'}}>
-            <div style={{fontSize:'3rem'}}>🚀</div>
-            <h2 style={{fontSize:'1.8rem',fontWeight:800,margin:0}}>Auto Apply Agent</h2>
-            <div style={{display:'inline-flex',alignItems:'center',gap:'6px',background:'linear-gradient(135deg,#ff9f0a,#ff453a)',color:'#fff',padding:'4px 14px',borderRadius:'99px',fontSize:'0.78rem',fontWeight:700,letterSpacing:'0.05em'}}>COMING SOON</div>
-            <p style={{color:'#6e6e73',fontSize:'1rem',maxWidth:'420px',lineHeight:1.6,margin:0}}>We're building an AI agent that automatically applies to jobs on your behalf — tailored resume, cover letter, and real form submission. Stay tuned!</p>
-            <button onClick={() => setCurrentPage('home')} style={{marginTop:'8px',padding:'12px 28px',borderRadius:'12px',border:'none',background:'#1d1d1f',color:'#fff',fontWeight:600,fontSize:'0.95rem',cursor:'pointer'}}>← Go Home</button>
-          </div>
+      case 'company-portal':
+        return (
+          <CompanyPortal 
+            customApiKey={customApiKey} 
+            onNavigateCandidateApp={() => setCurrentPage('auto-apply')} 
+          />
         );
+      case 'auto-apply':
+        return <AutoApply customApiKey={customApiKey} resumeText={resumeText} setResumeText={setResumeText} />;
+      case 'code':
+      case 'cvmind-code':
+        return <CVmindCode customApiKey={customApiKey} />;
       default:
         return (
           <Home 
@@ -446,10 +477,11 @@ export default function App() {
   };
 
   const isAdminPage = currentPage === 'admin';
+  const isCodePage = currentPage === 'code' || currentPage === 'cvmind-code';
   const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio';
 
   return (
-    <div className={`app-container ${isAdminPage ? 'admin-shell' : ''}`}>
+    <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''}`}>
 
       {/* ── Global Digital Serenity Background (for both dark & light modes) ── */}
       {!isMinimalPage && <DigitalSerenityBackground theme={theme} />}

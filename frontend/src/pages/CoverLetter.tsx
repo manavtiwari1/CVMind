@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import './CoverLetter.css';
 import ResumeWizard from '../components/ResumeWizard';
+import { authFetch } from '../lib/authFetch';
 
 // ─────────────────────────────────────────────────────────────────
 // Types
@@ -1378,7 +1379,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
 
         try {
           setSaving(true);
-          const response = await fetch(`${baseUrl}/api/user/work`, {
+          const response = await authFetch(`${baseUrl}/api/user/work`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1456,7 +1457,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
       || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
 
     try {
-      const response = await fetch(`${baseUrl}/api/user/work`, {
+      const response = await authFetch(`${baseUrl}/api/user/work`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1730,7 +1731,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
           const user = JSON.parse(userStr);
           const userId = user.id || user._id;
           if (userId) {
-            const saveRes = await fetch(`${baseUrl}/api/user/work`, {
+            const saveRes = await authFetch(`${baseUrl}/api/user/work`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({

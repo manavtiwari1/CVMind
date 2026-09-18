@@ -2,6 +2,10 @@ import 'dotenv/config';
 import crypto from 'crypto';
 import express from 'express';
 import autoApplyRouter from './routes/autoApply.js';
+import agentRouter from './routes/agent.js';
+import { startWorkers } from './agent/queue/workers.js';
+import companyRouter from './routes/company.js';
+import codeRouter from './routes/code.js';
 import cors from 'cors';
 import multer from 'multer';
 import bcrypt from 'bcryptjs';
@@ -10,9 +14,21 @@ import { parsePdf, parseDocx, parseTxt, fetchResumeFromUrl } from './services/pa
 import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, findJobsWithGemini, generateResumeWithGemini, generateProofreadingWithDeepSeek } from './services/gemini.js';
 import { getPublicStats, getAdminStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveJobFinderLog, savePaymentLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, getWhitelistedEmails, addWhitelistedEmail, deleteWhitelistedEmail, getAutoApplyAccessList, grantAutoApplyAccess, revokeAutoApplyAccess, hasAutoApplyAccess, getCareerCopilotAccessList, grantCareerCopilotAccess, revokeCareerCopilotAccess, hasCareerCopilotAccess, getAllUsersForAdmin, setUserStatus } from './db.js';
 import { Resend } from 'resend';
+import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf } from './services/authToken.js';
+import mongoose from 'mongoose';
+import { importUploadedResume, RESUME_MIME_TYPES } from './agent/resume/intake.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Refuse to boot in production without a token signing secret
+assertAuthConfigured();
+
+// Attach a signed session token to a user payload returned by a real sign-in
+const withSessionToken = (payload) => ({
+  ...payload,
+  token: signToken({ sub: payload.id, kind: 'user', email: payload.email })
+});
 
 // Initialize Resend Client
 const resend = new Resend(process.env.RESEND_API_KEY || '');
@@ -94,7 +110,7 @@ const sendWelcomeEmail = async (email, name, origin) => {
 app.use(cors({
   origin: '*', 
   methods: ['GET', 'POST', 'OPTIONS', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'x-gemini-key', 'x-admin-secret']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-gemini-key', 'x-admin-secret']
 }));
 
 app.use(express.json());
@@ -197,7 +213,7 @@ apiRouter.post('/api/auth/signup', async (req, res) => {
     return res.json({
       success: true,
       message: 'Account created successfully!',
-      user: userPayload
+      user: withSessionToken(userPayload)
     });
   } catch (err) {
     console.error('Sign Up Error:', err);
@@ -368,7 +384,7 @@ apiRouter.post('/api/auth/login', async (req, res) => {
     return res.json({
       success: true,
       message: 'Sign in successful!',
-      user: userPayload
+      user: withSessionToken(userPayload)
     });
   } catch (err) {
     console.error('Sign In Error:', err);
@@ -547,7 +563,7 @@ apiRouter.post('/api/auth/google', async (req, res) => {
     return res.json({
       success: true,
       message: 'Sign in with Google successful!',
-      user: userPayload
+      user: withSessionToken(userPayload)
     });
   } catch (err) {
     console.error('Google Sign In Error:', err);
@@ -572,6 +588,208 @@ apiRouter.get('/api/auth/account-status', async (req, res) => {
     return res.json({ status: 'active', active: true });
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Status check failed.' });
+  }
+});
+
+// ── GitHub & LinkedIn OAuth (server-side code exchange) ──────────────────────
+const ALLOWED_OAUTH_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'https://www.cvmind.online',
+  'https://cvmind.online'
+];
+
+// Short-lived anti-CSRF state store: state -> { origin, expires }
+const oauthStateStore = new Map();
+
+function createOAuthState(origin) {
+  // Purge expired states opportunistically
+  for (const [key, entry] of oauthStateStore) {
+    if (Date.now() > entry.expires) oauthStateStore.delete(key);
+  }
+  const state = crypto.randomBytes(24).toString('hex');
+  oauthStateStore.set(state, { origin, expires: Date.now() + 10 * 60 * 1000 });
+  return state;
+}
+
+function consumeOAuthState(state) {
+  const entry = oauthStateStore.get(state || '');
+  if (!entry) return null;
+  oauthStateStore.delete(state);
+  if (Date.now() > entry.expires) return null;
+  return entry;
+}
+
+function resolveOAuthOrigin(req) {
+  const requested = String(req.query.origin || '');
+  if (ALLOWED_OAUTH_ORIGINS.includes(requested)) return requested;
+  return process.env.FRONTEND_URL || 'https://www.cvmind.online';
+}
+
+function getBackendBaseUrl(req) {
+  return process.env.BACKEND_PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
+}
+
+function redirectWithAuthError(res, origin, message) {
+  return res.redirect(`${origin}/?authError=${encodeURIComponent(message)}`);
+}
+
+// Shared: find/create the user, enforce moderation status, log the login,
+// then hand the session payload back to the SPA via a query param.
+async function completeOAuthLogin(req, res, origin, { email, name, avatar, provider }) {
+  if (!email) {
+    return redirectWithAuthError(res, origin, `Your ${provider} account has no verified email address.`);
+  }
+
+  let user = await findUserByEmail(email);
+  if (!user) {
+    const salt = await bcrypt.genSalt(10);
+    const mockPasswordHash = await bcrypt.hash(`oauth-${provider}-` + Math.random().toString(36), salt);
+    user = await createUser({
+      email,
+      name: name || email.split('@')[0],
+      password: mockPasswordHash,
+      isGoogleUser: true, // OAuth account — no usable password
+      provider
+    });
+    sendWelcomeEmail(user.email, user.name, origin);
+  }
+
+  const blockError = getAccountBlockError(user);
+  if (blockError) {
+    return redirectWithAuthError(res, origin, blockError.error);
+  }
+
+  await saveLoginLog({ email: user.email, name: user.name, provider });
+
+  const isPaid = await isUserPaid(user);
+  const userPayload = {
+    id: user.id || user._id,
+    name: user.name,
+    email: user.email,
+    avatar: avatar || '',
+    isGoogleUser: user.isGoogleUser || false
+  };
+  if (isPaid) {
+    userPayload.plan = 'pro';
+    userPayload.isPro = true;
+    userPayload.isPaid = true;
+  }
+
+  const encoded = Buffer.from(JSON.stringify(withSessionToken(userPayload))).toString('base64url');
+  return res.redirect(`${origin}/?oauthUser=${encoded}`);
+}
+
+// Step 1 (GitHub): send the user to GitHub's consent screen
+apiRouter.get('/api/auth/github', (req, res) => {
+  const origin = resolveOAuthOrigin(req);
+  const clientId = process.env.GITHUB_CLIENT_ID;
+  if (!clientId || !process.env.GITHUB_CLIENT_SECRET) {
+    return redirectWithAuthError(res, origin, 'GitHub login is not configured yet.');
+  }
+  const state = createOAuthState(origin);
+  const redirectUri = `${getBackendBaseUrl(req)}/api/auth/github/callback`;
+  const url = `https://github.com/login/oauth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent('read:user user:email')}&state=${state}`;
+  return res.redirect(url);
+});
+
+// Step 2 (GitHub): exchange the code, fetch the profile, sign the user in
+apiRouter.get('/api/auth/github/callback', async (req, res) => {
+  const stateEntry = consumeOAuthState(req.query.state);
+  const origin = stateEntry?.origin || process.env.FRONTEND_URL || 'https://www.cvmind.online';
+  if (!stateEntry) return redirectWithAuthError(res, origin, 'GitHub sign-in session expired. Please try again.');
+  if (!req.query.code) return redirectWithAuthError(res, origin, 'GitHub sign-in was cancelled.');
+
+  try {
+    const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        code: req.query.code
+      })
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenData.access_token) throw new Error(tokenData.error_description || 'Token exchange failed');
+
+    const ghHeaders = { 'Authorization': `Bearer ${tokenData.access_token}`, 'Accept': 'application/vnd.github+json', 'User-Agent': 'CVMind' };
+    const profileRes = await fetch('https://api.github.com/user', { headers: ghHeaders });
+    const profile = await profileRes.json();
+
+    let email = profile.email || '';
+    if (!email) {
+      const emailsRes = await fetch('https://api.github.com/user/emails', { headers: ghHeaders });
+      const emails = await emailsRes.json();
+      if (Array.isArray(emails)) {
+        const primary = emails.find(e => e.primary && e.verified) || emails.find(e => e.verified);
+        email = primary?.email || '';
+      }
+    }
+
+    return await completeOAuthLogin(req, res, origin, {
+      email,
+      name: profile.name || profile.login,
+      avatar: profile.avatar_url || '',
+      provider: 'github'
+    });
+  } catch (err) {
+    console.error('GitHub OAuth Error:', err);
+    return redirectWithAuthError(res, origin, 'GitHub authentication failed. Please try again.');
+  }
+});
+
+// Step 1 (LinkedIn): send the user to LinkedIn's consent screen (OpenID Connect)
+apiRouter.get('/api/auth/linkedin', (req, res) => {
+  const origin = resolveOAuthOrigin(req);
+  const clientId = process.env.LINKEDIN_CLIENT_ID;
+  if (!clientId || !process.env.LINKEDIN_CLIENT_SECRET) {
+    return redirectWithAuthError(res, origin, 'LinkedIn login is not configured yet.');
+  }
+  const state = createOAuthState(origin);
+  const redirectUri = `${getBackendBaseUrl(req)}/api/auth/linkedin/callback`;
+  const url = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent('openid profile email')}&state=${state}`;
+  return res.redirect(url);
+});
+
+// Step 2 (LinkedIn): exchange the code, fetch userinfo, sign the user in
+apiRouter.get('/api/auth/linkedin/callback', async (req, res) => {
+  const stateEntry = consumeOAuthState(req.query.state);
+  const origin = stateEntry?.origin || process.env.FRONTEND_URL || 'https://www.cvmind.online';
+  if (!stateEntry) return redirectWithAuthError(res, origin, 'LinkedIn sign-in session expired. Please try again.');
+  if (!req.query.code) return redirectWithAuthError(res, origin, 'LinkedIn sign-in was cancelled.');
+
+  try {
+    const redirectUri = `${getBackendBaseUrl(req)}/api/auth/linkedin/callback`;
+    const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: String(req.query.code),
+        client_id: process.env.LINKEDIN_CLIENT_ID,
+        client_secret: process.env.LINKEDIN_CLIENT_SECRET,
+        redirect_uri: redirectUri
+      })
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenData.access_token) throw new Error(tokenData.error_description || 'Token exchange failed');
+
+    const profileRes = await fetch('https://api.linkedin.com/v2/userinfo', {
+      headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+    });
+    const profile = await profileRes.json();
+
+    return await completeOAuthLogin(req, res, origin, {
+      email: profile.email || '',
+      name: profile.name || '',
+      avatar: profile.picture || '',
+      provider: 'linkedin'
+    });
+  } catch (err) {
+    console.error('LinkedIn OAuth Error:', err);
+    return redirectWithAuthError(res, origin, 'LinkedIn authentication failed. Please try again.');
   }
 });
 
@@ -810,6 +1028,29 @@ async function extractResumeText(file, resumeUrl) {
 }
 
 // Resume Analysis Endpoint
+// Signed-in users' Resume Checker uploads become their default auto-apply resume, so the agent is ready
+// without a second upload. Best-effort: the analysis response never fails because of it.
+async function importCheckerResumeForAgent(req, file) {
+  const header = req.headers.authorization || '';
+  const auth = header.startsWith('Bearer ') ? verifyToken(header.slice(7).trim()) : null;
+  if (auth?.kind !== 'user' || !file || !RESUME_MIME_TYPES.includes(file.mimetype)) return null;
+  if (!process.env.MONGODB_URI || mongoose.connection.readyState !== 1) return null;
+
+  try {
+    const { profile, deduped } = await importUploadedResume({
+      userId: auth.sub,
+      file,
+      label: `Resume Checker – ${file.originalname}`,
+      via: 'resume_checker',
+      makeDefault: true
+    });
+    return { id: String(profile._id), status: profile.status, deduped };
+  } catch (err) {
+    console.error('[agent] could not import Resume Checker upload:', err.message);
+    return null;
+  }
+}
+
 apiRouter.post('/api/analyze', upload.single('resume'), async (req, res) => {
   try {
     const { file } = req;
@@ -854,11 +1095,14 @@ apiRouter.post('/api/analyze', upload.single('resume'), async (req, res) => {
       invalidatePublicStats();
     }
 
+    const agentResume = await importCheckerResumeForAgent(req, file);
+
     // Return the detailed analysis + original text (needed for AI optimizer)
     return res.json({
       success: true,
       data: evaluation,
-      resumeText: extractedText
+      resumeText: extractedText,
+      agentResume
     });
 
   } catch (error) {
@@ -1883,9 +2127,10 @@ ${education.length > 0 ? `
 </html>`;
 }
 
-apiRouter.post('/api/user/work', async (req, res) => {
+apiRouter.post('/api/user/work', requireUser, async (req, res) => {
 
-  const { userId, title, type, templateId, htmlContent, workId } = req.body || {};
+  const { title, type, templateId, htmlContent, workId } = req.body || {};
+  const userId = req.auth.sub;
   if (!userId || !title || !type || !templateId || !htmlContent) {
     return res.status(400).json({ error: 'Missing required work fields.' });
   }
@@ -1898,7 +2143,7 @@ apiRouter.post('/api/user/work', async (req, res) => {
   }
 });
 
-apiRouter.get('/api/user/work/:userId', async (req, res) => {
+apiRouter.get('/api/user/work/:userId', requireSelf(), async (req, res) => {
   const { userId } = req.params;
   try {
     const works = await getUserWorks(userId);
@@ -1909,7 +2154,7 @@ apiRouter.get('/api/user/work/:userId', async (req, res) => {
   }
 });
 
-apiRouter.delete('/api/user/work/:userId/:workId', async (req, res) => {
+apiRouter.delete('/api/user/work/:userId/:workId', requireSelf(), async (req, res) => {
   const { userId, workId } = req.params;
   try {
     await deleteUserWork(workId, userId);
@@ -1920,7 +2165,7 @@ apiRouter.delete('/api/user/work/:userId/:workId', async (req, res) => {
   }
 });
 
-apiRouter.delete('/api/user/:userId', async (req, res) => {
+apiRouter.delete('/api/user/:userId', requireSelf(), async (req, res) => {
   const { userId } = req.params;
   if (!userId) return res.status(400).json({ error: 'User ID is required.' });
   try {
@@ -1932,12 +2177,19 @@ apiRouter.delete('/api/user/:userId', async (req, res) => {
   }
 });
 
-apiRouter.post('/api/user/profile', async (req, res) => {
-  const { userId, name, email, address, avatar } = req.body || {};
-  if (!userId || !name || !email) {
-    return res.status(400).json({ error: 'User ID, name, and email are required.' });
+apiRouter.post('/api/user/profile', requireUser, async (req, res) => {
+  const { name, email, address, avatar } = req.body || {};
+  const userId = req.auth.sub;
+  if (!name || !email) {
+    return res.status(400).json({ error: 'Name and email are required.' });
   }
   try {
+    // Don't let one account take over another account's email
+    const emailOwner = await findUserByEmail(String(email).trim().toLowerCase());
+    if (emailOwner && String(emailOwner.id || emailOwner._id) !== userId) {
+      return res.status(409).json({ error: 'That email is already used by another account.' });
+    }
+
     const updated = await updateUserProfile({ userId, name, email, address, avatar });
     const isPaid = await isUserPaid(updated);
     const userPayload = {
@@ -1957,7 +2209,8 @@ apiRouter.post('/api/user/profile', async (req, res) => {
     return res.json({
       success: true,
       message: 'Profile updated successfully!',
-      user: userPayload
+      // Fresh token so its email matches the (possibly changed) account email
+      user: withSessionToken(userPayload)
     });
   } catch (error) {
     console.error('Update profile error:', error);
@@ -1965,10 +2218,11 @@ apiRouter.post('/api/user/profile', async (req, res) => {
   }
 });
 
-apiRouter.post('/api/user/password', async (req, res) => {
-  const { userId, currentPassword, newPassword } = req.body || {};
-  if (!userId || !currentPassword || !newPassword) {
-    return res.status(400).json({ error: 'User ID, current password, and new password are required.' });
+apiRouter.post('/api/user/password', requireUser, async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  const userId = req.auth.sub;
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Current password and new password are required.' });
   }
   try {
     const user = await findUserById(userId);
@@ -2154,7 +2408,7 @@ apiRouter.post('/api/ai/proofread', upload.single('resume'), async (req, res) =>
 });
 
 // User daily usage endpoint
-apiRouter.get('/api/user/usage/:userId', async (req, res) => {
+apiRouter.get('/api/user/usage/:userId', requireSelf(), async (req, res) => {
   try {
     const userId = String(req.params.userId || '').trim();
     if (!userId) return res.status(400).json({ error: 'userId is required' });
@@ -2170,6 +2424,12 @@ app.use('/_/backend', apiRouter);
 app.use('/', apiRouter);
 app.use('/api/auto-apply', autoApplyRouter);
 app.use('/_/backend/api/auto-apply', autoApplyRouter);
+app.use('/api/agent', agentRouter);
+app.use('/_/backend/api/agent', agentRouter);
+app.use('/api/company', companyRouter);
+app.use('/_/backend/api/company', companyRouter);
+app.use('/api/code', codeRouter);
+app.use('/_/backend/api/code', codeRouter);
 
 // Handle 404
 app.use((req, res) => {
@@ -2186,4 +2446,8 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
+  // Local dev convenience: run agent queue workers in the API process (production uses src/worker.js)
+  if (process.env.INLINE_WORKERS === 'true' && !process.env.VERCEL) {
+    startWorkers().catch((err) => console.error('[agent] failed to start inline workers:', err.message));
+  }
 });

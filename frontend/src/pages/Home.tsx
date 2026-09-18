@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Upload, FileText, CheckCircle2, ShieldAlert, ArrowRight, ShieldCheck, Lock, Search, BarChart3, Sparkles, Link, ChevronLeft, ChevronRight, Palette, Columns2 } from 'lucide-react';
 import { useLiveStats, formatStat } from '../utils/stats';
+import { authFetch } from '../lib/authFetch';
 import { HeroSection } from '../components/blocks/hero-section-9';
 import './Home.css';
 import './HomeCarousel.css';
@@ -232,7 +233,8 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
       const headers: Record<string, string> = {};
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
 
-      const response = await fetch(`${baseUrl}/api/analyze`, {
+      // Signed in: the session token lets the backend keep this upload as the auto-apply agent's resume
+      const response = await authFetch(`${baseUrl}/api/analyze`, {
         method: 'POST',
         headers: headers,
         body: formData

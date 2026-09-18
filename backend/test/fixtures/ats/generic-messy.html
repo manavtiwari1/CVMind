@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Careers — Apply</title></head>
+<body>
+  <h1>Apply for this role</h1>
+  <form action="/submit" method="post">
+    <!-- Label only via aria-labelledby, no for/id pairing -->
+    <div><span id="lbl-given">Given name</span><input type="text" aria-labelledby="lbl-given" class="c-input" required></div>
+    <div><span id="lbl-family">Family name</span><input type="text" aria-labelledby="lbl-family" class="c-input" required></div>
+
+    <!-- Label sits in a preceding sibling, name is meaningless -->
+    <div><p>Email address</p><input type="text" name="q_7734" required></div>
+
+    <!-- A framework-controlled input: it rejects plain value assignment and only trusts input events -->
+    <div><p>Phone</p><input type="text" id="controlled-phone" name="q_9910"></div>
+
+    <div><p>Gender</p>
+      <select name="q_eeo">
+        <option value="">Select…</option>
+        <option value="decline">Prefer not to say</option>
+        <option value="f">Female</option>
+        <option value="m">Male</option>
+      </select>
+    </div>
+
+    <div><p>Which team interests you most?</p><input type="text" name="q_team" required></div>
+
+    <div id="captcha-box" style="display:none;"><div class="g-recaptcha" data-sitekey="test-site-key"></div></div>
+
+    <button type="submit">Send application</button>
+  </form>
+
+  <script>
+    // Mimics React: the element keeps its own state and re-applies it unless a real input event fires
+    (function () {
+      const el = document.getElementById('controlled-phone');
+      let internal = '';
+      const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+      Object.defineProperty(el, 'value', {
+        get: () => internal,
+        set: (next) => { descriptor.set.call(el, next); }
+      });
+      el.addEventListener('input', () => { internal = descriptor.get.call(el); });
+
+      if (new URLSearchParams(location.search).has('captcha')) {
+        document.getElementById('captcha-box').style.display = 'block';
+      }
+    })();
+  </script>
+</body>
+</html>

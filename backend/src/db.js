@@ -223,6 +223,86 @@ const careerCopilotAccessSchema = new mongoose.Schema({
 });
 const CareerCopilotAccess = mongoose.models.CareerCopilotAccess || mongoose.model('CareerCopilotAccess', careerCopilotAccessSchema);
 
+const companySchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  website: { type: String, default: '' },
+  industry: { type: String, default: 'Technology' },
+  companySize: { type: String, default: '50-200 employees' },
+  location: { type: String, default: 'Bengaluru, India' },
+  description: { type: String, default: '' },
+  logo: { type: String, default: '' },
+  verified: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now }
+});
+const Company = mongoose.models.Company || mongoose.model('Company', companySchema);
+
+const jobSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  companyId: { type: String, required: true },
+  companyName: { type: String, required: true },
+  companyLogo: { type: String, default: '' },
+  domain: { type: String, default: '' },
+  title: { type: String, required: true },
+  department: { type: String, default: 'Engineering' },
+  jobType: { type: String, default: 'Full-time' },
+  experience: { type: String, default: '0-2 yrs' },
+  location: { type: String, default: 'Remote' },
+  remote: { type: String, default: 'Hybrid' },
+  salary: { type: String, default: '₹10L–₹18L/yr' },
+  deadline: { type: String, default: '' },
+  description: { type: String, required: true },
+  requirements: { type: String, default: '' },
+  skills: [{ type: String }],
+  allowAutoApply: { type: Boolean, default: true },
+  maxApplications: { type: Number, default: 100 },
+  status: { type: String, default: 'ACTIVE' },
+  postedAt: { type: Date, default: Date.now }
+});
+const Job = mongoose.models.Job || mongoose.model('Job', jobSchema);
+
+const applicationSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  jobId: { type: String, required: true },
+  companyId: { type: String, default: '' },
+  candidateId: { type: String, required: true },
+  candidateName: { type: String, required: true },
+  candidateEmail: { type: String, required: true },
+  candidatePhone: { type: String, default: '' },
+  candidateLocation: { type: String, default: '' },
+  resumeUrl: { type: String, default: '' },
+  resumeText: { type: String, default: '' },
+  coverLetter: { type: String, default: '' },
+  matchScore: { type: Number, default: 85 },
+  matchBreakdown: {
+    skills: { type: Number, default: 90 },
+    education: { type: Number, default: 100 },
+    experience: { type: Number, default: 85 },
+    location: { type: Number, default: 90 },
+    preferences: { type: Number, default: 95 }
+  },
+  matchReasoning: { type: String, default: '' },
+  mode: { type: String, default: 'Manual' },
+  status: { type: String, default: 'Applied' },
+  interviewDetails: {
+    date: { type: String, default: '' },
+    time: { type: String, default: '' },
+    meetingLink: { type: String, default: '' },
+    type: { type: String, default: 'Technical Interview' },
+    notes: { type: String, default: '' }
+  },
+  events: [{
+    title: { type: String },
+    description: { type: String },
+    timestamp: { type: Date, default: Date.now },
+    actor: { type: String, default: 'System' }
+  }],
+  appliedAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+const Application = mongoose.models.Application || mongoose.model('Application', applicationSchema);
+
 // ─── PER-FEATURE DAILY LIMITS FOR FREE USERS ─────────────────────────────────
 export const FREE_DAILY_LIMITS = {
   'analyze':           3,
@@ -248,6 +328,7 @@ const userSchema = new mongoose.Schema({
   address: { type: String, default: '' },
   avatar: { type: String, default: '' },
   isGoogleUser: { type: Boolean, default: false },
+  provider: { type: String, default: '' }, // 'password' | 'google' | 'github' | 'linkedin'
   resetPasswordToken: { type: String, default: '' },
   resetPasswordExpires: { type: Date, default: null },
   status: { type: String, default: 'active' }, // 'active' | 'suspended' | 'banned'
@@ -279,6 +360,70 @@ const loginLogSchema = new mongoose.Schema({
 });
 
 const LoginLog = mongoose.models.LoginLog || mongoose.model('LoginLog', loginLogSchema);
+
+// ─── CVMIND CODE MONGODB SCHEMAS & MODELS ─────────────────────────────────
+const codingSubmissionSchema = new mongoose.Schema({
+  id: { type: String, required: true, index: true },
+  userId: { type: String, default: 'anonymous', index: true },
+  problemId: { type: String, required: true, index: true },
+  problemTitle: { type: String, default: '' },
+  language: { type: String, required: true },
+  code: { type: String, required: true },
+  verdict: { type: String, required: true },
+  passedTests: { type: Number, default: 0 },
+  totalTests: { type: Number, default: 0 },
+  runtimeMs: { type: Number, default: 0 },
+  memoryMb: { type: Number, default: 0 },
+  error: { type: String, default: null },
+  createdAt: { type: Date, default: Date.now, index: true }
+});
+const CodingSubmission = mongoose.models.CodingSubmission || mongoose.model('CodingSubmission', codingSubmissionSchema);
+
+const codingProfileSchema = new mongoose.Schema({
+  userId: { type: String, required: true, unique: true, index: true },
+  solvedProblemIds: [{ type: String }],
+  totalSubmissions: { type: Number, default: 0 },
+  rating: { type: Number, default: 1640 },
+  streak: { type: Number, default: 14 },
+  lastActiveDate: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+const CodingProfile = mongoose.models.CodingProfile || mongoose.model('CodingProfile', codingProfileSchema);
+
+const customCodingProblemSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true, index: true },
+  title: { type: String, required: true },
+  slug: { type: String, required: true },
+  difficulty: { type: String, required: true },
+  category: { type: String, required: true },
+  companies: [{ type: String }],
+  acceptanceRate: { type: String, default: '50.0%' },
+  description: { type: String, required: true },
+  constraints: [{ type: String }],
+  examples: [{
+    input: String,
+    output: String,
+    explanation: String
+  }],
+  functionName: { type: String, default: 'solution' },
+  starterCode: {
+    javascript: String,
+    python: String,
+    cpp: String
+  },
+  sampleTestCases: [{
+    input: mongoose.Schema.Types.Mixed,
+    expected: mongoose.Schema.Types.Mixed
+  }],
+  hiddenTestCases: [{
+    input: mongoose.Schema.Types.Mixed,
+    expected: mongoose.Schema.Types.Mixed
+  }],
+  isAiGenerated: { type: Boolean, default: true },
+  createdBy: { type: String, default: 'anonymous' },
+  createdAt: { type: Date, default: Date.now }
+});
+const CustomCodingProblem = mongoose.models.CustomCodingProblem || mongoose.model('CustomCodingProblem', customCodingProblemSchema);
 
 export async function saveLoginLog({ email, name, provider }) {
   await ensureMongoConnection();
@@ -324,10 +469,11 @@ export async function findUserByEmail(email) {
   return db.users.find(u => u.email === searchEmail) || null;
 }
 
-export async function createUser({ email, name, password, isGoogleUser = false }) {
+export async function createUser({ email, name, password, isGoogleUser = false, provider = '' }) {
   await ensureMongoConnection();
   const cleanEmail = String(email || '').trim().toLowerCase();
   const cleanName = String(name || '').trim();
+  const cleanProvider = String(provider || (isGoogleUser ? 'google' : 'password')).trim().toLowerCase();
 
   // 1. MongoDB Mode
   if (mongoURI && mongoose.connection.readyState === 1) {
@@ -335,7 +481,8 @@ export async function createUser({ email, name, password, isGoogleUser = false }
       email: cleanEmail,
       name: cleanName,
       password,
-      isGoogleUser
+      isGoogleUser,
+      provider: cleanProvider
     });
     await newUser.save();
     return {
@@ -362,6 +509,7 @@ export async function createUser({ email, name, password, isGoogleUser = false }
     name: cleanName,
     password,
     isGoogleUser,
+    provider: cleanProvider,
     createdAt: new Date().toISOString()
   };
 
@@ -1405,6 +1553,7 @@ export async function getAllUsersForAdmin() {
       name: u.name || '',
       email,
       isGoogleUser: !!u.isGoogleUser,
+      provider: u.provider || (u.isGoogleUser ? 'google' : 'password'),
       status: u.status || 'active',
       statusReason: u.statusReason || '',
       statusUpdatedAt: u.statusUpdatedAt || null,
@@ -1417,7 +1566,7 @@ export async function getAllUsersForAdmin() {
   // 1. MongoDB Mode
   if (mongoURI && mongoose.connection.readyState === 1) {
     const [users, logs] = await Promise.all([
-      User.find().sort({ createdAt: -1 }).select('name email isGoogleUser status statusReason statusUpdatedAt createdAt').lean(),
+      User.find().sort({ createdAt: -1 }).select('name email isGoogleUser provider status statusReason statusUpdatedAt createdAt').lean(),
       LoginLog.find().select('email createdAt').lean()
     ]);
     const loginMap = buildLoginMap(logs);
@@ -1712,13 +1861,404 @@ export async function findUserByResetToken(token) {
   // 2. Local JSON DB Fallback
   const db = readDb();
   if (!db.users) db.users = [];
-  const u = db.users.find(x => x.resetPasswordToken === searchToken);
-  if (!u) return null;
-  
-  // Check expiry
-  const expires = new Date(u.resetPasswordExpires).getTime();
-  if (expires < Date.now()) return null;
-  
   return u;
 }
+
+// ─── COMPANY, JOB & APPLICATION DATA HELPERS ───────────────────────────────
+export async function saveCompany(companyData) {
+  await ensureMongoConnection();
+  const id = companyData.id || `comp_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+  const cleanEmail = String(companyData.email || '').trim().toLowerCase();
+  
+  const record = {
+    id,
+    name: companyData.name,
+    email: cleanEmail,
+    website: companyData.website || '',
+    industry: companyData.industry || 'Technology',
+    companySize: companyData.companySize || '50-200 employees',
+    location: companyData.location || 'Bengaluru, India',
+    description: companyData.description || '',
+    logo: companyData.logo || '',
+    verified: companyData.verified ?? true,
+    createdAt: companyData.createdAt || new Date()
+  };
+
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    let comp = await Company.findOne({ email: cleanEmail });
+    if (comp) {
+      Object.assign(comp, record);
+      return await comp.save();
+    }
+    return await Company.create(record);
+  }
+
+  const db = readDb();
+  if (!db.companies) db.companies = [];
+  const idx = db.companies.findIndex(c => c.email === cleanEmail);
+  if (idx >= 0) {
+    db.companies[idx] = { ...db.companies[idx], ...record };
+  } else {
+    db.companies.push(record);
+  }
+  writeDb(db);
+  return record;
+}
+
+export async function findCompanyByEmail(email) {
+  await ensureMongoConnection();
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    return await Company.findOne({ email: cleanEmail });
+  }
+  const db = readDb();
+  return (db.companies || []).find(c => c.email === cleanEmail) || null;
+}
+
+export async function saveCentralJob(jobData) {
+  await ensureMongoConnection();
+  const id = jobData.id || `job_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+  const record = {
+    id,
+    companyId: jobData.companyId || 'company_default',
+    companyName: jobData.companyName || 'CVMind Partner',
+    companyLogo: jobData.companyLogo || '',
+    domain: jobData.domain || '',
+    title: jobData.title,
+    department: jobData.department || 'Engineering',
+    jobType: jobData.jobType || 'Full-time',
+    experience: jobData.experience || '0-2 yrs',
+    location: jobData.location || 'Remote',
+    remote: jobData.remote || 'Hybrid',
+    salary: jobData.salary || '₹12L–₹22L/yr',
+    deadline: jobData.deadline || '',
+    description: jobData.description,
+    requirements: jobData.requirements || '',
+    skills: jobData.skills || [],
+    allowAutoApply: jobData.allowAutoApply ?? true,
+    maxApplications: jobData.maxApplications || 100,
+    status: jobData.status || 'ACTIVE',
+    postedAt: jobData.postedAt || new Date()
+  };
+
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    let job = await Job.findOne({ id });
+    if (job) {
+      Object.assign(job, record);
+      return await job.save();
+    }
+    return await Job.create(record);
+  }
+
+  const db = readDb();
+  if (!db.centralJobs) db.centralJobs = [];
+  const idx = db.centralJobs.findIndex(j => j.id === id);
+  if (idx >= 0) {
+    db.centralJobs[idx] = { ...db.centralJobs[idx], ...record };
+  } else {
+    db.centralJobs.unshift(record);
+  }
+  writeDb(db);
+  return record;
+}
+
+export async function getCentralJobs(filter = {}) {
+  await ensureMongoConnection();
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    const q = { ...filter };
+    return await Job.find(q).sort({ postedAt: -1 });
+  }
+  const db = readDb();
+  let jobs = db.centralJobs || [];
+  if (filter.companyId) {
+    jobs = jobs.filter(j => j.companyId === filter.companyId);
+  }
+  if (filter.status) {
+    jobs = jobs.filter(j => j.status === filter.status);
+  }
+  return jobs;
+}
+
+export async function saveCentralApplication(appData) {
+  await ensureMongoConnection();
+  const id = appData.id || `CVM-${Math.floor(100000 + Math.random() * 900000)}`;
+  const now = new Date();
+  
+  const initialEvent = {
+    title: 'Application Submitted',
+    description: `Applied via ${appData.mode || 'Manual'} mode on CVMind Platform.`,
+    timestamp: now,
+    actor: appData.candidateName || 'Candidate'
+  };
+
+  const record = {
+    id,
+    jobId: appData.jobId,
+    companyId: appData.companyId || '',
+    candidateId: appData.candidateId || appData.candidateEmail,
+    candidateName: appData.candidateName,
+    candidateEmail: String(appData.candidateEmail || '').toLowerCase(),
+    candidatePhone: appData.candidatePhone || '',
+    candidateLocation: appData.candidateLocation || '',
+    resumeUrl: appData.resumeUrl || '',
+    resumeText: appData.resumeText || '',
+    coverLetter: appData.coverLetter || '',
+    matchScore: appData.matchScore || 85,
+    matchBreakdown: appData.matchBreakdown || {
+      skills: 90, education: 95, experience: 85, location: 90, preferences: 90
+    },
+    matchReasoning: appData.matchReasoning || 'Strong candidate profile match.',
+    mode: appData.mode || 'Manual',
+    status: appData.status || 'Applied',
+    interviewDetails: appData.interviewDetails || {},
+    events: appData.events && appData.events.length ? appData.events : [initialEvent],
+    appliedAt: appData.appliedAt || now,
+    updatedAt: now
+  };
+
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    let app = await Application.findOne({ id });
+    if (app) {
+      Object.assign(app, record);
+      return await app.save();
+    }
+    return await Application.create(record);
+  }
+
+  const db = readDb();
+  if (!db.centralApplications) db.centralApplications = [];
+  const idx = db.centralApplications.findIndex(a => a.id === id);
+  if (idx >= 0) {
+    db.centralApplications[idx] = { ...db.centralApplications[idx], ...record };
+  } else {
+    db.centralApplications.unshift(record);
+  }
+  writeDb(db);
+  return record;
+}
+
+export async function updateApplicationStatus(applicationId, newStatus, actorName = 'Recruiter', interviewDetails = null) {
+  await ensureMongoConnection();
+  const now = new Date();
+  const event = {
+    title: `Status updated to ${newStatus}`,
+    description: interviewDetails 
+      ? `Interview scheduled for ${interviewDetails.date} at ${interviewDetails.time} (${interviewDetails.type}).` 
+      : `Application state progressed to ${newStatus}.`,
+    timestamp: now,
+    actor: actorName
+  };
+
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    let app = await Application.findOne({ id: applicationId });
+    if (!app) return null;
+    app.status = newStatus;
+    app.updatedAt = now;
+    if (interviewDetails) app.interviewDetails = interviewDetails;
+    app.events.push(event);
+    return await app.save();
+  }
+
+  const db = readDb();
+  if (!db.centralApplications) db.centralApplications = [];
+  const app = db.centralApplications.find(a => a.id === applicationId);
+  if (!app) return null;
+  app.status = newStatus;
+  app.updatedAt = now.toISOString();
+  if (interviewDetails) app.interviewDetails = interviewDetails;
+  if (!app.events) app.events = [];
+  app.events.push({ ...event, timestamp: now.toISOString() });
+  writeDb(db);
+  return app;
+}
+
+export async function getJobApplications(jobId) {
+  await ensureMongoConnection();
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    return await Application.find({ jobId }).sort({ matchScore: -1, appliedAt: -1 });
+  }
+  const db = readDb();
+  return (db.centralApplications || []).filter(a => a.jobId === jobId);
+}
+
+export async function getCandidateApplications(candidateEmail) {
+  await ensureMongoConnection();
+  const cleanEmail = String(candidateEmail || '').trim().toLowerCase();
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    return await Application.find({ candidateEmail: cleanEmail }).sort({ updatedAt: -1 });
+  }
+  const db = readDb();
+  return (db.centralApplications || []).filter(a => String(a.candidateEmail || '').toLowerCase() === cleanEmail);
+}
+
+// ─── CVMIND CODE PERSISTENCE FUNCTIONS ──────────────────────────────────────
+export async function saveCodingSubmission(subData) {
+  await ensureMongoConnection();
+  const record = {
+    id: subData.id || `sub_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+    userId: subData.userId || 'anonymous',
+    problemId: subData.problemId,
+    problemTitle: subData.problemTitle || '',
+    language: subData.language,
+    code: subData.code,
+    verdict: subData.verdict,
+    passedTests: subData.passedTests || 0,
+    totalTests: subData.totalTests || 0,
+    runtimeMs: subData.runtimeMs || 0,
+    memoryMb: subData.memoryMb || 0,
+    error: subData.error || null,
+    createdAt: new Date()
+  };
+
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    try {
+      const doc = await CodingSubmission.create(record);
+      return doc.toObject();
+    } catch (err) {
+      console.error('[MONGODB] saveCodingSubmission error:', err);
+    }
+  }
+
+  const db = readDb();
+  if (!db.codingSubmissions) db.codingSubmissions = [];
+  db.codingSubmissions.unshift(record);
+  writeDb(db);
+  return record;
+}
+
+export async function getUserCodingSubmissions(userId, problemId = null) {
+  await ensureMongoConnection();
+  const query = { userId };
+  if (problemId) query.problemId = problemId;
+
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    try {
+      return await CodingSubmission.find(query).sort({ createdAt: -1 }).limit(50);
+    } catch (err) {
+      console.error('[MONGODB] getUserCodingSubmissions error:', err);
+    }
+  }
+
+  const db = readDb();
+  return (db.codingSubmissions || [])
+    .filter(s => s.userId === userId && (!problemId || s.problemId === problemId))
+    .slice(0, 50);
+}
+
+export async function getUserCodingProfile(userId) {
+  await ensureMongoConnection();
+  const uid = userId || 'anonymous';
+
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    try {
+      let profile = await CodingProfile.findOne({ userId: uid });
+      if (!profile) {
+        profile = await CodingProfile.create({
+          userId: uid,
+          solvedProblemIds: ['two-sum'],
+          totalSubmissions: 1,
+          rating: 1655,
+          streak: 14
+        });
+      }
+      return profile.toObject();
+    } catch (err) {
+      console.error('[MONGODB] getUserCodingProfile error:', err);
+    }
+  }
+
+  const db = readDb();
+  if (!db.codingProfiles) db.codingProfiles = [];
+  let p = db.codingProfiles.find(x => x.userId === uid);
+  if (!p) {
+    p = {
+      userId: uid,
+      solvedProblemIds: ['two-sum'],
+      totalSubmissions: 1,
+      rating: 1655,
+      streak: 14,
+      lastActiveDate: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    db.codingProfiles.push(p);
+    writeDb(db);
+  }
+  return p;
+}
+
+export async function updateUserCodingProfile(userId, { problemId, verdict }) {
+  await ensureMongoConnection();
+  const uid = userId || 'anonymous';
+
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    try {
+      let profile = await CodingProfile.findOne({ userId: uid });
+      if (!profile) {
+        profile = new CodingProfile({ userId: uid, solvedProblemIds: [], totalSubmissions: 0, rating: 1640 });
+      }
+      profile.totalSubmissions += 1;
+      profile.lastActiveDate = new Date();
+      profile.updatedAt = new Date();
+
+      if (verdict === 'Accepted' && !profile.solvedProblemIds.includes(problemId)) {
+        profile.solvedProblemIds.push(problemId);
+        profile.rating += 15;
+      }
+      await profile.save();
+      return profile.toObject();
+    } catch (err) {
+      console.error('[MONGODB] updateUserCodingProfile error:', err);
+    }
+  }
+
+  const db = readDb();
+  if (!db.codingProfiles) db.codingProfiles = [];
+  let p = db.codingProfiles.find(x => x.userId === uid);
+  if (!p) {
+    p = { userId: uid, solvedProblemIds: [], totalSubmissions: 0, rating: 1640, streak: 14 };
+    db.codingProfiles.push(p);
+  }
+  p.totalSubmissions += 1;
+  p.lastActiveDate = new Date().toISOString();
+  p.updatedAt = new Date().toISOString();
+  if (verdict === 'Accepted' && !p.solvedProblemIds.includes(problemId)) {
+    p.solvedProblemIds.push(problemId);
+    p.rating += 15;
+  }
+  writeDb(db);
+  return p;
+}
+
+export async function saveCustomCodingProblem(problemData) {
+  await ensureMongoConnection();
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    try {
+      const doc = await CustomCodingProblem.create(problemData);
+      return doc.toObject();
+    } catch (err) {
+      console.error('[MONGODB] saveCustomCodingProblem error:', err);
+    }
+  }
+
+  const db = readDb();
+  if (!db.customCodingProblems) db.customCodingProblems = [];
+  db.customCodingProblems.unshift(problemData);
+  writeDb(db);
+  return problemData;
+}
+
+export async function getCustomCodingProblems() {
+  await ensureMongoConnection();
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    try {
+      return await CustomCodingProblem.find({}).sort({ createdAt: -1 }).limit(50);
+    } catch (err) {
+      console.error('[MONGODB] getCustomCodingProblems error:', err);
+    }
+  }
+
+  const db = readDb();
+  return db.customCodingProblems || [];
+}
+
 

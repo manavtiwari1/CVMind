@@ -1,0 +1,23 @@
+/* ── Auto Apply — server fill review ───────────────────────────────── */
+.aa-review { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 12px; border: 1px solid var(--border, #e2e8f0); background: var(--surface, #fff); }
+.aa-review-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.aa-review-head .aa-score-subtitle { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+
+.aa-review-shot { display: block; max-height: 420px; overflow: hidden; border-radius: 10px; border: 1px solid var(--border, #e2e8f0); }
+.aa-review-shot img { display: block; width: 100%; height: auto; }
+
+.aa-review-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.aa-review-table th { text-align: left; font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--border, #e2e8f0); }
+.aa-review-table td { padding: 6px 8px; vertical-align: top; border-bottom: 1px solid var(--border, #e2e8f0); }
+.aa-review-table td:first-child { width: 42%; }
+.aa-review-table small { display: block; color: var(--text-muted, #94a3b8); font-size: 0.74rem; }
+.aa-review-table tr.needs-review { background: rgba(245, 158, 11, 0.07); }
+.aa-review-label { font-weight: 500; overflow-wrap: anywhere; }
+.aa-review-flag {
+  margin-left: 6px; padding: 1px 7px; border-radius: 99px; font-size: 0.68rem; font-weight: 600;
+  background: rgba(245, 158, 11, 0.15); color: #b86e00;
+}
+
+@media (max-width: 640px) {
+  .aa-review-table td:first-child { width: 50%; }
+}

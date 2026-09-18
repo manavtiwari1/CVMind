@@ -7,6 +7,7 @@ import {
   GraduationCap, Activity, Rocket, Bot, Search, X, ExternalLink, Youtube
 } from 'lucide-react';
 import './CareerCopilot.css';
+import { authFetch } from '../lib/authFetch';
 
 const API = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
 
@@ -199,7 +200,7 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
       }
       if (!text.trim()) { setError('Could not read resume text. Please try a different file.'); return; }
       setLoadingMsg('AI is building your career profile…');
-      const r = await fetch(`${API}/api/auto-apply/profile`, {
+      const r = await authFetch(`${API}/api/auto-apply/profile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(customApiKey ? { 'x-gemini-key': customApiKey } : {}) },
         body: JSON.stringify({ resumeText: text })
