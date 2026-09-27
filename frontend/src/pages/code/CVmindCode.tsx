@@ -28,6 +28,16 @@ interface CVmindCodeProps {
 
 export default function CVmindCode({ customApiKey = '', initialTab = 'problems' }: CVmindCodeProps) {
   const [activeTab, setActiveTab] = useState<string>(() => {
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const tabParam = searchParams.get('tab');
+      if (tabParam && ['problems', 'arena', 'roadmap', 'contests', 'assessments', 'ai-gen', 'profile'].includes(tabParam)) {
+        return tabParam;
+      }
+      if (searchParams.get('problem')) {
+        return 'arena';
+      }
+    } catch {}
     return initialTab || 'problems';
   });
 
@@ -42,7 +52,17 @@ export default function CVmindCode({ customApiKey = '', initialTab = 'problems' 
     return CODING_PROBLEMS;
   });
 
-  const [selectedProblem, setSelectedProblem] = useState<CodingProblem>(CODING_PROBLEMS[0]);
+  const [selectedProblem, setSelectedProblem] = useState<CodingProblem>(() => {
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const probId = searchParams.get('problem');
+      if (probId) {
+        const found = CODING_PROBLEMS.find(p => p.id === probId);
+        if (found) return found;
+      }
+    } catch {}
+    return CODING_PROBLEMS[0];
+  });
 
   const [solvedProblemIds, setSolvedProblemIds] = useState<string[]>(() => {
     try {

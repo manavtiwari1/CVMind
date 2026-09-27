@@ -467,24 +467,10 @@ export default function Navbar({
               <NavigationMenuItem>
                 <button
                   onClick={() => go('code')}
-                  className={`nav-link${['code', 'cvmind-code'].includes(currentPage) ? ' active' : ''}`}
+                  className={`nav-link${['code', 'cvmind-code', 'code-arena'].includes(currentPage) ? ' active' : ''}`}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: 'transparent', border: 'none' }}
                 >
                   <span style={{ fontWeight: 600 }}>CVMind Code</span>
-                </button>
-              </NavigationMenuItem>
-
-              {/* 6. Company Portal (For Employers) */}
-              <NavigationMenuItem>
-                <button
-                  onClick={() => go('company-portal')}
-                  className={`nav-link${currentPage === 'company-portal' ? ' active' : ''}`}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: 'transparent', border: 'none' }}
-                >
-                  <span>Company Portal</span>
-                  <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '2px 7px', borderRadius: '99px', background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', color: '#fff', letterSpacing: '0.04em' }}>
-                    EMPLOYERS
-                  </span>
                 </button>
               </NavigationMenuItem>
 
@@ -643,6 +629,12 @@ export default function Navbar({
                 onClick={() => go('auto-apply')}
               >
                 Auto Apply Agent ✨
+              </button>
+              <button
+                className={`mobile-drawer-link mobile-sub-link${['code', 'cvmind-code', 'code-arena'].includes(currentPage) ? ' active' : ''}`}
+                onClick={() => go('code')}
+              >
+                CVMind Code ⚡
               </button>
 
               {/* SmartPrep AI sub-accordion */}

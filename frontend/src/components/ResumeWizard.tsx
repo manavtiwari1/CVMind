@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft,
   Sparkles,
@@ -13,7 +13,9 @@ import {
   MapPin,
   Linkedin,
   SkipForward,
-  Award
+  Award,
+  UploadCloud,
+  FileText
 } from 'lucide-react';
 import './ResumeWizard.css';
 
@@ -44,36 +46,88 @@ interface ResumeWizardProps {
   onBack: () => void;
   onSkip: () => void;
   onGenerate: (formData: any) => void;
+  initialData?: any;
+  onUploadResumeClick?: () => void;
 }
 
-export default function ResumeWizard({ templateName, onBack, onSkip, onGenerate }: ResumeWizardProps) {
+export default function ResumeWizard({ templateName, onBack, onSkip, onGenerate, initialData, onUploadResumeClick }: ResumeWizardProps) {
   // Personal Info
   const [personalInfo, setPersonalInfo] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    location: '',
-    linkedin: ''
+    fullName: initialData?.personalInfo?.fullName || '',
+    email: initialData?.personalInfo?.email || '',
+    phone: initialData?.personalInfo?.phone || '',
+    location: initialData?.personalInfo?.location || '',
+    linkedin: initialData?.personalInfo?.linkedin || '',
+    jobTitle: initialData?.personalInfo?.jobTitle || ''
   });
 
-  // Education (initialized with one empty entry)
-  const [educations, setEducations] = useState<Education[]>([
-    { university: '', degree: '', gradYear: '', cgpa: '' }
-  ]);
+  // Summary
+  const [summary, setSummary] = useState(initialData?.summary || '');
 
-  // Work Experiences (initialized with one empty entry)
-  const [workExperiences, setWorkExperiences] = useState<WorkExperience[]>([
-    { company: '', jobTitle: '', location: '', startDate: '', endDate: '', description: '' }
-  ]);
+  // Education (initialized with one empty entry or extracted)
+  const [educations, setEducations] = useState<Education[]>(() => {
+    if (initialData?.educations && initialData.educations.length > 0) {
+      return initialData.educations;
+    }
+    return [{ university: '', degree: '', gradYear: '', cgpa: '' }];
+  });
 
-  // Courses / Certifications (initialized with one empty entry)
-  const [courses, setCourses] = useState<Course[]>([
-    { name: '', platform: '', date: '' }
-  ]);
+  // Work Experiences (initialized with one empty entry or extracted)
+  const [workExperiences, setWorkExperiences] = useState<WorkExperience[]>(() => {
+    if (initialData?.workExperiences && initialData.workExperiences.length > 0) {
+      return initialData.workExperiences;
+    }
+    return [{ company: '', jobTitle: '', location: '', startDate: '', endDate: '', description: '' }];
+  });
+
+  // Courses / Certifications (initialized with one empty entry or extracted)
+  const [courses, setCourses] = useState<Course[]>(() => {
+    if (initialData?.courses && initialData.courses.length > 0) {
+      return initialData.courses;
+    }
+    return [{ name: '', platform: '', date: '' }];
+  });
 
   // Skills
-  const [skills, setSkills] = useState<string[]>([]);
+  const [skills, setSkills] = useState<string[]>(initialData?.skills || []);
   const [skillInput, setSkillInput] = useState('');
+
+  // Additional rich template sections (Languages, Achievements, Time Breakdown)
+  const [languages, setLanguages] = useState(initialData?.languages || []);
+  const [achievements, setAchievements] = useState(initialData?.achievements || []);
+  const [timeBreakdown, setTimeBreakdown] = useState(initialData?.timeBreakdown || []);
+
+  // Sync state if initialData is updated dynamically
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.personalInfo) {
+        setPersonalInfo({
+          fullName: initialData.personalInfo.fullName || '',
+          email: initialData.personalInfo.email || '',
+          phone: initialData.personalInfo.phone || '',
+          location: initialData.personalInfo.location || '',
+          linkedin: initialData.personalInfo.linkedin || '',
+          jobTitle: initialData.personalInfo.jobTitle || ''
+        });
+      }
+      if (initialData.summary) setSummary(initialData.summary);
+      if (initialData.educations && initialData.educations.length > 0) {
+        setEducations(initialData.educations);
+      }
+      if (initialData.workExperiences && initialData.workExperiences.length > 0) {
+        setWorkExperiences(initialData.workExperiences);
+      }
+      if (initialData.skills && initialData.skills.length > 0) {
+        setSkills(initialData.skills);
+      }
+      if (initialData.courses && initialData.courses.length > 0) {
+        setCourses(initialData.courses);
+      }
+      if (initialData.languages) setLanguages(initialData.languages);
+      if (initialData.achievements) setAchievements(initialData.achievements);
+      if (initialData.timeBreakdown) setTimeBreakdown(initialData.timeBreakdown);
+    }
+  }, [initialData]);
 
   // Form errors
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -190,10 +244,15 @@ export default function ResumeWizard({ templateName, onBack, onSkip, onGenerate 
 
     onGenerate({
       personalInfo,
+      jobTitle: personalInfo.jobTitle || 'Professional',
+      summary: summary.trim(),
       education: educations.filter(edu => edu.university.trim() || edu.degree.trim()),
       workExperiences: workExperiences.filter(exp => exp.company.trim() || exp.jobTitle.trim()),
       skills,
-      courses: courses.filter(c => c.name.trim() || c.platform.trim())
+      courses: courses.filter(c => c.name.trim() || c.platform.trim()),
+      languages,
+      achievements,
+      timeBreakdown
     });
   };
 
@@ -209,9 +268,16 @@ export default function ResumeWizard({ templateName, onBack, onSkip, onGenerate 
             Selected Layout: <strong>{templateName}</strong>
           </div>
         </div>
-        <button className="rw-skip-btn" onClick={onSkip}>
-          Skip & Edit Manually <SkipForward size={14} />
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {onUploadResumeClick && (
+            <button type="button" className="rw-autofill-btn" onClick={onUploadResumeClick}>
+              <UploadCloud size={14} /> Auto-fill from Existing Resume
+            </button>
+          )}
+          <button className="rw-skip-btn" onClick={onSkip}>
+            Skip & Edit Manually <SkipForward size={14} />
+          </button>
+        </div>
       </div>
 
       <div className="rw-grid-layout">
@@ -219,8 +285,18 @@ export default function ResumeWizard({ templateName, onBack, onSkip, onGenerate 
         <form className="rw-form-column" onSubmit={handleSubmit}>
           <div className="rw-hero-text">
             <h2>Let's build your <span className="rw-gradient-text">ATS Resume</span></h2>
-            <p>Fill in some basic details and our CV Mind will optimize them into a beautiful, recruiter-ready resume layout.</p>
+            <p>Fill in some basic details and CV Mind will optimize them into a beautiful, recruiter-ready resume layout.</p>
           </div>
+
+          {initialData && (
+            <div className="rw-extracted-alert">
+              <Sparkles size={18} className="rw-alert-icon" />
+              <div>
+                <strong>Existing resume details imported!</strong>
+                <span> Your data has been populated into the fields below. Review and adjust anything you'd like.</span>
+              </div>
+            </div>
+          )}
 
           {/* SECTION 1: Personal Info */}
           <div className="rw-card">
@@ -307,18 +383,63 @@ export default function ResumeWizard({ templateName, onBack, onSkip, onGenerate 
                     />
                   </div>
                 </div>
-                <div className="rw-form-group" style={{ visibility: 'hidden' }}>
-                  {/* Empty group for spacing symmetry */}
+                <div className="rw-form-group">
+                  <label htmlFor="jobTitle">Target Role / Job Title</label>
+                  <div className="rw-input-with-icon">
+                    <Briefcase size={14} className="rw-field-icon" />
+                    <input
+                      type="text"
+                      id="jobTitle"
+                      name="jobTitle"
+                      placeholder="e.g. Senior Software Engineer"
+                      value={personalInfo.jobTitle || ''}
+                      onChange={handlePersonalInfoChange}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* SECTION 2: Academic Info */}
+          {/* SECTION 2: Summary */}
+          <div className="rw-card">
+            <div className="rw-card-header">
+              <FileText size={18} className="rw-section-icon" />
+              <h3>2. Professional Summary</h3>
+            </div>
+            <div className="rw-card-body">
+              <div className="rw-form-group">
+                <label htmlFor="summary">Executive Summary / Pitch</label>
+                <textarea
+                  id="summary"
+                  name="summary"
+                  rows={3}
+                  placeholder="Briefly explain your experience, accomplishments, and value you bring..."
+                  value={summary}
+                  onChange={e => setSummary(e.target.value)}
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: '0.75rem',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: 'var(--text-primary)',
+                    fontFamily: 'inherit',
+                    fontSize: '0.86rem',
+                    resize: 'vertical',
+                    minHeight: '75px'
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 3: Academic Info */}
           <div className="rw-card">
             <div className="rw-card-header">
               <GraduationCap size={18} className="rw-section-icon" />
-              <h3>2. Education / Academic details</h3>
+              <h3>3. Education / Academic details</h3>
             </div>
             <div className="rw-card-body">
               {educations.map((edu, index) => (
@@ -390,11 +511,11 @@ export default function ResumeWizard({ templateName, onBack, onSkip, onGenerate 
             </div>
           </div>
 
-          {/* SECTION 3: Work Experience */}
+          {/* SECTION 4: Work Experience */}
           <div className="rw-card">
             <div className="rw-card-header">
               <Briefcase size={18} className="rw-section-icon" />
-              <h3>3. Work Experience</h3>
+              <h3>4. Work Experience</h3>
             </div>
             <div className="rw-card-body">
               {workExperiences.map((exp, index) => (
@@ -487,11 +608,11 @@ export default function ResumeWizard({ templateName, onBack, onSkip, onGenerate 
             </div>
           </div>
 
-          {/* SECTION 4: Skills */}
+          {/* SECTION 5: Skills */}
           <div className="rw-card">
             <div className="rw-card-header">
               <Wrench size={18} className="rw-section-icon" />
-              <h3>4. Skills</h3>
+              <h3>5. Skills</h3>
             </div>
             <div className="rw-card-body">
               <div className="rw-form-group">
@@ -523,11 +644,11 @@ export default function ResumeWizard({ templateName, onBack, onSkip, onGenerate 
             </div>
           </div>
 
-          {/* SECTION 5: Courses / Certifications */}
+          {/* SECTION 6: Courses / Certifications */}
           <div className="rw-card">
             <div className="rw-card-header">
               <Award size={18} className="rw-section-icon" />
-              <h3>5. Courses / Certifications</h3>
+              <h3>6. Courses / Certifications</h3>
             </div>
             <div className="rw-card-body">
               {courses.map((course, index) => (

@@ -9,7 +9,7 @@ import multer from 'multer';
 import bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
 import { parsePdf, parseDocx, parseTxt, fetchResumeFromUrl } from './services/parser.js';
-import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, findJobsWithGemini, generateResumeWithGemini, generateProofreadingWithDeepSeek } from './services/gemini.js';
+import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, findJobsWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek } from './services/gemini.js';
 import { getPublicStats, getAdminStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveJobFinderLog, savePaymentLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, getWhitelistedEmails, addWhitelistedEmail, deleteWhitelistedEmail, getAutoApplyAccessList, grantAutoApplyAccess, revokeAutoApplyAccess, hasAutoApplyAccess, getCareerCopilotAccessList, grantCareerCopilotAccess, revokeCareerCopilotAccess, hasCareerCopilotAccess, getAllUsersForAdmin, setUserStatus } from './db.js';
 import { Resend } from 'resend';
 
@@ -1309,6 +1309,43 @@ apiRouter.post('/api/resume/generate', async (req, res) => {
     console.error('Resume Generation API Error:', error);
     return res.status(500).json({
       error: error.message || 'AI Resume generation failed. Please try again.'
+    });
+  }
+});
+
+// AI Resume Data Extraction Endpoint (Parses uploaded resume into wizard JSON structure)
+apiRouter.post('/api/resume/parse-data', upload.single('resume'), async (req, res) => {
+  try {
+    const { file } = req;
+    const resumeUrl = req.body?.resumeUrl || '';
+    let resumeText = req.body?.resumeText || '';
+    const customApiKey = req.headers['x-gemini-key'] || null;
+
+    if (!resumeText && (file || resumeUrl)) {
+      try {
+        resumeText = await extractResumeText(file, resumeUrl);
+      } catch (parseErr) {
+        return res.status(parseErr.status || 400).json({ error: parseErr.message });
+      }
+    }
+
+    if (!resumeText || resumeText.trim().length < 30) {
+      return res.status(400).json({
+        error: 'Unable to extract text from the resume. Please ensure the document has readable text.'
+      });
+    }
+
+    const structuredData = await extractResumeDataWithAI(resumeText, customApiKey);
+
+    return res.json({
+      success: true,
+      data: structuredData,
+      rawText: resumeText
+    });
+  } catch (error) {
+    console.error('Resume Parse API Error:', error);
+    return res.status(500).json({
+      error: error.message || 'Failed to extract resume data. Please try again.'
     });
   }
 });
