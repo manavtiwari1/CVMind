@@ -6,7 +6,7 @@ import {
   Sparkles, Copy, Check, Download, RotateCcw, ArrowLeft,
   Loader2, AlertTriangle, Eraser, Highlighter,
   ChevronDown, ChevronRight, FileText, CheckCircle2,
-  Image, Link, Pencil, Globe
+  Image, Link, Pencil, Globe, UploadCloud, X, FileUp
 } from 'lucide-react';
 import './CoverLetter.css';
 import ResumeWizard from '../components/ResumeWizard';
@@ -55,6 +55,301 @@ const HIGHLIGHT_COLORS = [
 // ATS Resume Templates (22 designs)
 // ─────────────────────────────────────────────────────────────────
 const TEMPLATES: Template[] = [
+  {
+    id: 'cvmind-executive',
+    name: 'Executive Double-Column',
+    tag: 'Enhancv Style · Visual ATS',
+    icon: '✨',
+    color: '#2563eb',
+    accent: 'rgba(37,99,235,0.12)',
+    description: 'Executive 2-column resume with achievements, skills, My Time donut chart, and CVMind branding.',
+    highlights: ['Two-Column Layout', 'My Time Chart', 'CVMind Branding', 'Icon Achievements'],
+    html: `<div style="font-family:'Inter',Arial,sans-serif;max-width:760px;margin:0 auto;padding:36px 32px;background:#ffffff;color:#1e293b;line-height:1.55;">
+  <!-- HEADER -->
+  <div style="margin-bottom:20px;">
+    <div style="font-size:28px;font-weight:800;letter-spacing:0.5px;color:#2d3748;text-transform:uppercase;margin:0 0 2px 0;line-height:1.2;">YOUR NAME</div>
+    <div style="font-size:15px;font-weight:700;color:#2563eb;margin-bottom:12px;letter-spacing:-0.2px;">The role you are applying for?</div>
+    
+    <!-- Contact Info Row with Icons -->
+    <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center;font-size:12px;color:#64748b;">
+      <span style="display:inline-flex;align-items:center;gap:5px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></svg>
+        <span>Email</span>
+      </span>
+      <span style="display:inline-flex;align-items:center;gap:5px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <span>LinkedIn/Portfolio</span>
+      </span>
+      <span style="display:inline-flex;align-items:center;gap:5px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+        <span>Location</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- 2-COLUMN BODY -->
+  <table style="width:100%;border-collapse:collapse;border:none;">
+    <tr>
+      <!-- LEFT COLUMN (~58%) -->
+      <td style="width:58%;vertical-align:top;padding-right:20px;border:none;">
+        
+        <!-- EXPERIENCE SECTION -->
+        <div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:2.5px solid #0f172a;padding-bottom:3px;margin-bottom:12px;">EXPERIENCE</div>
+        
+        <div style="margin-bottom:12px;">
+          <div style="font-size:13.5px;font-weight:700;color:#0f172a;">Title</div>
+          <div style="font-size:13px;font-weight:700;color:#2563eb;margin:1px 0 3px;">Company Name</div>
+          <div style="display:flex;gap:14px;font-size:11.5px;color:#64748b;margin-bottom:6px;">
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+              <span>Date period</span>
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>Location</span>
+            </span>
+          </div>
+          <ul style="margin:0;padding-left:16px;font-size:12.5px;color:#334155;line-height:1.5;">
+            <li>Highlight your accomplishments, using numbers if possible.</li>
+          </ul>
+        </div>
+        <div style="border-bottom:1px dashed #cbd5e1;margin:12px 0;"></div>
+
+        <div style="margin-bottom:12px;">
+          <div style="font-size:13.5px;font-weight:700;color:#0f172a;">Title</div>
+          <div style="font-size:13px;font-weight:700;color:#2563eb;margin:1px 0 3px;">Company Name</div>
+          <div style="display:flex;gap:14px;font-size:11.5px;color:#64748b;margin-bottom:6px;">
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+              <span>Date period</span>
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>Location</span>
+            </span>
+          </div>
+          <ul style="margin:0;padding-left:16px;font-size:12.5px;color:#334155;line-height:1.5;">
+            <li>Highlight your accomplishments, using numbers if possible.</li>
+          </ul>
+        </div>
+        <div style="border-bottom:1px dashed #cbd5e1;margin:12px 0;"></div>
+
+        <div style="margin-bottom:12px;">
+          <div style="font-size:13.5px;font-weight:700;color:#0f172a;">Title</div>
+          <div style="font-size:13px;font-weight:700;color:#2563eb;margin:1px 0 3px;">Company Name</div>
+          <div style="display:flex;gap:14px;font-size:11.5px;color:#64748b;margin-bottom:6px;">
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+              <span>Date period</span>
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>Location</span>
+            </span>
+          </div>
+          <ul style="margin:0;padding-left:16px;font-size:12.5px;color:#334155;line-height:1.5;">
+            <li>Highlight your accomplishments, using numbers if possible.</li>
+          </ul>
+        </div>
+        <div style="border-bottom:1px dashed #cbd5e1;margin:12px 0;"></div>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-size:13.5px;font-weight:700;color:#0f172a;">Title</div>
+          <div style="font-size:13px;font-weight:700;color:#2563eb;margin:1px 0 3px;">Company Name</div>
+          <div style="display:flex;gap:14px;font-size:11.5px;color:#64748b;margin-bottom:6px;">
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+              <span>Date period</span>
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>Location</span>
+            </span>
+          </div>
+          <ul style="margin:0;padding-left:16px;font-size:12.5px;color:#334155;line-height:1.5;">
+            <li>Highlight your accomplishments, using numbers if possible.</li>
+          </ul>
+        </div>
+
+        <!-- EDUCATION SECTION -->
+        <div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:2.5px solid #0f172a;padding-bottom:3px;margin:20px 0 12px;">EDUCATION</div>
+        
+        <div style="margin-bottom:12px;">
+          <div style="font-size:13.5px;font-weight:700;color:#0f172a;">Degree and Field of Study</div>
+          <div style="font-size:13px;font-weight:700;color:#2563eb;margin:1px 0 3px;">School or University</div>
+          <div style="display:flex;gap:14px;font-size:11.5px;color:#64748b;">
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+              <span>Date period</span>
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>Location</span>
+            </span>
+          </div>
+        </div>
+        <div style="border-bottom:1px dashed #cbd5e1;margin:12px 0;"></div>
+
+        <div style="margin-bottom:14px;">
+          <div style="font-size:13.5px;font-weight:700;color:#0f172a;">Degree and Field of Study</div>
+          <div style="font-size:13px;font-weight:700;color:#2563eb;margin:1px 0 3px;">School or University</div>
+          <div style="display:flex;gap:14px;font-size:11.5px;color:#64748b;">
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+              <span>Date period</span>
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>Location</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- LANGUAGES SECTION -->
+        <div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:2.5px solid #0f172a;padding-bottom:3px;margin:20px 0 12px;">LANGUAGES</div>
+        <div style="display:flex;gap:20px;margin-bottom:16px;">
+          <div style="flex:1;">
+            <div style="font-size:12.5px;font-weight:700;color:#0f172a;">Language</div>
+            <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Native</div>
+            <div style="display:flex;gap:5px;">
+              <span style="width:10px;height:10px;border-radius:50%;background:#2563eb;display:inline-block;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#2563eb;display:inline-block;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#2563eb;display:inline-block;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#2563eb;display:inline-block;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#2563eb;display:inline-block;"></span>
+            </div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:12.5px;font-weight:700;color:#0f172a;">Language</div>
+            <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Advanced</div>
+            <div style="display:flex;gap:5px;">
+              <span style="width:10px;height:10px;border-radius:50%;background:#2563eb;display:inline-block;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#2563eb;display:inline-block;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#2563eb;display:inline-block;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#2563eb;display:inline-block;"></span>
+              <span style="width:10px;height:10px;border-radius:50%;background:#e2e8f0;display:inline-block;"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CERTIFICATION SECTION -->
+        <div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:2.5px solid #0f172a;padding-bottom:3px;margin:20px 0 12px;">CERTIFICATION</div>
+        <div style="display:flex;gap:20px;">
+          <div style="flex:1;">
+            <div style="font-size:12.5px;font-weight:700;color:#0f172a;">Course Title</div>
+            <div style="font-size:11px;color:#64748b;line-height:1.4;">Which institution provided the course?</div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:12.5px;font-weight:700;color:#0f172a;">Course Title</div>
+            <div style="font-size:11px;color:#64748b;line-height:1.4;">Which institution provided the course?</div>
+          </div>
+        </div>
+
+      </td>
+
+      <!-- RIGHT COLUMN (~40%) -->
+      <td style="width:40%;vertical-align:top;border:none;">
+        
+        <!-- SUMMARY SECTION -->
+        <div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:2.5px solid #0f172a;padding-bottom:3px;margin-bottom:10px;">SUMMARY</div>
+        <p style="font-size:12px;color:#64748b;line-height:1.55;margin:0 0 18px 0;">Briefly explain why you're a great fit for the role - use the AI assistant to tailor this summary for each job posting.</p>
+
+        <!-- KEY ACHIEVEMENTS SECTION -->
+        <div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:2.5px solid #0f172a;padding-bottom:3px;margin:18px 0 12px;">KEY ACHIEVEMENTS</div>
+        
+        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;">
+          <div style="flex-shrink:0;color:#2563eb;margin-top:2px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 12L2 9Z"/><path d="M11 3 8 9l4 12 4-12-3-6"/><path d="M2 9h20"/></svg>
+          </div>
+          <div>
+            <div style="font-size:12.5px;font-weight:700;color:#0f172a;">Your Achievement</div>
+            <div style="font-size:11.5px;color:#64748b;line-height:1.45;">Describe what you did and the impact it had.</div>
+          </div>
+        </div>
+        <div style="border-bottom:1px dashed #cbd5e1;margin:10px 0;"></div>
+
+        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;">
+          <div style="flex-shrink:0;color:#2563eb;margin-top:2px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div>
+            <div style="font-size:12.5px;font-weight:700;color:#0f172a;">Your Achievement</div>
+            <div style="font-size:11.5px;color:#64748b;line-height:1.45;">Describe what you did and the impact it had.</div>
+          </div>
+        </div>
+        <div style="border-bottom:1px dashed #cbd5e1;margin:10px 0;"></div>
+
+        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:16px;">
+          <div style="flex-shrink:0;color:#2563eb;margin-top:2px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>
+          </div>
+          <div>
+            <div style="font-size:12.5px;font-weight:700;color:#0f172a;">Your Achievement</div>
+            <div style="font-size:11.5px;color:#64748b;line-height:1.45;">Describe what you did and the impact it had.</div>
+          </div>
+        </div>
+
+        <!-- SKILLS SECTION -->
+        <div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:2.5px solid #0f172a;padding-bottom:3px;margin:18px 0 10px;">SKILLS</div>
+        <div style="margin-bottom:18px;">
+          <span style="display:inline-block;border-bottom:2px solid #94a3b8;font-weight:600;font-size:12px;color:#334155;padding-bottom:2px;margin:3px 10px 4px 0;">Your Skill</span>
+          <span style="display:inline-block;border-bottom:2px solid #94a3b8;font-weight:600;font-size:12px;color:#334155;padding-bottom:2px;margin:3px 10px 4px 0;">Problem Solving</span>
+          <span style="display:inline-block;border-bottom:2px solid #94a3b8;font-weight:600;font-size:12px;color:#334155;padding-bottom:2px;margin:3px 10px 4px 0;">Project Management</span>
+        </div>
+
+        <!-- MY TIME SECTION -->
+        <div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:2.5px solid #0f172a;padding-bottom:3px;margin:18px 0 10px;">MY TIME</div>
+        <div style="border:1.5px solid #5eead4;border-radius:10px;padding:14px 12px;background:#ffffff;box-sizing:border-box;">
+          
+          <!-- Donut Chart SVG with badges A-F -->
+          <svg viewBox="0 0 160 160" style="width:130px;height:130px;display:block;margin:0 auto 10px;">
+            <circle r="42" cx="80" cy="80" fill="transparent" stroke="#2563eb" stroke-width="20" stroke-dasharray="70 213" stroke-dashoffset="0" />
+            <circle r="42" cx="80" cy="80" fill="transparent" stroke="#38bdf8" stroke-width="20" stroke-dasharray="50 233" stroke-dashoffset="-70" />
+            <circle r="42" cx="80" cy="80" fill="transparent" stroke="#60a5fa" stroke-width="20" stroke-dasharray="45 238" stroke-dashoffset="-120" />
+            <circle r="42" cx="80" cy="80" fill="transparent" stroke="#93c5fd" stroke-width="20" stroke-dasharray="40 243" stroke-dashoffset="-165" />
+            <circle r="42" cx="80" cy="80" fill="transparent" stroke="#bfdbfe" stroke-width="20" stroke-dasharray="38 245" stroke-dashoffset="-205" />
+            <circle r="42" cx="80" cy="80" fill="transparent" stroke="#1d4ed8" stroke-width="20" stroke-dasharray="39 244" stroke-dashoffset="-243" />
+            
+            <g><circle cx="126" cy="48" r="8" fill="#000" /><text x="126" y="51" fill="#fff" font-size="9" font-weight="700" text-anchor="middle" font-family="sans-serif">A</text></g>
+            <g><circle cx="138" cy="98" r="8" fill="#000" /><text x="138" y="101" fill="#fff" font-size="9" font-weight="700" text-anchor="middle" font-family="sans-serif">B</text></g>
+            <g><circle cx="118" cy="138" r="8" fill="#000" /><text x="118" y="141" fill="#fff" font-size="9" font-weight="700" text-anchor="middle" font-family="sans-serif">C</text></g>
+            <g><circle cx="68" cy="142" r="8" fill="#000" /><text x="68" y="145" fill="#fff" font-size="9" font-weight="700" text-anchor="middle" font-family="sans-serif">D</text></g>
+            <g><circle cx="26" cy="114" r="8" fill="#000" /><text x="26" y="117" fill="#fff" font-size="9" font-weight="700" text-anchor="middle" font-family="sans-serif">E</text></g>
+            <g><circle cx="34" cy="54" r="8" fill="#000" /><text x="34" y="57" fill="#fff" font-size="9" font-weight="700" text-anchor="middle" font-family="sans-serif">F</text></g>
+          </svg>
+
+          <!-- Legend -->
+          <div style="font-size:11px;color:#334155;line-height:1.7;text-align:left;">
+            <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#000;color:#fff;font-size:9px;font-weight:700;">A</span> Product roadmap planning</div>
+            <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#000;color:#fff;font-size:9px;font-weight:700;">B</span> QA work</div>
+            <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#000;color:#fff;font-size:9px;font-weight:700;">C</span> User interviews, research</div>
+            <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#000;color:#fff;font-size:9px;font-weight:700;">D</span> Mentoring my team of 10</div>
+            <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#000;color:#fff;font-size:9px;font-weight:700;">E</span> Cooking quesadillas with my cat</div>
+            <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#000;color:#fff;font-size:9px;font-weight:700;">F</span> Recharging in nature</div>
+          </div>
+
+          <div style="text-align:center;margin-top:8px;">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1px solid #5eead4;color:#14b8a6;font-size:12px;font-weight:700;line-height:1;">+</span>
+          </div>
+        </div>
+
+      </td>
+    </tr>
+  </table>
+
+  <!-- FOOTER BRANDING (Powered by CVMind) -->
+  <div style="margin-top:36px;padding-top:14px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#94a3b8;">
+    <a href="https://www.cvmind.ai" target="_blank" style="color:#94a3b8;text-decoration:none;font-size:11px;">www.cvmind.ai</a>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#64748b;">
+      <span>Powered by</span>
+      <span style="display:inline-flex;align-items:center;gap:4px;font-weight:800;color:#0f172a;letter-spacing:0.3px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 12 2.1 10.55"/><path d="M12 12l5.5 8.5"/></svg>
+        CVMind
+      </span>
+    </div>
+  </div>
+</div>`
+  },
   {
     id: 'classic-pro',
     name: 'Classic Professional',
@@ -1118,6 +1413,14 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
   const [activeWorkTitle, setActiveWorkTitle] = useState<string>('');
   const [saving, setSaving] = useState(false);
 
+  // Existing Resume Onboarding States
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const [extractedData, setExtractedData] = useState<any>(null);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractError, setExtractError] = useState('');
+  const [dragOver, setDragOver] = useState(false);
+  const resumeFileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const handleHash = () => {
       setActiveTab(window.location.hash === '#cover-letter' ? 'cover-letter' : 'resume');
@@ -1414,7 +1717,39 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
     if (template.type === 'cover-letter') {
       setStep('editor');
     } else {
+      setShowOnboardingModal(true);
+    }
+  };
+
+  const handleUploadAndExtract = async (file: File) => {
+    setIsExtracting(true);
+    setExtractError('');
+    try {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL
+        || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
+      
+      const formData = new FormData();
+      formData.append('resume', file);
+
+      const headers: Record<string, string> = {};
+      if (customApiKey) headers['x-gemini-key'] = customApiKey;
+
+      const res = await fetch(`${baseUrl}/api/resume/parse-data`, {
+        method: 'POST',
+        headers,
+        body: formData
+      });
+
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Failed to extract resume data.');
+
+      setExtractedData(resData.data);
+      setShowOnboardingModal(false);
       setStep('form');
+    } catch (err: any) {
+      setExtractError(err.message || 'Error extracting resume data. Please try again.');
+    } finally {
+      setIsExtracting(false);
     }
   };
 
@@ -1768,15 +2103,131 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
 
   const closeAllPopups = () => { setShowTextColor(false); setShowHighlight(false); setShowTableDialog(false); };
 
+  const renderOnboardingModal = () => {
+    if (!showOnboardingModal) return null;
+    return (
+      <div className="cl-onboard-backdrop" onClick={() => setShowOnboardingModal(false)}>
+        <div className="cl-onboard-modal" onClick={e => e.stopPropagation()}>
+          <button 
+            type="button" 
+            className="cl-onboard-close" 
+            onClick={() => setShowOnboardingModal(false)}
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+
+          <div className="cl-onboard-header">
+            <div className="cl-onboard-badge">
+              <Sparkles size={14} /> Quick Resume Setup
+            </div>
+            <h2 className="cl-onboard-title">Do you have an existing resume?</h2>
+            <p className="cl-onboard-sub">
+              Upload your existing resume to let CV Mind extract all your details in seconds, or start fresh from scratch.
+            </p>
+          </div>
+
+          <div className="cl-onboard-cards">
+            {/* OPTION 1: YES, UPLOAD */}
+            <div 
+              className={`cl-onboard-card cl-onboard-card-upload ${dragOver ? 'drag-over' : ''} ${isExtracting ? 'loading' : ''}`}
+              onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={e => {
+                e.preventDefault();
+                setDragOver(false);
+                const file = e.dataTransfer.files?.[0];
+                if (file) handleUploadAndExtract(file);
+              }}
+            >
+              <div className="cl-onboard-card-tag">Recommended · Fastest</div>
+              <div className="cl-onboard-icon-wrap upload">
+                <UploadCloud size={28} />
+              </div>
+              <h3 className="cl-onboard-card-h3">Yes, I have a resume</h3>
+              <p className="cl-onboard-card-p">
+                Upload your PDF, DOCX or TXT. AI will automatically extract your experience, education, skills, and summary.
+              </p>
+
+              <input
+                type="file"
+                ref={resumeFileInputRef}
+                style={{ display: 'none' }}
+                accept=".pdf,.docx,.txt"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) handleUploadAndExtract(file);
+                }}
+              />
+
+              {isExtracting ? (
+                <div className="cl-onboard-extracting">
+                  <Loader2 size={18} className="cl-spin" />
+                  <span>Extracting your details with AI...</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="cl-onboard-btn-primary"
+                  onClick={() => resumeFileInputRef.current?.click()}
+                >
+                  <FileUp size={15} /> Upload & Auto-fill
+                </button>
+              )}
+
+              <div className="cl-onboard-drop-hint">PDF, DOCX or TXT (Drag & drop here)</div>
+
+              {extractError && (
+                <div className="cl-onboard-error">
+                  <AlertTriangle size={13} /> {extractError}
+                </div>
+              )}
+            </div>
+
+            {/* OPTION 2: NO, START FROM SCRATCH */}
+            <div className="cl-onboard-card cl-onboard-card-scratch">
+              <div className="cl-onboard-icon-wrap scratch">
+                <Sparkles size={28} />
+              </div>
+              <h3 className="cl-onboard-card-h3">No, start from scratch</h3>
+              <p className="cl-onboard-card-p">
+                Build your resume step-by-step using our guided form wizard or proceed directly to manual editing.
+              </p>
+
+              <button
+                type="button"
+                className="cl-onboard-btn-secondary"
+                onClick={() => {
+                  setShowOnboardingModal(false);
+                  setExtractedData(null);
+                  setStep('form');
+                }}
+              >
+                Start Blank Resume
+              </button>
+
+              <div className="cl-onboard-drop-hint">Old standard process · Guided builder</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // ── WIZARD FORM ─────────────────────────────────────────────
   if (step === 'form') {
     return (
-      <ResumeWizard
-        templateName={selectedTemplate?.name || ''}
-        onBack={() => { setStep('gallery'); setSelectedTemplate(null); }}
-        onSkip={() => { setStep('editor'); }}
-        onGenerate={handleGenerateFromWizard}
-      />
+      <>
+        <ResumeWizard
+          templateName={selectedTemplate?.name || ''}
+          onBack={() => { setStep('gallery'); setSelectedTemplate(null); }}
+          onSkip={() => { setStep('editor'); }}
+          onGenerate={handleGenerateFromWizard}
+          initialData={extractedData}
+          onUploadResumeClick={() => setShowOnboardingModal(true)}
+        />
+        {renderOnboardingModal()}
+      </>
     );
   }
 
@@ -1894,6 +2345,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
             </button>
           ))}
         </div>
+        {renderOnboardingModal()}
       </div>
     );
   }

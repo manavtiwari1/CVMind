@@ -25,9 +25,9 @@
 
 .navbar-container {
   width: 100%;
-  max-width: 1280px;
+  max-width: 1560px;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 2.5rem;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
@@ -45,20 +45,22 @@
 }
 
 .navbar-logo-img {
-  height: 2rem;
+  height: 2.35rem;
   width: auto;
   object-fit: contain;
-  filter: brightness(1.1);
-  transition: opacity var(--t-fast);
+  transition: transform 0.2s ease, opacity var(--t-fast);
 }
 
-.navbar-brand:hover .navbar-logo-img { opacity: 0.8; }
+.navbar-brand:hover .navbar-logo-img {
+  transform: scale(1.05);
+  opacity: 0.92;
+}
 
 .navbar-brand-name {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #0d0d0d;
-  letter-spacing: -0.02em;
+  font-size: 1.18rem;
+  font-weight: 800;
+  color: #0b1e3b;
+  letter-spacing: -0.025em;
 }
 
 /* ── Center Navigation ───────────────────────────────────── */

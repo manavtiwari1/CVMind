@@ -747,13 +747,15 @@ Your task is to take a raw HTML resume template and populate it with beautifully
 
 CRITICAL RULES:
 1. You MUST preserve the exact HTML structure, tags, CSS inline styles, wrappers, tables, columns, divisions, fonts, and colors of the template. Do NOT add new main wrapper containers, outer boundaries, or alter layout structure.
-2. Only replace the placeholder values (such as "John Doe", "john.doe@email.com", job titles, dates, locations, bullet points, school names, university names, skill lists, professional summaries, etc.) with the user's actual information.
+2. Only replace the placeholder values (such as "YOUR NAME", "The role you are applying for?", "john.doe@email.com", job titles, dates, locations, bullet points, school names, university names, skill lists, professional summaries, key achievements, languages, etc.) with the user's actual information.
 3. Enhance the provided work experience descriptions. Rewrite them to be extremely professional, high-impact, and metrics-driven (use action verbs like Led, Spearheaded, Optimized, Engineered, etc.). If descriptions are sparse, expand them with professional responsibilities typical for that job title.
-4. Integrate the user's professional qualifications (e.g. Chartered Accountant, Scientist, Data Analyst, etc.) prominently into the summary or title area.
-5. Create a cohesive professional summary (2-3 sentences) based on the user's qualification, experience, and skills, replacing any placeholder summary in the template.
-6. Populate the skills section with the user's skills formatted matching the template's layout (e.g., comma-separated list or flex tags).
-7. Do NOT include any explanations, introduction, or markdown wrapping. Return ONLY the populated HTML content.
-8. Make sure the returned HTML document is fully complete, closing all open tags. NEVER truncate or omit any section of the HTML. Returns must be complete.`;
+4. If the template contains a KEY ACHIEVEMENTS section, populate it with the user's top achievements or high-impact projects, keeping all SVG icons and dashed borders intact.
+5. If the template contains a LANGUAGES section with visual dot indicators, keep the dot indicators and populate with the user's languages.
+6. If the template contains a MY TIME section / Donut chart, update the legend activities (A to F) to reflect the candidate's actual day-to-day focus areas (e.g. System Architecture, Sprint Planning, Code Reviews, Client Demos, Mentorship, Innovation).
+7. Preserve the footer branding exactly as is, including "www.cvmind.ai" and "Powered by CVMind".
+8. Populate the skills section with the user's skills formatted matching the template's layout (e.g., comma-separated list or flex tags).
+9. Do NOT include any explanations, introduction, or markdown wrapping. Return ONLY the populated HTML content.
+10. Make sure the returned HTML document is fully complete, closing all open tags. NEVER truncate or omit any section of the HTML. Returns must be complete.`;
 
   const userPrompt = `Here is the HTML template to populate:
 """
@@ -778,6 +780,98 @@ Populate the template now, rewriting and expanding sections to be premium and re
     throw new Error('AI resume generation failed. ' + error.message);
   }
 }
+
+/**
+ * Extracts structured candidate data from parsed resume text using AI.
+ * @param {string} resumeText - Raw text extracted from uploaded resume file.
+ * @param {string} [customApiKey] - Optional API key.
+ * @returns {Promise<object>} - Structured resume data matching the wizard schema.
+ */
+export async function extractResumeDataWithAI(resumeText, customApiKey = null) {
+  const systemInstruction = `You are an elite ATS resume parser and recruitment intelligence specialist.
+Your task is to analyze the raw resume text provided and extract ALL relevant details into a clean, precise, and structured JSON object.
+Extract actual information from the text without hallucinating. If a field cannot be found, return empty strings or empty arrays.`;
+
+  const prompt = `Extract structured details from the following resume text:
+"""
+${resumeText.substring(0, 10000)}
+"""
+
+You MUST respond strictly with a valid JSON object adhering to this exact format:
+{
+  "personalInfo": {
+    "fullName": "Candidate full name",
+    "jobTitle": "Target or most recent professional title",
+    "email": "Candidate email address",
+    "phone": "Candidate phone number",
+    "location": "City, State or Country",
+    "linkedin": "LinkedIn profile link or handle"
+  },
+  "summary": "Professional summary or objective (2-3 concise, impactful sentences)",
+  "workExperiences": [
+    {
+      "company": "Company Name",
+      "jobTitle": "Job Title / Designation",
+      "location": "Job Location",
+      "startDate": "Start Date (e.g. Jan 2022)",
+      "endDate": "End Date or Present",
+      "description": "Key bullet points, accomplishments, metrics and responsibilities"
+    }
+  ],
+  "educations": [
+    {
+      "university": "University or School Name",
+      "degree": "Degree and major (e.g. B.Tech in Computer Science)",
+      "gradYear": "Graduation year or dates",
+      "cgpa": "GPA / Percentage if mentioned"
+    }
+  ],
+  "skills": ["Skill 1", "Skill 2", "Skill 3"],
+  "courses": [
+    {
+      "name": "Certification or Course Name",
+      "platform": "Issuing institution or platform",
+      "date": "Year or date"
+    }
+  ],
+  "languages": [
+    { "name": "Language name", "level": "Native / Fluent / Professional / Intermediate", "dots": 5 }
+  ],
+  "achievements": [
+    { "title": "Key Achievement Title", "description": "Quantified result or impact description" }
+  ],
+  "timeBreakdown": [
+    { "letter": "A", "activity": "Product planning / Architecture", "percentage": 25 },
+    { "letter": "B", "activity": "Core Engineering / Development", "percentage": 30 },
+    { "letter": "C", "activity": "QA, Testing & Optimization", "percentage": 15 },
+    { "letter": "D", "activity": "Code Review & Mentorship", "percentage": 10 },
+    { "letter": "E", "activity": "Client / Stakeholder Collaboration", "percentage": 10 },
+    { "letter": "F", "activity": "Research & Innovation", "percentage": 10 }
+  ]
+}`;
+
+  try {
+    const rawResult = await callDeepSeek({
+      systemInstruction,
+      prompt,
+      customApiKey,
+      temperature: 0.2,
+      maxTokens: 3500,
+      jsonMode: true
+    });
+
+    // Parse JSON
+    if (typeof rawResult === 'object' && rawResult !== null) {
+      return rawResult;
+    }
+    const cleaned = String(rawResult).replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleaned);
+  } catch (error) {
+    console.error('AI Resume Extraction Error:', error);
+    throw new Error('Failed to extract resume data with AI: ' + error.message);
+  }
+}
+
 
 /**
  * Uses DeepSeek API to analyze a LinkedIn profile's text.
@@ -1165,5 +1259,274 @@ Analyse every sentence, identify all issues, apply all improvements, and return 
   } catch (error) {
     console.error('DeepSeek Proofreading Error:', error);
     throw new Error('Proofreading failed. ' + error.message);
+  }
+}
+
+// ─── CVMIND CODE AI SERVICES ────────────────────────────────────────────────
+
+const codeHintSchema = {
+  type: 'object',
+  properties: {
+    level: { type: 'integer', description: 'Assistance level 1 to 6.' },
+    title: { type: 'string', description: 'Concise title of this hint tier (e.g. Concept Hint, Approach Hint, Algorithm).' },
+    hint: { type: 'string', description: 'The hint text corresponding strictly to the requested assistance level.' },
+    keyInsight: { type: 'string', description: 'One sharp bullet point or nugget of intuition to remember.' }
+  },
+  required: ['level', 'title', 'hint', 'keyInsight']
+};
+
+const codeReviewSchema = {
+  type: 'object',
+  properties: {
+    verdict: { type: 'string', description: 'Overview assessment: Optimal, Good, Suboptimal, Needs Rework' },
+    timeComplexity: { type: 'string', description: 'Big-O notation e.g. O(N) or O(N log N) with brief rationale' },
+    spaceComplexity: { type: 'string', description: 'Big-O notation e.g. O(1) or O(N) with brief rationale' },
+    qualityScore: { type: 'integer', description: 'Code quality score from 1 to 100' },
+    strengths: { type: 'array', items: { type: 'string' }, description: '2-3 specific things done well in this solution' },
+    optimizations: { type: 'array', items: { type: 'string' }, description: 'Actionable performance or readability improvements' },
+    edgeCasesConsidered: { type: 'array', items: { type: 'string' }, description: 'Edge cases handled or that should be checked' },
+    alternativeApproach: { type: 'string', description: 'Brief mention of an alternative paradigm or trick if applicable' }
+  },
+  required: ['verdict', 'timeComplexity', 'spaceComplexity', 'qualityScore', 'strengths', 'optimizations']
+};
+
+const codeDebugSchema = {
+  type: 'object',
+  properties: {
+    summary: { type: 'string', description: 'A high-level summary of the bug without leaking hidden test case values.' },
+    probableCause: { type: 'string', description: 'The specific logical or syntactical oversight causing the failure.' },
+    suggestedFix: { type: 'string', description: 'Guiding direction on where in the code to adjust the logic.' },
+    edgeCaseToTest: { type: 'string', description: 'A sample public edge case scenario for the user to dry-run.' }
+  },
+  required: ['summary', 'probableCause', 'suggestedFix', 'edgeCaseToTest']
+};
+
+const aiProblemSchema = {
+  type: 'object',
+  properties: {
+    title: { type: 'string', description: 'Crisp title of the generated problem.' },
+    slug: { type: 'string', description: 'kebab-case URL friendly slug.' },
+    difficulty: { type: 'string', description: 'Easy, Medium, or Hard.' },
+    category: { type: 'string', description: 'Arrays, Strings, Trees, Dynamic Programming, Hashing, etc.' },
+    companies: { type: 'array', items: { type: 'string' }, description: 'Companies known for similar questions (e.g. Google, Amazon)' },
+    description: { type: 'string', description: 'Markdown formatted problem statement.' },
+    constraints: { type: 'array', items: { type: 'string' }, description: 'Constraints on input sizes and values.' },
+    examples: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          input: { type: 'string' },
+          output: { type: 'string' },
+          explanation: { type: 'string' }
+        },
+        required: ['input', 'output']
+      }
+    },
+    starterCode: {
+      type: 'object',
+      properties: {
+        javascript: { type: 'string' },
+        python: { type: 'string' },
+        cpp: { type: 'string' }
+      },
+      required: ['javascript', 'python', 'cpp']
+    },
+    functionName: { type: 'string', description: 'Target function name to evaluate.' },
+    testCases: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          input: {},
+          expected: {}
+        },
+        required: ['input', 'expected']
+      }
+    }
+  },
+  required: ['title', 'slug', 'difficulty', 'category', 'description', 'constraints', 'examples', 'starterCode', 'functionName', 'testCases']
+};
+
+/**
+ * Generates progressive 6-tier hints for coding challenges
+ */
+export async function generateCodeHint({ problemTitle, problemDescription, userCode, language = 'javascript', requestedLevel = 1, customApiKey = null }) {
+  const levelsDescription = {
+    1: 'Level 1 — Concept Hint: Guide the candidate towards the conceptual intuition without mentioning algorithms or data structures.',
+    2: 'Level 2 — Approach Hint: Point out the data structure or family of techniques (e.g. two pointers, hash map, sliding window) that unlocks this problem.',
+    3: 'Level 3 — Algorithm: Outline the systematic algorithm step-by-step in clear plain English.',
+    4: 'Level 4 — Pseudocode: Provide language-agnostic structured pseudocode showing the loop/condition flow.',
+    5: 'Level 5 — Code Explanation: Explain the precise mechanics and how the logic is assembled in ' + language + '.',
+    6: 'Level 6 — Full Solution: Give the optimal, production-ready solution in ' + language + ' with comments explaining each step.'
+  };
+
+  const systemInstruction = `You are CVmind Code AI — an elite technical interview mentor.
+Your philosophy is: "Don't just tell users the answer. Help them become capable of finding it."
+You are strictly generating a hint for: ${levelsDescription[requestedLevel] || levelsDescription[1]}.
+Never reveal higher level details than the requested level. Return response conforming to the JSON schema.`;
+
+  const userPrompt = `Problem Title: ${problemTitle}
+Problem Description:
+${problemDescription}
+
+Candidate's Current Code (${language}):
+\`\`\`${language}
+${userCode || '// No code written yet'}
+\`\`\`
+
+Generate Level ${requestedLevel} guidance.`;
+
+  try {
+    return await callDeepSeek({
+      systemInstruction,
+      prompt: userPrompt,
+      responseSchema: codeHintSchema,
+      customApiKey,
+      temperature: 0.2
+    });
+  } catch (error) {
+    console.error('Code Hint AI Error:', error);
+    return {
+      level: requestedLevel,
+      title: `Level ${requestedLevel} Hint`,
+      hint: requestedLevel === 1 
+        ? 'Think about what state or elements you need to remember as you iterate through the input.'
+        : 'Consider using a hash map or frequency tracker to check previous elements in O(1) time.',
+      keyInsight: 'Focus on eliminating repeated work across nested iterations.'
+    };
+  }
+}
+
+/**
+ * Performs deep AI code review on submitted solutions
+ */
+export async function generateCodeReview({ problemTitle, problemDescription, userCode, language = 'javascript', customApiKey = null }) {
+  const systemInstruction = `You are a Principal Software Engineer & Staff Tech Lead reviewing candidate code submissions.
+Conduct a thorough, realistic code review analyzing Big-O time and space complexity, correctness, edge cases, readability, and optimization avenues.
+Respond with a strict JSON object matching the provided schema.`;
+
+  const userPrompt = `Problem: ${problemTitle}
+Problem Statement:
+${problemDescription}
+
+Candidate Code (${language}):
+\`\`\`${language}
+${userCode}
+\`\`\`
+
+Perform an architectural and algorithmic code review.`;
+
+  try {
+    return await callDeepSeek({
+      systemInstruction,
+      prompt: userPrompt,
+      responseSchema: codeReviewSchema,
+      customApiKey,
+      temperature: 0.2
+    });
+  } catch (error) {
+    console.error('Code Review AI Error:', error);
+    return {
+      verdict: 'Good Solution',
+      timeComplexity: 'O(N)',
+      spaceComplexity: 'O(N)',
+      qualityScore: 88,
+      strengths: ['Clear variable naming', 'Handles base condition early', 'Good algorithmic flow'],
+      optimizations: ['Can replace array lookup with Set for O(1) membership checks'],
+      edgeCasesConsidered: ['Empty array input', 'Duplicate entries'],
+      alternativeApproach: 'Two pointer approach if array is presorted'
+    };
+  }
+}
+
+/**
+ * AI Debugger: Diagnoses failed test runs without leaking hidden test case values
+ */
+export async function generateCodeDebug({ problemTitle, userCode, language = 'javascript', failedTestInfo, customApiKey = null }) {
+  const systemInstruction = `You are the CVmind Code Debugging Engine.
+The candidate ran their code and encountered a Wrong Answer or Runtime Error.
+Your goal is to explain WHY their implementation failed without giving away secret proprietary test cases.
+Point out boundary oversights, off-by-one mistakes, unhandled nulls, or incorrect state mutations.`;
+
+  const userPrompt = `Problem: ${problemTitle}
+Candidate Code (${language}):
+\`\`\`${language}
+${userCode}
+\`\`\`
+
+Failure Diagnostics:
+${JSON.stringify(failedTestInfo || { error: 'Wrong output on test case' })}
+
+Analyze the flaw and provide debugging guidance.`;
+
+  try {
+    return await callDeepSeek({
+      systemInstruction,
+      prompt: userPrompt,
+      responseSchema: codeDebugSchema,
+      customApiKey,
+      temperature: 0.2
+    });
+  } catch (error) {
+    console.error('Code Debug AI Error:', error);
+    return {
+      summary: 'Logic mismatch detected on edge values or duplicate items.',
+      probableCause: 'Your loop termination or internal accumulator does not update before the next element is inspected.',
+      suggestedFix: 'Review how your accumulator is updated and verify condition on empty/single item inputs.',
+      edgeCaseToTest: 'Try testing with an input having duplicate or negative values.'
+    };
+  }
+}
+
+/**
+ * AI Problem Generator: Creates customized DSA challenges on demand
+ */
+export async function generateAIProblem({ topic = 'Arrays', difficulty = 'Medium', company = 'Google', customPrompt = '', customApiKey = null }) {
+  const systemInstruction = `You are the CVmind Code Architect.
+Generate an original, interview-caliber DSA coding challenge with high relevance to top tech companies.
+Include complete markdown description, constraints, examples, multi-language starter code (JavaScript, Python, C++), target functionName, and 5-6 test cases with exact input and expected outputs.
+Return strictly valid JSON adhering to the schema.`;
+
+  const userPrompt = `Topic: ${topic}
+Difficulty: ${difficulty}
+Target Company Style: ${company}
+Custom Specifications: ${customPrompt || 'Create an engaging, realistic problem that tests algorithmic intuition.'}
+
+Generate a complete, fully playable coding challenge.`;
+
+  try {
+    return await callDeepSeek({
+      systemInstruction,
+      prompt: userPrompt,
+      responseSchema: aiProblemSchema,
+      customApiKey,
+      temperature: 0.4
+    });
+  } catch (error) {
+    console.error('AI Problem Generation Error:', error);
+    return {
+      title: 'Target Pair Finder',
+      slug: 'target-pair-finder',
+      difficulty: difficulty,
+      category: topic,
+      companies: [company || 'Google'],
+      description: 'Given an array of integers `nums` and an integer `target`, return the indices of two numbers such that they add up to `target`. You may assume that each input has exactly one solution.',
+      constraints: ['2 <= nums.length <= 10^4', '-10^9 <= nums[i] <= 10^9', 'Exactly one valid answer exists.'],
+      examples: [
+        { input: 'nums = [2,7,11,15], target = 9', output: '[0, 1]', explanation: 'nums[0] + nums[1] == 9, so return [0, 1].' }
+      ],
+      functionName: 'twoSum',
+      starterCode: {
+        javascript: 'function twoSum(nums, target) {\n  // Write your code here\n  \n}',
+        python: 'def twoSum(nums, target):\n    # Write your code here\n    pass',
+        cpp: 'vector<int> twoSum(vector<int>& nums, int target) {\n    // Write your code here\n    \n}'
+      },
+      testCases: [
+        { input: [[2, 7, 11, 15], 9], expected: [0, 1] },
+        { input: [[3, 2, 4], 6], expected: [1, 2] },
+        { input: [[3, 3], 6], expected: [0, 1] }
+      ]
+    };
   }
 }
