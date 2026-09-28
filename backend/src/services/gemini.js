@@ -747,13 +747,15 @@ Your task is to take a raw HTML resume template and populate it with beautifully
 
 CRITICAL RULES:
 1. You MUST preserve the exact HTML structure, tags, CSS inline styles, wrappers, tables, columns, divisions, fonts, and colors of the template. Do NOT add new main wrapper containers, outer boundaries, or alter layout structure.
-2. Only replace the placeholder values (such as "John Doe", "john.doe@email.com", job titles, dates, locations, bullet points, school names, university names, skill lists, professional summaries, etc.) with the user's actual information.
+2. Only replace the placeholder values (such as "YOUR NAME", "The role you are applying for?", "john.doe@email.com", job titles, dates, locations, bullet points, school names, university names, skill lists, professional summaries, key achievements, languages, etc.) with the user's actual information.
 3. Enhance the provided work experience descriptions. Rewrite them to be extremely professional, high-impact, and metrics-driven (use action verbs like Led, Spearheaded, Optimized, Engineered, etc.). If descriptions are sparse, expand them with professional responsibilities typical for that job title.
-4. Integrate the user's professional qualifications (e.g. Chartered Accountant, Scientist, Data Analyst, etc.) prominently into the summary or title area.
-5. Create a cohesive professional summary (2-3 sentences) based on the user's qualification, experience, and skills, replacing any placeholder summary in the template.
-6. Populate the skills section with the user's skills formatted matching the template's layout (e.g., comma-separated list or flex tags).
-7. Do NOT include any explanations, introduction, or markdown wrapping. Return ONLY the populated HTML content.
-8. Make sure the returned HTML document is fully complete, closing all open tags. NEVER truncate or omit any section of the HTML. Returns must be complete.`;
+4. If the template contains a KEY ACHIEVEMENTS section, populate it with the user's top achievements or high-impact projects, keeping all SVG icons and dashed borders intact.
+5. If the template contains a LANGUAGES section with visual dot indicators, keep the dot indicators and populate with the user's languages.
+6. If the template contains a MY TIME section / Donut chart, update the legend activities (A to F) to reflect the candidate's actual day-to-day focus areas (e.g. System Architecture, Sprint Planning, Code Reviews, Client Demos, Mentorship, Innovation).
+7. Preserve the footer branding exactly as is, including "www.cvmind.ai" and "Powered by CVMind".
+8. Populate the skills section with the user's skills formatted matching the template's layout (e.g., comma-separated list or flex tags).
+9. Do NOT include any explanations, introduction, or markdown wrapping. Return ONLY the populated HTML content.
+10. Make sure the returned HTML document is fully complete, closing all open tags. NEVER truncate or omit any section of the HTML. Returns must be complete.`;
 
   const userPrompt = `Here is the HTML template to populate:
 """
@@ -778,6 +780,98 @@ Populate the template now, rewriting and expanding sections to be premium and re
     throw new Error('AI resume generation failed. ' + error.message);
   }
 }
+
+/**
+ * Extracts structured candidate data from parsed resume text using AI.
+ * @param {string} resumeText - Raw text extracted from uploaded resume file.
+ * @param {string} [customApiKey] - Optional API key.
+ * @returns {Promise<object>} - Structured resume data matching the wizard schema.
+ */
+export async function extractResumeDataWithAI(resumeText, customApiKey = null) {
+  const systemInstruction = `You are an elite ATS resume parser and recruitment intelligence specialist.
+Your task is to analyze the raw resume text provided and extract ALL relevant details into a clean, precise, and structured JSON object.
+Extract actual information from the text without hallucinating. If a field cannot be found, return empty strings or empty arrays.`;
+
+  const prompt = `Extract structured details from the following resume text:
+"""
+${resumeText.substring(0, 10000)}
+"""
+
+You MUST respond strictly with a valid JSON object adhering to this exact format:
+{
+  "personalInfo": {
+    "fullName": "Candidate full name",
+    "jobTitle": "Target or most recent professional title",
+    "email": "Candidate email address",
+    "phone": "Candidate phone number",
+    "location": "City, State or Country",
+    "linkedin": "LinkedIn profile link or handle"
+  },
+  "summary": "Professional summary or objective (2-3 concise, impactful sentences)",
+  "workExperiences": [
+    {
+      "company": "Company Name",
+      "jobTitle": "Job Title / Designation",
+      "location": "Job Location",
+      "startDate": "Start Date (e.g. Jan 2022)",
+      "endDate": "End Date or Present",
+      "description": "Key bullet points, accomplishments, metrics and responsibilities"
+    }
+  ],
+  "educations": [
+    {
+      "university": "University or School Name",
+      "degree": "Degree and major (e.g. B.Tech in Computer Science)",
+      "gradYear": "Graduation year or dates",
+      "cgpa": "GPA / Percentage if mentioned"
+    }
+  ],
+  "skills": ["Skill 1", "Skill 2", "Skill 3"],
+  "courses": [
+    {
+      "name": "Certification or Course Name",
+      "platform": "Issuing institution or platform",
+      "date": "Year or date"
+    }
+  ],
+  "languages": [
+    { "name": "Language name", "level": "Native / Fluent / Professional / Intermediate", "dots": 5 }
+  ],
+  "achievements": [
+    { "title": "Key Achievement Title", "description": "Quantified result or impact description" }
+  ],
+  "timeBreakdown": [
+    { "letter": "A", "activity": "Product planning / Architecture", "percentage": 25 },
+    { "letter": "B", "activity": "Core Engineering / Development", "percentage": 30 },
+    { "letter": "C", "activity": "QA, Testing & Optimization", "percentage": 15 },
+    { "letter": "D", "activity": "Code Review & Mentorship", "percentage": 10 },
+    { "letter": "E", "activity": "Client / Stakeholder Collaboration", "percentage": 10 },
+    { "letter": "F", "activity": "Research & Innovation", "percentage": 10 }
+  ]
+}`;
+
+  try {
+    const rawResult = await callDeepSeek({
+      systemInstruction,
+      prompt,
+      customApiKey,
+      temperature: 0.2,
+      maxTokens: 3500,
+      jsonMode: true
+    });
+
+    // Parse JSON
+    if (typeof rawResult === 'object' && rawResult !== null) {
+      return rawResult;
+    }
+    const cleaned = String(rawResult).replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleaned);
+  } catch (error) {
+    console.error('AI Resume Extraction Error:', error);
+    throw new Error('Failed to extract resume data with AI: ' + error.message);
+  }
+}
+
 
 /**
  * Uses DeepSeek API to analyze a LinkedIn profile's text.

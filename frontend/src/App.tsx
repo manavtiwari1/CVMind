@@ -39,6 +39,7 @@ import ArticleAtsResume from './pages/ArticleAtsResume';
 import CopyrightPolicy from './pages/CopyrightPolicy';
 import ArticlePage from './pages/ArticlePage';
 import CVmindCode from './pages/code/CVmindCode';
+import CVmindCodeLanding from './pages/code/CVmindCodeLanding';
 import { ARTICLES } from './data/articles';
 import DigitalSerenityBackground from './components/DigitalSerenityBackground';
 import TawkChat from './components/TawkChat';
@@ -55,7 +56,7 @@ export default function App() {
       return 'portfolio';
     }
     const urlPage = pathname.replace(/^\//, '');
-    const validPages = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'career-copilot', 'copyright-policy', ...ARTICLES.map(a => a.slug)];
+    const validPages = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'career-copilot', 'copyright-policy', ...ARTICLES.map(a => a.slug)];
     if (urlPage && validPages.includes(urlPage)) {
       return urlPage;
     }
@@ -188,8 +189,13 @@ export default function App() {
     }
   }, [currentPage, isLoggedIn]);
 
-  // Auto-detect resetToken in URL and trigger AuthModal password reset popup
+  // Auto-detect resetToken or sign-in URL and trigger AuthModal popup
   useEffect(() => {
+    const pathname = window.location.pathname;
+    if (pathname === '/sign-in' || pathname === '/sign-up' || pathname === '/login') {
+      setShowAuthModal(true);
+      window.history.replaceState({}, '', '/');
+    }
     const searchParams = new URLSearchParams(window.location.search);
     const token = searchParams.get('resetToken');
     const email = searchParams.get('email');
@@ -463,6 +469,9 @@ export default function App() {
         return <AutoApply customApiKey={customApiKey} resumeText={resumeText} setResumeText={setResumeText} />;
       case 'code':
       case 'cvmind-code':
+        return <CVmindCodeLanding setCurrentPage={setCurrentPage} />;
+      case 'code-arena':
+      case 'cvmind-code-arena':
         return <CVmindCode customApiKey={customApiKey} />;
       default:
         return (
@@ -477,8 +486,8 @@ export default function App() {
   };
 
   const isAdminPage = currentPage === 'admin';
-  const isCodePage = currentPage === 'code' || currentPage === 'cvmind-code';
-  const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio';
+  const isCodePage = currentPage === 'code-arena' || currentPage === 'cvmind-code-arena';
+  const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || isCodePage;
 
   return (
     <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''}`}>

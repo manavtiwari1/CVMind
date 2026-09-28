@@ -28,3 +28,5 @@ CVMindAIApp/expo-env.d.ts
 __pycache__/
 scratch/
 backend/data/resumetrics-db.json
+test-call.js
+backend/test-call.js
