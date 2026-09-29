@@ -4,6 +4,7 @@ import {
   Briefcase, MapPin, Clock, ExternalLink, AlertCircle, Sparkles
 } from 'lucide-react';
 import SkeletonLoader from '../components/SkeletonLoader';
+import { getErrorMessage } from '../utils/errors';
 import './JobFinder.css';
 
 interface JobFinderProps {
@@ -104,7 +105,7 @@ export default function JobFinder({ customApiKey }: JobFinderProps) {
       try {
         const parsedUser = JSON.parse(userStr);
         return parsedUser?.email?.toLowerCase() || '';
-      } catch (e) {
+      } catch {
         return '';
       }
     }
@@ -207,8 +208,8 @@ export default function JobFinder({ customApiKey }: JobFinderProps) {
       } else {
         throw new Error('Job search completed but returned no results.');
       }
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Connection failed. Please check that the backend server is running.');
+    } catch (err) {
+      setErrorMsg(getErrorMessage(err) || 'Connection failed. Please check that the backend server is running.');
     } finally {
       clearInterval(stepInterval);
       setLoading(false);

@@ -13,6 +13,11 @@ import {
   NavigationMenuTrigger,
 } from './ui/navigation-menu';
 import cvmindIcon from '../assets/cvmind_icon.png';
+import { getErrorMessage } from '../utils/errors';
+import type { LoadedWork, SavedWork, StoredUser } from '../types/api';
+
+// Works listed from the database always have an id and a creation date
+type ListedWork = SavedWork & { _id: string; createdAt: string };
 import './Navbar.css';
 import { authFetch } from '../lib/authFetch';
 
@@ -24,7 +29,7 @@ interface NavbarProps {
   isLoggedIn: boolean;
   setShowAuthModal: (show: boolean) => void;
   handleSignOut: () => void;
-  setLoadedWork: (work: any) => void;
+  setLoadedWork: (work: LoadedWork | null) => void;
 }
 
 export default function Navbar({ 
@@ -45,7 +50,7 @@ export default function Navbar({
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState('');
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<StoredUser | null>(null);
 
 
   // Profile Modal Form States
@@ -60,13 +65,16 @@ export default function Navbar({
   const [confirmPassword, setConfirmPassword] = useState('');
 
   // Works State
-  const [works, setWorks] = useState<any[]>([]);
+  const [works, setWorks] = useState<ListedWork[]>([]);
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState('');
   const [modalSuccess, setModalSuccess] = useState('');
 
-  // Sync user details reactively on login
-  useEffect(() => {
+  // Sync user details reactively on login (adjusting state during render when isLoggedIn changes,
+  // see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  const [syncedLogin, setSyncedLogin] = useState<boolean | null>(null);
+  if (isLoggedIn !== syncedLogin) {
+    setSyncedLogin(isLoggedIn);
     if (isLoggedIn) {
       const u = localStorage.getItem('cvmind_user');
       if (u) {
@@ -84,16 +92,14 @@ export default function Navbar({
     } else {
       setUser(null);
     }
-  }, [isLoggedIn]);
+  }
 
-  const [_activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
 
   // Click outside listener for dropdowns
   useEffect(() => {
     const handleOutsideClick = () => {
       setShowDropdown(false);
-      setActiveSubmenu(null);
     };
     window.addEventListener('click', handleOutsideClick);
     return () => window.removeEventListener('click', handleOutsideClick);
@@ -166,8 +172,8 @@ export default function Navbar({
       localStorage.setItem('cvmind_user', JSON.stringify(data.user));
       setUser(data.user);
       setModalSuccess('Profile updated successfully!');
-    } catch (err: any) {
-      setModalError(err.message || 'An error occurred while updating profile.');
+    } catch (err) {
+      setModalError(getErrorMessage(err) || 'An error occurred while updating profile.');
     } finally {
       setModalLoading(false);
     }
@@ -217,8 +223,8 @@ export default function Navbar({
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (err: any) {
-      setModalError(err.message || 'An error occurred while updating password.');
+    } catch (err) {
+      setModalError(getErrorMessage(err) || 'An error occurred while updating password.');
     } finally {
       setModalLoading(false);
     }
@@ -239,8 +245,8 @@ export default function Navbar({
       if (!response.ok) throw new Error(data.error || 'Failed to fetch works');
 
       setWorks(data.data || []);
-    } catch (err: any) {
-      setModalError(err.message || 'Failed to load works.');
+    } catch (err) {
+      setModalError(getErrorMessage(err) || 'Failed to load works.');
     } finally {
       setModalLoading(false);
     }
@@ -263,8 +269,8 @@ export default function Navbar({
       if (setLoadedWork) {
         setLoadedWork({ deleted: true, workId });
       }
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete work.');
+    } catch (err) {
+      alert(getErrorMessage(err) || 'Failed to delete work.');
     }
   };
 
@@ -280,8 +286,8 @@ export default function Navbar({
       if (!res.ok) throw new Error(data.error || 'Failed to delete account.');
       setActiveModal(null);
       handleSignOut();
-    } catch (err: any) {
-      setDeleteError(err.message || 'Something went wrong. Please try again.');
+    } catch (err) {
+      setDeleteError(getErrorMessage(err) || 'Something went wrong. Please try again.');
     } finally {
       setDeleteLoading(false);
     }
@@ -996,7 +1002,7 @@ export default function Navbar({
                 </div>
               ) : (
                 <div className="works-grid">
-                  {works.map((w: any) => (
+                  {works.map((w) => (
                     <div key={w.id || w._id} className="work-item-card">
                       <div className="work-card-top">
                         <span className={`work-type-badge ${w.type}`} style={{

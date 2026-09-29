@@ -8,8 +8,8 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
+import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu-styles';
 import { CircleCheckIcon, CircleHelpIcon, CircleIcon } from 'lucide-react';
 
 // Link shim for Vite / React SPA

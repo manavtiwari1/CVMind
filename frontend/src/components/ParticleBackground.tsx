@@ -113,7 +113,8 @@ export default function ParticleBackground({ theme }: ParticleBackgroundProps) {
         const angle = rot + (i * Math.PI * 2) / 3 - Math.PI / 2;
         const px = x + Math.cos(angle) * size;
         const py = y + Math.sin(angle) * size;
-        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
       }
       ctx.closePath();
     };
@@ -137,7 +138,8 @@ export default function ParticleBackground({ theme }: ParticleBackgroundProps) {
         const angle = rot + (i * Math.PI * 2) / 6;
         const px = x + Math.cos(angle) * size;
         const py = y + Math.sin(angle) * size;
-        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
       }
       ctx.closePath();
     };

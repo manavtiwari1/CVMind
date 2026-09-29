@@ -3,13 +3,32 @@ import {
   Copy, Check, Linkedin, ArrowRight, RefreshCw, Send, Users, UserCheck
 } from 'lucide-react';
 import SkeletonLoader from '../../components/SkeletonLoader';
+import { getErrorMessage } from '../../utils/errors';
+import { parseSavedContent } from '../../utils/savedWork';
+import type { LoadedWork } from '../../types/api';
 import './LinkedInOutreach.css';
+
+// /api/linkedin/outreach
+interface OutreachResult {
+  connectionRequest: string;
+  referralPitch: string;
+  recruiterDM: string;
+}
+
+// Page state saved in a 'linkedin-outreach' work
+interface SavedOutreachContent {
+  jobTitle?: string;
+  companyName?: string;
+  targetName?: string;
+  context?: string;
+  result?: OutreachResult | null;
+}
 
 interface LinkedInOutreachProps {
   customApiKey: string;
   resumeText: string;
-  loadedWork?: any;
-  setLoadedWork?: (work: any) => void;
+  loadedWork?: LoadedWork | null;
+  setLoadedWork?: (work: LoadedWork | null) => void;
 }
 
 export default function LinkedInOutreach({ customApiKey, resumeText, loadedWork, setLoadedWork }: LinkedInOutreachProps) {
@@ -19,34 +38,44 @@ export default function LinkedInOutreach({ customApiKey, resumeText, loadedWork,
   const [context, setContext] = useState('');
   const [useResumeText, setUseResumeText] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<OutreachResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<'connect' | 'referral' | 'recruiter'>('connect');
 
-  // Load saved work if opened from My Works
-  useEffect(() => {
-    if (loadedWork) {
-      if (loadedWork.deleted) {
-        removeState();
-        return;
-      }
-      if (loadedWork.type === 'linkedin-outreach') {
-        try {
-          const parsed = JSON.parse(loadedWork.htmlContent);
-          if (parsed) {
-            setJobTitle(parsed.jobTitle || '');
-            setCompanyName(parsed.companyName || '');
-            setTargetName(parsed.targetName || '');
-            setContext(parsed.context || '');
-            setResult(parsed.result || null);
-          }
-        } catch (e) {
-          console.error('Error parsing loaded LinkedIn outreach work:', e);
-        }
+  const clearForm = () => {
+    setResult(null);
+    setJobTitle('');
+    setCompanyName('');
+    setTargetName('');
+    setContext('');
+  };
+
+  // Load saved work if opened from My Works (adjusting state during render,
+  // see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  const [handledWork, setHandledWork] = useState<LoadedWork | null>(null);
+  if (loadedWork && loadedWork !== handledWork) {
+    setHandledWork(loadedWork);
+    if (loadedWork.deleted) {
+      clearForm();
+    } else if (loadedWork.type === 'linkedin-outreach') {
+      const saved = parseSavedContent<SavedOutreachContent>(loadedWork.htmlContent);
+      if (saved) {
+        setJobTitle(saved.jobTitle || '');
+        setCompanyName(saved.companyName || '');
+        setTargetName(saved.targetName || '');
+        setContext(saved.context || '');
+        setResult(saved.result || null);
+      } else {
+        console.error('Error parsing loaded LinkedIn outreach work');
       }
     }
+  }
+
+  // A deletion notice has been handled; clear it in the parent
+  useEffect(() => {
+    if (loadedWork?.deleted && setLoadedWork) setLoadedWork(null);
   }, [loadedWork, setLoadedWork]);
 
   const handleCopy = (text: string, sectionId: string) => {
@@ -118,9 +147,9 @@ export default function LinkedInOutreach({ customApiKey, resumeText, loadedWork,
       } else {
         throw new Error('Invalid output format from server.');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setErrorMsg(err.message || 'Generation failed. Make sure the servers are online.');
+      setErrorMsg(getErrorMessage(err) || 'Generation failed. Make sure the servers are online.');
     } finally {
       setLoading(false);
     }
@@ -129,11 +158,7 @@ export default function LinkedInOutreach({ customApiKey, resumeText, loadedWork,
 
 
   function removeState() {
-    setResult(null);
-    setJobTitle('');
-    setCompanyName('');
-    setTargetName('');
-    setContext('');
+    clearForm();
     if (setLoadedWork) {
       setLoadedWork(null);
     }

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import SkeletonLoader from '../components/SkeletonLoader';
 import { downloadResumeAsDocx, downloadResumeAsPdf, downloadResumeAsTxt } from '../utils/generateResumeDocx';
+import { getErrorMessage } from '../utils/errors';
 import './Dashboard.css';
 
 interface Suggestions {
@@ -120,8 +121,8 @@ export default function Dashboard({ setCurrentPage, analysisResult, resumeText, 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Optimization failed.');
       setOptimizedResume(data.data.optimizedResume);
-    } catch (err: any) {
-      setOptimizeError(err.message || 'Something went wrong.');
+    } catch (err) {
+      setOptimizeError(getErrorMessage(err) || 'Something went wrong.');
     } finally {
       setOptimizing(false);
     }

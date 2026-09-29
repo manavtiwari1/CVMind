@@ -3,13 +3,37 @@ import {
   Copy, Check, Linkedin, ArrowRight, RefreshCw
 } from 'lucide-react';
 import SkeletonLoader from '../../components/SkeletonLoader';
+import { getErrorMessage } from '../../utils/errors';
+import { parseSavedContent } from '../../utils/savedWork';
+import type { LoadedWork } from '../../types/api';
 import './LinkedInBio.css';
+
+// /api/linkedin/bio
+interface BannerIdea {
+  text: string;
+  bgStyle: string;
+  tip: string;
+}
+
+interface BioResult {
+  headlines?: string[];
+  aboutSummaries?: string[];
+  bannerIdeas?: BannerIdea[];
+  hashtags?: string[];
+}
+
+// Page state saved in a 'linkedin-bio' work
+interface SavedBioContent {
+  jobTitle?: string;
+  skills?: string;
+  result?: BioResult | null;
+}
 
 interface LinkedInBioProps {
   customApiKey: string;
   resumeText: string;
-  loadedWork?: any;
-  setLoadedWork?: (work: any) => void;
+  loadedWork?: LoadedWork | null;
+  setLoadedWork?: (work: LoadedWork | null) => void;
 }
 
 export default function LinkedInBio({ customApiKey, resumeText, loadedWork, setLoadedWork }: LinkedInBioProps) {
@@ -17,31 +41,39 @@ export default function LinkedInBio({ customApiKey, resumeText, loadedWork, setL
   const [skills, setSkills] = useState('');
   const [useResumeText, setUseResumeText] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<BioResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
 
 
-  // Load saved work if opened from My Works
-  useEffect(() => {
-    if (loadedWork) {
-      if (loadedWork.deleted) {
-        removeState();
-        return;
-      }
-      if (loadedWork.type === 'linkedin-bio') {
-        try {
-          const parsed = JSON.parse(loadedWork.htmlContent);
-          if (parsed) {
-            setJobTitle(parsed.jobTitle || '');
-            setSkills(parsed.skills || '');
-            setResult(parsed.result || null);
-          }
-        } catch (e) {
-          console.error('Error parsing loaded LinkedIn bio work:', e);
-        }
+  const clearForm = () => {
+    setResult(null);
+    setJobTitle('');
+    setSkills('');
+  };
+
+  // Load saved work if opened from My Works (adjusting state during render,
+  // see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  const [handledWork, setHandledWork] = useState<LoadedWork | null>(null);
+  if (loadedWork && loadedWork !== handledWork) {
+    setHandledWork(loadedWork);
+    if (loadedWork.deleted) {
+      clearForm();
+    } else if (loadedWork.type === 'linkedin-bio') {
+      const saved = parseSavedContent<SavedBioContent>(loadedWork.htmlContent);
+      if (saved) {
+        setJobTitle(saved.jobTitle || '');
+        setSkills(saved.skills || '');
+        setResult(saved.result || null);
+      } else {
+        console.error('Error parsing loaded LinkedIn bio work');
       }
     }
+  }
+
+  // A deletion notice has been handled; clear it in the parent
+  useEffect(() => {
+    if (loadedWork?.deleted && setLoadedWork) setLoadedWork(null);
   }, [loadedWork, setLoadedWork]);
 
   const handleCopy = (text: string, sectionId: string) => {
@@ -111,9 +143,9 @@ export default function LinkedInBio({ customApiKey, resumeText, loadedWork, setL
       } else {
         throw new Error('Invalid output format from server.');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setErrorMsg(err.message || 'Generation failed. Make sure the servers are online.');
+      setErrorMsg(getErrorMessage(err) || 'Generation failed. Make sure the servers are online.');
     } finally {
       setLoading(false);
     }
@@ -122,9 +154,7 @@ export default function LinkedInBio({ customApiKey, resumeText, loadedWork, setL
 
 
   function removeState() {
-    setResult(null);
-    setJobTitle('');
-    setSkills('');
+    clearForm();
     if (setLoadedWork) {
       setLoadedWork(null);
     }
@@ -312,7 +342,7 @@ export default function LinkedInBio({ customApiKey, resumeText, loadedWork, setL
                   <h3>🎨 LinkedIn Profile Banner Visual Ideas</h3>
                 </div>
                 <div className="banner-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
-                  {result.bannerIdeas && result.bannerIdeas.map((banner: any, index: number) => {
+                  {result.bannerIdeas && result.bannerIdeas.map((banner, index: number) => {
                     const id = `banner-${index}`;
                     return (
                       <div key={index} className="banner-card glass-card" style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border)', borderRadius: '8px' }}>
@@ -347,7 +377,7 @@ export default function LinkedInBio({ customApiKey, resumeText, loadedWork, setL
                     <h3 style={{ margin: 0 }}>#️⃣ Recommended Hashtags</h3>
                     <button 
                       className="btn-secondary btn-sm" 
-                      onClick={() => handleCopy(result.hashtags.join(' '), 'hashtags')}
+                      onClick={() => handleCopy((result.hashtags || []).join(' '), 'hashtags')}
                     >
                       {copiedSection === 'hashtags' ? <><Check size={12} className="text-success" /> Copied!</> : <><Copy size={12} /> Copy Hashtags</>}
                     </button>

@@ -3,13 +3,30 @@ import {
   Copy, Check, ArrowRight, RefreshCw, GraduationCap, Building2, Rocket, Palette
 } from 'lucide-react';
 import SkeletonLoader from '../../components/SkeletonLoader';
+import { getErrorMessage } from '../../utils/errors';
+import { parseSavedContent } from '../../utils/savedWork';
+import type { LoadedWork } from '../../types/api';
 import './ElevatorPitch.css';
+
+// AI response (schema in backend/src/services/gemini.js)
+interface PitchResult {
+  corporate: string;
+  startup: string;
+  creative: string;
+}
+
+// Page state saved in an 'elevator-pitch' work
+interface SavedPitchContent {
+  jobTitle?: string;
+  details?: string;
+  result?: PitchResult | null;
+}
 
 interface ElevatorPitchProps {
   customApiKey: string;
   resumeText: string;
-  loadedWork?: any;
-  setLoadedWork?: (work: any) => void;
+  loadedWork?: LoadedWork | null;
+  setLoadedWork?: (work: LoadedWork | null) => void;
 }
 
 export default function ElevatorPitch({ customApiKey, resumeText, loadedWork, setLoadedWork }: ElevatorPitchProps) {
@@ -17,32 +34,40 @@ export default function ElevatorPitch({ customApiKey, resumeText, loadedWork, se
   const [details, setDetails] = useState('');
   const [useResumeText, setUseResumeText] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<PitchResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<'corporate' | 'startup' | 'creative'>('corporate');
 
-  // Load saved work if opened from My Works
-  useEffect(() => {
-    if (loadedWork) {
-      if (loadedWork.deleted) {
-        removeState();
-        return;
-      }
-      if (loadedWork.type === 'elevator-pitch') {
-        try {
-          const parsed = JSON.parse(loadedWork.htmlContent);
-          if (parsed) {
-            setJobTitle(parsed.jobTitle || '');
-            setDetails(parsed.details || '');
-            setResult(parsed.result || null);
-          }
-        } catch (e) {
-          console.error('Error parsing loaded elevator pitch work:', e);
-        }
+  const clearForm = () => {
+    setResult(null);
+    setJobTitle('');
+    setDetails('');
+  };
+
+  // Load saved work if opened from My Works (adjusting state during render,
+  // see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  const [handledWork, setHandledWork] = useState<LoadedWork | null>(null);
+  if (loadedWork && loadedWork !== handledWork) {
+    setHandledWork(loadedWork);
+    if (loadedWork.deleted) {
+      clearForm();
+    } else if (loadedWork.type === 'elevator-pitch') {
+      const saved = parseSavedContent<SavedPitchContent>(loadedWork.htmlContent);
+      if (saved) {
+        setJobTitle(saved.jobTitle || '');
+        setDetails(saved.details || '');
+        setResult(saved.result || null);
+      } else {
+        console.error('Error parsing loaded elevator pitch work');
       }
     }
+  }
+
+  // A deletion notice has been handled; clear it in the parent
+  useEffect(() => {
+    if (loadedWork?.deleted && setLoadedWork) setLoadedWork(null);
   }, [loadedWork, setLoadedWork]);
 
   const handleCopy = (text: string, sectionId: string) => {
@@ -112,9 +137,9 @@ export default function ElevatorPitch({ customApiKey, resumeText, loadedWork, se
       } else {
         throw new Error('Invalid output format from server.');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setErrorMsg(err.message || 'Generation failed. Make sure the servers are online.');
+      setErrorMsg(getErrorMessage(err) || 'Generation failed. Make sure the servers are online.');
     } finally {
       setLoading(false);
     }
@@ -123,9 +148,7 @@ export default function ElevatorPitch({ customApiKey, resumeText, loadedWork, se
 
 
   function removeState() {
-    setResult(null);
-    setJobTitle('');
-    setDetails('');
+    clearForm();
     if (setLoadedWork) {
       setLoadedWork(null);
     }

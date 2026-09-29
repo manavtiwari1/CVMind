@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Bold, Italic, Underline, Strikethrough,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
@@ -11,6 +11,8 @@ import {
 import './CoverLetter.css';
 import ResumeWizard from '../components/ResumeWizard';
 import { authFetch } from '../lib/authFetch';
+import { getErrorMessage } from '../utils/errors';
+import type { ExtractedResume, LoadedWork, WizardFormData } from '../types/api';
 
 // ─────────────────────────────────────────────────────────────────
 // Types
@@ -1392,8 +1394,8 @@ Yours faithfully,<br><br><br>
 // ─────────────────────────────────────────────────────────────────
 interface CoverLetterProps {
   customApiKey: string;
-  loadedWork?: any;
-  setLoadedWork?: (work: any) => void;
+  loadedWork?: LoadedWork | null;
+  setLoadedWork?: (work: LoadedWork | null) => void;
 }
 
 export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }: CoverLetterProps) {
@@ -1416,11 +1418,17 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
 
   // Existing Resume Onboarding States
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
-  const [extractedData, setExtractedData] = useState<any>(null);
+  const [extractedData, setExtractedData] = useState<ExtractedResume | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractError, setExtractError] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const resumeFileInputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  const countWords = useCallback(() => {
+    const t = editorRef.current?.innerText || '';
+    setWordCount(t.trim().split(/\s+/).filter(Boolean).length);
+  }, []);
 
   useEffect(() => {
     const handleHash = () => {
@@ -1430,39 +1438,43 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
-  // Handle Loading Work from Dashboard / Global Modals
-  useEffect(() => {
-    if (loadedWork) {
-      if (loadedWork.deleted) {
-        if (activeWorkId === loadedWork.workId) {
-          setActiveWorkId(null);
-          setActiveWorkTitle('');
-          setStep('gallery');
-        }
-        if (setLoadedWork) {
-          setLoadedWork(null);
-        }
-        return;
+  // Handle Loading Work from Dashboard / Global Modals.
+  // Local state is adjusted during render; the editor DOM and clearing the
+  // parent's one-shot loadedWork happen in the effect below.
+  const [handledWork, setHandledWork] = useState<LoadedWork | null>(null);
+  if (loadedWork && loadedWork !== handledWork) {
+    setHandledWork(loadedWork);
+    if (loadedWork.deleted) {
+      if (activeWorkId === loadedWork.workId) {
+        setActiveWorkId(null);
+        setActiveWorkTitle('');
+        setStep('gallery');
       }
+    } else {
       const template = TEMPLATES.find(t => t.id === loadedWork.templateId) || TEMPLATES[0];
       setSelectedTemplate(template);
-      setActiveWorkId(loadedWork.id || loadedWork._id);
+      setActiveWorkId(loadedWork.id || loadedWork._id || null);
       setActiveWorkTitle(loadedWork.title || 'Untitled Work');
-      setActiveTab(loadedWork.type || 'resume');
+      setActiveTab(loadedWork.type === 'cover-letter' ? 'cover-letter' : 'resume');
       setStep('editor');
-      
+    }
+  }
+
+  useEffect(() => {
+    if (!loadedWork) return;
+    if (!loadedWork.deleted) {
+      const html = loadedWork.htmlContent;
       setTimeout(() => {
         if (editorRef.current) {
-          editorRef.current.innerHTML = loadedWork.htmlContent;
+          editorRef.current.innerHTML = html;
           countWords();
         }
       }, 80);
-      
-      if (setLoadedWork) {
-        setLoadedWork(null);
-      }
     }
-  }, [loadedWork, setLoadedWork, activeWorkId]);
+    if (setLoadedWork) {
+      setLoadedWork(null);
+    }
+  }, [loadedWork, setLoadedWork, countWords]);
 
   const [showTableDialog, setShowTableDialog] = useState(false);
   const [tableRows, setTableRows] = useState(3);
@@ -1642,7 +1654,6 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
   };
   const [currentFont, setCurrentFont] = useState('Arial, sans-serif');
   const [currentSize, setCurrentSize] = useState('12');
-  const editorRef = useRef<HTMLDivElement>(null);
   const savedRange = useRef<Range | null>(null);
 
   useEffect(() => {
@@ -1654,7 +1665,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
       }
       countWords();
     }
-  }, [step, selectedTemplate, activeWorkId]);
+  }, [step, selectedTemplate, activeWorkId, countWords]);
 
   // Background auto-save effect
   useEffect(() => {
@@ -1668,7 +1679,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
         const userStr = localStorage.getItem('cvmind_user');
         if (!userStr) return;
 
-        let userId = '';
+        let userId: string;
         try {
           const user = JSON.parse(userStr);
           userId = user.id || user._id;
@@ -1747,8 +1758,8 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
       setExtractedData(resData.data);
       setShowOnboardingModal(false);
       setStep('form');
-    } catch (err: any) {
-      setExtractError(err.message || 'Error extracting resume data. Please try again.');
+    } catch (err) {
+      setExtractError(getErrorMessage(err) || 'Error extracting resume data. Please try again.');
     } finally {
       setIsExtracting(false);
     }
@@ -1778,7 +1789,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
       return;
     }
 
-    let userId = '';
+    let userId: string;
     try {
       const user = JSON.parse(userStr);
       userId = user.id || user._id;
@@ -1814,16 +1825,11 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
         navigator.clipboard.writeText(shareUrl);
         window.open(shareUrl, '_blank');
       }
-    } catch (err: any) {
-      alert(err.message || 'An error occurred while preparing your portfolio.');
+    } catch (err) {
+      alert(getErrorMessage(err) || 'An error occurred while preparing your portfolio.');
     } finally {
       setSaving(false);
     }
-  };
-
-  const countWords = () => {
-    const t = editorRef.current?.innerText || '';
-    setWordCount(t.trim().split(/\s+/).filter(Boolean).length);
   };
 
   const saveSelection = () => {
@@ -1948,8 +1954,8 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
         editorRef.current.innerHTML = data.data.refinedLetter; 
         countWords(); 
       }
-    } catch (err: any) {
-      setRefineError(err.message || 'Something went wrong.');
+    } catch (err) {
+      setRefineError(getErrorMessage(err) || 'Something went wrong.');
     } finally {
       setRefining(false);
     }
@@ -1982,8 +1988,8 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
         editorRef.current.innerHTML = data.data.refinedLetter; 
         countWords(); 
       }
-    } catch (err: any) {
-      setRefineError(err.message || 'Something went wrong.');
+    } catch (err) {
+      setRefineError(getErrorMessage(err) || 'Something went wrong.');
     } finally {
       setRefining(false);
     }
@@ -2019,8 +2025,8 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
         editorRef.current.innerHTML = data.data.refinedLetter; 
         countWords(); 
       }
-    } catch (err: any) {
-      setRefineError(err.message || 'Something went wrong.');
+    } catch (err) {
+      setRefineError(getErrorMessage(err) || 'Something went wrong.');
     } finally {
       setRefining(false);
     }
@@ -2035,7 +2041,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
     }
   };
 
-  const handleGenerateFromWizard = async (formData: any) => {
+  const handleGenerateFromWizard = async (formData: WizardFormData) => {
     if (!selectedTemplate) return;
     setStep('loading');
     setRefineError('');
@@ -2096,8 +2102,8 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
           countWords();
         }
       }, 100);
-    } catch (err: any) {
-      setRefineError(err.message || 'Something went wrong.');
+    } catch (err) {
+      setRefineError(getErrorMessage(err) || 'Something went wrong.');
       setStep('form');
     }
   };

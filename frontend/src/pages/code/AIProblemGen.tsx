@@ -44,7 +44,7 @@ export default function AIProblemGen({ onLoadGeneratedProblem, customApiKey = ''
       if (!res.ok || !data.success) throw new Error(data.error || 'Failed to generate problem');
 
       setGeneratedProblem(data.problem);
-    } catch (err: any) {
+    } catch {
       // Create a fallback problem so the user is never stuck
       const fallback: CodingProblem = {
         id: `ai-custom-${Date.now()}`,
@@ -123,7 +123,7 @@ export default function AIProblemGen({ onLoadGeneratedProblem, customApiKey = ''
             </label>
             <select
               value={difficulty}
-              onChange={(e) => setDifficulty(e.target.value as any)}
+              onChange={(e) => setDifficulty(e.target.value as 'Easy' | 'Medium' | 'Hard')}
               className="filter-select"
               style={{ width: '100%' }}
             >

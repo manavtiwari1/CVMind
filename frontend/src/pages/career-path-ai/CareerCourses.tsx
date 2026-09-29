@@ -3,13 +3,37 @@ import {
   ArrowRight, RefreshCw, BookOpen, GraduationCap, Check, HelpCircle
 } from 'lucide-react';
 import SkeletonLoader from '../../components/SkeletonLoader';
+import { getErrorMessage } from '../../utils/errors';
+import { parseSavedContent } from '../../utils/savedWork';
+import type { LoadedWork } from '../../types/api';
 import './CareerCourses.css';
+
+// AI response (schema in backend/src/services/gemini.js)
+interface CourseSuggestion {
+  title: string;
+  platform: string;
+  skillsCovered: string[];
+  reason: string;
+  duration: string;
+}
+
+interface CoursesResult {
+  gaps: string[];
+  courses: CourseSuggestion[];
+}
+
+// Page state saved in a 'career-courses' work
+interface SavedCoursesContent {
+  targetJob?: string;
+  skills?: string;
+  result?: CoursesResult | null;
+}
 
 interface CareerCoursesProps {
   customApiKey: string;
   resumeText: string;
-  loadedWork?: any;
-  setLoadedWork?: (work: any) => void;
+  loadedWork?: LoadedWork | null;
+  setLoadedWork?: (work: LoadedWork | null) => void;
 }
 
 export default function CareerCourses({ customApiKey, resumeText, loadedWork, setLoadedWork }: CareerCoursesProps) {
@@ -17,29 +41,37 @@ export default function CareerCourses({ customApiKey, resumeText, loadedWork, se
   const [skills, setSkills] = useState('');
   const [useResumeText, setUseResumeText] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<CoursesResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Load saved work if opened from My Works
-  useEffect(() => {
-    if (loadedWork) {
-      if (loadedWork.deleted) {
-        removeState();
-        return;
-      }
-      if (loadedWork.type === 'career-courses') {
-        try {
-          const parsed = JSON.parse(loadedWork.htmlContent);
-          if (parsed) {
-            setTargetJob(parsed.targetJob || '');
-            setSkills(parsed.skills || '');
-            setResult(parsed.result || null);
-          }
-        } catch (e) {
-          console.error('Error parsing loaded career courses work:', e);
-        }
+  const clearForm = () => {
+    setResult(null);
+    setTargetJob('');
+    setSkills('');
+  };
+
+  // Load saved work if opened from My Works (adjusting state during render,
+  // see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  const [handledWork, setHandledWork] = useState<LoadedWork | null>(null);
+  if (loadedWork && loadedWork !== handledWork) {
+    setHandledWork(loadedWork);
+    if (loadedWork.deleted) {
+      clearForm();
+    } else if (loadedWork.type === 'career-courses') {
+      const saved = parseSavedContent<SavedCoursesContent>(loadedWork.htmlContent);
+      if (saved) {
+        setTargetJob(saved.targetJob || '');
+        setSkills(saved.skills || '');
+        setResult(saved.result || null);
+      } else {
+        console.error('Error parsing loaded career courses work');
       }
     }
+  }
+
+  // A deletion notice has been handled; clear it in the parent
+  useEffect(() => {
+    if (loadedWork?.deleted && setLoadedWork) setLoadedWork(null);
   }, [loadedWork, setLoadedWork]);
 
   const handleGenerate = async () => {
@@ -103,18 +135,16 @@ export default function CareerCourses({ customApiKey, resumeText, loadedWork, se
       } else {
         throw new Error('Invalid output format from server.');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setErrorMsg(err.message || 'Generation failed. Make sure the servers are online.');
+      setErrorMsg(getErrorMessage(err) || 'Generation failed. Make sure the servers are online.');
     } finally {
       setLoading(false);
     }
   };
 
   function removeState() {
-    setResult(null);
-    setTargetJob('');
-    setSkills('');
+    clearForm();
     if (setLoadedWork) {
       setLoadedWork(null);
     }
@@ -250,7 +280,7 @@ export default function CareerCourses({ customApiKey, resumeText, loadedWork, se
               </div>
 
               <div className="courses-cards-grid" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                {result.courses && result.courses.map((course: any, index: number) => (
+                {result.courses && result.courses.map((course, index: number) => (
                   <div key={index} className="course-recommendation-card glass-card" style={{ padding: '1.75rem', border: '1px solid var(--border)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
                     
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>

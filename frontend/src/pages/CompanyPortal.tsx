@@ -6,6 +6,71 @@ import {
 } from 'lucide-react';
 import './CompanyPortal.css';
 
+// Shapes from backend/src/db.js (companySchema, jobSchema, applicationSchema)
+interface Company {
+  id: string;
+  name: string;
+  email: string;
+  website: string;
+  industry: string;
+  companySize: string;
+  location: string;
+  description: string;
+  logo: string;
+  verified: boolean;
+}
+
+interface CompanyJob {
+  id: string;
+  companyId?: string;
+  companyName?: string;
+  title: string;
+  department?: string;
+  jobType: string;
+  experience?: string;
+  location: string;
+  remote?: string;
+  salary: string;
+  deadline?: string;
+  description?: string;
+  requirements?: string;
+  skills: string[];
+  allowAutoApply?: boolean;
+  maxApplications?: number;
+  status: string;
+  postedAt?: string;
+}
+
+interface ApplicationEvent {
+  title: string;
+  description: string;
+  timestamp: string;
+  actor: string;
+}
+
+interface Applicant {
+  id: string;
+  jobId?: string;
+  candidateName: string;
+  candidateEmail: string;
+  candidatePhone?: string;
+  resumeText?: string;
+  coverLetter?: string;
+  matchScore: number;
+  matchBreakdown?: {
+    skills: number;
+    education: number;
+    experience: number;
+    location: number;
+    preferences: number;
+  };
+  matchReasoning?: string;
+  mode: string;
+  status: string;
+  events?: ApplicationEvent[];
+  appliedAt: string;
+}
+
 interface CompanyPortalProps {
   customApiKey?: string;
   onNavigateCandidateApp?: () => void;
@@ -15,10 +80,10 @@ export default function CompanyPortal({ customApiKey, onNavigateCandidateApp }: 
   const [activeTab, setActiveTab] = useState<'overview' | 'jobs' | 'post-job' | 'applicants' | 'rankings' | 'company-info'>('overview');
   
   // Registered Company Details
-  const [company, _setCompany] = useState<any>(() => {
+  const [company] = useState<Company>(() => {
     const saved = localStorage.getItem('cvmind_company');
     if (saved) {
-      try { return JSON.parse(saved); } catch {}
+      try { return JSON.parse(saved); } catch { /* fall back to the demo company */ }
     }
     return {
       id: 'comp_cvmind_demo',
@@ -35,8 +100,7 @@ export default function CompanyPortal({ customApiKey, onNavigateCandidateApp }: 
   });
 
   // Job Listing & Post Form State
-  const [jobs, setJobs] = useState<any[]>([]);
-  const [_loadingJobs, setLoadingJobs] = useState(false);
+  const [jobs, setJobs] = useState<CompanyJob[]>([]);
   const [newJob, setNewJob] = useState({
     title: 'Senior Python & AI Engineer',
     department: 'Engineering',
@@ -59,14 +123,14 @@ export default function CompanyPortal({ customApiKey, onNavigateCandidateApp }: 
 
   // Applicant State
   const [selectedJobId, setSelectedJobId] = useState<string>('all');
-  const [applicants, setApplicants] = useState<any[]>([]);
+  const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [applicantFilter, setApplicantFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedApplicant, setSelectedApplicant] = useState<any>(null);
+  const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
 
   // Interview Scheduler Modal State
   const [showInterviewModal, setShowInterviewModal] = useState(false);
-  const [interviewApplicant, setInterviewApplicant] = useState<any>(null);
+  const [interviewApplicant, setInterviewApplicant] = useState<Applicant | null>(null);
   const [interviewDate, setInterviewDate] = useState('2026-08-25');
   const [interviewTime, setInterviewTime] = useState('14:00');
   const [interviewType, setInterviewType] = useState('Technical Interview');
@@ -74,44 +138,42 @@ export default function CompanyPortal({ customApiKey, onNavigateCandidateApp }: 
   const [interviewNotes, setInterviewNotes] = useState('Please bring your GitHub projects and be ready for a short live coding walk-through.');
   const [interviewSuccess, setInterviewSuccess] = useState('');
 
-  // Load jobs from backend
-  const fetchCompanyJobs = async () => {
-    setLoadingJobs(true);
-    try {
-      const res = await fetch(`/_/backend/api/company/jobs?companyId=${company.id}`);
-      if (res.ok) {
-        const data = await res.json();
-        setJobs(data.jobs || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch jobs:', err);
-    } finally {
-      setLoadingJobs(false);
-    }
-  };
-
-  // Load applicants for a job
-  const fetchApplicants = async (jobId: string) => {
-    try {
-      const targetId = jobId === 'all' ? (jobs[0]?.id || 'j001') : jobId;
-      const res = await fetch(`/_/backend/api/company/jobs/${targetId}/applicants`);
-      if (res.ok) {
-        const data = await res.json();
-        setApplicants(data.applicants || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch applicants:', err);
-    }
-  };
-
+  // Load jobs from backend (state is only set once the request settles, and not after unmount)
   useEffect(() => {
-    fetchCompanyJobs();
+    let cancelled = false;
+    const loadJobs = async () => {
+      try {
+        const res = await fetch(`/_/backend/api/company/jobs?companyId=${company.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled) setJobs(data.jobs || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch jobs:', err);
+      }
+    };
+    loadJobs();
+    return () => { cancelled = true; };
   }, [company.id]);
 
+  // Load applicants for the selected job
   useEffect(() => {
-    if (jobs.length > 0) {
-      fetchApplicants(selectedJobId);
-    }
+    if (jobs.length === 0) return;
+    let cancelled = false;
+    const loadApplicants = async () => {
+      try {
+        const targetId = selectedJobId === 'all' ? (jobs[0]?.id || 'j001') : selectedJobId;
+        const res = await fetch(`/_/backend/api/company/jobs/${targetId}/applicants`);
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled) setApplicants(data.applicants || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch applicants:', err);
+      }
+    };
+    loadApplicants();
+    return () => { cancelled = true; };
   }, [selectedJobId, jobs]);
 
   // Initial mock applicants if none returned
@@ -240,7 +302,7 @@ export default function CompanyPortal({ customApiKey, onNavigateCandidateApp }: 
       if (res.ok) {
         setApplicants(prev => prev.map(a => a.id === applicantId ? { ...a, status: newStatus } : a));
         if (selectedApplicant && selectedApplicant.id === applicantId) {
-          setSelectedApplicant((prev: any) => ({ ...prev, status: newStatus }));
+          setSelectedApplicant((prev) => prev && { ...prev, status: newStatus });
         }
       }
     } catch (err) {

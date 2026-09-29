@@ -3,12 +3,14 @@ import { Upload, FileText, CheckCircle2, ShieldAlert, ArrowRight, ShieldCheck, L
 import { useLiveStats, formatStat } from '../utils/stats';
 import { authFetch } from '../lib/authFetch';
 import { HeroSection } from '../components/blocks/hero-section-9';
+import { getErrorMessage } from '../utils/errors';
+import type { ResumeAnalysis } from '../types/api';
 import './Home.css';
 import './HomeCarousel.css';
 
 interface HomeProps {
   setCurrentPage: (page: string) => void;
-  setAnalysisResult: (result: any) => void;
+  setAnalysisResult: (result: ResumeAnalysis) => void;
   setResumeText: (text: string) => void;
   customApiKey: string;
 }
@@ -251,9 +253,9 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
       } else {
         throw new Error('Analysis completed, but failed to retrieve proper feedback metrics.');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Upload Error:', err);
-      setErrorMsg(err.message || 'Connection failed. Ensure the backend server is running.');
+      setErrorMsg(getErrorMessage(err) || 'Connection failed. Ensure the backend server is running.');
     } finally {
       clearInterval(stepInterval);
       setLoading(false);

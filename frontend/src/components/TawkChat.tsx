@@ -1,23 +1,32 @@
 import { useEffect } from 'react';
 
+interface TawkApi {
+  onLoad?: () => void;
+  onChatMinimized?: () => void;
+  hideWidget: () => void;
+  showWidget: () => void;
+  maximize: () => void;
+}
+
 declare global {
   interface Window {
-    Tawk_API?: any;
+    Tawk_API?: TawkApi;
     Tawk_LoadStart?: Date;
   }
 }
 
 export default function TawkChat() {
   useEffect(() => {
-    window.Tawk_API = window.Tawk_API || {};
+    const tawk = window.Tawk_API || ({} as TawkApi);
+    window.Tawk_API = tawk;
     window.Tawk_LoadStart = new Date();
 
     // Hide the chat bubble by default; Contact page's "Live Support" opens it.
-    window.Tawk_API.onLoad = function () {
-      window.Tawk_API.hideWidget();
+    tawk.onLoad = function () {
+      tawk.hideWidget();
     };
-    window.Tawk_API.onChatMinimized = function () {
-      window.Tawk_API.hideWidget();
+    tawk.onChatMinimized = function () {
+      tawk.hideWidget();
     };
 
     const s1 = document.createElement('script');

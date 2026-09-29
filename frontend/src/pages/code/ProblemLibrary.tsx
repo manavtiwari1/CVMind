@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Search, CheckCircle2, Circle, Sparkles, Code2, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { TOPICS, COMPANIES, type CodingProblem } from '../../data/codingProblems';
 
@@ -54,10 +54,13 @@ export default function ProblemLibrary({
     });
   }, [problems, searchQuery, selectedTopic, selectedDifficulty, selectedCompany, statusFilter, solvedProblemIds]);
 
-  // Reset to page 1 whenever any filter changes
-  useEffect(() => {
+  // Reset to page 1 whenever any filter changes (adjusting state during render)
+  const filterKey = [searchQuery, selectedTopic, selectedDifficulty, selectedCompany, statusFilter].join('|');
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
     setCurrentPage(1);
-  }, [searchQuery, selectedTopic, selectedDifficulty, selectedCompany, statusFilter]);
+  }
 
   const totalPages = Math.max(1, Math.ceil(filteredProblems.length / ITEMS_PER_PAGE));
   const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
@@ -187,7 +190,7 @@ export default function ProblemLibrary({
 
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
+            onChange={(e) => setStatusFilter(e.target.value as 'All' | 'Solved' | 'Unsolved')}
             className="filter-select"
           >
             <option value="All">Status: All</option>

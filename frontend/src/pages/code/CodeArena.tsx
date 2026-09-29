@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import confetti from 'canvas-confetti';
 import { 
@@ -22,6 +22,67 @@ import {
   Check
 } from 'lucide-react';
 import type { CodingProblem } from '../../data/codingProblems';
+import { getErrorMessage } from '../../utils/errors';
+
+type Language = 'javascript' | 'python' | 'cpp';
+
+interface TestCaseResult {
+  testCaseIndex: number;
+  passed: boolean;
+  input: unknown;
+  expected: unknown;
+  actual: unknown;
+}
+
+// /api/code/run (data.result) and /api/code/submit (data)
+interface JudgeResult {
+  verdict: string;
+  error?: string;
+  runtimeMs?: number;
+  memoryMb?: number;
+  results?: TestCaseResult[];
+  passedTests?: number;
+  totalTests?: number;
+  runtimePercentile?: number;
+  memoryPercentile?: number;
+}
+
+interface Submission {
+  id: string;
+  verdict: string;
+  passedTests?: number;
+  totalTests?: number;
+  runtimeMs?: number;
+  memoryMb?: number;
+  language: Language;
+  timestamp: string;
+}
+
+// /api/code/ai/hint
+interface AiHint {
+  level?: number;
+  title?: string;
+  hint: string;
+  keyInsight?: string;
+}
+
+// /api/code/ai/review
+interface AiReview {
+  verdict: string;
+  timeComplexity: string;
+  spaceComplexity: string;
+  qualityScore: number;
+  strengths?: string[];
+  optimizations?: string[];
+}
+
+// /api/code/ai/debug
+interface AiDebug {
+  summary: string;
+  probableCause: string;
+  suggestedFix: string;
+  edgeCaseToTest: string;
+}
 
 interface CodeArenaProps {
   problem: CodingProblem;
@@ -36,7 +97,7 @@ export default function CodeArena({
   onMarkSolved,
   customApiKey = ''
 }: CodeArenaProps) {
-  const [language, setLanguage] = useState<'javascript' | 'python' | 'cpp'>('javascript');
+  const [language, setLanguage] = useState<Language>('javascript');
   const [code, setCode] = useState<string>(problem.starterCode[language]);
   const [activeLeftTab, setActiveLeftTab] = useState<'description' | 'hints' | 'submissions' | 'editorial'>('description');
   const [activeConsoleTab, setActiveConsoleTab] = useState<'testcases' | 'output' | 'debug' | 'review'>('testcases');
@@ -46,17 +107,17 @@ export default function CodeArena({
   // Execution states
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [runResult, setRunResult] = useState<any>(null);
-  const [submissionVerdict, setSubmissionVerdict] = useState<any>(null);
+  const [runResult, setRunResult] = useState<JudgeResult | null>(null);
+  const [submissionVerdict, setSubmissionVerdict] = useState<JudgeResult | null>(null);
   const [showVerdictModal, setShowVerdictModal] = useState<boolean>(false);
-  const [submissionsList, setSubmissionsList] = useState<any[]>([]);
+  const [submissionsList, setSubmissionsList] = useState<Submission[]>([]);
 
   // AI Assistant states
-  const [aiHints, setAiHints] = useState<{ [level: number]: any }>({});
+  const [aiHints, setAiHints] = useState<{ [level: number]: AiHint }>({});
   const [loadingHintLevel, setLoadingHintLevel] = useState<number | null>(null);
-  const [aiReview, setAiReview] = useState<any>(null);
+  const [aiReview, setAiReview] = useState<AiReview | null>(null);
   const [loadingReview, setLoadingReview] = useState<boolean>(false);
-  const [aiDebug, setAiDebug] = useState<any>(null);
+  const [aiDebug, setAiDebug] = useState<AiDebug | null>(null);
   const [loadingDebug, setLoadingDebug] = useState<boolean>(false);
 
   // UI helpers
@@ -64,10 +125,13 @@ export default function CodeArena({
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const arenaRef = useRef<HTMLDivElement>(null);
 
-  // Reset code when language changes or problem changes
-  useEffect(() => {
+  // Reset code when language changes or problem changes (adjusting state during render,
+  // see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  const [codeSource, setCodeSource] = useState({ problem, language });
+  if (codeSource.problem !== problem || codeSource.language !== language) {
+    setCodeSource({ problem, language });
     setCode(problem.starterCode[language] || '');
-  }, [language, problem]);
+  }
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(code);
@@ -128,10 +192,10 @@ export default function CodeArena({
       if (!response.ok) throw new Error(data.error || 'Failed to execute code');
 
       setRunResult(data.result);
-    } catch (err: any) {
+    } catch (err) {
       setRunResult({
         verdict: 'Runtime Error',
-        error: err.message || 'Execution error occurred.'
+        error: getErrorMessage(err) || 'Execution error occurred.'
       });
     } finally {
       setIsRunning(false);
@@ -168,7 +232,7 @@ export default function CodeArena({
       setSubmissionVerdict(data);
       setShowVerdictModal(true);
 
-      const newSub = {
+      const newSub: Submission = {
         id: `sub_${Date.now()}`,
         verdict: data.verdict,
         passedTests: data.passedTests,
@@ -188,10 +252,10 @@ export default function CodeArena({
         });
         onMarkSolved(problem.id);
       }
-    } catch (err: any) {
+    } catch (err) {
       setSubmissionVerdict({
         verdict: 'Submission Error',
-        error: err.message || 'Unable to reach code judge.'
+        error: getErrorMessage(err) || 'Unable to reach code judge.'
       });
       setShowVerdictModal(true);
     } finally {
@@ -228,7 +292,7 @@ export default function CodeArena({
       if (data.success && data.data) {
         setAiHints(prev => ({ ...prev, [level]: data.data }));
       }
-    } catch (err) {
+    } catch {
       // Fallback hint from problem metadata if offline
       const fallbackText = problem.hints && problem.hints[level - 1] 
         ? problem.hints[level - 1]
@@ -275,7 +339,7 @@ export default function CodeArena({
       if (data.success && data.data) {
         setAiReview(data.data);
       }
-    } catch (err) {
+    } catch {
       setAiReview({
         verdict: 'Code Evaluated',
         timeComplexity: 'O(N)',
@@ -581,7 +645,7 @@ export default function CodeArena({
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <select
               value={language}
-              onChange={(e) => setLanguage(e.target.value as any)}
+              onChange={(e) => setLanguage(e.target.value as Language)}
               className="editor-lang-select"
             >
               <option value="javascript">JavaScript (Node.js)</option>
@@ -772,7 +836,7 @@ export default function CodeArena({
                       </div>
                     )}
 
-                    {runResult.results && runResult.results.map((res: any, i: number) => (
+                    {runResult.results && runResult.results.map((res, i: number) => (
                       <div key={i} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', padding: '10px', marginBottom: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '0.82rem' }}>
                           <span style={{ color: '#94a3b8' }}>Test Case {res.testCaseIndex}</span>

@@ -195,7 +195,6 @@ export {
   NavigationMenuLink,
   NavigationMenuPositioner,
   NavigationMenuViewport,
-  navigationMenuTriggerStyle,
   NavigationMenuPopup,
   NavigationMenuArrow,
 };

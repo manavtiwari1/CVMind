@@ -9,6 +9,8 @@ import {
   AlertCircle, Search, Download, FileText,
   Puzzle, Play, ShieldAlert, Save, Check
 } from 'lucide-react';
+import { getErrorMessage } from '../utils/errors';
+import type { EducationEntry, ExperienceEntry, JobMatch } from '../types/api';
 import './AutoApply.css';
 import { authFetch } from '../lib/authFetch';
 import ResumeTab from './autoApply/ResumeTab';
@@ -27,6 +29,27 @@ type View = 'landing' | 'wizard' | 'jobs' | 'tracker' | 'sandbox' | 'profile' | 
 type WizardStep = 1 | 2 | 3;
 type AppStatus = 'Applied' | 'Pending' | 'Interview' | 'Assessment' | 'Rejected' | 'Offer' | 'Saved';
 
+// AI responses from /api/auto-apply/* (see backend/src/routes/autoApply.js)
+interface TailorResult {
+  tailoredResume: string;
+  addedKeywords: string[];
+  changedSections: string[];
+  atsScore: number;
+  matchScore: number;
+}
+
+interface CoverLetterResult {
+  coverLetter: string;
+  subject: string;
+  tone?: string;
+}
+
+interface AnswerResult {
+  answer: string;
+  wordCount?: number;
+  tone?: string;
+}
+
 interface CandidateProfile {
   name: string;
   firstName?: string;
@@ -39,8 +62,8 @@ interface CandidateProfile {
   summary: string;
   skills: string[];
   techStack?: string[];
-  experience?: any[];
-  education?: any[];
+  experience?: ExperienceEntry[];
+  education?: EducationEntry[];
   college?: string;
   degree?: string;
   graduationYear?: string;
@@ -60,27 +83,8 @@ interface CandidateProfile {
   relocation?: string;
 }
 
-interface JobMatch {
-  id: string; title: string; company: string; domain: string; location: string;
-  type: string; remote: string; salary: string; exp: string; posted: string;
-  skills: string[]; industry: string; matchScore: number;
-  matchedSkills: string[]; missingSkills: string[];
-  matchBreakdown?: {
-    skills: number;
-    education: number;
-    experience: number;
-    location: number;
-    jdRelevance?: number;
-    preferences?: number;
-  };
-  matchReasoning?: string;
-  isScraped?: boolean;
-  apply_url?: string;
-  isLiveCompany?: boolean;
-}
-
 interface Application {
-  id: string; userId: string; job: any; matchScore: number; status: AppStatus;
+  id: string; userId: string; job: JobMatch; matchScore: number; status: AppStatus;
   appliedAt: string; updatedAt: string; tailoredResume: string | null;
   coverLetter: string | null; notes: string;
 }
@@ -96,6 +100,11 @@ const STATUS_BG: Record<AppStatus, string> = {
 const ALL_STATUSES: AppStatus[] = ['Saved', 'Applied', 'Pending', 'Interview', 'Assessment', 'Offer', 'Rejected'];
 
 const API = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
+
+// Random integer in [min, min + range); only called from event handlers
+function randomInt(min: number, range: number) {
+  return Math.floor(Math.random() * range) + min;
+}
 
 function scoreColor(s: number) {
   if (s >= 80) return '#30d158';
@@ -188,10 +197,10 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
   const [companyFilter, setCompanyFilter] = useState('All');
   const [selectedJob, setSelectedJob] = useState<JobMatch | null>(null);
   const [jobDetailMode, setJobDetailMode] = useState<'details' | 'tailor' | 'cover' | 'answer'>('details');
-  const [tailorResult, setTailorResult] = useState<any>(null);
-  const [coverResult, setCoverResult] = useState<any>(null);
+  const [tailorResult, setTailorResult] = useState<TailorResult | null>(null);
+  const [coverResult, setCoverResult] = useState<CoverLetterResult | null>(null);
   const [answerQuestion, setAnswerQuestion] = useState('');
-  const [answerResult, setAnswerResult] = useState<any>(null);
+  const [answerResult, setAnswerResult] = useState<AnswerResult | null>(null);
   const [trackerView, setTrackerView] = useState<'kanban' | 'list'>('kanban');
   const [dragStatus, setDragStatus] = useState<AppStatus | null>(null);
   const [draggingApp, setDraggingApp] = useState<string | null>(null);
@@ -232,7 +241,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
     phase: 'progress' | 'receipt' | 'creds' | 'real-applying' | 'real-receipt';
     steps: { label: string; status: 'pending' | 'running' | 'done' | 'error' }[];
     receipt: null | {
-      tailored: any; cover: any; app: any;
+      tailored: TailorResult | null; cover: CoverLetterResult | null; app: Application | null;
       atsScore: number; atsImprovement: number;
     };
     portalPending?: 'naukri' | 'linkedin';
@@ -254,7 +263,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
         } else if (profile) {
           setProfileForm(profile);
         }
-      } catch (err) {
+      } catch {
         if (profile) setProfileForm(profile);
       }
     };
@@ -271,16 +280,15 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
     }
   }, [profile, customApiKey]);
 
-  useEffect(() => {
-    if (view === 'tracker') loadApplications();
-  }, [view]);
-
+  // Called by every button that opens the tracker view
   const loadApplications = async () => {
     try {
       const r = await authFetch(`${API}/api/auto-apply/applications/${userId}`);
       const d = await r.json();
       if (d.success) setApplications(d.data);
-    } catch { }
+    } catch (e) {
+      console.error('Failed to load applications:', e);
+    }
   };
 
   const handleSaveProfile = async (e?: React.FormEvent) => {
@@ -322,7 +330,9 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
         setResumeText(d.resumeText);
         if (setGlobalResumeText) setGlobalResumeText(d.resumeText);
       }
-    } catch { } finally { setLoading(false); }
+    } catch (e) {
+      console.error('Resume text extraction failed:', e);
+    } finally { setLoading(false); }
   };
 
   const generateProfile = async () => {
@@ -373,7 +383,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
       }).catch(() => {});
 
       setStep(2);
-    } catch (e: any) { setError(e.message || 'Failed to generate profile.'); }
+    } catch (e) { setError(getErrorMessage(e) || 'Failed to generate profile.'); }
     finally { setLoading(false); }
   };
 
@@ -388,7 +398,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       setJobs(d.data.jobs);
-    } catch (e: any) { setError(e.message || 'Failed to load jobs.'); }
+    } catch (e) { setError(getErrorMessage(e) || 'Failed to load jobs.'); }
     finally { setLoading(false); }
   };
 
@@ -442,8 +452,8 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
         setScrapeUrlInput('');
         setBreakdownModalJob(newJob);
       }
-    } catch (e: any) {
-      alert(`Scraping failed: ${e.message}`);
+    } catch (e) {
+      alert(`Scraping failed: ${getErrorMessage(e)}`);
     } finally {
       setIsScrapingUrl(false);
     }
@@ -480,7 +490,9 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
       if (ad.success && ad.data?.answer) {
         generatedAnswer = ad.data.answer;
       }
-    } catch { }
+    } catch {
+      // Keep the template answer if the AI call fails
+    }
 
     const parts = (p.name || '').split(' ');
     setSandboxForm({
@@ -559,9 +571,9 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
     ];
     setApplyModal({ job, phase: 'progress', steps: STEPS, receipt: null });
 
-    let tailored: any = null;
-    let cover: any = null;
-    let app: any = null;
+    let tailored: TailorResult | null = null;
+    let cover: CoverLetterResult | null = null;
+    let app: Application | null = null;
 
     try {
       // Step 0 — analyze
@@ -626,11 +638,13 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
       updateModalStep(4, 'done');
 
       // Transition to receipt
-      const atsScore = tailored?.atsScore || Math.floor(Math.random() * 15) + 80;
-      const atsImprovement = tailored?.atsScore ? (tailored.atsScore - (job.matchScore - 5)) : Math.floor(Math.random() * 12) + 8;
+      const atsScore = tailored?.atsScore || randomInt(80, 15);
+      const atsImprovement = tailored?.atsScore ? (tailored.atsScore - (job.matchScore - 5)) : randomInt(8, 12);
       await new Promise(r => setTimeout(r, 400));
       setApplyModal(prev => prev ? { ...prev, phase: 'receipt', receipt: { tailored, cover, app, atsScore, atsImprovement } } : null);
-    } catch { }
+    } catch (e) {
+      console.error('Auto-apply failed:', e);
+    }
     finally { setApplyingJobId(null); }
   };
 
@@ -645,7 +659,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       setTailorResult(d.data);
-    } catch (e: any) { setError(e.message); }
+    } catch (e) { setError(getErrorMessage(e)); }
     finally { setLoading(false); }
   };
 
@@ -660,7 +674,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       setCoverResult(d.data);
-    } catch (e: any) { setError(e.message); }
+    } catch (e) { setError(getErrorMessage(e)); }
     finally { setLoading(false); }
   };
 
@@ -676,7 +690,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       setAnswerResult(d.data);
-    } catch (e: any) { setError(e.message); }
+    } catch (e) { setError(getErrorMessage(e)); }
     finally { setLoading(false); }
   };
 
@@ -688,14 +702,14 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
         body: JSON.stringify({ status })
       });
       setApplications(prev => prev.map(a => a.id === appId ? { ...a, status, updatedAt: new Date().toISOString() } : a));
-    } catch { }
+    } catch (e) { console.error('Failed to update application status:', e); }
   };
 
   const deleteApp = async (appId: string) => {
     try {
       await authFetch(`${API}/api/auto-apply/applications/${appId}`, { method: 'DELETE' });
       setApplications(prev => prev.filter(a => a.id !== appId));
-    } catch { }
+    } catch (e) { console.error('Failed to delete application:', e); }
   };
 
   const copyToClipboard = (text: string, key: string) => {
@@ -903,6 +917,8 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
   const renderApplyModal = () => {
     if (!applyModal) return null;
     const { job, phase, steps, receipt } = applyModal;
+    const receiptTailored = receipt?.tailored;
+    const receiptCover = receipt?.cover;
 
     return (
       <div className="aa-modal-backdrop">
@@ -955,40 +971,40 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
                   <div className="aa-receipt-score-badge">+{receipt.atsImprovement}% boost</div>
                 </div>
               </div>
-              {receipt.tailored && (
+              {receiptTailored && (
                 <div className="aa-receipt-section">
                   <div className="aa-receipt-section-header">
                     <h4 className="aa-receipt-section-title"><Sparkles size={14} />Tailored Resume</h4>
                     <div className="aa-receipt-actions">
-                      <button className="aa-btn-sm" onClick={() => copyToClipboard(receipt.tailored.tailoredResume, 'tailor-receipt')}>
+                      <button className="aa-btn-sm" onClick={() => copyToClipboard(receiptTailored.tailoredResume, 'tailor-receipt')}>
                         <Copy size={11} />{copied === 'tailor-receipt' ? 'Copied!' : 'Copy'}
                       </button>
-                      <button className="aa-btn-sm" onClick={() => downloadText(receipt.tailored.tailoredResume, `tailored-resume-${job.company.replace(/\s/g,'-')}.txt`)}>
+                      <button className="aa-btn-sm" onClick={() => downloadText(receiptTailored.tailoredResume, `tailored-resume-${job.company.replace(/\s/g,'-')}.txt`)}>
                         <Download size={11} />Download
                       </button>
                     </div>
                   </div>
                   <div className="aa-receipt-chips">
-                    {(receipt.tailored.addedKeywords || []).map((k: string) => <span key={k} className="aa-chip">+{k}</span>)}
+                    {(receiptTailored.addedKeywords || []).map((k: string) => <span key={k} className="aa-chip">+{k}</span>)}
                   </div>
-                  <textarea className="aa-receipt-preview" rows={6} readOnly value={receipt.tailored.tailoredResume} />
+                  <textarea className="aa-receipt-preview" rows={6} readOnly value={receiptTailored.tailoredResume} />
                 </div>
               )}
-              {receipt.cover && (
+              {receiptCover && (
                 <div className="aa-receipt-section">
                   <div className="aa-receipt-section-header">
                     <h4 className="aa-receipt-section-title"><Edit3 size={14} />Cover Letter</h4>
                     <div className="aa-receipt-actions">
-                      <button className="aa-btn-sm" onClick={() => copyToClipboard(receipt.cover.coverLetter, 'cover-receipt')}>
+                      <button className="aa-btn-sm" onClick={() => copyToClipboard(receiptCover.coverLetter, 'cover-receipt')}>
                         <Copy size={11} />{copied === 'cover-receipt' ? 'Copied!' : 'Copy'}
                       </button>
-                      <button className="aa-btn-sm" onClick={() => downloadText(receipt.cover.coverLetter, `cover-${job.company.replace(/\s/g,'-')}.txt`)}>
+                      <button className="aa-btn-sm" onClick={() => downloadText(receiptCover.coverLetter, `cover-${job.company.replace(/\s/g,'-')}.txt`)}>
                         <Download size={11} />Download
                       </button>
                     </div>
                   </div>
-                  {receipt.cover.subject && <p className="aa-receipt-subject">Subject: <strong>{receipt.cover.subject}</strong></p>}
-                  <textarea className="aa-receipt-preview" rows={6} readOnly value={receipt.cover.coverLetter} />
+                  {receiptCover.subject && <p className="aa-receipt-subject">Subject: <strong>{receiptCover.subject}</strong></p>}
+                  <textarea className="aa-receipt-preview" rows={6} readOnly value={receiptCover.coverLetter} />
                 </div>
               )}
               <div className="aa-receipt-footer">
@@ -1664,7 +1680,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
                       <div className="aa-job-title">{job.title} {job.isScraped && <span className="aa-scraper-tag" style={{ marginLeft: 6 }}>Live Scraped</span>}</div>
                       <div className="aa-job-company">{job.company}</div>
                     </div>
-                    <div className="aa-match-ring" style={{ '--score-color': scoreColor(job.matchScore) } as any} title="Click to view 5-factor breakdown" onClick={(e) => { e.stopPropagation(); setBreakdownModalJob(job); }}>
+                    <div className="aa-match-ring" style={{ '--score-color': scoreColor(job.matchScore) } as React.CSSProperties} title="Click to view 5-factor breakdown" onClick={(e) => { e.stopPropagation(); setBreakdownModalJob(job); }}>
                       <span className="aa-match-val">{job.matchScore}%</span>
                     </div>
                   </div>

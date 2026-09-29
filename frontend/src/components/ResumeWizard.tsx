@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   ArrowLeft,
   Sparkles,
@@ -18,35 +18,17 @@ import {
   FileText
 } from 'lucide-react';
 import './ResumeWizard.css';
-
-interface WorkExperience {
-  company: string;
-  jobTitle: string;
-  location: string;
-  startDate: string;
-  endDate: string;
-  description: string;
-}
-
-interface Education {
-  university: string;
-  degree: string;
-  gradYear: string;
-  cgpa: string;
-}
-
-interface Course {
-  name: string;
-  platform: string;
-  date: string;
-}
+import type {
+  ExtractedResume, WizardAchievement, WizardCourse as Course, WizardEducation as Education,
+  WizardFormData, WizardLanguage, WizardTimeSlice, WizardWorkExperience as WorkExperience,
+} from '../types/api';
 
 interface ResumeWizardProps {
   templateName: string;
   onBack: () => void;
   onSkip: () => void;
-  onGenerate: (formData: any) => void;
-  initialData?: any;
+  onGenerate: (formData: WizardFormData) => void;
+  initialData?: ExtractedResume | null;
   onUploadResumeClick?: () => void;
 }
 
@@ -93,12 +75,15 @@ export default function ResumeWizard({ templateName, onBack, onSkip, onGenerate,
   const [skillInput, setSkillInput] = useState('');
 
   // Additional rich template sections (Languages, Achievements, Time Breakdown)
-  const [languages, setLanguages] = useState(initialData?.languages || []);
-  const [achievements, setAchievements] = useState(initialData?.achievements || []);
-  const [timeBreakdown, setTimeBreakdown] = useState(initialData?.timeBreakdown || []);
+  const [languages, setLanguages] = useState<WizardLanguage[]>(initialData?.languages || []);
+  const [achievements, setAchievements] = useState<WizardAchievement[]>(initialData?.achievements || []);
+  const [timeBreakdown, setTimeBreakdown] = useState<WizardTimeSlice[]>(initialData?.timeBreakdown || []);
 
-  // Sync state if initialData is updated dynamically
-  useEffect(() => {
+  // Sync state if initialData is updated dynamically (adjusting state during render,
+  // see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  const [syncedInitialData, setSyncedInitialData] = useState(initialData);
+  if (initialData !== syncedInitialData) {
+    setSyncedInitialData(initialData);
     if (initialData) {
       if (initialData.personalInfo) {
         setPersonalInfo({
@@ -127,7 +112,7 @@ export default function ResumeWizard({ templateName, onBack, onSkip, onGenerate,
       if (initialData.achievements) setAchievements(initialData.achievements);
       if (initialData.timeBreakdown) setTimeBreakdown(initialData.timeBreakdown);
     }
-  }, [initialData]);
+  }
 
   // Form errors
   const [errors, setErrors] = useState<Record<string, string>>({});

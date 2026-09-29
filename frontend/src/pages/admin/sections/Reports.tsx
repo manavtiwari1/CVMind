@@ -4,10 +4,9 @@ import type { AdminStats } from '../types';
 
 interface ReportsProps {
   stats: AdminStats;
-  subSection: string;
 }
 
-export default function Reports({ stats, subSection: _subSection }: ReportsProps) {
+export default function Reports({ stats }: ReportsProps) {
   const [loading, setLoading] = useState<string | null>(null);
 
   const triggerExport = (reportType: string, format: string) => {

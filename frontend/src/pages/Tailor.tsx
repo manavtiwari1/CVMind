@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileText, ChevronRight, Check, Copy, Sparkles, BrainCircuit, RefreshCw, Cpu, CheckCircle2, ShieldCheck, FileCheck, Download, ChevronDown, Link } from 'lucide-react';
+import { getErrorMessage } from '../utils/errors';
 import './Tailor.css';
 
 interface TailorProps {
@@ -156,9 +157,9 @@ export default function Tailor({ customApiKey }: TailorProps) {
       } else {
         throw new Error('Completed, but failed to retrieve tailored output.');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setErrorMsg(err.message || 'Connection failed. Make sure the backend server is running.');
+      setErrorMsg(getErrorMessage(err) || 'Connection failed. Make sure the backend server is running.');
     } finally {
       clearInterval(stepInterval);
       setLoading(false);
@@ -237,9 +238,9 @@ export default function Tailor({ customApiKey }: TailorProps) {
         continue;
       }
 
-      const isListItem = /^[•\-\*\s]+/.test(lines[i]) || line.startsWith('-') || line.startsWith('*');
+      const isListItem = /^[•\-*\s]+/.test(lines[i]) || line.startsWith('-') || line.startsWith('*');
       if (isListItem) {
-        const cleanContent = line.replace(/^[•\-\*\s]+/, '').trim();
+        const cleanContent = line.replace(/^[•\-*\s]+/, '').trim();
         if (!inList) {
           html += '<ul class="bullet-list">';
           inList = true;
@@ -373,13 +374,13 @@ export default function Tailor({ customApiKey }: TailorProps) {
         
         const parts = listText.split(/[,;]+/);
         parts.forEach(part => {
-          const cleanPart = part.replace(/[()'"\.*]/g, '').trim();
+          const cleanPart = part.replace(/[()'".*]/g, '').trim();
           if (cleanPart && cleanPart.length > 1 && cleanPart.length < 35 && !/specific|related|skills|begging|e\.g\./i.test(cleanPart)) {
             processed.push(cleanPart);
           }
         });
       } else {
-        const clean = item.replace(/[()'"\.*]/g, '').trim();
+        const clean = item.replace(/[()'".*]/g, '').trim();
         if (clean && clean.length > 1 && clean.length < 35) {
           processed.push(clean);
         }

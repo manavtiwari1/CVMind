@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import React, { useState } from "react";
+import React from "react";
 
 interface BackgroundGradientGlowProps {
   children?: React.ReactNode;
@@ -7,8 +7,6 @@ interface BackgroundGradientGlowProps {
 }
 
 export const Component = ({ children, className }: BackgroundGradientGlowProps) => {
-  const [_count, _setCount] = useState(0);
-
   return (
     <div className={cn("min-h-screen w-full relative", className)}>
       {/* Aurora Dream Corner Whispers */}

@@ -4,6 +4,7 @@ import {
   AlertCircle, Zap, MessageSquare, BookOpen, Target, Upload, X, Link
 } from 'lucide-react';
 import SkeletonLoader from '../components/SkeletonLoader';
+import { getErrorMessage } from '../utils/errors';
 import './Proofreading.css';
 
 const INDUSTRIES = [
@@ -25,6 +26,28 @@ function getChangeMeta(type: string) {
   return CHANGE_TYPE_META[type] || { label: type, color: 'var(--text-secondary)', bg: 'var(--bg-secondary)' };
 }
 
+// /api/ai/proofread (schema in backend/src/services/gemini.js)
+interface ProofreadChange {
+  type: string;
+  original: string;
+  corrected: string;
+  explanation: string;
+}
+
+interface ProofreadResult {
+  correctedText: string;
+  score: number;
+  summary: string;
+  changes: ProofreadChange[];
+  stats: {
+    grammarFixes: number;
+    spellingFixes: number;
+    passiveToActive: number;
+    verbUpgrades: number;
+    toneAlignments: number;
+  };
+}
+
 interface ProofreadingProps {
   customApiKey: string;
 }
@@ -37,7 +60,7 @@ export default function Proofreading({ customApiKey }: ProofreadingProps) {
   const [dragActive, setDragActive] = useState(false);
   const [industry, setIndustry] = useState('General');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<ProofreadResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -135,8 +158,8 @@ export default function Proofreading({ customApiKey }: ProofreadingProps) {
       } else {
         throw new Error('Invalid response format from server.');
       }
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Proofreading failed. Make sure the servers are online.');
+    } catch (err) {
+      setErrorMsg(getErrorMessage(err) || 'Proofreading failed. Make sure the servers are online.');
     } finally {
       setLoading(false);
     }
@@ -439,7 +462,7 @@ export default function Proofreading({ customApiKey }: ProofreadingProps) {
                   </div>
 
                   <div className="changes-list">
-                    {result.changes.map((change: any, idx: number) => {
+                    {result.changes.map((change, idx: number) => {
                       const meta = getChangeMeta(change.type);
                       return (
                         <div key={idx} className="change-item">

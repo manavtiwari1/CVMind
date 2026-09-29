@@ -56,7 +56,7 @@ export default function AdminShell({
     }
     // Reports routing
     if (activeSection.startsWith('reports-')) {
-      return <Reports stats={stats} subSection={activeSection} />;
+      return <Reports stats={stats} />;
     }
     // System health routing
     if (activeSection.startsWith('system-')) {

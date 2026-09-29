@@ -44,6 +44,8 @@ import { ARTICLES } from './data/articles';
 import DigitalSerenityBackground from './components/DigitalSerenityBackground';
 import TawkChat from './components/TawkChat';
 import { applySEO } from './utils/seo';
+import { getErrorMessage } from './utils/errors';
+import type { LoadedWork, ResumeAnalysis } from './types/api';
 import './styles/theme.css';
 import './styles/3d-effects.css';
 import './styles/skeleton.css';
@@ -92,15 +94,22 @@ export default function App() {
   const [customApiKey, setCustomApiKey] = useState<string>(() => {
     return localStorage.getItem('resumetrics_gemini_key') || '';
   });
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisResult, setAnalysisResult] = useState<ResumeAnalysis | null>(null);
   const [resumeText, setResumeText] = useState<string>('');
 
   // Authentication State
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     return localStorage.getItem('cvmind_logged_in') === 'true';
   });
-  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
-  const [loadedWork, setLoadedWork] = useState<any>(null);
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(() => {
+    const pathname = window.location.pathname;
+    if (pathname === '/sign-in' || pathname === '/sign-up' || pathname === '/login') return true;
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('resetToken') && searchParams.get('email')) return true;
+    // AuthModal reads and clears ?authError itself to show the message
+    return Boolean(searchParams.get('authError'));
+  });
+  const [loadedWork, setLoadedWork] = useState<LoadedWork | null>(null);
 
   useEffect(() => {
     localStorage.setItem('cvmind_aa_access', 'true');
@@ -184,23 +193,18 @@ export default function App() {
     const privatePages = ['prep', 'resume-editor', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'proofreading', 'tailor', 'voice-prep', 'portfolio-gen', 'job-finder', 'career-courses', 'elevator-pitch', 'career-roadmap', 'auto-apply', 'career-copilot'];
 
     if (privatePages.includes(currentPage) && !isLoggedIn) {
+      // setCurrentPage also updates browser history, so this redirect has to run in an effect
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentPage('home');
       setShowAuthModal(true);
     }
   }, [currentPage, isLoggedIn]);
 
-  // Auto-detect resetToken or sign-in URL and trigger AuthModal popup
+  // Sign-in URLs open the AuthModal (see showAuthModal's initial state); tidy the URL
   useEffect(() => {
     const pathname = window.location.pathname;
     if (pathname === '/sign-in' || pathname === '/sign-up' || pathname === '/login') {
-      setShowAuthModal(true);
       window.history.replaceState({}, '', '/');
-    }
-    const searchParams = new URLSearchParams(window.location.search);
-    const token = searchParams.get('resetToken');
-    const email = searchParams.get('email');
-    if (token && email) {
-      setShowAuthModal(true);
     }
   }, []);
 
@@ -236,11 +240,11 @@ export default function App() {
         localStorage.setItem('cvmind_user', JSON.stringify(data.user));
         setIsLoggedIn(true);
         setCurrentPage('dashboard');
-      } catch (err: any) {
+      } catch (err) {
         console.error('Google Redirect Auth Error:', err);
         // Surface the failure (e.g. banned/suspended account) in the auth modal
         const params = new URLSearchParams(window.location.search);
-        params.set('authError', err?.message || 'Google sign-in failed. Please try again.');
+        params.set('authError', getErrorMessage(err) || 'Google sign-in failed. Please try again.');
         window.history.replaceState({}, '', window.location.pathname + `?${params.toString()}`);
         setShowAuthModal(true);
       }
@@ -253,11 +257,8 @@ export default function App() {
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
 
-    if (searchParams.get('authError')) {
-      // AuthModal reads and clears the param itself to show the message
-      setShowAuthModal(true);
-      return;
-    }
+    // ?authError already opened the AuthModal via its initial state
+    if (searchParams.get('authError')) return;
 
     const encoded = searchParams.get('oauthUser');
     if (!encoded) return;
@@ -273,6 +274,8 @@ export default function App() {
 
       localStorage.setItem('cvmind_logged_in', 'true');
       localStorage.setItem('cvmind_user', JSON.stringify(user));
+      // One-time login from the OAuth redirect URL; setCurrentPage also updates browser history
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoggedIn(true);
       setCurrentPage('dashboard');
     } catch (err) {
@@ -437,9 +440,10 @@ export default function App() {
             <button onClick={() => setCurrentPage('home')} style={{padding:'10px 24px',borderRadius:'12px',border:'none',background:'#1d1d1f',color:'#fff',fontWeight:600,fontSize:'0.9rem',cursor:'pointer'}}>← Go Home</button>
           </div>
         );
-      case 'portfolio':
+      case 'portfolio': {
         const wId = window.location.pathname.split('/').pop();
         return <Portfolio workId={wId} />;
+      }
       case 'resume-builder':
         return <ResumeBuilderLanding setCurrentPage={setCurrentPage} />;
       case 'resume-editor':
@@ -469,7 +473,7 @@ export default function App() {
         return <AutoApply customApiKey={customApiKey} resumeText={resumeText} setResumeText={setResumeText} />;
       case 'code':
       case 'cvmind-code':
-        return <CVmindCodeLanding setCurrentPage={setCurrentPage} />;
+        return <CVmindCodeLanding />;
       case 'code-arena':
       case 'cvmind-code-arena':
         return <CVmindCode customApiKey={customApiKey} />;

@@ -37,7 +37,9 @@ export default function CVmindCode({ customApiKey = '', initialTab = 'problems' 
       if (searchParams.get('problem')) {
         return 'arena';
       }
-    } catch {}
+    } catch {
+      // fall back to the default tab
+    }
     return initialTab || 'problems';
   });
 
@@ -48,7 +50,9 @@ export default function CVmindCode({ customApiKey = '', initialTab = 'problems' 
         const parsed = JSON.parse(savedCustom);
         return [...CODING_PROBLEMS, ...parsed];
       }
-    } catch {}
+    } catch {
+      // ignore corrupt saved problems
+    }
     return CODING_PROBLEMS;
   });
 
@@ -60,7 +64,9 @@ export default function CVmindCode({ customApiKey = '', initialTab = 'problems' 
         const found = CODING_PROBLEMS.find(p => p.id === probId);
         if (found) return found;
       }
-    } catch {}
+    } catch {
+      // fall back to the first problem
+    }
     return CODING_PROBLEMS[0];
   });
 
@@ -68,7 +74,9 @@ export default function CVmindCode({ customApiKey = '', initialTab = 'problems' 
     try {
       const saved = localStorage.getItem('cvmind_solved_problems');
       if (saved) return JSON.parse(saved);
-    } catch {}
+    } catch {
+      // ignore corrupt solved list
+    }
     return ['two-sum']; // Pre-seed with one solved challenge for realistic baseline stats
   });
 
@@ -93,7 +101,9 @@ export default function CVmindCode({ customApiKey = '', initialTab = 'problems' 
     try {
       const savedCustom = JSON.parse(localStorage.getItem('cvmind_custom_problems') || '[]');
       localStorage.setItem('cvmind_custom_problems', JSON.stringify([newProblem, ...savedCustom]));
-    } catch {}
+    } catch {
+      // the problem still loads; it just isn't persisted
+    }
     setSelectedProblem(newProblem);
     setActiveTab('arena');
   };

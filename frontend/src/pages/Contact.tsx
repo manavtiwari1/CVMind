@@ -87,9 +87,9 @@ export default function Contact() {
               className="info-detail-item" 
               style={{ cursor: 'pointer' }}
               onClick={() => {
-                if ((window as any).Tawk_API) {
-                  (window as any).Tawk_API.showWidget();
-                  (window as any).Tawk_API.maximize();
+                if (window.Tawk_API) {
+                  window.Tawk_API.showWidget();
+                  window.Tawk_API.maximize();
                 }
               }}
             >

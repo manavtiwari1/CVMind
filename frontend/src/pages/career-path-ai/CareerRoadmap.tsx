@@ -3,13 +3,38 @@ import {
   ArrowRight, RefreshCw, GraduationCap, Check, Compass, Flag
 } from 'lucide-react';
 import SkeletonLoader from '../../components/SkeletonLoader';
+import { getErrorMessage } from '../../utils/errors';
+import { parseSavedContent } from '../../utils/savedWork';
+import type { LoadedWork } from '../../types/api';
 import './CareerRoadmap.css';
+
+// AI response (schema in backend/src/services/gemini.js)
+interface RoadmapStep {
+  stepNumber: number;
+  phaseName: string;
+  timeframe: string;
+  focus: string;
+  actions: string[];
+  milestone: string;
+}
+
+interface RoadmapResult {
+  steps: RoadmapStep[];
+}
+
+// Page state saved in a 'career-roadmap' work
+interface SavedRoadmapContent {
+  currentRole?: string;
+  targetRole?: string;
+  years?: string;
+  result?: RoadmapResult | null;
+}
 
 interface CareerRoadmapProps {
   customApiKey: string;
   resumeText: string;
-  loadedWork?: any;
-  setLoadedWork?: (work: any) => void;
+  loadedWork?: LoadedWork | null;
+  setLoadedWork?: (work: LoadedWork | null) => void;
 }
 
 export default function CareerRoadmap({ customApiKey, resumeText, loadedWork, setLoadedWork }: CareerRoadmapProps) {
@@ -18,31 +43,40 @@ export default function CareerRoadmap({ customApiKey, resumeText, loadedWork, se
   const [years, setYears] = useState('2 Years');
   const [useResumeText, setUseResumeText] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<RoadmapResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
 
-  // Load saved work if opened from My Works
-  useEffect(() => {
-    if (loadedWork) {
-      if (loadedWork.deleted) {
-        removeState();
-        return;
-      }
-      if (loadedWork.type === 'career-roadmap') {
-        try {
-          const parsed = JSON.parse(loadedWork.htmlContent);
-          if (parsed) {
-            setCurrentRole(parsed.currentRole || '');
-            setTargetRole(parsed.targetRole || '');
-            setYears(parsed.years || '2 Years');
-            setResult(parsed.result || null);
-          }
-        } catch (e) {
-          console.error('Error parsing loaded career roadmap work:', e);
-        }
+  const clearForm = () => {
+    setResult(null);
+    setCurrentRole('');
+    setTargetRole('');
+    setYears('2 Years');
+  };
+
+  // Load saved work if opened from My Works (adjusting state during render,
+  // see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  const [handledWork, setHandledWork] = useState<LoadedWork | null>(null);
+  if (loadedWork && loadedWork !== handledWork) {
+    setHandledWork(loadedWork);
+    if (loadedWork.deleted) {
+      clearForm();
+    } else if (loadedWork.type === 'career-roadmap') {
+      const saved = parseSavedContent<SavedRoadmapContent>(loadedWork.htmlContent);
+      if (saved) {
+        setCurrentRole(saved.currentRole || '');
+        setTargetRole(saved.targetRole || '');
+        setYears(saved.years || '2 Years');
+        setResult(saved.result || null);
+      } else {
+        console.error('Error parsing loaded career roadmap work');
       }
     }
+  }
+
+  // A deletion notice has been handled; clear it in the parent
+  useEffect(() => {
+    if (loadedWork?.deleted && setLoadedWork) setLoadedWork(null);
   }, [loadedWork, setLoadedWork]);
 
   const handleGenerate = async () => {
@@ -107,9 +141,9 @@ export default function CareerRoadmap({ customApiKey, resumeText, loadedWork, se
       } else {
         throw new Error('Invalid output format from server.');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setErrorMsg(err.message || 'Generation failed. Make sure the servers are online.');
+      setErrorMsg(getErrorMessage(err) || 'Generation failed. Make sure the servers are online.');
     } finally {
       setLoading(false);
     }
@@ -118,10 +152,7 @@ export default function CareerRoadmap({ customApiKey, resumeText, loadedWork, se
 
 
   function removeState() {
-    setResult(null);
-    setCurrentRole('');
-    setTargetRole('');
-    setYears('2 Years');
+    clearForm();
     if (setLoadedWork) {
       setLoadedWork(null);
     }
@@ -263,7 +294,7 @@ export default function CareerRoadmap({ customApiKey, resumeText, loadedWork, se
             {/* Vertical Timeline */}
             <div className="vertical-timeline-container" style={{ position: 'relative', paddingLeft: '2.5rem', borderLeft: '2px solid rgba(41, 151, 255, 0.2)' }}>
               
-              {result.steps && result.steps.map((step: any, idx: number) => (
+              {result.steps && result.steps.map((step, idx: number) => (
                 <div key={idx} className="timeline-block animate-fade-in" style={{ position: 'relative', marginBottom: '2.5rem' }}>
                   
                   {/* Timeline Badge/Dot */}
