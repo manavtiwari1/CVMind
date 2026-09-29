@@ -15,6 +15,7 @@ import {
   type ConfettiRef,
 } from './ui/sign-up';
 import { useRef } from 'react';
+import { getErrorMessage } from '../utils/errors';
 
 /* ─── Types ─────────────────────────────────────────────────────── */
 
@@ -93,32 +94,40 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   const currentStepName = steps[step];
   const isLastStep = step === steps.length - 1;
 
-  /* Reset on open ──────────────────────────────────────────────── */
+  /* Reset on open (adjusting state during render, see
+     https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes) ── */
+  const [wasOpen, setWasOpen] = useState(false);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
+    if (isOpen) {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('resetToken');
+      const urlEmail = params.get('email');
+      if (token && urlEmail) {
+        setMode('resetPassword');
+        setResetToken(token);
+        setEmail(urlEmail);
+      } else {
+        setMode('signIn');
+        setResetToken('');
+        setEmail('');
+      }
+      setStep(0);
+      setName(''); setPassword(''); setConfirm('');
+      setShowPw(false); setShowConfirm(false);
+      setCaptcha(null); setCaptchaAnswer('');
+      setSuccessMsg(null);
+      setLoading(false); setDone(false);
+      // Surface OAuth redirect errors (GitHub/LinkedIn) passed back via query param
+      setErrorMsg(params.get('authError'));
+    }
+  }
+
+  /* Remove the OAuth error from the URL once it has been shown ─── */
   useEffect(() => {
     if (!isOpen) return;
     const params = new URLSearchParams(window.location.search);
-    const token = params.get('resetToken');
-    const urlEmail = params.get('email');
-    if (token && urlEmail) {
-      setMode('resetPassword');
-      setResetToken(token);
-      setEmail(urlEmail);
-    } else {
-      setMode('signIn');
-      setResetToken('');
-      setEmail('');
-    }
-    setStep(0);
-    setName(''); setPassword(''); setConfirm('');
-    setShowPw(false); setShowConfirm(false);
-    setCaptcha(null); setCaptchaAnswer('');
-    setErrorMsg(null); setSuccessMsg(null);
-    setLoading(false); setDone(false);
-
-    // Surface OAuth redirect errors (GitHub/LinkedIn) passed back via query param
-    const authError = params.get('authError');
-    if (authError) {
-      setErrorMsg(authError);
+    if (params.get('authError')) {
       params.delete('authError');
       const qs = params.toString();
       window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''));
@@ -202,7 +211,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Request failed.');
         setSuccessMsg(data.message || 'A reset link has been sent to your email.');
-      } catch (err: any) { setErrorMsg(err.message || 'Connection failed.'); }
+      } catch (err) { setErrorMsg(getErrorMessage(err) || 'Connection failed.'); }
       finally { setLoading(false); }
       return;
     }
@@ -220,7 +229,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         window.history.pushState({}, '', window.location.pathname);
         setSuccessMsg(data.message || 'Password reset! You can now sign in.');
         setTimeout(() => switchMode('signIn'), 2000);
-      } catch (err: any) { setErrorMsg(err.message || 'Connection failed.'); }
+      } catch (err) { setErrorMsg(getErrorMessage(err) || 'Connection failed.'); }
       finally { setLoading(false); }
       return;
     }
@@ -239,7 +248,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         localStorage.setItem('cvmind_logged_in', 'true');
         localStorage.setItem('cvmind_user', JSON.stringify(data.user));
         fireSuccess();
-      } catch (err: any) { setErrorMsg(err.message || 'Connection failed.'); }
+      } catch (err) { setErrorMsg(getErrorMessage(err) || 'Connection failed.'); }
       finally { setLoading(false); }
       return;
     }
@@ -256,8 +265,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       localStorage.setItem('cvmind_logged_in', 'true');
       localStorage.setItem('cvmind_user', JSON.stringify(data.user));
       fireSuccess();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Connection failed.');
+    } catch (err) {
+      setErrorMsg(getErrorMessage(err) || 'Connection failed.');
       loadCaptcha(); // challenge is single-use — get a fresh one for the retry
     }
     finally { setLoading(false); }

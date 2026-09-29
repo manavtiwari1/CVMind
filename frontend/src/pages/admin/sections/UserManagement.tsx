@@ -17,6 +17,38 @@ interface UserActionsApi {
   removeUser: (user: AdminUser) => void;
 }
 
+
+// ── Requests (no React state), shared by mount effects and refresh actions ──
+
+async function requestUsers(backend: string, secret: string): Promise<AdminUser[]> {
+  const res = await fetch(`${backend}/api/admin/users`, { headers: { 'x-admin-secret': secret } });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.error || 'Failed to load users.');
+  return data.data || [];
+}
+
+interface AccessData {
+  emails?: WhitelistEntry[];
+  autoApplyEmails?: string[];
+  careerCopilotEmails?: string[];
+}
+
+async function requestAccessData(backend: string, secret: string): Promise<AccessData> {
+  const headers = { 'x-admin-secret': secret };
+  const [wlRes, aaRes, ccRes] = await Promise.all([
+    fetch(`${backend}/api/admin/whitelist`, { headers }),
+    fetch(`${backend}/api/admin/auto-apply-access`, { headers }),
+    fetch(`${backend}/api/admin/career-copilot-access`, { headers }),
+  ]);
+  const [wlData, aaData, ccData] = await Promise.all([wlRes.json(), aaRes.json(), ccRes.json()]);
+  const toEmails = (list: { email: string }[] = []) => list.map((x) => x.email);
+  return {
+    emails: wlData.emails,
+    autoApplyEmails: aaData.success ? toEmails(aaData.data) : undefined,
+    careerCopilotEmails: ccData.success ? toEmails(ccData.data) : undefined,
+  };
+}
+
 function useAdminUsers(secret: string, BACKEND: string) {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,11 +57,9 @@ function useAdminUsers(secret: string, BACKEND: string) {
 
   const fetchUsers = useCallback(async () => {
     try {
+      const list = await requestUsers(BACKEND, secret);
       setError('');
-      const res = await fetch(`${BACKEND}/api/admin/users`, { headers: { 'x-admin-secret': secret } });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to load users.');
-      setUsers(data.data || []);
+      setUsers(list);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load users.');
     } finally {
@@ -37,7 +67,15 @@ function useAdminUsers(secret: string, BACKEND: string) {
     }
   }, [BACKEND, secret]);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  // Initial load; state is only set once the request settles (and not after unmount)
+  useEffect(() => {
+    let cancelled = false;
+    requestUsers(BACKEND, secret)
+      .then((list) => { if (!cancelled) { setError(''); setUsers(list); } })
+      .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load users.'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [BACKEND, secret]);
 
   const setStatus = async (user: AdminUser, status: UserStatus) => {
     let reason = '';
@@ -316,27 +354,37 @@ function AccessManager({ secret, BACKEND }: { secret: string; BACKEND: string })
   const [autoApplyEmails, setAutoApplyEmails] = useState<Set<string>>(new Set());
   const [careerCopilotEmails, setCareerCopilotEmails] = useState<Set<string>>(new Set());
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
+  const applyAccessData = (data: AccessData) => {
+    if (data.emails) setEmails(data.emails);
+    if (data.autoApplyEmails) setAutoApplyEmails(new Set(data.autoApplyEmails));
+    if (data.careerCopilotEmails) setCareerCopilotEmails(new Set(data.careerCopilotEmails));
+  };
+
+  const fetchAll = async () => {
     try {
-      const [wlRes, aaRes, ccRes] = await Promise.all([
-        fetch(`${BACKEND}/api/admin/whitelist`, { headers: { 'x-admin-secret': secret } }),
-        fetch(`${BACKEND}/api/admin/auto-apply-access`, { headers: { 'x-admin-secret': secret } }),
-        fetch(`${BACKEND}/api/admin/career-copilot-access`, { headers: { 'x-admin-secret': secret } }),
-      ]);
-      const [wlData, aaData, ccData] = await Promise.all([wlRes.json(), aaRes.json(), ccRes.json()]);
-      if (wlData.emails) setEmails(wlData.emails);
-      if (aaData.success) setAutoApplyEmails(new Set((aaData.data || []).map((x: { email: string }) => x.email)));
-      if (ccData.success) setCareerCopilotEmails(new Set((ccData.data || []).map((x: { email: string }) => x.email)));
+      applyAccessData(await requestAccessData(BACKEND, secret));
     } catch { setError('Failed to load access data.'); }
     finally { setLoading(false); }
-  }, [BACKEND, secret]);
+  };
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  // Initial load; state is only set once the request settles (and not after unmount)
+  useEffect(() => {
+    let cancelled = false;
+    requestAccessData(BACKEND, secret)
+      .then((data) => {
+        if (cancelled) return;
+        if (data.emails) setEmails(data.emails);
+        if (data.autoApplyEmails) setAutoApplyEmails(new Set(data.autoApplyEmails));
+        if (data.careerCopilotEmails) setCareerCopilotEmails(new Set(data.careerCopilotEmails));
+      })
+      .catch(() => { if (!cancelled) setError('Failed to load access data.'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [BACKEND, secret]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -379,7 +427,9 @@ function AccessManager({ secret, BACKEND }: { secret: string; BACKEND: string })
         await fetch(`${BACKEND}/api/admin/auto-apply-access`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret }, body: JSON.stringify({ email }) });
         setAutoApplyEmails(prev => new Set([...prev, email]));
       }
-    } catch { }
+    } catch (e) {
+      console.error('Failed to update Auto Apply access:', e);
+    }
   };
 
   const toggleCareerCopilot = async (email: string, has: boolean) => {
@@ -391,7 +441,9 @@ function AccessManager({ secret, BACKEND }: { secret: string; BACKEND: string })
         await fetch(`${BACKEND}/api/admin/career-copilot-access`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret }, body: JSON.stringify({ email }) });
         setCareerCopilotEmails(prev => new Set([...prev, email]));
       }
-    } catch { }
+    } catch (e) {
+      console.error('Failed to update Career Copilot access:', e);
+    }
   };
 
   return (

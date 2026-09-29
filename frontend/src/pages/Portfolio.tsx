@@ -3,6 +3,8 @@ import {
   AlertCircle, Download, Printer, Globe, ArrowLeft, ArrowUpRight
 } from 'lucide-react';
 import SkeletonLoader from '../components/SkeletonLoader';
+import { getErrorMessage } from '../utils/errors';
+import type { SavedWork } from '../types/api';
 import './Portfolio.css';
 
 interface PortfolioProps {
@@ -10,17 +12,17 @@ interface PortfolioProps {
 }
 
 export default function Portfolio({ workId }: PortfolioProps) {
-  const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [workData, setWorkData] = useState<any>(null);
+  const [fetchLoading, setLoading] = useState(true);
+  const [fetchError, setErrorMsg] = useState<string | null>(null);
+  const [workData, setWorkData] = useState<SavedWork | null>(null);
   const [themeName, setThemeName] = useState('classic');
 
+  // Without a work id in the URL there is nothing to load
+  const loading = !!workId && fetchLoading;
+  const errorMsg = workId ? fetchError : 'No resume portfolio link detected. Please check the URL.';
+
   useEffect(() => {
-    if (!workId) {
-      setErrorMsg('No resume portfolio link detected. Please check the URL.');
-      setLoading(false);
-      return;
-    }
+    if (!workId) return;
 
     const fetchPortfolio = async () => {
       setLoading(true);
@@ -41,9 +43,9 @@ export default function Portfolio({ workId }: PortfolioProps) {
         } else {
           throw new Error('Portfolio found, but content is corrupt.');
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error('Fetch portfolio error:', err);
-        setErrorMsg(err.message || 'Error connecting to servers.');
+        setErrorMsg(getErrorMessage(err) || 'Error connecting to servers.');
       } finally {
         setLoading(false);
       }

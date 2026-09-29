@@ -6,6 +6,8 @@ import {
   FileText, Linkedin as LinkedinIcon, AlertCircle, Play, LayoutDashboard,
   GraduationCap, Activity, Rocket, Bot, Search, X, ExternalLink, Youtube
 } from 'lucide-react';
+import { getErrorMessage } from '../utils/errors';
+import type { InterviewFeedback, JobMatch, ParsedProfile, ResumeAnalysis } from '../types/api';
 import './CareerCopilot.css';
 import { authFetch } from '../lib/authFetch';
 
@@ -17,7 +19,20 @@ type Tab = 'home' | 'resume' | 'jobs' | 'learn' | 'interview' | 'analytics';
 
 interface InterviewSession {
   type: string; questions: string[]; idx: number;
-  answers: string[]; feedbacks: any[]; done: boolean;
+  answers: string[]; feedbacks: (InterviewFeedback | null)[]; done: boolean;
+}
+
+type CopilotProfile = ParsedProfile & { careerGoal?: string; careerHealthScore?: number };
+
+interface DailyBriefing {
+  date: string; newJobs: number; resumeTip: string;
+  skillAlert: string; networkingAction: string; interviewTip: string;
+}
+
+// Jobs the user opened on an external portal (kept in localStorage)
+interface TrackedApplication {
+  title: string; company: string; location: string;
+  portal: 'linkedin' | 'naukri' | 'indeed'; appliedAt: string;
 }
 
 const AGENTS = [
@@ -109,19 +124,19 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
   const [resumeText, setResumeText] = useState(initialResume);
   const [goal, setGoal] = useState('');
   const [prefs, setPrefs] = useState({ salary: '', location: '', remote: 'Hybrid', industry: 'All' });
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<CopilotProfile | null>(null);
   const [healthScore, setHealthScore] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState('');
   const [error, setError] = useState('');
-  const [jobs, setJobs] = useState<any[]>([]);
-  const [dailyBriefing, setDailyBriefing] = useState<any>(null);
+  const [jobs, setJobs] = useState<JobMatch[]>([]);
+  const [dailyBriefing, setDailyBriefing] = useState<DailyBriefing | null>(null);
   const [agentActive, setAgentActive] = useState('');
   const [agentPanel, setAgentPanel] = useState<string | null>(null);
   const [activeFeature, setActiveFeature] = useState(0);
 
   // Resume analysis
-  const [resumeAnalysis, setResumeAnalysis] = useState<any>(null);
+  const [resumeAnalysis, setResumeAnalysis] = useState<ResumeAnalysis | null>(null);
   const [resumeLoading, setResumeLoading] = useState(false);
   const resumeAnalyzed = useRef(false);
 
@@ -129,7 +144,7 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
   const [aiFixLoading, setAiFixLoading] = useState(false);
   const [aiFixedResume, setAiFixedResume] = useState<string | null>(null);
   const [showResumeEditor, setShowResumeEditor] = useState(false);
-  const [editableProfile, setEditableProfile] = useState<any>(null);
+  const [editableProfile, setEditableProfile] = useState<CopilotProfile | null>(null);
 
   // Interview
   const [interviewSession, setInterviewSession] = useState<InterviewSession | null>(null);
@@ -138,25 +153,9 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Analytics / Applications tracking
-  const [applications, setApplications] = useState<any[]>(() => {
+  const [applications, setApplications] = useState<TrackedApplication[]>(() => {
     try { return JSON.parse(localStorage.getItem('cvmind_cc_apps') || '[]'); } catch { return []; }
   });
-
-  useEffect(() => {
-    if (view === 'dashboard' && healthScore === 0) {
-      setTimeout(() => setHealthScore(profile?.careerHealthScore || 72), 300);
-    }
-    if (view === 'dashboard' && !resumeAnalyzed.current && (resumeFile || resumeText)) {
-      resumeAnalyzed.current = true;
-      analyzeResume();
-    }
-  }, [view]);
-
-  useEffect(() => {
-    if (tab === 'resume' && !resumeAnalysis && !resumeLoading && (resumeFile || resumeText)) {
-      analyzeResume();
-    }
-  }, [tab]);
 
   const analyzeResume = async () => {
     if (resumeLoading) return;
@@ -171,7 +170,27 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
       const r = await fetch(`${API}/api/analyze`, { method: 'POST', body: fd, headers });
       const d = await r.json();
       if (d.success && d.data) setResumeAnalysis(d.data);
-    } catch { } finally { setResumeLoading(false); }
+    } catch (e) {
+      console.error('Resume analysis failed:', e);
+    } finally { setResumeLoading(false); }
+  };
+
+  useEffect(() => {
+    if (view === 'dashboard' && healthScore === 0) {
+      setTimeout(() => setHealthScore(profile?.careerHealthScore || 72), 300);
+    }
+    if (view === 'dashboard' && !resumeAnalyzed.current && (resumeFile || resumeText)) {
+      resumeAnalyzed.current = true;
+      analyzeResume();
+    }
+  }, [view]);
+
+  // Opening the Resume tab starts the analysis if it has not run yet
+  const openTab = (next: Tab) => {
+    setTab(next);
+    if (next === 'resume' && !resumeAnalysis && !resumeLoading && (resumeFile || resumeText)) {
+      analyzeResume();
+    }
   };
 
   const handleFileUpload = async (file: File) => {
@@ -182,7 +201,9 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
       const r = await fetch(`${API}/api/analyze`, { method: 'POST', body: fd, headers: customApiKey ? { 'x-gemini-key': customApiKey } : {} });
       const d = await r.json();
       if (d.resumeText) { setResumeText(d.resumeText); if (setGlobalResume) setGlobalResume(d.resumeText); }
-    } catch { } finally { setLoading(false); setLoadingMsg(''); }
+    } catch (e) {
+      console.error('Resume text extraction failed:', e);
+    } finally { setLoading(false); setLoadingMsg(''); }
   };
 
   const buildProfile = async () => {
@@ -209,7 +230,7 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
       if (!r.ok) throw new Error(d.error);
       setProfile({ ...d.data, careerGoal: goal, careerHealthScore: 72 });
       setStep(3);
-    } catch (e: any) { setError(e.message || 'Failed to build profile.'); }
+    } catch (e) { setError(getErrorMessage(e) || 'Failed to build profile.'); }
     finally { setLoading(false); }
   };
 
@@ -235,7 +256,7 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
     finally { setLoading(false); }
   };
 
-  const applyToJob = (job: any, portal: 'linkedin' | 'naukri' | 'indeed') => {
+  const applyToJob = (job: JobMatch, portal: 'linkedin' | 'naukri' | 'indeed') => {
     const q = encodeURIComponent(`${job.title} ${job.company}`);
     const loc = encodeURIComponent(job.location || 'India');
     const slug = job.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -263,7 +284,7 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
     if (!interviewSession || !interviewInput.trim()) return;
     setInterviewEvalLoading(true);
     const currentQ = interviewSession.questions[interviewSession.idx];
-    let feedback: any = null;
+    let feedback: InterviewFeedback | null = null;
     try {
       const r = await fetch(`${API}/api/prep/evaluate`, {
         method: 'POST',
@@ -272,7 +293,9 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
       });
       const d = await r.json();
       feedback = d.success ? d.data : null;
-    } catch { }
+    } catch {
+      // No feedback for this answer; the session still moves on
+    }
     const newAnswers = [...interviewSession.answers, interviewInput];
     const newFeedbacks = [...interviewSession.feedbacks, feedback];
     const nextIdx = interviewSession.idx + 1;
@@ -285,10 +308,12 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
 
   const avgInterviewScore = () => {
     if (!interviewSession?.feedbacks.length) return 0;
-    const valid = interviewSession.feedbacks.filter(Boolean);
+    const valid = interviewSession.feedbacks.filter((f): f is InterviewFeedback => f !== null);
     if (!valid.length) return 0;
     return Math.round(valid.reduce((s, f) => s + (f.score || 0), 0) / valid.length * 10);
   };
+
+  const lastFeedback = interviewSession ? interviewSession.feedbacks[interviewSession.idx - 1] : null;
 
   const getSkillGaps = () => {
     if (resumeAnalysis?.atsKeywords?.missing?.length) {
@@ -320,7 +345,7 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       setAiFixedResume(d.data.optimizedResume);
-    } catch (e: any) { setError(e.message || 'AI fix failed. Try again.'); }
+    } catch (e) { setError(getErrorMessage(e) || 'AI fix failed. Try again.'); }
     finally { setAiFixLoading(false); }
   };
 
@@ -345,7 +370,7 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
     URL.revokeObjectURL(url);
   };
 
-  const buildResumeTextFromProfile = (p: any): string => {
+  const buildResumeTextFromProfile = (p: CopilotProfile): string => {
     const lines: string[] = [];
     if (p.name) lines.push(p.name);
     const contact = [p.email, p.phone, p.location].filter(Boolean).join(' | ');
@@ -358,7 +383,7 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
     if (allSkills.length) { lines.push('SKILLS'); lines.push(allSkills.join(', ')); lines.push(''); }
     if (p.experience?.length) {
       lines.push('EXPERIENCE');
-      p.experience.forEach((e: any) => {
+      p.experience.forEach((e) => {
         lines.push(`${e.title} at ${e.company} | ${e.duration}`);
         if (e.description) lines.push(`• ${e.description}`);
         lines.push('');
@@ -366,7 +391,7 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
     }
     if (p.education?.length) {
       lines.push('EDUCATION');
-      p.education.forEach((e: any) => { lines.push(`${e.degree} | ${e.institution} | ${e.year}`); });
+      p.education.forEach((e) => { lines.push(`${e.degree} | ${e.institution} | ${e.year}`); });
       lines.push('');
     }
     if (p.certifications?.length) { lines.push('CERTIFICATIONS'); lines.push(p.certifications.join(', ')); }
@@ -424,7 +449,7 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
         </div>
         <div className="cc-hero-agents">
           {AGENTS.slice(0, 6).map((a, i) => (
-            <div key={i} className="cc-agent-pill" style={{ '--ag-color': a.color } as any}>
+            <div key={i} className="cc-agent-pill" style={{ '--ag-color': a.color } as React.CSSProperties}>
               <span style={{ color: a.color }}>{a.icon}</span>{a.name}
             </div>
           ))}
@@ -449,7 +474,7 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
             <h2 className="cc-equipped-title">Fully equipped for<br/>your career</h2>
             <div className="cc-accordion">
               {COPILOT_FEATURES.map((f, i) => (
-                <div key={i} className={`cc-acc-item ${activeFeature === i ? 'open' : ''}`} onClick={() => setActiveFeature(i)} style={{ '--acc-c': f.color } as any}>
+                <div key={i} className={`cc-acc-item ${activeFeature === i ? 'open' : ''}`} onClick={() => setActiveFeature(i)} style={{ '--acc-c': f.color } as React.CSSProperties}>
                   <div className="cc-acc-header">
                     <span className="cc-acc-icon" style={{ color: f.color }}>{f.icon}</span>
                     <span className="cc-acc-title">{f.title}</span>
@@ -731,13 +756,13 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
                 <div className="cc-modal-question">{interviewSession.questions[interviewSession.idx]}</div>
 
                 {/* Show feedback from previous answer if exists */}
-                {interviewSession.feedbacks.length > 0 && interviewSession.feedbacks[interviewSession.idx - 1] && (
+                {lastFeedback && (
                   <div className="cc-answer-feedback">
-                    <div className="cc-feedback-score">Score: <strong>{interviewSession.feedbacks[interviewSession.idx - 1].score}/10</strong></div>
-                    <div className="cc-feedback-strengths"><CheckCircle2 size={13} color="#30d158" />{interviewSession.feedbacks[interviewSession.idx - 1].strengths}</div>
-                    <div className="cc-feedback-improve"><AlertCircle size={13} color="#ff9f0a" />{interviewSession.feedbacks[interviewSession.idx - 1].improvements}</div>
-                    {interviewSession.feedbacks[interviewSession.idx - 1].refinedAnswer && (
-                      <details className="cc-refined-answer"><summary>See refined answer</summary><p>{interviewSession.feedbacks[interviewSession.idx - 1].refinedAnswer}</p></details>
+                    <div className="cc-feedback-score">Score: <strong>{lastFeedback.score}/10</strong></div>
+                    <div className="cc-feedback-strengths"><CheckCircle2 size={13} color="#30d158" />{lastFeedback.strengths}</div>
+                    <div className="cc-feedback-improve"><AlertCircle size={13} color="#ff9f0a" />{lastFeedback.improvements}</div>
+                    {lastFeedback.refinedAnswer && (
+                      <details className="cc-refined-answer"><summary>See refined answer</summary><p>{lastFeedback.refinedAnswer}</p></details>
                     )}
                   </div>
                 )}
@@ -794,7 +819,7 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
       </div>
 
       <div className="cc-tabs">
-        {tabs.map(t => <button key={t.id} className={`cc-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.icon}{t.label}</button>)}
+        {tabs.map(t => <button key={t.id} className={`cc-tab ${tab === t.id ? 'active' : ''}`} onClick={() => openTab(t.id)}>{t.icon}{t.label}</button>)}
       </div>
 
       <div className="cc-dash-body">
@@ -847,11 +872,11 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
                       setAgentPanel(agentPanel === a.name ? null : a.name);
                     } else {
                       setAgentPanel(null);
-                      if (tabMap[a.name]) setTab(tabMap[a.name]);
+                      if (tabMap[a.name]) openTab(tabMap[a.name]);
                     }
                   };
                   return (
-                    <button key={i} className={`cc-agent-status-card ${agentActive === a.name ? 'active' : ''}`} onClick={handleClick} style={{ '--ag-c': a.color } as any} title={a.desc}>
+                    <button key={i} className={`cc-agent-status-card ${agentActive === a.name ? 'active' : ''}`} onClick={handleClick} style={{ '--ag-c': a.color } as React.CSSProperties} title={a.desc}>
                       <div style={{ color: a.color }}>{a.icon}</div>
                       <span>{a.name.split(' ')[0]}</span>
                       <div className="cc-agent-pulse" style={{ background: a.color }} />
@@ -978,7 +1003,7 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
             </div>
             <div className="cc-quick-jobs">
               <div className="cc-section-label">Top Job Matches Today</div>
-              {jobs.slice(0, 4).map((j: any, i) => (
+              {jobs.slice(0, 4).map((j, i) => (
                 <div key={i} className="cc-job-row">
                   <div className="cc-job-score" style={{ color: j.matchScore >= 75 ? '#30d158' : '#ff9f0a' }}>{j.matchScore}%</div>
                   <div className="cc-job-info"><div className="cc-job-title">{j.title}</div><div className="cc-job-co">{j.company} · {j.location} · {j.salary}</div></div>
@@ -1007,7 +1032,7 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
               ))}
             </div>
 
-            {resumeAnalysis?.atsKeywords?.missing?.length > 0 && (
+            {resumeAnalysis && (resumeAnalysis.atsKeywords?.missing?.length ?? 0) > 0 && (
               <div className="cc-missing-keywords">
                 <div className="cc-section-label">Missing Keywords</div>
                 <div className="cc-kw-chips">
@@ -1025,10 +1050,10 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
               ))}
             </div>
 
-            {resumeAnalysis?.contentAndImpact?.suggestions?.length > 0 && (
+            {resumeAnalysis && (resumeAnalysis.contentAndImpact?.suggestions?.length ?? 0) > 0 && (
               <div className="cc-rewrites">
                 <div className="cc-section-label">AI Bullet Rewrites</div>
-                {resumeAnalysis.contentAndImpact.suggestions.map((s: any, i: number) => (
+                {resumeAnalysis.contentAndImpact.suggestions.map((s, i: number) => (
                   <div key={i} className="cc-rewrite-card">
                     <div className="cc-rewrite-before"><span>Before</span><p>{s.original}</p></div>
                     <ArrowRight size={14} color="#8e8e93" className="cc-rewrite-arrow" />
@@ -1113,15 +1138,15 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
                   <div className="cc-re-section"><div className="cc-re-section-title">Experience
                     <button className="cc-re-add-btn" onClick={() => setEditableProfile({ ...editableProfile, experience: [...(editableProfile.experience || []), { title: '', company: '', duration: '', description: '' }] })}>+ Add</button>
                   </div>
-                    {(editableProfile.experience || []).map((exp: any, i: number) => (
+                    {(editableProfile.experience || []).map((exp, i: number) => (
                       <div key={i} className="cc-re-entry">
                         <div className="cc-re-grid2">
-                          <div className="cc-re-field"><label>Job Title</label><input value={exp.title || ''} onChange={e => { const ex = [...editableProfile.experience]; ex[i] = { ...ex[i], title: e.target.value }; setEditableProfile({ ...editableProfile, experience: ex }); }} placeholder="Software Engineer" /></div>
-                          <div className="cc-re-field"><label>Company</label><input value={exp.company || ''} onChange={e => { const ex = [...editableProfile.experience]; ex[i] = { ...ex[i], company: e.target.value }; setEditableProfile({ ...editableProfile, experience: ex }); }} placeholder="Acme Corp" /></div>
-                          <div className="cc-re-field"><label>Duration</label><input value={exp.duration || ''} onChange={e => { const ex = [...editableProfile.experience]; ex[i] = { ...ex[i], duration: e.target.value }; setEditableProfile({ ...editableProfile, experience: ex }); }} placeholder="Jan 2022 – Present" /></div>
+                          <div className="cc-re-field"><label>Job Title</label><input value={exp.title || ''} onChange={e => { const ex = [...(editableProfile.experience || [])]; ex[i] = { ...ex[i], title: e.target.value }; setEditableProfile({ ...editableProfile, experience: ex }); }} placeholder="Software Engineer" /></div>
+                          <div className="cc-re-field"><label>Company</label><input value={exp.company || ''} onChange={e => { const ex = [...(editableProfile.experience || [])]; ex[i] = { ...ex[i], company: e.target.value }; setEditableProfile({ ...editableProfile, experience: ex }); }} placeholder="Acme Corp" /></div>
+                          <div className="cc-re-field"><label>Duration</label><input value={exp.duration || ''} onChange={e => { const ex = [...(editableProfile.experience || [])]; ex[i] = { ...ex[i], duration: e.target.value }; setEditableProfile({ ...editableProfile, experience: ex }); }} placeholder="Jan 2022 – Present" /></div>
                         </div>
-                        <div className="cc-re-field"><label>Description</label><textarea className="cc-re-textarea" rows={2} value={exp.description || ''} onChange={e => { const ex = [...editableProfile.experience]; ex[i] = { ...ex[i], description: e.target.value }; setEditableProfile({ ...editableProfile, experience: ex }); }} placeholder="Bullet points describing your role and impact…" /></div>
-                        <button className="cc-re-del-btn" onClick={() => { const ex = editableProfile.experience.filter((_: any, j: number) => j !== i); setEditableProfile({ ...editableProfile, experience: ex }); }}>Remove</button>
+                        <div className="cc-re-field"><label>Description</label><textarea className="cc-re-textarea" rows={2} value={exp.description || ''} onChange={e => { const ex = [...(editableProfile.experience || [])]; ex[i] = { ...ex[i], description: e.target.value }; setEditableProfile({ ...editableProfile, experience: ex }); }} placeholder="Bullet points describing your role and impact…" /></div>
+                        <button className="cc-re-del-btn" onClick={() => { const ex = (editableProfile.experience || []).filter((_, j: number) => j !== i); setEditableProfile({ ...editableProfile, experience: ex }); }}>Remove</button>
                       </div>
                     ))}
                   </div>
@@ -1129,14 +1154,14 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
                   <div className="cc-re-section"><div className="cc-re-section-title">Education
                     <button className="cc-re-add-btn" onClick={() => setEditableProfile({ ...editableProfile, education: [...(editableProfile.education || []), { degree: '', institution: '', year: '' }] })}>+ Add</button>
                   </div>
-                    {(editableProfile.education || []).map((edu: any, i: number) => (
+                    {(editableProfile.education || []).map((edu, i: number) => (
                       <div key={i} className="cc-re-entry">
                         <div className="cc-re-grid2">
-                          <div className="cc-re-field"><label>Degree</label><input value={edu.degree || ''} onChange={e => { const ed = [...editableProfile.education]; ed[i] = { ...ed[i], degree: e.target.value }; setEditableProfile({ ...editableProfile, education: ed }); }} placeholder="B.Tech Computer Science" /></div>
-                          <div className="cc-re-field"><label>Institution</label><input value={edu.institution || ''} onChange={e => { const ed = [...editableProfile.education]; ed[i] = { ...ed[i], institution: e.target.value }; setEditableProfile({ ...editableProfile, education: ed }); }} placeholder="IIT Delhi" /></div>
-                          <div className="cc-re-field"><label>Year</label><input value={edu.year || ''} onChange={e => { const ed = [...editableProfile.education]; ed[i] = { ...ed[i], year: e.target.value }; setEditableProfile({ ...editableProfile, education: ed }); }} placeholder="2023" /></div>
+                          <div className="cc-re-field"><label>Degree</label><input value={edu.degree || ''} onChange={e => { const ed = [...(editableProfile.education || [])]; ed[i] = { ...ed[i], degree: e.target.value }; setEditableProfile({ ...editableProfile, education: ed }); }} placeholder="B.Tech Computer Science" /></div>
+                          <div className="cc-re-field"><label>Institution</label><input value={edu.institution || ''} onChange={e => { const ed = [...(editableProfile.education || [])]; ed[i] = { ...ed[i], institution: e.target.value }; setEditableProfile({ ...editableProfile, education: ed }); }} placeholder="IIT Delhi" /></div>
+                          <div className="cc-re-field"><label>Year</label><input value={edu.year || ''} onChange={e => { const ed = [...(editableProfile.education || [])]; ed[i] = { ...ed[i], year: e.target.value }; setEditableProfile({ ...editableProfile, education: ed }); }} placeholder="2023" /></div>
                         </div>
-                        <button className="cc-re-del-btn" onClick={() => { const ed = editableProfile.education.filter((_: any, j: number) => j !== i); setEditableProfile({ ...editableProfile, education: ed }); }}>Remove</button>
+                        <button className="cc-re-del-btn" onClick={() => { const ed = (editableProfile.education || []).filter((_, j: number) => j !== i); setEditableProfile({ ...editableProfile, education: ed }); }}>Remove</button>
                       </div>
                     ))}
                   </div>
@@ -1150,7 +1175,7 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
         {tab === 'jobs' && (
           <div className="cc-module">
             <div className="cc-module-header"><Briefcase size={20} color="#30d158" /><h3>Job Center</h3><span className="cc-badge">{jobs.length} matches</span></div>
-            {jobs.map((j: any, i) => (
+            {jobs.map((j, i) => (
               <div key={i} className="cc-job-card">
                 <div className="cc-job-card-score" style={{ background: j.matchScore >= 75 ? '#30d15820' : '#ff9f0a20', color: j.matchScore >= 75 ? '#30d158' : '#ff9f0a' }}>{j.matchScore}%</div>
                 <div className="cc-job-card-body">
@@ -1231,7 +1256,7 @@ export default function CareerCopilot({ customApiKey, resumeText: initialResume 
               { type: 'Behavioral (STAR)', icon: <Star size={16} />, color: '#ff9f0a', desc: 'STAR method practice with AI feedback on each answer' },
               { type: 'Voice Practice', icon: <Play size={16} />, color: '#bf5af2', desc: '5 questions with detailed feedback and refined model answers' },
             ].map((s, i) => (
-              <div key={i} className="cc-interview-session" style={{ '--si-color': s.color } as any}>
+              <div key={i} className="cc-interview-session" style={{ '--si-color': s.color } as React.CSSProperties}>
                 <div className="cc-session-icon" style={{ color: s.color, background: `${s.color}15` }}>{s.icon}</div>
                 <div style={{ flex: 1 }}><div className="cc-session-title">{s.type}</div><div className="cc-session-desc">{s.desc}</div></div>
                 <button className="cc-btn-sm" onClick={() => startInterview(s.type)}><Play size={12} /> Start</button>

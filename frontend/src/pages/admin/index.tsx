@@ -4,6 +4,18 @@ import AdminShell from './AdminShell';
 import type { AdminStats } from './types';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 
+// Request only (no React state), shared by the initial load and refreshes
+async function requestStats(backend: string, key: string): Promise<AdminStats> {
+  const res = await fetch(`${backend}/api/admin/stats`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-admin-secret': key },
+    body: JSON.stringify({ secret: key }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to fetch platform diagnostics.');
+  return data.data;
+}
+
 interface AdminIndexProps {
   setCurrentPage: (page: string) => void;
 }
@@ -11,7 +23,7 @@ interface AdminIndexProps {
 export default function AdminIndex({ setCurrentPage }: AdminIndexProps) {
   const [secret, setSecret] = useState(() => localStorage.getItem('cvmind_admin_secret') || '');
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('cvmind_admin_secret'));
-  const [isFetching, setIsFetching] = useState(false);
+  const [isFetching, setIsFetching] = useState(() => !!localStorage.getItem('cvmind_admin_secret'));
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [error, setError] = useState('');
 
@@ -24,14 +36,7 @@ export default function AdminIndex({ setCurrentPage }: AdminIndexProps) {
     setIsFetching(true);
     setError('');
     try {
-      const res = await fetch(`${BACKEND}/api/admin/stats`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-secret': key },
-        body: JSON.stringify({ secret: key }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to fetch platform diagnostics.');
-      setStats(data.data);
+      setStats(await requestStats(BACKEND, key));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Connection failed to backend API.');
     } finally {
@@ -39,12 +44,16 @@ export default function AdminIndex({ setCurrentPage }: AdminIndexProps) {
     }
   }, [BACKEND]);
 
-  // Handle initial data load when user has a saved secret
+  // Initial data load once signed in; state is only set when the request settles
   useEffect(() => {
-    if (isLoggedIn && secret) {
-      fetchStats(secret);
-    }
-  }, [isLoggedIn, secret, fetchStats]);
+    if (!isLoggedIn || !secret) return;
+    let cancelled = false;
+    requestStats(BACKEND, secret)
+      .then((data) => { if (!cancelled) setStats(data); })
+      .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : 'Connection failed to backend API.'); })
+      .finally(() => { if (!cancelled) setIsFetching(false); });
+    return () => { cancelled = true; };
+  }, [isLoggedIn, secret, BACKEND]);
 
   // Set up auto-refresh timer
   useEffect(() => {
@@ -58,6 +67,8 @@ export default function AdminIndex({ setCurrentPage }: AdminIndexProps) {
   const handleLogin = (secretKey: string) => {
     setSecret(secretKey);
     setIsLoggedIn(true);
+    setIsFetching(true);
+    setError('');
   };
 
   const handleSignOut = () => {

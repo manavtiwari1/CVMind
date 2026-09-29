@@ -1,6 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Globe, ArrowRight, RefreshCw, Download, Copy, Check, Palette, Zap, Monitor } from 'lucide-react';
+import { getErrorMessage } from '../utils/errors';
+import type { ExperienceEntry } from '../types/api';
 import './PortfolioGen.css';
+
+// Parsed resume behind a generated site (/api/portfolio/generate-site)
+interface PortfolioData {
+  name?: string;
+  title?: string;
+  email?: string;
+  skills?: string[];
+  experience?: ExperienceEntry[];
+}
 
 interface PortfolioGenProps {
   customApiKey: string;
@@ -21,12 +32,17 @@ export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage 
   const [colorTheme, setColorTheme] = useState('dark-pro');
   const [step, setStep] = useState<'setup' | 'generating' | 'preview'>('setup');
   const [portfolioHTML, setPortfolioHTML] = useState('');
-  const [portfolioData, setPortfolioData] = useState<any>(null);
+  const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
 
-  useEffect(() => { setLocalResume(resumeText || ''); }, [resumeText]);
+  // Follow the shared resume text when it changes (adjusting state during render)
+  const [prevResumeText, setPrevResumeText] = useState(resumeText);
+  if (resumeText !== prevResumeText) {
+    setPrevResumeText(resumeText);
+    setLocalResume(resumeText || '');
+  }
 
   const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL
     || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
@@ -39,7 +55,7 @@ export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage 
     try {
       const userStr = localStorage.getItem('cvmind_user');
       let userId = '';
-      if (userStr) { try { const u = JSON.parse(userStr); userId = u.id || u._id || ''; } catch {} }
+      if (userStr) { try { const u = JSON.parse(userStr); userId = u.id || u._id || ''; } catch { /* not signed in */ } }
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
       const res = await fetch(`${baseUrl}/api/portfolio/generate-site`, {
@@ -51,8 +67,8 @@ export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage 
       setPortfolioHTML(data.data.portfolioHTML);
       setPortfolioData(data.data.portfolioData);
       setStep('preview');
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Generation failed. Please try again.');
+    } catch (err) {
+      setErrorMsg(getErrorMessage(err) || 'Generation failed. Please try again.');
       setStep('setup');
     }
   };

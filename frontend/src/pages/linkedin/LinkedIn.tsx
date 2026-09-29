@@ -1,22 +1,36 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import {
   Sparkles, ShieldCheck, AlertCircle, Copy, Check, ArrowRight,
   Linkedin, Award, Star, Compass, Terminal, FileText, CheckCircle2, ChevronRight,
   Upload, Lock
 } from 'lucide-react';
 import SkeletonLoader from '../../components/SkeletonLoader';
+import { getErrorMessage } from '../../utils/errors';
+import { parseSavedContent } from '../../utils/savedWork';
+import type { LoadedWork } from '../../types/api';
 import './LinkedIn.css';
+
+// /api/linkedin evaluation (linkedinSchema in backend/src/services/gemini.js)
+interface LinkedInEvaluation {
+  score: number;
+  summary: string;
+  headline: { current: string; feedback: string; suggestions: string[] };
+  about: { feedback: string; improvedText: string };
+  experience: { feedback: string; tips: string[] };
+  skillsAndKeywords: { matched: string[]; missing: string[] };
+  generalTips: string[];
+}
 
 interface LinkedInProps {
   customApiKey: string;
-  loadedWork?: any;
-  setLoadedWork?: (work: any) => void;
+  loadedWork?: LoadedWork | null;
+  setLoadedWork?: (work: LoadedWork | null) => void;
 }
 
 export default function LinkedIn({ customApiKey, loadedWork, setLoadedWork }: LinkedInProps) {
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<LinkedInEvaluation | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
   const [saveIndicator, setSaveIndicator] = useState(false);
@@ -34,19 +48,20 @@ export default function LinkedIn({ customApiKey, loadedWork, setLoadedWork }: Li
     'Formulating corporate recruiter branding suggestions...'
   ];
 
-  // Load saved work if opened from My Works
-  useEffect(() => {
-    if (loadedWork && loadedWork.type === 'linkedin') {
-      try {
-        const parsed = JSON.parse(loadedWork.htmlContent);
-        if (parsed && parsed.evaluation) {
-          setResult(parsed.evaluation);
-        }
-      } catch (e) {
-        console.error('Error parsing loaded LinkedIn work:', e);
+  // Load saved work if opened from My Works (adjusting state during render,
+  // see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  const [handledWork, setHandledWork] = useState<LoadedWork | null>(null);
+  if (loadedWork && loadedWork !== handledWork) {
+    setHandledWork(loadedWork);
+    if (!loadedWork.deleted && loadedWork.type === 'linkedin') {
+      const saved = parseSavedContent<{ evaluation?: LinkedInEvaluation }>(loadedWork.htmlContent);
+      if (saved?.evaluation) {
+        setResult(saved.evaluation);
+      } else if (!saved) {
+        console.error('Error parsing loaded LinkedIn work');
       }
     }
-  }, [loadedWork]);
+  }
 
   const handleCopy = (text: string, sectionId: string) => {
     navigator.clipboard.writeText(text);
@@ -185,9 +200,9 @@ export default function LinkedIn({ customApiKey, loadedWork, setLoadedWork }: Li
       } else {
         throw new Error('Analysis completed, but failed to retrieve profile metrics.');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('LinkedIn Optimize Error:', err);
-      setErrorMsg(err.message || 'Connection failed. Ensure the backend is active.');
+      setErrorMsg(getErrorMessage(err) || 'Connection failed. Ensure the backend is active.');
     } finally {
       clearInterval(stepInterval);
       setLoading(false);
@@ -228,14 +243,14 @@ export default function LinkedIn({ customApiKey, loadedWork, setLoadedWork }: Li
               <span>Upload LinkedIn PDF Profile</span>
             </div>
             
-            {selectedFile || (loadedWork && loadedWork.type === 'linkedin') ? (
+            {selectedFile || (loadedWork && !loadedWork.deleted && loadedWork.type === 'linkedin') ? (
               <div className="li-file-selected-state">
                 <div className="li-file-icon-wrapper">
                   <FileText className="li-file-icon" />
                 </div>
                 <div className="li-file-details">
                   <span className="li-file-name">
-                    {selectedFile ? selectedFile.name : (loadedWork ? loadedWork.title : 'LinkedIn Profile PDF')}
+                    {selectedFile ? selectedFile.name : (loadedWork && !loadedWork.deleted ? loadedWork.title : 'LinkedIn Profile PDF')}
                   </span>
                   {selectedFile && (
                     <span className="li-file-size">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>

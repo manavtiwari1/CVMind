@@ -16,10 +16,6 @@ import {
 import cvmindIcon from '../../assets/cvmind_icon.png';
 import './CVmindCodeLanding.css';
 
-interface CVmindCodeLandingProps {
-  setCurrentPage?: (page: string) => void;
-}
-
 const FEATURE_HIGHLIGHTS = [
   {
     icon: <Code2 className="code-feat-icon text-cyan" size={24} />,
@@ -68,7 +64,7 @@ const POPULAR_PROBLEMS = [
   { id: 'lru-cache', title: 'LRU Cache', difficulty: 'Hard', category: 'Design', acceptance: '58%' },
 ];
 
-export default function CVmindCodeLanding({ setCurrentPage: _setCurrentPage }: CVmindCodeLandingProps) {
+export default function CVmindCodeLanding() {
   const [activeCodeTab, setActiveCodeTab] = useState<'python' | 'javascript' | 'cpp'>('python');
 
   const openCodeArenaInNewTab = (tab?: string, problemId?: string) => {

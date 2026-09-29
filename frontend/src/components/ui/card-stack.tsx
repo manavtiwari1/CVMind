@@ -125,10 +125,12 @@ export function CardStack<T extends CardStackItem>({
   );
   const [hovering, setHovering] = React.useState(false);
 
-  // keep active in bounds if items change
-  React.useEffect(() => {
+  // keep active in bounds if items change (adjusting state during render)
+  const [prevLen, setPrevLen] = React.useState(len);
+  if (len !== prevLen) {
+    setPrevLen(len);
     setActive((a) => wrapIndex(a, len));
-  }, [len]);
+  }
 
   React.useEffect(() => {
     if (!len) return;
@@ -266,7 +268,7 @@ export function CardStack<T extends CardStackItem>({
                     dragConstraints: { left: 0, right: 0 },
                     dragElastic: 0.18,
                     onDragEnd: (
-                      _e: any,
+                      _e: MouseEvent | TouchEvent | PointerEvent,
                       info: { offset: { x: number }; velocity: { x: number } },
                     ) => {
                       if (reduceMotion) return;

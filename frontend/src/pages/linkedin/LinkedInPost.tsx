@@ -1,13 +1,38 @@
 import { useState, useEffect } from 'react';
 import { Copy, Check, Linkedin, ArrowRight, RefreshCw, Zap, Clock, Lightbulb } from 'lucide-react';
 import SkeletonLoader from '../../components/SkeletonLoader';
+import { getErrorMessage } from '../../utils/errors';
+import { parseSavedContent } from '../../utils/savedWork';
+import type { LoadedWork } from '../../types/api';
 import './LinkedInPost.css';
 
 interface LinkedInPostProps {
   customApiKey: string;
   resumeText: string;
-  loadedWork?: any;
-  setLoadedWork?: (work: any) => void;
+  loadedWork?: LoadedWork | null;
+  setLoadedWork?: (work: LoadedWork | null) => void;
+}
+
+// /api/linkedin/post
+interface GeneratedPost {
+  style: string;
+  content: string;
+  hook: string;
+  hashtags: string[];
+}
+
+interface PostResult {
+  posts: GeneratedPost[];
+  bestTimeToPost?: string;
+  engagementTip?: string;
+}
+
+// Page state saved in a 'linkedin-post' work
+interface SavedPostContent {
+  topic?: string;
+  jobTitle?: string;
+  tone?: string;
+  result?: PostResult | null;
 }
 
 const TONES = [
@@ -22,23 +47,37 @@ export default function LinkedInPost({ customApiKey, resumeText, loadedWork, set
   const [tone, setTone] = useState('Professional');
   const [useResume, setUseResume] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<PostResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedPost, setExpandedPost] = useState<number>(0);
 
-  useEffect(() => {
-    if (loadedWork?.type === 'linkedin-post') {
-      try {
-        const parsed = JSON.parse(loadedWork.htmlContent);
-        setTopic(parsed.topic || '');
-        setJobTitle(parsed.jobTitle || '');
-        setTone(parsed.tone || 'Professional');
-        setResult(parsed.result || null);
-      } catch {}
+  const clearForm = () => {
+    setResult(null); setTopic(''); setJobTitle(''); setTone('Professional');
+  };
+
+  // Restore a saved post, or clear the page when it was deleted (adjusting state during render,
+  // see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  const [handledWork, setHandledWork] = useState<LoadedWork | null>(null);
+  if (loadedWork && loadedWork !== handledWork) {
+    setHandledWork(loadedWork);
+    if (loadedWork?.deleted) {
+      clearForm();
+    } else if (loadedWork?.type === 'linkedin-post') {
+      const saved = parseSavedContent<SavedPostContent>(loadedWork.htmlContent);
+      if (saved) {
+        setTopic(saved.topic || '');
+        setJobTitle(saved.jobTitle || '');
+        setTone(saved.tone || 'Professional');
+        setResult(saved.result || null);
+      }
     }
-    if (loadedWork?.deleted) reset();
-  }, [loadedWork]);
+  }
+
+  // A deletion notice has been handled; clear it in the parent
+  useEffect(() => {
+    if (loadedWork?.deleted && setLoadedWork) setLoadedWork(null);
+  }, [loadedWork, setLoadedWork]);
 
   const copy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -47,7 +86,7 @@ export default function LinkedInPost({ customApiKey, resumeText, loadedWork, set
   };
 
   const reset = () => {
-    setResult(null); setTopic(''); setJobTitle(''); setTone('Professional');
+    clearForm();
     if (setLoadedWork) setLoadedWork(null);
   };
 
@@ -61,7 +100,7 @@ export default function LinkedInPost({ customApiKey, resumeText, loadedWork, set
         || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
       const userStr = localStorage.getItem('cvmind_user');
       let userId = '';
-      if (userStr) { try { const u = JSON.parse(userStr); userId = u.id || u._id || ''; } catch {} }
+      if (userStr) { try { const u = JSON.parse(userStr); userId = u.id || u._id || ''; } catch { /* not signed in */ } }
 
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
@@ -74,8 +113,8 @@ export default function LinkedInPost({ customApiKey, resumeText, loadedWork, set
       if (!res.ok) throw new Error(data.error || 'Server error');
       setResult(data.data);
       if (data.work && setLoadedWork) setLoadedWork(data.work);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Generation failed.');
+    } catch (err) {
+      setErrorMsg(getErrorMessage(err) || 'Generation failed.');
     } finally {
       setLoading(false);
     }
@@ -206,7 +245,7 @@ export default function LinkedInPost({ customApiKey, resumeText, loadedWork, set
 
             {/* Posts */}
             <div className="lp-posts-grid">
-              {(result.posts || []).map((post: any, idx: number) => (
+              {(result.posts || []).map((post, idx: number) => (
                 <div
                   key={idx}
                   className={`lp-post-card glass-card${expandedPost === idx ? ' expanded' : ''}`}

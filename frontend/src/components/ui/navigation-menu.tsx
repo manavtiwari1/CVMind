@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { cva } from 'class-variance-authority';
+import { navigationMenuTriggerStyle } from './navigation-menu-styles';
 import { ChevronDownIcon } from 'lucide-react';
 import { NavigationMenu as NavigationMenuPrimitive } from 'radix-ui';
 import './navigation-menu.css';
@@ -43,10 +43,6 @@ function NavigationMenuItem({ className, ...props }: React.ComponentProps<typeof
     <NavigationMenuPrimitive.Item data-slot="navigation-menu-item" className={cn('relative', className)} {...props} />
   );
 }
-
-const navigationMenuTriggerStyle = cva(
-  'cursor-pointer group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-[active=true]:bg-accent/50 data-[state=open]:bg-accent/50 data-[active=true]:text-accent-foreground ring-ring/10 dark:ring-ring/20 dark:outline-ring/40 outline-ring/50 transition-[color,box-shadow] focus-visible:ring-4 focus-visible:outline-1',
-);
 
 function NavigationMenuTrigger({
   className,
@@ -107,7 +103,7 @@ function NavigationMenuLink({
   children,
   ...props
 }: React.ComponentProps<typeof NavigationMenuPrimitive.Link> & {
-  render?: React.ReactElement;
+  render?: React.ReactElement<{ children?: React.ReactNode }>;
 }) {
   if (render && React.isValidElement(render)) {
     return (
@@ -120,8 +116,8 @@ function NavigationMenuLink({
         )}
         {...props}
       >
-        {React.cloneElement(render as React.ReactElement<any>, {
-          children: (render.props as any).children || children,
+        {React.cloneElement(render, {
+          children: render.props.children || children,
         })}
       </NavigationMenuPrimitive.Link>
     );
@@ -174,7 +170,6 @@ export {
   NavigationMenuLink,
   NavigationMenuIndicator,
   NavigationMenuViewport,
-  navigationMenuTriggerStyle,
   NavigationMenuPositioner,
   NavigationMenuPopup,
   NavigationMenuArrow,

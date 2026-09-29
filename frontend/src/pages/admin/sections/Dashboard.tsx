@@ -115,10 +115,12 @@ export default function Dashboard({ stats }: DashboardProps) {
   const revenueTrendData = useMemo(() => {
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const currentMonth = new Date().getMonth();
+    // Fixed per-month variation (0.5–1.0) so the simulated trend is stable across refreshes
+    const variation = (i: number, seed: number) => 0.5 + (((i + 1) * seed) % 10) / 20;
     return months.slice(Math.max(0, currentMonth - 5), currentMonth + 1).map((m, i) => ({
       month: m,
-      revenue: Math.round((stats.totalPayments || 0) * (0.5 + Math.random() * 0.5) / 6 * (i + 1) * 200),
-      users: Math.round((stats.totalLogins || 0) * (0.5 + Math.random() * 0.5) / 6 * (i + 1)),
+      revenue: Math.round((stats.totalPayments || 0) * variation(i, 7) / 6 * (i + 1) * 200),
+      users: Math.round((stats.totalLogins || 0) * variation(i, 3) / 6 * (i + 1)),
     }));
   }, [stats.totalPayments, stats.totalLogins]);
 

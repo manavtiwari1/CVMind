@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, ArrowRight, RefreshCw, ChevronRight, Volume2, Zap, Award, AlertCircle, CheckCircle } from 'lucide-react';
 import SkeletonLoader from '../components/SkeletonLoader';
+import { getErrorMessage } from '../utils/errors';
 import './VoicePrep.css';
 
 interface VoicePrepProps {
@@ -11,10 +12,54 @@ interface VoicePrepProps {
 const CATEGORIES = ['Behavioral', 'Technical', 'Situational', 'Leadership', 'Problem Solving'];
 const LEVELS = ['Entry Level', 'Mid-level', 'Senior', 'Lead / Manager'];
 
+// /api/voice-prep/question
+interface VoiceQuestion {
+  question: string;
+  category?: string;
+  difficulty?: string;
+  what_interviewer_wants?: string;
+}
+
+// /api/voice-prep/analyze
+interface VoiceFeedback {
+  overallScore: number;
+  verdict: string;
+  scores?: Record<string, number>;
+  fillerWordCount?: number;
+  fillerWords?: string[];
+  strengths?: string[];
+  improvements?: string[];
+  starMethod?: Record<string, string>;
+  improvedAnswer?: string;
+}
+
+// Minimal Web Speech API types (not part of TypeScript's DOM lib)
+interface SpeechResultEvent {
+  resultIndex: number;
+  results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }>;
+}
+
+interface SpeechErrorEvent {
+  error: string;
+}
+
+interface SpeechRecognizer {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechResultEvent) => void) | null;
+  onerror: ((event: SpeechErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+
+type SpeechRecognizerConstructor = new () => SpeechRecognizer;
+
 declare global {
   interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
+    SpeechRecognition?: SpeechRecognizerConstructor;
+    webkitSpeechRecognition?: SpeechRecognizerConstructor;
   }
 }
 
@@ -23,15 +68,15 @@ export default function VoicePrep({ customApiKey, resumeText }: VoicePrepProps) 
   const [level, setLevel] = useState('Mid-level');
   const [category, setCategory] = useState('Behavioral');
   const [step, setStep] = useState<'setup' | 'question' | 'recording' | 'analyzing' | 'feedback'>('setup');
-  const [question, setQuestion] = useState<any>(null);
+  const [question, setQuestion] = useState<VoiceQuestion | null>(null);
   const [transcript, setTranscript] = useState('');
-  const [feedback, setFeedback] = useState<any>(null);
+  const [feedback, setFeedback] = useState<VoiceFeedback | null>(null);
   const [loadingQ, setLoadingQ] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [sessionCount, setSessionCount] = useState(0);
-  const recognitionRef = useRef<any>(null);
-  const timerRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognizer | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isRecordingRef = useRef(false);
 
   const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL
@@ -55,8 +100,8 @@ export default function VoicePrep({ customApiKey, resumeText }: VoicePrepProps) 
       setStep('question');
       setTranscript('');
       setFeedback(null);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to generate question.');
+    } catch (err) {
+      setErrorMsg(getErrorMessage(err) || 'Failed to generate question.');
     } finally { setLoadingQ(false); }
   };
 
@@ -67,13 +112,14 @@ export default function VoicePrep({ customApiKey, resumeText }: VoicePrepProps) 
     }
     setErrorMsg(null);
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
     let finalTranscript = '';
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event) => {
       let interim = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript + ' ';
@@ -82,7 +128,7 @@ export default function VoicePrep({ customApiKey, resumeText }: VoicePrepProps) 
       setTranscript(finalTranscript + interim);
     };
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event) => {
       console.error("Speech recognition error:", event.error);
       if (event.error !== 'no-speech') {
         if (timerRef.current) clearInterval(timerRef.current);
@@ -98,7 +144,9 @@ export default function VoicePrep({ customApiKey, resumeText }: VoicePrepProps) 
 
     recognition.onend = () => {
       if (isRecordingRef.current) {
-        try { recognition.start(); } catch (e) {}
+        try { recognition.start(); } catch {
+          // start() throws if recognition is already running
+        }
       }
     };
 
@@ -132,8 +180,8 @@ export default function VoicePrep({ customApiKey, resumeText }: VoicePrepProps) 
       setFeedback(data.data);
       setStep('feedback');
       setSessionCount(c => c + 1);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Analysis failed.');
+    } catch (err) {
+      setErrorMsg(getErrorMessage(err) || 'Analysis failed.');
       setStep('question');
     }
   };
@@ -351,7 +399,7 @@ export default function VoicePrep({ customApiKey, resumeText }: VoicePrepProps) 
                 {feedback.verdict}
               </div>
               <div className="vp-sub-scores">
-                {Object.entries(feedback.scores || {}).map(([key, val]: [string, any]) => (
+                {Object.entries(feedback.scores || {}).map(([key, val]) => (
                   <div key={key} className="vp-sub-score">
                     <span className="vp-sub-label">{key.charAt(0).toUpperCase() + key.slice(1)}</span>
                     <div className="vp-sub-bar">
@@ -365,7 +413,7 @@ export default function VoicePrep({ customApiKey, resumeText }: VoicePrepProps) 
           </div>
 
           {/* Filler words */}
-          {feedback.fillerWordCount > 0 && (
+          {(feedback.fillerWordCount ?? 0) > 0 && (
             <div className="vp-filler-card glass-card">
               <h4>🗣️ Filler Words Detected ({feedback.fillerWordCount}x)</h4>
               <div className="vp-filler-tags">
@@ -398,7 +446,7 @@ export default function VoicePrep({ customApiKey, resumeText }: VoicePrepProps) 
             <div className="vp-star-card glass-card">
               <h4>⭐ STAR Method Framework</h4>
               <div className="vp-star-grid">
-                {Object.entries(feedback.starMethod).map(([key, val]: [string, any]) => (
+                {Object.entries(feedback.starMethod).map(([key, val]) => (
                   <div key={key} className="vp-star-item">
                     <span className="vp-star-key">{key.charAt(0).toUpperCase() + key.slice(1)}</span>
                     <span className="vp-star-val">{val}</span>

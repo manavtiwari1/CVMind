@@ -37,7 +37,7 @@ function parseSections(text: string): ParsedSection[] {
     const upperTrimmed = trimmed.toUpperCase().replace(/[:\-–—]+$/, '').trim();
 
     const isHeader = SECTION_HEADERS.includes(upperTrimmed) ||
-      (trimmed === trimmed.toUpperCase() && trimmed.length > 2 && trimmed.length < 55 && /^[A-Z\s&\/]+$/.test(trimmed));
+      (trimmed === trimmed.toUpperCase() && trimmed.length > 2 && trimmed.length < 55 && /^[A-Z\s&/]+$/.test(trimmed));
 
     if (isHeader && trimmed.length > 0) {
       if (current.lines.some(l => l.trim() !== '')) {
@@ -150,7 +150,7 @@ function sectionHeadingParagraph(heading: string): Paragraph {
 }
 
 function bodyParagraph(text: string, isBullet = false): Paragraph {
-  const cleanText = text.replace(/^[•\-\*]\s*/, '').trim();
+  const cleanText = text.replace(/^[•\-*]\s*/, '').trim();
 
   return new Paragraph({
     spacing: { after: 60 },
@@ -203,7 +203,7 @@ function skillsLineParagraph(text: string): Paragraph {
 // ─── Heuristics to classify lines inside a section ────────────────────────
 
 function looksLikeBullet(line: string): boolean {
-  return /^[•\-\*\u2022]\s+/.test(line.trim()) || /^\d+\.\s+/.test(line.trim());
+  return /^[•\-*\u2022]\s+/.test(line.trim()) || /^\d+\.\s+/.test(line.trim());
 }
 
 function looksLikeJobTitle(line: string): boolean {
@@ -408,7 +408,7 @@ export function downloadResumeAsPdf(
       if (!trimmed) continue;
 
       if (looksLikeBullet(trimmed)) {
-        const cleanText = trimmed.replace(/^[•\-\*\u2022]\s*/, '').replace(/^\d+\.\s*/, '').trim();
+        const cleanText = trimmed.replace(/^[•\-*\u2022]\s*/, '').replace(/^\d+\.\s*/, '').trim();
         html += `<div class="bullet-item">${cleanText}</div>`;
       } else if (!isSkills && looksLikeJobTitle(trimmed)) {
         html += `<div class="job-title">${trimmed}</div>`;

@@ -1,7 +1,7 @@
 // Auto-generated 110+ Comprehensive DSA Coding Problems for CVMind Code
 export interface TestCase {
-  input: any;
-  expected: any;
+  input: unknown;
+  expected: unknown;
 }
 
 export interface ProblemExample {

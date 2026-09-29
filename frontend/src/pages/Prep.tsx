@@ -6,6 +6,9 @@ import {
   Briefcase, Cpu, Loader2, AlertCircle, Link
 } from 'lucide-react';
 import SkeletonLoader from '../components/SkeletonLoader';
+import { getErrorMessage } from '../utils/errors';
+import { parseSavedContent } from '../utils/savedWork';
+import type { InterviewFeedback, LoadedWork } from '../types/api';
 import './Prep.css';
 import { authFetch } from '../lib/authFetch';
 
@@ -17,13 +20,21 @@ interface PrepQuestion {
   tip: string;
 }
 
+// Session saved in a 'prep' work
+interface SavedPrepContent {
+  questions?: PrepQuestion[];
+  resumeText?: string;
+  userAnswers?: Record<number, string>;
+  evaluations?: Record<number, InterviewFeedback>;
+}
+
 interface PrepProps {
   customApiKey: string;
   resumeText: string;
   setResumeText: (text: string) => void;
   setCurrentPage: (page: string) => void;
-  loadedWork: any;
-  setLoadedWork: (work: any) => void;
+  loadedWork: LoadedWork | null;
+  setLoadedWork: (work: LoadedWork | null) => void;
 }
 
 export default function Prep({ customApiKey, resumeText, setResumeText, setCurrentPage, loadedWork, setLoadedWork }: PrepProps) {
@@ -42,39 +53,43 @@ export default function Prep({ customApiKey, resumeText, setResumeText, setCurre
   const [activeFilter, setActiveFilter] = useState<string>('All');
 
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
-  const [evaluations, setEvaluations] = useState<Record<number, any>>({});
+  const [evaluations, setEvaluations] = useState<Record<number, InterviewFeedback>>({});
   const [evaluatingIndex, setEvaluatingIndex] = useState<number | null>(null);
   const [savingPrep, setSavingPrep] = useState(false);
 
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load from database if loadedWork is present
+  // Load from database if loadedWork is present. Local state is adjusted during render
+  // (see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes);
+  // the parent's resumeText and loadedWork are updated in the effect below.
+  const [handledWork, setHandledWork] = useState<LoadedWork | null>(null);
+  if (loadedWork && loadedWork !== handledWork) {
+    setHandledWork(loadedWork);
+    if (loadedWork.deleted) {
+      setQuestions([]);
+      setUserAnswers({});
+      setEvaluations({});
+    } else if (loadedWork.type === 'prep') {
+      const payload = parseSavedContent<SavedPrepContent>(loadedWork.htmlContent);
+      if (!payload) {
+        console.error('Failed to parse loaded prep session');
+      } else if (payload.questions) {
+        setQuestions(payload.questions);
+        if (payload.userAnswers) setUserAnswers(payload.userAnswers);
+        if (payload.evaluations) setEvaluations(payload.evaluations);
+        setExpandedIndex(0);
+      }
+    }
+  }
+
   useEffect(() => {
-    if (loadedWork) {
-      if (loadedWork.deleted) {
-        setQuestions([]);
-        setUserAnswers({});
-        setEvaluations({});
-        if (setLoadedWork) {
-          setLoadedWork(null);
-        }
-        return;
-      }
-      if (loadedWork.type === 'prep') {
-        try {
-          const payload = JSON.parse(loadedWork.htmlContent);
-          if (payload.questions) {
-            setQuestions(payload.questions);
-            if (payload.resumeText) setResumeText(payload.resumeText);
-            if (payload.userAnswers) setUserAnswers(payload.userAnswers);
-            if (payload.evaluations) setEvaluations(payload.evaluations);
-            setExpandedIndex(0);
-          }
-        } catch (err) {
-          console.error('Failed to parse loaded prep session:', err);
-        }
-      }
+    if (!loadedWork) return;
+    if (loadedWork.deleted) {
+      if (setLoadedWork) setLoadedWork(null);
+    } else if (loadedWork.type === 'prep') {
+      const payload = parseSavedContent<SavedPrepContent>(loadedWork.htmlContent);
+      if (payload?.questions && payload.resumeText) setResumeText(payload.resumeText);
     }
   }, [loadedWork, setLoadedWork, setResumeText]);
 
@@ -116,8 +131,8 @@ export default function Prep({ customApiKey, resumeText, setResumeText, setCurre
         setEvaluations(nextEvaluations);
         await autoSavePrepSession(questions, userAnswers, nextEvaluations);
       }
-    } catch (err: any) {
-      alert(err.message || 'Evaluation failed. Make sure the backend server is running.');
+    } catch (err) {
+      alert(getErrorMessage(err) || 'Evaluation failed. Make sure the backend server is running.');
     } finally {
       setEvaluatingIndex(null);
     }
@@ -127,7 +142,7 @@ export default function Prep({ customApiKey, resumeText, setResumeText, setCurre
     currentQuestions = questions,
     currentAnswers = userAnswers,
     currentEvaluations = evaluations,
-    currentWorkId = loadedWork?.id || loadedWork?._id
+    currentWorkId = loadedWork && !loadedWork.deleted ? loadedWork.id || loadedWork._id : undefined
   ) => {
     if (currentQuestions.length === 0) return;
     const userStr = localStorage.getItem('cvmind_user');
@@ -330,9 +345,9 @@ export default function Prep({ customApiKey, resumeText, setResumeText, setCurre
       } else {
         throw new Error('Failed to generate interview questions. Please try again.');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setErrorMsg(err.message || 'Connection failed. Make sure the backend server is running.');
+      setErrorMsg(getErrorMessage(err) || 'Connection failed. Make sure the backend server is running.');
     } finally {
       clearInterval(stepInterval);
       setLoading(false);

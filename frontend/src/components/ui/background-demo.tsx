@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import React, { useState } from "react";
+import React from "react";
 
 interface BackgroundDemoProps {
   children?: React.ReactNode;
@@ -7,8 +7,6 @@ interface BackgroundDemoProps {
 }
 
 export default function Component({ children, className }: BackgroundDemoProps) {
-  const [_count, _setCount] = useState(0);
-
   return (
     <div className={cn("min-h-screen w-full bg-[#fff8f0] relative", className)}>
       {/* Soft Warm Pastel Texture */}
