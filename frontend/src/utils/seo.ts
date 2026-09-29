@@ -6,7 +6,7 @@ interface PageSEO {
   keywords?: string;
 }
 
-const SITE_URL = 'https://www.cvmind.online';
+const SITE_URL = 'https://www.cvmind.in';
 
 const PAGE_SEO: Record<string, PageSEO> = {
   home: {

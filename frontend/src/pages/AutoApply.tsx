@@ -414,7 +414,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
           id: `scraped_${Date.now()}`,
           title: scraped.title || 'Software Engineer',
           company: scraped.company || 'Company',
-          domain: scraped.company ? `${scraped.company.toLowerCase().replace(/\s+/g, '')}.com` : 'cvmind.online',
+          domain: scraped.company ? `${scraped.company.toLowerCase().replace(/\s+/g, '')}.com` : 'cvmind.in',
           location: scraped.location || 'Remote / India',
           type: scraped.employment_type || 'Full-time',
           remote: scraped.remote || 'Hybrid',
@@ -509,7 +509,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
       const appRecord = {
         userId,
         candidateName: `${sandboxForm.firstName} ${sandboxForm.lastName}`.trim() || profile?.name || 'Candidate',
-        candidateEmail: sandboxForm.email || profile?.email || 'candidate@cvmind.online',
+        candidateEmail: sandboxForm.email || profile?.email || 'candidate@cvmind.in',
         mode: 'Demo Application Sandbox',
         job: {
           id: 'job_demo_abc_tech',
@@ -609,7 +609,7 @@ export default function AutoApply({ customApiKey, resumeText: initialResumeText 
         body: JSON.stringify({
           userId,
           candidateName: activeProf?.name || 'Candidate',
-          candidateEmail: activeProf?.email || (String(userId).includes('@') ? userId : 'candidate@cvmind.online'),
+          candidateEmail: activeProf?.email || (String(userId).includes('@') ? userId : 'candidate@cvmind.in'),
           job,
           tailoredResume: tailored?.tailoredResume || null,
           coverLetter: cover?.coverLetter || null,

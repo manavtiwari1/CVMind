@@ -47,7 +47,7 @@ export default function CopyrightPolicy() {
           <p>We respect the intellectual-property rights of others and expect our users to do the same. If you believe any content on CV Mind infringes your copyright, please send a notice to <a href="mailto:contact@manavtiwari.in">contact@manavtiwari.in</a> including:</p>
           <ul>
             <li>Identification of the copyrighted work you claim has been infringed.</li>
-            <li>The exact URL on cvmind.online where the allegedly infringing material appears.</li>
+            <li>The exact URL on cvmind.in where the allegedly infringing material appears.</li>
             <li>Your name, contact information, and a statement that you are the rights holder or authorized to act on their behalf.</li>
             <li>A good-faith statement that the use is not authorized by the copyright owner, its agent, or the law.</li>
           </ul>

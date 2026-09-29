@@ -30,11 +30,11 @@ export default function ArticleAtsResume({ setCurrentPage }: ArticleProps) {
         '@type': 'Article',
         headline: 'How to Create an ATS-Friendly Resume in 2026 (Step-by-Step Guide)',
         description: 'Learn how to create an ATS-friendly resume that gets past screening software. Formatting rules, keyword tips, templates, and a free checker to test yours.',
-        author: { '@type': 'Organization', name: 'CV Mind Team', url: 'https://www.cvmind.online/' },
+        author: { '@type': 'Organization', name: 'CV Mind Team', url: 'https://www.cvmind.in/' },
         publisher: { '@type': 'Organization', name: 'CV Mind' },
         datePublished: '2026-07-08',
         dateModified: '2026-07-08',
-        mainEntityOfPage: 'https://www.cvmind.online/how-to-create-an-ats-friendly-resume',
+        mainEntityOfPage: 'https://www.cvmind.in/how-to-create-an-ats-friendly-resume',
       },
       {
         '@context': 'https://schema.org',
