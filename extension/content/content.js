@@ -90,7 +90,7 @@
         </div>
 
         <div class="cvmind-drawer-footer">
-          <a href="https://www.cvmind.online/auto-apply" target="_blank" rel="noopener" class="cvmind-footer-link">Open CVMind dashboard ↗</a>
+          <a href="https://www.cvmind.in/auto-apply" target="_blank" rel="noopener" class="cvmind-footer-link">Open CVMind dashboard ↗</a>
         </div>
       </div>`;
     document.body.appendChild(root);

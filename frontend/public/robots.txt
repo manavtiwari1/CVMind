@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /dashboard
 
-Sitemap: https://www.cvmind.online/sitemap.xml
+Sitemap: https://www.cvmind.in/sitemap.xml

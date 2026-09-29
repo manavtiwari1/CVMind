@@ -23,11 +23,11 @@ export default function ArticlePage({ slug, setCurrentPage }: ArticlePageProps) 
         '@type': 'Article',
         headline: article.title,
         description: article.metaDescription,
-        author: { '@type': 'Organization', name: 'CV Mind Team', url: 'https://www.cvmind.online/' },
+        author: { '@type': 'Organization', name: 'CV Mind Team', url: 'https://www.cvmind.in/' },
         publisher: { '@type': 'Organization', name: 'CV Mind' },
         datePublished: article.isoDate,
         dateModified: article.isoDate,
-        mainEntityOfPage: `https://www.cvmind.online/${article.slug}`,
+        mainEntityOfPage: `https://www.cvmind.in/${article.slug}`,
       },
     ];
     if (article.faqs?.length) {

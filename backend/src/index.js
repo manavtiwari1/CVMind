@@ -41,7 +41,7 @@ const sendWelcomeEmail = async (email, name, origin) => {
   }
 
   const isLocal = origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
-  const host = isLocal ? origin : 'https://www.cvmind.online';
+  const host = isLocal ? origin : 'https://www.cvmind.in';
   const createResumeLink = `${host}`;
 
   try {
@@ -596,9 +596,26 @@ const ALLOWED_OAUTH_ORIGINS = [
   'http://localhost:5173',
   'http://localhost:3000',
   'http://127.0.0.1:5173',
+  'https://www.cvmind.in',
+  'https://cvmind.in',
   'https://www.cvmind.online',
   'https://cvmind.online'
 ];
+
+function isAllowedOAuthOrigin(origin) {
+  if (!origin || typeof origin !== 'string') return false;
+  if (ALLOWED_OAUTH_ORIGINS.includes(origin)) return true;
+  try {
+    const parsed = new URL(origin);
+    const host = parsed.hostname.toLowerCase();
+    if (host === 'localhost' || host === '127.0.0.1') return true;
+    if (host === 'cvmind.in' || host.endsWith('.cvmind.in')) return true;
+    if (host === 'cvmind.online' || host.endsWith('.cvmind.online')) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 // Short-lived anti-CSRF state store: state -> { origin, expires }
 const oauthStateStore = new Map();
@@ -623,8 +640,8 @@ function consumeOAuthState(state) {
 
 function resolveOAuthOrigin(req) {
   const requested = String(req.query.origin || '');
-  if (ALLOWED_OAUTH_ORIGINS.includes(requested)) return requested;
-  return process.env.FRONTEND_URL || 'https://www.cvmind.online';
+  if (isAllowedOAuthOrigin(requested)) return requested;
+  return process.env.FRONTEND_URL || 'https://www.cvmind.in';
 }
 
 function getBackendBaseUrl(req) {
@@ -697,7 +714,9 @@ apiRouter.get('/api/auth/github', (req, res) => {
 // Step 2 (GitHub): exchange the code, fetch the profile, sign the user in
 apiRouter.get('/api/auth/github/callback', async (req, res) => {
   const stateEntry = consumeOAuthState(req.query.state);
-  const origin = stateEntry?.origin || process.env.FRONTEND_URL || 'https://www.cvmind.online';
+  const origin = (stateEntry && isAllowedOAuthOrigin(stateEntry.origin))
+    ? stateEntry.origin
+    : (process.env.FRONTEND_URL || 'https://www.cvmind.in');
   if (!stateEntry) return redirectWithAuthError(res, origin, 'GitHub sign-in session expired. Please try again.');
   if (!req.query.code) return redirectWithAuthError(res, origin, 'GitHub sign-in was cancelled.');
 
@@ -756,7 +775,9 @@ apiRouter.get('/api/auth/linkedin', (req, res) => {
 // Step 2 (LinkedIn): exchange the code, fetch userinfo, sign the user in
 apiRouter.get('/api/auth/linkedin/callback', async (req, res) => {
   const stateEntry = consumeOAuthState(req.query.state);
-  const origin = stateEntry?.origin || process.env.FRONTEND_URL || 'https://www.cvmind.online';
+  const origin = (stateEntry && isAllowedOAuthOrigin(stateEntry.origin))
+    ? stateEntry.origin
+    : (process.env.FRONTEND_URL || 'https://www.cvmind.in');
   if (!stateEntry) return redirectWithAuthError(res, origin, 'LinkedIn sign-in session expired. Please try again.');
   if (!req.query.code) return redirectWithAuthError(res, origin, 'LinkedIn sign-in was cancelled.');
 
