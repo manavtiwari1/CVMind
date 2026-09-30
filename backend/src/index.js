@@ -109,7 +109,7 @@ const sendWelcomeEmail = async (email, name, origin) => {
 // Enable CORS for all requests, allow credentials and specific headers
 app.use(cors({
   origin: '*', 
-  methods: ['GET', 'POST', 'OPTIONS', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'OPTIONS', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-gemini-key', 'x-admin-secret']
 }));
 
