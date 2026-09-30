@@ -22,11 +22,12 @@ export default function TawkChat() {
     window.Tawk_LoadStart = new Date();
 
     // Hide the chat bubble by default; Contact page's "Live Support" opens it.
+    // Read window.Tawk_API at call time: Tawk's script may replace the object after loading.
     tawk.onLoad = function () {
-      tawk.hideWidget();
+      window.Tawk_API?.hideWidget();
     };
     tawk.onChatMinimized = function () {
-      tawk.hideWidget();
+      window.Tawk_API?.hideWidget();
     };
 
     const s1 = document.createElement('script');
