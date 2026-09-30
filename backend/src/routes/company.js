@@ -7,6 +7,7 @@ import {
   getJobApplications, 
   updateApplicationStatus 
 } from '../db.js';
+import { requireCompany } from '../services/authToken.js';
 
 const router = express.Router();
 
@@ -114,7 +115,7 @@ router.get('/profile', async (req, res) => {
 });
 
 // ── POST /api/company/parse-job ───────────────────────────────────────────
-router.post('/parse-job', async (req, res) => {
+router.post('/parse-job', requireCompany, async (req, res) => {
   try {
     const { jobDescription } = req.body || {};
     const apiKey = req.headers['x-gemini-key'] || null;
@@ -132,7 +133,7 @@ router.post('/parse-job', async (req, res) => {
 });
 
 // ── POST /api/company/jobs ────────────────────────────────────────────────
-router.post('/jobs', async (req, res) => {
+router.post('/jobs', requireCompany, async (req, res) => {
   try {
     const { 
       companyId, companyName, companyLogo, domain, title, department, jobType, 
@@ -187,7 +188,7 @@ router.get('/jobs', async (req, res) => {
 });
 
 // ── GET /api/company/jobs/:id/applicants ────────────────────────────────
-router.get('/jobs/:id/applicants', async (req, res) => {
+router.get('/jobs/:id/applicants', requireCompany, async (req, res) => {
   try {
     const { id } = req.params;
     const applicants = await getJobApplications(id);
@@ -198,7 +199,7 @@ router.get('/jobs/:id/applicants', async (req, res) => {
 });
 
 // ── POST /api/company/applicants/:id/status ─────────────────────────────
-router.post('/applicants/:id/status', async (req, res) => {
+router.post('/applicants/:id/status', requireCompany, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, actorName, interviewDetails } = req.body || {};
@@ -220,7 +221,7 @@ router.post('/applicants/:id/status', async (req, res) => {
 });
 
 // ── POST /api/company/interviews ─────────────────────────────────────────
-router.post('/interviews', async (req, res) => {
+router.post('/interviews', requireCompany, async (req, res) => {
   try {
     const { applicationId, date, time, meetingLink, type, notes, recruiterName } = req.body || {};
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, ArrowRight, RefreshCw, ChevronRight, Volume2, Zap, Award, AlertCircle, CheckCircle } from 'lucide-react';
 import SkeletonLoader from '../components/SkeletonLoader';
 import { getErrorMessage } from '../utils/errors';
+import { authFetch } from '../lib/authFetch';
 import './VoicePrep.css';
 
 interface VoicePrepProps {
@@ -171,7 +172,7 @@ export default function VoicePrep({ customApiKey, resumeText }: VoicePrepProps) 
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
-      const res = await fetch(`${baseUrl}/api/voice-prep/analyze`, {
+      const res = await authFetch(`${baseUrl}/api/voice-prep/analyze`, {
         method: 'POST', headers,
         body: JSON.stringify({ question: question?.question, transcript, jobTitle })
       });

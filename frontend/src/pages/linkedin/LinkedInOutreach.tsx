@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import { getErrorMessage } from '../../utils/errors';
+import { authFetch } from '../../lib/authFetch';
 import { parseSavedContent } from '../../utils/savedWork';
 import type { LoadedWork } from '../../types/api';
 import './LinkedInOutreach.css';
@@ -120,7 +121,7 @@ export default function LinkedInOutreach({ customApiKey, resumeText, loadedWork,
         headers['x-gemini-key'] = customApiKey;
       }
 
-      const response = await fetch(`${baseUrl}/api/linkedin/outreach`, {
+      const response = await authFetch(`${baseUrl}/api/linkedin/outreach`, {
         method: 'POST',
         headers,
         body: JSON.stringify({

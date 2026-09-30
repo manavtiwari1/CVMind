@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Globe, ArrowRight, RefreshCw, Download, Copy, Check, Palette, Zap, Monitor } from 'lucide-react';
 import { getErrorMessage } from '../utils/errors';
+import { authFetch } from '../lib/authFetch';
 import type { ExperienceEntry } from '../types/api';
 import './PortfolioGen.css';
 
@@ -58,7 +59,7 @@ export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage 
       if (userStr) { try { const u = JSON.parse(userStr); userId = u.id || u._id || ''; } catch { /* not signed in */ } }
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
-      const res = await fetch(`${baseUrl}/api/portfolio/generate-site`, {
+      const res = await authFetch(`${baseUrl}/api/portfolio/generate-site`, {
         method: 'POST', headers,
         body: JSON.stringify({ resumeText: localResume, colorTheme, style: colorTheme, userId })
       });

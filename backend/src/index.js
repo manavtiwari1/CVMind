@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import crypto from 'crypto';
 import express from 'express';
+import { rateLimit } from 'express-rate-limit';
 import autoApplyRouter from './routes/autoApply.js';
 import agentRouter from './routes/agent.js';
 import { startWorkers } from './agent/queue/workers.js';
@@ -14,11 +15,13 @@ import { parsePdf, parseDocx, parseTxt, fetchResumeFromUrl } from './services/pa
 import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, findJobsWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek } from './services/gemini.js';
 import { getPublicStats, getAdminStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveJobFinderLog, savePaymentLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, getWhitelistedEmails, addWhitelistedEmail, deleteWhitelistedEmail, getAutoApplyAccessList, grantAutoApplyAccess, revokeAutoApplyAccess, hasAutoApplyAccess, getCareerCopilotAccessList, grantCareerCopilotAccess, revokeCareerCopilotAccess, hasCareerCopilotAccess, getAllUsersForAdmin, setUserStatus } from './db.js';
 import { Resend } from 'resend';
-import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf } from './services/authToken.js';
+import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser } from './services/authToken.js';
 import mongoose from 'mongoose';
 import { importUploadedResume, RESUME_MIME_TYPES } from './agent/resume/intake.js';
 
 const app = express();
+// Render/Vercel sit behind one proxy; trust it so rate limiting sees the real client IP
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 
 // Refuse to boot in production without a token signing secret
@@ -109,11 +112,41 @@ const sendWelcomeEmail = async (email, name, origin) => {
 // Enable CORS for all requests, allow credentials and specific headers
 app.use(cors({
   origin: '*', 
-  methods: ['GET', 'POST', 'OPTIONS', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'OPTIONS', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-gemini-key', 'x-admin-secret']
 }));
 
 app.use(express.json());
+
+// Public routes that call an AI model: limit each IP so scripted requests can't burn AI credits.
+// Signed-in-only AI routes (auto-apply, agent, company parse-job) are not included.
+const AI_ROUTE_PATHS = [
+  '/api/chat',
+  '/api/analyze',
+  '/api/optimize',
+  '/api/tailor',
+  '/api/prep',
+  '/api/cover-letter/refine',
+  '/api/resume/generate',
+  '/api/resume/parse-data',
+  '/api/linkedin',
+  '/api/career',
+  '/api/voice-prep',
+  '/api/portfolio/generate-site',
+  '/api/job-finder',
+  '/api/ai',
+  '/api/code/ai',
+];
+const aiRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 20,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({ success: false, error: 'Too many requests. Please wait a minute and try again.' });
+  },
+});
+app.use([...AI_ROUTE_PATHS, ...AI_ROUTE_PATHS.map((p) => `/_/backend${p}`)], aiRateLimiter);
 
 const apiRouter = express.Router();
 
@@ -1412,10 +1445,12 @@ apiRouter.post('/api/resume/parse-data', upload.single('resume'), async (req, re
 });
 
 // LinkedIn Profile Optimizer Endpoint
-apiRouter.post('/api/linkedin/analyze', upload.single('linkedinPdf'), async (req, res) => {
+apiRouter.post('/api/linkedin/analyze', optionalUser, upload.single('linkedinPdf'), async (req, res) => {
   try {
     const { file } = req;
-    const { email, userId } = req.body || {};
+    const { email } = req.body || {};
+    // Save to My Works only for the signed-in user (never a userId from the request body)
+    const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
 
     if (!file) {
@@ -1469,9 +1504,11 @@ apiRouter.post('/api/linkedin/analyze', upload.single('linkedinPdf'), async (req
 });
 
 // LinkedIn Profile Bio & Banner Generator Endpoint
-apiRouter.post('/api/linkedin/bio', async (req, res) => {
+apiRouter.post('/api/linkedin/bio', optionalUser, async (req, res) => {
   try {
-    const { skills, jobTitle, resumeText, email, userId } = req.body || {};
+    const { skills, jobTitle, resumeText, email } = req.body || {};
+    // Save to My Works only for the signed-in user (never a userId from the request body)
+    const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
 
     if (!jobTitle) {
@@ -1521,9 +1558,11 @@ apiRouter.post('/api/linkedin/bio', async (req, res) => {
 });
 
 // LinkedIn Outreach & DM Writer Endpoint
-apiRouter.post('/api/linkedin/outreach', async (req, res) => {
+apiRouter.post('/api/linkedin/outreach', optionalUser, async (req, res) => {
   try {
-    const { jobTitle, companyName, context, targetName, email, userId } = req.body || {};
+    const { jobTitle, companyName, context, targetName, email } = req.body || {};
+    // Save to My Works only for the signed-in user (never a userId from the request body)
+    const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
 
     if (!jobTitle) {
@@ -1574,9 +1613,11 @@ apiRouter.post('/api/linkedin/outreach', async (req, res) => {
 });
 
 // Skill Gap & Course Recommendation Endpoint
-apiRouter.post('/api/career/courses', async (req, res) => {
+apiRouter.post('/api/career/courses', optionalUser, async (req, res) => {
   try {
-    const { targetJob, skills, resumeText, email, userId } = req.body || {};
+    const { targetJob, skills, resumeText, email } = req.body || {};
+    // Save to My Works only for the signed-in user (never a userId from the request body)
+    const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
 
     if (!targetJob) {
@@ -1625,9 +1666,11 @@ apiRouter.post('/api/career/courses', async (req, res) => {
 });
 
 // Elevator Pitch Builder Endpoint
-apiRouter.post('/api/career/pitch', async (req, res) => {
+apiRouter.post('/api/career/pitch', optionalUser, async (req, res) => {
   try {
-    const { jobTitle, details, resumeText, email, userId } = req.body || {};
+    const { jobTitle, details, resumeText, email } = req.body || {};
+    // Save to My Works only for the signed-in user (never a userId from the request body)
+    const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
 
     if (!jobTitle) {
@@ -1676,9 +1719,11 @@ apiRouter.post('/api/career/pitch', async (req, res) => {
 });
 
 // Career Roadmap Endpoint
-apiRouter.post('/api/career/roadmap', async (req, res) => {
+apiRouter.post('/api/career/roadmap', optionalUser, async (req, res) => {
   try {
-    const { currentRole, targetRole, years, resumeText, email, userId } = req.body || {};
+    const { currentRole, targetRole, years, resumeText, email } = req.body || {};
+    // Save to My Works only for the signed-in user (never a userId from the request body)
+    const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
 
     if (!targetRole) {
@@ -1755,9 +1800,11 @@ apiRouter.get('/api/portfolio/:workId', async (req, res) => {
 
 // ─── USER WORK & PROFILE ENDPOINTS ───────────────────────────────────────────
 // LinkedIn Post Generator Endpoint
-apiRouter.post('/api/linkedin/post', async (req, res) => {
+apiRouter.post('/api/linkedin/post', optionalUser, async (req, res) => {
   try {
-    const { topic, jobTitle, tone, resumeText, userId } = req.body || {};
+    const { topic, jobTitle, tone, resumeText } = req.body || {};
+    // Save to My Works only for the signed-in user (never a userId from the request body)
+    const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
 
     if (!topic || !jobTitle) {
@@ -1875,9 +1922,11 @@ Return ONLY this JSON:
 });
 
 // Voice Prep — Analyze User Answer
-apiRouter.post('/api/voice-prep/analyze', async (req, res) => {
+apiRouter.post('/api/voice-prep/analyze', optionalUser, async (req, res) => {
   try {
-    const { question, transcript, jobTitle, userId } = req.body || {};
+    const { question, transcript, jobTitle } = req.body || {};
+    // Save to My Works only for the signed-in user (never a userId from the request body)
+    const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
 
     if (!question || !transcript) return res.status(400).json({ error: 'Question and transcript are required.' });
@@ -1948,9 +1997,11 @@ Return ONLY this JSON:
 });
 
 // Portfolio Website Generator Endpoint
-apiRouter.post('/api/portfolio/generate-site', async (req, res) => {
+apiRouter.post('/api/portfolio/generate-site', optionalUser, async (req, res) => {
   try {
-    const { resumeText, colorTheme, style, userId } = req.body || {};
+    const { resumeText, colorTheme, style } = req.body || {};
+    // Save to My Works only for the signed-in user (never a userId from the request body)
+    const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
 
     if (!resumeText || resumeText.trim().length < 50) {

@@ -231,6 +231,13 @@ export default function CompanyPortal({ customApiKey, onNavigateCandidateApp }: 
     }
   ];
 
+  // Company accounts are not live yet: the backend refuses these actions without a company login
+  const notifyIfLocked = (res: Response) => {
+    if (res.status === 401) {
+      alert('Company accounts are coming soon. This action is disabled in the demo portal.');
+    }
+  };
+
   // AI Job Parser Handler
   const handleRunAIParser = async () => {
     if (!newJob.description || newJob.description.length < 20) return;
@@ -257,6 +264,8 @@ export default function CompanyPortal({ customApiKey, onNavigateCandidateApp }: 
           requirements: p.requirements ? p.requirements.join('\n') : prev.requirements
         }));
         setParserSuccessMsg('✨ AI Job Parser extracted key skills and criteria successfully!');
+      } else {
+        notifyIfLocked(res);
       }
     } catch (err) {
       console.error('AI Parser error:', err);
@@ -285,6 +294,8 @@ export default function CompanyPortal({ customApiKey, onNavigateCandidateApp }: 
         setJobs(prev => [data.job, ...prev]);
         setActiveTab('jobs');
         alert('🎉 Job published successfully to the central CVMind ecosystem! Candidates will now see this job in their Auto Apply feed.');
+      } else {
+        notifyIfLocked(res);
       }
     } catch (err) {
       console.error('Failed to post job:', err);
@@ -304,6 +315,8 @@ export default function CompanyPortal({ customApiKey, onNavigateCandidateApp }: 
         if (selectedApplicant && selectedApplicant.id === applicantId) {
           setSelectedApplicant((prev) => prev && { ...prev, status: newStatus });
         }
+      } else {
+        notifyIfLocked(res);
       }
     } catch (err) {
       console.error('Failed to update applicant status:', err);
@@ -335,6 +348,8 @@ export default function CompanyPortal({ customApiKey, onNavigateCandidateApp }: 
           setShowInterviewModal(false);
           setInterviewSuccess('');
         }, 2200);
+      } else {
+        notifyIfLocked(res);
       }
     } catch (err) {
       console.error('Failed to schedule interview:', err);

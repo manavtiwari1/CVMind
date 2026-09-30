@@ -68,6 +68,14 @@ function requireKind(kind) {
 export const requireUser = requireKind('user');
 export const requireCompany = requireKind('company');
 
+// For public routes that also do something extra for signed-in users (e.g. save to My Works):
+// sets req.auth when a valid user token is present, never rejects the request
+export function optionalUser(req, res, next) {
+  const payload = verifyToken(readBearer(req));
+  if (payload && payload.kind === 'user') req.auth = payload;
+  next();
+}
+
 // For routes like /things/:userId — the signed-in user may only act on their own id
 export function requireSelf(param = 'userId') {
   return [requireUser, (req, res, next) => {

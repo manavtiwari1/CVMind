@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import { getErrorMessage } from '../../utils/errors';
+import { authFetch } from '../../lib/authFetch';
 import { parseSavedContent } from '../../utils/savedWork';
 import type { LoadedWork } from '../../types/api';
 import './LinkedInBio.css';
@@ -118,7 +119,7 @@ export default function LinkedInBio({ customApiKey, resumeText, loadedWork, setL
         headers['x-gemini-key'] = customApiKey;
       }
 
-      const response = await fetch(`${baseUrl}/api/linkedin/bio`, {
+      const response = await authFetch(`${baseUrl}/api/linkedin/bio`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
