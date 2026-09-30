@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import crypto from 'crypto';
 import express from 'express';
+import { rateLimit } from 'express-rate-limit';
 import autoApplyRouter from './routes/autoApply.js';
 import agentRouter from './routes/agent.js';
 import { startWorkers } from './agent/queue/workers.js';
@@ -19,6 +20,8 @@ import mongoose from 'mongoose';
 import { importUploadedResume, RESUME_MIME_TYPES } from './agent/resume/intake.js';
 
 const app = express();
+// Render/Vercel sit behind one proxy; trust it so rate limiting sees the real client IP
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 
 // Refuse to boot in production without a token signing secret
@@ -114,6 +117,36 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Public routes that call an AI model: limit each IP so scripted requests can't burn AI credits.
+// Signed-in-only AI routes (auto-apply, agent, company parse-job) are not included.
+const AI_ROUTE_PATHS = [
+  '/api/chat',
+  '/api/analyze',
+  '/api/optimize',
+  '/api/tailor',
+  '/api/prep',
+  '/api/cover-letter/refine',
+  '/api/resume/generate',
+  '/api/resume/parse-data',
+  '/api/linkedin',
+  '/api/career',
+  '/api/voice-prep',
+  '/api/portfolio/generate-site',
+  '/api/job-finder',
+  '/api/ai',
+  '/api/code/ai',
+];
+const aiRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 20,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({ success: false, error: 'Too many requests. Please wait a minute and try again.' });
+  },
+});
+app.use([...AI_ROUTE_PATHS, ...AI_ROUTE_PATHS.map((p) => `/_/backend${p}`)], aiRateLimiter);
 
 const apiRouter = express.Router();
 
