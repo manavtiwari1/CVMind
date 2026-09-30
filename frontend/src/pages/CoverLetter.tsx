@@ -6,7 +6,7 @@ import {
   Sparkles, Copy, Check, Download, RotateCcw, ArrowLeft,
   Loader2, AlertTriangle, Eraser, Highlighter,
   ChevronDown, ChevronRight, FileText, CheckCircle2,
-  Image, Link, Pencil, Globe, UploadCloud, X, FileUp
+  Image, Link, Pencil, Globe
 } from 'lucide-react';
 import './CoverLetter.css';
 import ResumeWizard from '../components/ResumeWizard';
@@ -1397,7 +1397,7 @@ interface CoverLetterProps {
 }
 
 export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }: CoverLetterProps) {
-  const [step, setStep] = useState<'gallery' | 'form' | 'loading' | 'editor'>('gallery');
+  const [step, setStep] = useState<'gallery' | 'onboard-question' | 'onboard-upload' | 'form' | 'loading' | 'editor'>('gallery');
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [refining, setRefining] = useState(false);
   const [refineError, setRefineError] = useState('');
@@ -1415,7 +1415,6 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
   const [saving, setSaving] = useState(false);
 
   // Existing Resume Onboarding States
-  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [extractedData, setExtractedData] = useState<any>(null);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractError, setExtractError] = useState('');
@@ -1718,7 +1717,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
     if (template.type === 'cover-letter') {
       setStep('editor');
     } else {
-      setShowOnboardingModal(true);
+      setStep('onboard-question');
     }
   };
 
@@ -1745,7 +1744,6 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
       if (!res.ok) throw new Error(resData.error || 'Failed to extract resume data.');
 
       setExtractedData(resData.data);
-      setShowOnboardingModal(false);
       setStep('form');
     } catch (err: any) {
       setExtractError(err.message || 'Error extracting resume data. Please try again.');
@@ -2104,116 +2102,138 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
 
   const closeAllPopups = () => { setShowTextColor(false); setShowHighlight(false); setShowTableDialog(false); };
 
-  const renderOnboardingModal = () => {
-    if (!showOnboardingModal) return null;
+  // ── ONBOARDING: Do you have an existing resume? ─────────────────────────
+  if (step === 'onboard-question') {
     return (
-      <div className="cl-onboard-backdrop" onClick={() => setShowOnboardingModal(false)}>
-        <div className="cl-onboard-modal" onClick={e => e.stopPropagation()}>
-          <button 
-            type="button" 
-            className="cl-onboard-close" 
-            onClick={() => setShowOnboardingModal(false)}
-            aria-label="Close"
+      <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg, #f8fafc)', padding: '2rem' }}>
+        {/* Illustration */}
+        <div style={{ marginBottom: '2rem', position: 'relative', width: 220, height: 160 }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(34,197,94,0.12)', borderRadius: '50%', transform: 'scale(1.3)' }} />
+          <svg width="220" height="160" viewBox="0 0 220 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Floating resume papers */}
+            <rect x="30" y="20" width="44" height="56" rx="4" fill="#fff" stroke="#d1d5db" strokeWidth="1.5" transform="rotate(-12 30 20)" />
+            <rect x="34" y="28" width="28" height="3" rx="1.5" fill="#9ca3af" transform="rotate(-12 34 28)" />
+            <rect x="34" y="35" width="20" height="2" rx="1" fill="#d1d5db" transform="rotate(-12 34 35)" />
+            <rect x="34" y="40" width="24" height="2" rx="1" fill="#d1d5db" transform="rotate(-12 34 40)" />
+            <rect x="145" y="15" width="44" height="56" rx="4" fill="#fff" stroke="#d1d5db" strokeWidth="1.5" transform="rotate(10 145 15)" />
+            <rect x="150" y="24" width="28" height="3" rx="1.5" fill="#9ca3af" transform="rotate(10 150 24)" />
+            <rect x="150" y="31" width="20" height="2" rx="1" fill="#d1d5db" transform="rotate(10 150 31)" />
+            <rect x="150" y="36" width="24" height="2" rx="1" fill="#d1d5db" transform="rotate(10 150 36)" />
+            {/* Center resume with profile */}
+            <rect x="80" y="30" width="60" height="80" rx="6" fill="#fff" stroke="#22c55e" strokeWidth="2" />
+            <circle cx="110" cy="52" r="10" fill="#bbf7d0" />
+            <rect x="90" y="68" width="40" height="3" rx="1.5" fill="#22c55e" />
+            <rect x="90" y="75" width="30" height="2" rx="1" fill="#d1d5db" />
+            <rect x="90" y="81" width="35" height="2" rx="1" fill="#d1d5db" />
+            <rect x="90" y="87" width="28" height="2" rx="1" fill="#d1d5db" />
+            {/* Sparkle dots */}
+            <circle cx="68" cy="55" r="3" fill="#22c55e" />
+            <circle cx="152" cy="60" r="3" fill="#22c55e" />
+            <circle cx="110" cy="130" r="3" fill="#22c55e" opacity="0.5" />
+          </svg>
+        </div>
+
+        <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary, #1a1a1a)', textAlign: 'center', marginBottom: '0.6rem', lineHeight: 1.3 }}>
+          Do you have an existing resume?
+        </h2>
+        <p style={{ color: 'var(--text-secondary, #6b7280)', textAlign: 'center', marginBottom: '2rem', maxWidth: '400px', fontSize: '0.95rem', lineHeight: 1.6 }}>
+          Save time by uploading your resume. We will pre-fill the template with your data.
+        </p>
+
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <button
+            onClick={() => setStep('onboard-upload')}
+            style={{ background: '#22c55e', color: '#fff', border: 'none', borderRadius: '8px', padding: '12px 48px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s' }}
+            onMouseOver={e => (e.currentTarget.style.background = '#16a34a')}
+            onMouseOut={e => (e.currentTarget.style.background = '#22c55e')}
           >
-            <X size={18} />
+            Yes
           </button>
-
-          <div className="cl-onboard-header">
-            <div className="cl-onboard-badge">
-              <Sparkles size={14} /> Quick Resume Setup
-            </div>
-            <h2 className="cl-onboard-title">Do you have an existing resume?</h2>
-            <p className="cl-onboard-sub">
-              Upload your existing resume to let CV Mind extract all your details in seconds, or start fresh from scratch.
-            </p>
-          </div>
-
-          <div className="cl-onboard-cards">
-            {/* OPTION 1: YES, UPLOAD */}
-            <div 
-              className={`cl-onboard-card cl-onboard-card-upload ${dragOver ? 'drag-over' : ''} ${isExtracting ? 'loading' : ''}`}
-              onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={e => {
-                e.preventDefault();
-                setDragOver(false);
-                const file = e.dataTransfer.files?.[0];
-                if (file) handleUploadAndExtract(file);
-              }}
-            >
-              <div className="cl-onboard-card-tag">Recommended · Fastest</div>
-              <div className="cl-onboard-icon-wrap upload">
-                <UploadCloud size={28} />
-              </div>
-              <h3 className="cl-onboard-card-h3">Yes, I have a resume</h3>
-              <p className="cl-onboard-card-p">
-                Upload your PDF, DOCX or TXT. AI will automatically extract your experience, education, skills, and summary.
-              </p>
-
-              <input
-                type="file"
-                ref={resumeFileInputRef}
-                style={{ display: 'none' }}
-                accept=".pdf,.docx,.txt"
-                onChange={e => {
-                  const file = e.target.files?.[0];
-                  if (file) handleUploadAndExtract(file);
-                }}
-              />
-
-              {isExtracting ? (
-                <div className="cl-onboard-extracting">
-                  <Loader2 size={18} className="cl-spin" />
-                  <span>Extracting your details with AI...</span>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className="cl-onboard-btn-primary"
-                  onClick={() => resumeFileInputRef.current?.click()}
-                >
-                  <FileUp size={15} /> Upload & Auto-fill
-                </button>
-              )}
-
-              <div className="cl-onboard-drop-hint">PDF, DOCX or TXT (Drag & drop here)</div>
-
-              {extractError && (
-                <div className="cl-onboard-error">
-                  <AlertTriangle size={13} /> {extractError}
-                </div>
-              )}
-            </div>
-
-            {/* OPTION 2: NO, START FROM SCRATCH */}
-            <div className="cl-onboard-card cl-onboard-card-scratch">
-              <div className="cl-onboard-icon-wrap scratch">
-                <Sparkles size={28} />
-              </div>
-              <h3 className="cl-onboard-card-h3">No, start from scratch</h3>
-              <p className="cl-onboard-card-p">
-                Build your resume step-by-step using our guided form wizard or proceed directly to manual editing.
-              </p>
-
-              <button
-                type="button"
-                className="cl-onboard-btn-secondary"
-                onClick={() => {
-                  setShowOnboardingModal(false);
-                  setExtractedData(null);
-                  setStep('form');
-                }}
-              >
-                Start Blank Resume
-              </button>
-
-              <div className="cl-onboard-drop-hint">Old standard process · Guided builder</div>
-            </div>
-          </div>
+          <button
+            onClick={() => { setExtractedData(null); setStep('form'); }}
+            style={{ background: '#fff', color: '#374151', border: '1.5px solid #d1d5db', borderRadius: '8px', padding: '12px 48px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', transition: 'border-color 0.2s' }}
+            onMouseOver={e => (e.currentTarget.style.borderColor = '#9ca3af')}
+            onMouseOut={e => (e.currentTarget.style.borderColor = '#d1d5db')}
+          >
+            No
+          </button>
         </div>
       </div>
     );
-  };
+  }
+
+  // ── ONBOARDING: Upload resume ────────────────────────────────────────────
+  if (step === 'onboard-upload') {
+    return (
+      <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg, #f8fafc)', padding: '2rem' }}>
+        <h2 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary, #1a1a1a)', textAlign: 'center', marginBottom: '2rem', lineHeight: 1.3, maxWidth: '500px' }}>
+          Great. Please upload it for a quick start.
+        </h2>
+
+        <div
+          style={{ background: '#fff', border: `2px dashed ${dragOver ? '#22c55e' : '#d1d5db'}`, borderRadius: '16px', padding: '3rem 3.5rem', textAlign: 'center', maxWidth: '480px', width: '100%', transition: 'border-color 0.2s', cursor: 'pointer' }}
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={e => {
+            e.preventDefault();
+            setDragOver(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file) handleUploadAndExtract(file);
+          }}
+          onClick={() => !isExtracting && resumeFileInputRef.current?.click()}
+        >
+          <p style={{ color: '#6b7280', marginBottom: '0.3rem', fontSize: '0.95rem' }}>Drop your resume here or choose a file.</p>
+          <p style={{ color: '#6b7280', marginBottom: '1.5rem', fontSize: '0.9rem' }}>.pdf and .docx only.</p>
+
+          <input
+            type="file"
+            ref={resumeFileInputRef}
+            style={{ display: 'none' }}
+            accept=".pdf,.docx"
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) handleUploadAndExtract(file);
+            }}
+          />
+
+          {isExtracting ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#22c55e', fontWeight: 600 }}>
+              <Loader2 size={18} className="cl-spin" />
+              <span>Extracting your details with AI...</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); resumeFileInputRef.current?.click(); }}
+              style={{ background: '#22c55e', color: '#fff', border: 'none', borderRadius: '8px', padding: '12px 36px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s' }}
+              onMouseOver={e => (e.currentTarget.style.background = '#16a34a')}
+              onMouseOut={e => (e.currentTarget.style.background = '#22c55e')}
+            >
+              Upload Resume
+            </button>
+          )}
+
+          {extractError && (
+            <div style={{ marginTop: '1rem', color: '#ef4444', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center' }}>
+              <AlertTriangle size={13} /> {extractError}
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#6b7280', fontSize: '0.82rem' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          We never share your data with 3rd parties or use it for AI model training.
+        </div>
+
+        <button
+          onClick={() => setStep('onboard-question')}
+          style={{ marginTop: '1.5rem', background: 'none', border: 'none', color: '#9ca3af', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}
+        >
+          ← Go back
+        </button>
+      </div>
+    );
+  }
 
   // ── WIZARD FORM ─────────────────────────────────────────────
   if (step === 'form') {
@@ -2225,9 +2245,8 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
           onSkip={() => { setStep('editor'); }}
           onGenerate={handleGenerateFromWizard}
           initialData={extractedData}
-          onUploadResumeClick={() => setShowOnboardingModal(true)}
+          onUploadResumeClick={() => setStep('onboard-upload')}
         />
-        {renderOnboardingModal()}
       </>
     );
   }
@@ -2346,7 +2365,6 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
             </button>
           ))}
         </div>
-        {renderOnboardingModal()}
       </div>
     );
   }
