@@ -15,6 +15,7 @@ import {
   getCustomCodingProblems
 } from '../db.js';
 import { CURATED_PROBLEMS } from '../data/curatedProblems.js';
+import { optionalUser } from '../services/authToken.js';
 
 const router = express.Router();
 
@@ -76,9 +77,11 @@ router.get('/problems/:id', (req, res) => {
 });
 
 // Run Code (Sample test cases only)
-router.post('/run', async (req, res) => {
+router.post('/run', optionalUser, async (req, res) => {
   try {
-    const { problemId, code, language, customTestCases, userId } = req.body;
+    const { problemId, code, language, customTestCases } = req.body;
+    // Record runs under the signed-in user only (never a userId from the request body)
+    const userId = req.auth?.sub;
     const dbCustom = await getCustomCodingProblems();
     const problem = [...CURATED_PROBLEMS, ...(dbCustom || [])].find(p => p.id === problemId || p.slug === problemId);
 
@@ -117,9 +120,11 @@ router.post('/run', async (req, res) => {
 });
 
 // Submit Code (Full evaluation against sample + hidden test cases & saved to MongoDB)
-router.post('/submit', async (req, res) => {
+router.post('/submit', optionalUser, async (req, res) => {
   try {
-    const { problemId, code, language, userId } = req.body;
+    const { problemId, code, language } = req.body;
+    // Record submissions under the signed-in user only (never a userId from the request body)
+    const userId = req.auth?.sub;
     const dbCustom = await getCustomCodingProblems();
     const problem = [...CURATED_PROBLEMS, ...(dbCustom || [])].find(p => p.id === problemId || p.slug === problemId);
 

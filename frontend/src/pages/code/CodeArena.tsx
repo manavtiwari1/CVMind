@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import type { CodingProblem } from '../../data/codingProblems';
 import { getErrorMessage } from '../../utils/errors';
+import { authFetch } from '../../lib/authFetch';
 
 type Language = 'javascript' | 'python' | 'cpp';
 
@@ -177,7 +178,7 @@ export default function CodeArena({
         }
       }
 
-      const response = await fetch(`${baseUrl}/api/code/run`, {
+      const response = await authFetch(`${baseUrl}/api/code/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -215,7 +216,7 @@ export default function CodeArena({
       const user = JSON.parse(localStorage.getItem('cvmind_user') || '{}');
       const userId = user.id || user._id || 'anonymous';
 
-      const response = await fetch(`${baseUrl}/api/code/submit`, {
+      const response = await authFetch(`${baseUrl}/api/code/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
