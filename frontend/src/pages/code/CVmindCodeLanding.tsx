@@ -13,21 +13,24 @@ import {
   Braces,
   Play
 } from 'lucide-react';
+import { CODING_PROBLEMS } from '../../data/codingProblems';
 import cvmindIcon from '../../assets/cvmind_icon.png';
 import './CVmindCodeLanding.css';
+
+const PROBLEM_COUNT = CODING_PROBLEMS.length;
 
 const FEATURE_HIGHLIGHTS = [
   {
     icon: <Code2 className="code-feat-icon text-cyan" size={24} />,
-    title: '110+ Curated DSA Challenges',
-    description: 'Carefully selected algorithmic challenges spanning Arrays, Two Pointers, Binary Search, Trees, Graphs, and Dynamic Programming, structured from Easy to Hard.',
-    badge: '110+ Challenges'
+    title: `${PROBLEM_COUNT} DSA Challenges`,
+    description: 'Classic algorithm problems across arrays, linked lists, trees, graphs, dynamic programming and more, each with a full statement, examples and a hidden test set.',
+    badge: `${PROBLEM_COUNT} Challenges`
   },
   {
     icon: <Terminal className="code-feat-icon text-emerald" size={24} />,
     title: 'Monaco Editor & Multi-Language Runner',
-    description: 'Powered by the same editor engine as VS Code. Write and execute solutions in Python, JavaScript, TypeScript, C++, and Java with sub-millisecond feedback.',
-    badge: '5 Languages'
+    description: 'The same editor engine as VS Code. Write solutions in JavaScript or Python and run them against the tests. C++ has editor support, but it is not judged yet.',
+    badge: 'JavaScript & Python'
   },
   {
     icon: <Sparkles className="code-feat-icon text-purple" size={24} />,
@@ -38,30 +41,30 @@ const FEATURE_HIGHLIGHTS = [
   {
     icon: <Compass className="code-feat-icon text-blue" size={24} />,
     title: 'Visual Skill Tree & Roadmap',
-    description: 'Track your algorithmic proficiency across data structure domains with milestone badges, streak tracking, and personalized next-step recommendations.',
+    description: 'Work through topics in order, with progress per topic, milestone badges, streak tracking and a recommendation for what to solve next.',
     badge: 'Structured'
   },
   {
     icon: <Trophy className="code-feat-icon text-amber" size={24} />,
-    title: 'Mock Technical Assessments',
-    description: 'Simulate real 45-minute technical screening rounds modeled after FAANG and top product companies, complete with strict time limits and scorecards.',
-    badge: 'Company Grade'
+    title: 'Timed Practice',
+    description: 'Pick a time limit, a number of problems and a difficulty, then work through them against a countdown. It is practice only, with no proctoring.',
+    badge: 'Practice'
   },
   {
     icon: <ShieldCheck className="code-feat-icon text-teal" size={24} />,
-    title: 'Recruiter-Ready Coding Profile',
-    description: 'Showcase your solved problem distribution, acceptance rates, algorithmic rating, and verified skills to employers directly from your profile.',
-    badge: 'Verified'
+    title: 'Your Progress Profile',
+    description: 'See problems solved by difficulty and topic, your streaks and a submission heatmap. Progress is saved on your device.',
+    badge: 'Your data'
   }
 ];
 
 const POPULAR_PROBLEMS = [
-  { id: 'two-sum', title: 'Two Sum', difficulty: 'Easy', category: 'Arrays & Hashing', acceptance: '94%' },
-  { id: 'valid-parentheses', title: 'Valid Parentheses', difficulty: 'Easy', category: 'Stack', acceptance: '88%' },
-  { id: 'best-time-to-buy-and-sell-stock', title: 'Best Time to Buy & Sell Stock', difficulty: 'Easy', category: 'Sliding Window', acceptance: '85%' },
-  { id: 'longest-substring-without-repeating-characters', title: 'Longest Substring Without Repeating', difficulty: 'Medium', category: 'Sliding Window', acceptance: '72%' },
-  { id: 'merge-two-sorted-lists', title: 'Merge Two Sorted Lists', difficulty: 'Easy', category: 'Linked List', acceptance: '91%' },
-  { id: 'lru-cache', title: 'LRU Cache', difficulty: 'Hard', category: 'Design', acceptance: '58%' },
+  { id: 'two-sum', title: 'Two Sum', difficulty: 'Easy', category: 'Arrays & Hashing' },
+  { id: 'valid-parentheses', title: 'Valid Parentheses', difficulty: 'Easy', category: 'Stack' },
+  { id: 'best-time-to-buy-and-sell-stock', title: 'Best Time to Buy & Sell Stock', difficulty: 'Easy', category: 'Sliding Window' },
+  { id: 'longest-substring-without-repeating-characters', title: 'Longest Substring Without Repeating', difficulty: 'Medium', category: 'Sliding Window' },
+  { id: 'merge-two-sorted-lists', title: 'Merge Two Sorted Lists', difficulty: 'Easy', category: 'Linked List' },
+  { id: 'lru-cache', title: 'LRU Cache', difficulty: 'Hard', category: 'Design' },
 ];
 
 export default function CVmindCodeLanding() {
@@ -138,8 +141,8 @@ public:
 
           <p className="code-landing-subtitle">
             CVMind Code is an all-in-one in-browser coding arena and automated DSA judge.
-            Solve 110+ curated coding problems in a VS Code-grade Monaco IDE, run multi-language test suites in real time,
-            and leverage progressive AI coaching to master data structures and algorithms.
+            Solve {PROBLEM_COUNT} coding problems in a Monaco editor (the engine behind VS Code), run your code against real tests,
+            and use progressive AI hints to learn data structures and algorithms.
           </p>
 
           {/* Core Call to Action Buttons */}
@@ -166,18 +169,18 @@ public:
           {/* Quick Metrics Bar */}
           <div className="code-landing-metrics">
             <div className="code-metric-item">
-              <span className="code-metric-num">110+</span>
+              <span className="code-metric-num">{PROBLEM_COUNT}</span>
               <span className="code-metric-label">DSA Challenges</span>
             </div>
             <div className="code-metric-divider" />
             <div className="code-metric-item">
-              <span className="code-metric-num">5</span>
-              <span className="code-metric-label">Languages Supported</span>
+              <span className="code-metric-num">2</span>
+              <span className="code-metric-label">Languages Judged</span>
             </div>
             <div className="code-metric-divider" />
             <div className="code-metric-item">
-              <span className="code-metric-num">0ms</span>
-              <span className="code-metric-label">Zero-Install Runner</span>
+              <span className="code-metric-num">0</span>
+              <span className="code-metric-label">Installs Needed</span>
             </div>
             <div className="code-metric-divider" />
             <div className="code-metric-item">
@@ -272,7 +275,7 @@ public:
           </div>
           <h2 className="code-section-title">Everything You Need to Ace Tech Rounds</h2>
           <p className="code-section-desc">
-            Unlike static question lists, CVMind Code is a complete hands-on development playground equipped with an isolated judge and step-by-step AI guidance.
+            Unlike static question lists, CVMind Code is a complete hands-on development playground equipped with an automated judge and step-by-step AI guidance.
           </p>
         </div>
 
@@ -312,9 +315,6 @@ public:
                 <span className="code-prob-cat">{prob.category}</span>
               </div>
               <h4 className="code-prob-name">{prob.title}</h4>
-              <div className="code-prob-meta">
-                <span>Acceptance: <strong>{prob.acceptance}</strong></span>
-              </div>
               <button 
                 className="code-prob-solve-btn"
                 onClick={() => openCodeArenaInNewTab('arena', prob.id)}
