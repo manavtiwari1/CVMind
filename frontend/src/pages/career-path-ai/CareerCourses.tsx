@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import { getErrorMessage } from '../../utils/errors';
+import { authFetch } from '../../lib/authFetch';
 import { parseSavedContent } from '../../utils/savedWork';
 import type { LoadedWork } from '../../types/api';
 import './CareerCourses.css';
@@ -110,7 +111,7 @@ export default function CareerCourses({ customApiKey, resumeText, loadedWork, se
         headers['x-gemini-key'] = customApiKey;
       }
 
-      const response = await fetch(`${baseUrl}/api/career/courses`, {
+      const response = await authFetch(`${baseUrl}/api/career/courses`, {
         method: 'POST',
         headers,
         body: JSON.stringify({

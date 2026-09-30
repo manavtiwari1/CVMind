@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import { getErrorMessage } from '../../utils/errors';
+import { authFetch } from '../../lib/authFetch';
 import { parseSavedContent } from '../../utils/savedWork';
 import type { LoadedWork } from '../../types/api';
 import './LinkedIn.css';
@@ -180,7 +181,7 @@ export default function LinkedIn({ customApiKey, loadedWork, setLoadedWork }: Li
       formData.append('email', email);
       formData.append('userId', userId);
 
-      const response = await fetch(`${baseUrl}/api/linkedin/analyze`, {
+      const response = await authFetch(`${baseUrl}/api/linkedin/analyze`, {
         method: 'POST',
         headers,
         body: formData

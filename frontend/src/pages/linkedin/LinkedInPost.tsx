@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Copy, Check, Linkedin, ArrowRight, RefreshCw, Zap, Clock, Lightbulb } from 'lucide-react';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import { getErrorMessage } from '../../utils/errors';
+import { authFetch } from '../../lib/authFetch';
 import { parseSavedContent } from '../../utils/savedWork';
 import type { LoadedWork } from '../../types/api';
 import './LinkedInPost.css';
@@ -105,7 +106,7 @@ export default function LinkedInPost({ customApiKey, resumeText, loadedWork, set
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
 
-      const res = await fetch(`${baseUrl}/api/linkedin/post`, {
+      const res = await authFetch(`${baseUrl}/api/linkedin/post`, {
         method: 'POST', headers,
         body: JSON.stringify({ topic, jobTitle, tone, resumeText: useResume ? resumeText : '', userId })
       });
