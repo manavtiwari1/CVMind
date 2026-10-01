@@ -113,7 +113,7 @@ export async function startAgentTestApp(models = AGENT_MODELS, routerOptions = {
 
   const app = express();
   app.use(express.json({ limit: '1mb' }));
-  app.use('/api/agent', createAgentRouter({ loadWork: async () => null, loadLatestResumeWork: async () => null, ...routerOptions }));
+  app.use('/api/agent', createAgentRouter({ loadWork: async () => null, loadLatestResumeWork: async () => null, checkAccess: async () => true, ...routerOptions }));
   app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
   const server = app.listen(0);
   const baseUrl = `http://127.0.0.1:${server.address().port}/api/agent`;

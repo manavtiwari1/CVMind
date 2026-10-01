@@ -391,9 +391,9 @@ export default function Navbar({
                       <NavigationMenuLink render={<button onClick={() => go('auto-apply')} />}>
                         <div className="font-medium" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           Auto Apply Agent
-                          <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '1px 6px', borderRadius: '99px', background: 'linear-gradient(135deg,#10b981,#34d399)', color: '#fff', letterSpacing: '0.04em' }}>UNLOCKED</span>
+                          <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '1px 6px', borderRadius: '99px', background: 'linear-gradient(135deg,#f59e0b,#fbbf24)', color: '#fff', letterSpacing: '0.04em' }}>SOON</span>
                         </div>
-                        <div className="text-muted-foreground">AI applies to jobs for you automatically.</div>
+                        <div className="text-muted-foreground">Coming soon: AI applies to jobs for you.</div>
                       </NavigationMenuLink>
                     </div>
                   </div>
@@ -636,7 +636,7 @@ export default function Navbar({
                 className={`mobile-drawer-link mobile-sub-link${currentPage === 'auto-apply' ? ' active' : ''}`}
                 onClick={() => go('auto-apply')}
               >
-                Auto Apply Agent ✨
+                Auto Apply Agent (Soon)
               </button>
               <button
                 className={`mobile-drawer-link mobile-sub-link${['code', 'cvmind-code', 'code-arena'].includes(currentPage) ? ' active' : ''}`}

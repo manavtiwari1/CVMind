@@ -21,7 +21,7 @@ before(async () => {
   process.env.MONGODB_URI = 'mongodb://in-memory-test';
   const app = express();
   app.use(express.json());
-  app.use('/api/agent', createAgentRouter({ loadWork: async () => null }));
+  app.use('/api/agent', createAgentRouter({ loadWork: async () => null, checkAccess: async () => true }));
   app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
   server = app.listen(0);
   baseUrl = `http://127.0.0.1:${server.address().port}/api/agent`;
