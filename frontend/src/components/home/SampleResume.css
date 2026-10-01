@@ -1,0 +1,69 @@
+.sr-page {
+  box-sizing: border-box;
+  padding: 34px 38px 38px;
+  background: #fff;
+  color: #1f2937;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.sr-page section { margin-top: 16px; }
+
+.sr-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.sr-name { font-size: 27px; font-weight: 800; letter-spacing: -0.02em; color: #0f172a; line-height: 1.1; }
+.sr-role { margin-top: 3px; font-size: 14px; font-weight: 600; color: #2563eb; }
+.sr-contact { margin-top: 8px; font-size: 11px; color: #6b7280; }
+
+.sr-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+}
+
+.sr-h {
+  margin: 0 0 6px;
+  padding-bottom: 3px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #0f172a;
+  border-bottom: 1.5px solid #0f172a;
+}
+
+.sr-p { margin: 0; }
+
+.sr-job { margin-bottom: 10px; }
+.sr-job-top { display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; }
+.sr-job-top span { color: #6b7280; font-size: 11px; white-space: nowrap; }
+.sr-company { margin-bottom: 4px; font-size: 11.5px; font-weight: 600; color: #2563eb; }
+
+.sr-ul { margin: 0; padding-left: 16px; }
+.sr-ul li { margin-bottom: 2px; }
+
+.sr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sr-chip {
+  padding: 2px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1e3a8a;
+  background: #eaf0ff;
+  border-radius: 4px;
+}
+.sr-chip--new { color: #065f46; background: #d1fae5; box-shadow: 0 0 0 1.5px #34d399; }
+
+.sr-mark { background: #fde2b5; color: inherit; padding: 1px 0; }
+
+.sr-typo {
+  text-decoration: underline wavy #ef4444;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
