@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BookOpen, Building2, Check, ChevronDown, History, Lock, Sparkles, Undo2 } from 'lucide-react';
 import type { CodingProblem } from '../../../data/codingProblems';
+import { levelOf } from '../../../data/codingLevels';
 import type { AiHint } from '../codeApi';
 import { timeAgo, type SubmissionRecord } from '../codeStore';
 import RichText from '../RichText';
@@ -59,7 +60,7 @@ export default function DescriptionPane({
           <article>
             <h1 className="cx-problem-title">{number}. {problem.title}</h1>
             <div className="cx-problem-meta">
-              <span className={`cx-pill cx-pill--${problem.difficulty.toLowerCase()}`}>{problem.difficulty}</span>
+              <span className={`cx-pill cx-pill--${levelOf(problem).toLowerCase()}`}>{levelOf(problem)}</span>
               <span className="cx-tag">{problem.category}</span>
               {solved && <span className="cx-pill cx-pill--solved"><Check size={12} /> Solved</span>}
               {problem.isAiGenerated && <span className="cx-tag cx-tag--ai"><Sparkles size={11} /> AI generated</span>}
