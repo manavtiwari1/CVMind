@@ -1,0 +1,184 @@
+/* ════════════════════════════════════════════════════════════
+   CVMind Code: design tokens, app shell, top bar, shared pieces
+   Light by default, dark via [data-cx-theme='dark'] on .cx-app
+   ════════════════════════════════════════════════════════════ */
+.cx-app {
+  --cx-bg: #f4f5f7;
+  --cx-surface: #ffffff;
+  --cx-surface-2: #f0f2f5;
+  --cx-surface-3: #e7eaef;
+  --cx-border: #e1e5ea;
+  --cx-text: #1b2230;
+  --cx-muted: #5f6b7a;
+  --cx-faint: #8a95a5;
+  --cx-accent: #16a37f;
+  --cx-accent-strong: #0f8a6b;
+  --cx-accent-soft: rgba(22, 163, 127, 0.12);
+  --cx-blue: #2f6fed;
+  --cx-easy: #0f9f8a;
+  --cx-medium: #d98a00;
+  --cx-hard: #e0443e;
+  --cx-easy-bg: rgba(15, 159, 138, 0.12);
+  --cx-medium-bg: rgba(217, 138, 0, 0.14);
+  --cx-hard-bg: rgba(224, 68, 62, 0.12);
+  --cx-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 4px 14px rgba(16, 24, 40, 0.06);
+  --cx-radius: 12px;
+  --cx-mono: 'JetBrains Mono', 'Fira Code', Consolas, 'SFMono-Regular', monospace;
+
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--cx-bg);
+  color: var(--cx-text);
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cx-app[data-cx-theme='dark'] {
+  --cx-bg: #0f1216;
+  --cx-surface: #171b21;
+  --cx-surface-2: #1f242c;
+  --cx-surface-3: #2a303a;
+  --cx-border: #2b313b;
+  --cx-text: #e7ebf1;
+  --cx-muted: #98a3b3;
+  --cx-faint: #6d788a;
+  --cx-accent: #2fd0a4;
+  --cx-accent-strong: #5ae0bb;
+  --cx-accent-soft: rgba(47, 208, 164, 0.14);
+  --cx-blue: #6a9bff;
+  --cx-easy: #2fd0b8;
+  --cx-medium: #ffb938;
+  --cx-hard: #ff6b66;
+  --cx-easy-bg: rgba(47, 208, 184, 0.14);
+  --cx-medium-bg: rgba(255, 185, 56, 0.14);
+  --cx-hard-bg: rgba(255, 107, 102, 0.14);
+  --cx-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+/* The site-wide theme styles bare h1-h6, p and a. These resets have class+element specificity so they beat it;
+   single-class rules that need their own size or colour are written as `.cx-app .name` below. */
+.cx-app :is(h1, h2, h3, h4, h5, h6) {
+  margin: 0; font-family: inherit; font-size: inherit; font-weight: 700; letter-spacing: normal; line-height: 1.3; color: inherit;
+}
+.cx-app p { margin: 0; font-size: inherit; line-height: inherit; color: inherit; }
+.cx-app a { color: inherit; opacity: 1; }
+.cx-app *, .cx-app *::before, .cx-app *::after { box-sizing: border-box; }
+.cx-app button { font: inherit; color: inherit; }
+
+.cx-app :focus-visible { outline: 2px solid var(--cx-blue); outline-offset: 2px; }
+
+/* ── Top bar ──────────────────────────────────────────────── */
+.cx-topbar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; gap: 1.2rem;
+  height: 56px; padding: 0 1.25rem;
+  background: var(--cx-surface);
+  border-bottom: 1px solid var(--cx-border);
+}
+
+.cx-brand { display: flex; align-items: center; gap: 0.6rem; padding: 0; background: none; border: 0; cursor: pointer; }
+.cx-brand img { width: 30px; height: 30px; object-fit: contain; }
+.cx-brand-name { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.02em; color: var(--cx-text); }
+.cx-brand-name em { font-style: normal; color: var(--cx-accent); }
+
+.cx-nav { display: flex; align-items: center; gap: 0.15rem; margin-left: 0.4rem; overflow-x: auto; scrollbar-width: none; }
+.cx-nav::-webkit-scrollbar { display: none; }
+.cx-nav-item {
+  display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.8rem;
+  font-size: 0.88rem; font-weight: 600; color: var(--cx-muted); white-space: nowrap;
+  background: none; border: 0; border-radius: 8px; cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.cx-nav-item:hover { color: var(--cx-text); background: var(--cx-surface-2); }
+.cx-nav-item.is-active { color: var(--cx-text); background: var(--cx-surface-2); box-shadow: inset 0 -2px 0 var(--cx-accent); }
+
+.cx-topbar-right { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; }
+.cx-chip {
+  display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.7rem;
+  font-size: 0.82rem; font-weight: 700; color: var(--cx-text);
+  background: var(--cx-surface-2); border: 1px solid var(--cx-border); border-radius: 999px; white-space: nowrap;
+}
+.cx-chip svg { flex: none; }
+.cx-icon-btn {
+  display: grid; place-items: center; width: 34px; height: 34px; padding: 0; color: var(--cx-muted);
+  background: none; border: 1px solid transparent; border-radius: 8px; cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.cx-icon-btn:hover { color: var(--cx-text); background: var(--cx-surface-2); }
+.cx-icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.cx-main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+/* ── Buttons ──────────────────────────────────────────────── */
+.cx-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  padding: 0.5rem 1rem; font-size: 0.88rem; font-weight: 700;
+  color: var(--cx-text); background: var(--cx-surface-2); border: 1px solid var(--cx-border); border-radius: 8px; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.cx-btn:hover:not(:disabled) { background: var(--cx-surface-3); }
+.cx-btn:active:not(:disabled) { transform: translateY(1px); }
+.cx-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.cx-btn--primary { color: #fff; background: var(--cx-accent); border-color: var(--cx-accent); }
+.cx-btn--primary:hover:not(:disabled) { background: var(--cx-accent-strong); border-color: var(--cx-accent-strong); }
+.cx-btn--ghost { background: transparent; }
+.cx-btn--sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; }
+
+/* ── Difficulty / tags ────────────────────────────────────── */
+.cx-diff { font-weight: 700; }
+.cx-diff--easy { color: var(--cx-easy); }
+.cx-diff--medium { color: var(--cx-medium); }
+.cx-diff--hard { color: var(--cx-hard); }
+.cx-pill { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.15rem 0.6rem; font-size: 0.76rem; font-weight: 700; border-radius: 999px; }
+.cx-pill--easy { color: var(--cx-easy); background: var(--cx-easy-bg); }
+.cx-pill--medium { color: var(--cx-medium); background: var(--cx-medium-bg); }
+.cx-pill--hard { color: var(--cx-hard); background: var(--cx-hard-bg); }
+.cx-tag { display: inline-flex; align-items: center; padding: 0.15rem 0.6rem; font-size: 0.76rem; font-weight: 600; color: var(--cx-muted); background: var(--cx-surface-2); border-radius: 999px; }
+
+.cx-card { background: var(--cx-surface); border: 1px solid var(--cx-border); border-radius: var(--cx-radius); box-shadow: var(--cx-shadow); }
+
+/* ── Progress bars, status marks (shared by several pages) ── */
+.cx-bar { height: 6px; overflow: hidden; background: var(--cx-surface-3); border-radius: 999px; }
+.cx-bar-fill { display: block; height: 100%; border-radius: 999px; transition: width 0.5s ease; }
+.cx-bar-fill--easy { background: var(--cx-easy); }
+.cx-bar-fill--medium { background: var(--cx-medium); }
+.cx-bar-fill--hard { background: var(--cx-hard); }
+.cx-bar-fill--accent { background: var(--cx-accent); }
+.cx-st { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--cx-border); }
+.cx-st--solved { color: #fff; background: var(--cx-easy); border-color: var(--cx-easy); }
+.cx-st--attempted { color: var(--cx-medium); border-color: var(--cx-medium); }
+.cx-flame { color: #f59e0b; }
+
+/* ── Rendered problem text ────────────────────────────────── */
+.cx-rich { font-size: 0.94rem; line-height: 1.7; color: var(--cx-text); }
+.cx-rich > * + * { margin-top: 0.9rem; }
+.cx-rich p { font-size: inherit; line-height: inherit; color: inherit; }
+.cx-rich ul, .cx-rich ol { padding-left: 1.3rem; }
+.cx-rich ul { list-style: disc; }
+.cx-rich ol { list-style: decimal; }
+.cx-rich li + li { margin-top: 0.3rem; }
+.cx-inline-code {
+  padding: 0.1rem 0.4rem; font-family: var(--cx-mono); font-size: 0.84em;
+  color: var(--cx-text); background: var(--cx-surface-3); border-radius: 5px;
+}
+.cx-pre { margin: 0; padding: 0.8rem 1rem; overflow-x: auto; font-family: var(--cx-mono); font-size: 0.85rem; background: var(--cx-surface-2); border-radius: 8px; }
+
+/* ── Empty / loading states ───────────────────────────────── */
+.cx-empty { display: grid; place-items: center; gap: 0.6rem; padding: 3rem 1rem; text-align: center; color: var(--cx-muted); }
+.cx-empty h3 { font-size: 1.05rem; color: var(--cx-text); }
+
+/* ── Page container for non-workspace pages ───────────────── */
+.cx-page { width: min(1240px, 100% - 2.5rem); margin: 0 auto; padding: 1.8rem 0 3rem; }
+.cx-page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+.cx-page-head h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
+.cx-page-head p { margin-top: 0.3rem; color: var(--cx-muted); max-width: 640px; }
+
+@media (max-width: 760px) {
+  .cx-topbar { gap: 0.6rem; padding: 0 0.75rem; }
+  .cx-brand-name { display: none; }
+  .cx-page { width: calc(100% - 1.5rem); padding-top: 1.2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cx-app * { transition: none !important; animation: none !important; }
+}
