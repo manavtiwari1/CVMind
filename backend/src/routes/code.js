@@ -53,7 +53,7 @@ router.get('/problems', async (req, res) => {
       difficulty: p.difficulty,
       category: p.category,
       companies: p.companies,
-      acceptanceRate: p.acceptanceRate || '52.0%',
+      acceptanceRate: p.acceptanceRate || '',
       isAiGenerated: !!p.isAiGenerated
     }));
 
@@ -76,7 +76,19 @@ router.get('/problems/:id', (req, res) => {
   res.json({ success: true, problem: safeProblem });
 });
 
-// Run Code (Sample test cases only)
+// How a problem's data maps onto its function (linked lists, trees, design classes, answer ordering)
+function judgeMeta(problem) {
+  return {
+    kind: problem?.kind,
+    adapter: problem?.adapter,
+    argTypes: problem?.argTypes,
+    returnType: problem?.returnType,
+    compare: problem?.compare,
+    cppSpec: problem?.cppSpec,
+  };
+}
+
+// Run Code (sample test cases only, or one custom input)
 router.post('/run', optionalUser, async (req, res) => {
   try {
     const { problemId, code, language, customTestCases } = req.body;
@@ -85,8 +97,8 @@ router.post('/run', optionalUser, async (req, res) => {
     const dbCustom = await getCustomCodingProblems();
     const problem = [...CURATED_PROBLEMS, ...(dbCustom || [])].find(p => p.id === problemId || p.slug === problemId);
 
-    const testCasesToRun = customTestCases && customTestCases.length > 0 
-      ? customTestCases 
+    const testCasesToRun = customTestCases && customTestCases.length > 0
+      ? customTestCases
       : (problem ? problem.sampleTestCases : []);
 
     const fnName = problem ? problem.functionName : 'solution';
@@ -94,23 +106,25 @@ router.post('/run', optionalUser, async (req, res) => {
       code,
       language: language || 'javascript',
       testCases: testCasesToRun,
-      functionName: fnName
+      functionName: fnName,
+      meta: judgeMeta(problem),
     });
 
-    // Save run record to MongoDB (non-blocking)
-    saveCodingSubmission({
-      userId: userId || 'anonymous',
-      problemId: problem ? problem.id : 'custom',
-      problemTitle: problem ? problem.title : 'Custom Run',
-      language,
-      code,
-      verdict: result.verdict,
-      passedTests: result.passedTests,
-      totalTests: result.totalTests,
-      runtimeMs: result.runtimeMs,
-      memoryMb: result.memoryMb,
-      error: result.error
-    }).catch(err => console.error('[MONGODB] Save run error:', err));
+    // Keep a record of real runs only; a run that was never executed is not worth storing
+    if (!result.simulated) {
+      saveCodingSubmission({
+        userId: userId || 'anonymous',
+        problemId: problem ? problem.id : 'custom',
+        problemTitle: problem ? problem.title : 'Custom Run',
+        language,
+        code,
+        verdict: result.verdict,
+        passedTests: result.passedTests,
+        totalTests: result.totalTests,
+        runtimeMs: result.runtimeMs,
+        error: result.error
+      }).catch(err => console.error('[MONGODB] Save run error:', err));
+    }
 
     res.json({ success: true, result });
   } catch (error) {
@@ -119,7 +133,7 @@ router.post('/run', optionalUser, async (req, res) => {
   }
 });
 
-// Submit Code (Full evaluation against sample + hidden test cases & saved to MongoDB)
+// Submit Code (full evaluation against sample + hidden test cases, saved to MongoDB)
 router.post('/submit', optionalUser, async (req, res) => {
   try {
     const { problemId, code, language } = req.body;
@@ -132,52 +146,49 @@ router.post('/submit', optionalUser, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Problem not found for evaluation' });
     }
 
-    const fullTestCases = [...(problem.sampleTestCases || []), ...(problem.hiddenTestCases || [])];
+    const samples = problem.sampleTestCases || [];
+    const fullTestCases = [...samples, ...(problem.hiddenTestCases || [])];
     const result = await runJudgeSubmission({
       code,
       language: language || 'javascript',
       testCases: fullTestCases,
-      functionName: problem.functionName
+      functionName: problem.functionName,
+      meta: judgeMeta(problem),
     });
 
-    const submissionRecord = {
-      id: `sub_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-      userId: userId || 'anonymous',
-      problemId: problem.id,
-      problemTitle: problem.title,
-      language,
-      code,
-      verdict: result.verdict,
-      passedTests: result.passedTests,
-      totalTests: result.totalTests,
-      runtimeMs: result.runtimeMs,
-      memoryMb: result.memoryMb,
-      runtimePercentile: result.runtimePercentile,
-      memoryPercentile: result.memoryPercentile,
-      createdAt: new Date().toISOString()
-    };
+    // Public feedback: the sample cases, plus the first failing hidden case so the user can see what broke
+    const all = result.results || [];
+    const firstHiddenFailure = all.slice(samples.length).find(r => !r.passed);
+    const publicResults = [...all.slice(0, samples.length), ...(firstHiddenFailure ? [firstHiddenFailure] : [])];
 
-    // Save submission to MongoDB
-    await saveCodingSubmission(submissionRecord);
-
-    // Update user profile in MongoDB (ratings & solved count)
-    const updatedProfile = await updateUserCodingProfile(submissionRecord.userId, {
-      problemId: problem.id,
-      verdict: result.verdict
-    });
+    // A result that was not produced by really running the code is neither stored nor counted
+    if (!result.simulated) {
+      const submissionRecord = {
+        id: `sub_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+        userId: userId || 'anonymous',
+        problemId: problem.id,
+        problemTitle: problem.title,
+        language,
+        code,
+        verdict: result.verdict,
+        passedTests: result.passedTests,
+        totalTests: result.totalTests,
+        runtimeMs: result.runtimeMs,
+        createdAt: new Date().toISOString()
+      };
+      await saveCodingSubmission(submissionRecord);
+      await updateUserCodingProfile(submissionRecord.userId, { problemId: problem.id, verdict: result.verdict });
+    }
 
     res.json({
       success: true,
-      submission: submissionRecord,
-      profile: updatedProfile,
       verdict: result.verdict,
       passedTests: result.passedTests,
       totalTests: result.totalTests,
       runtimeMs: result.runtimeMs,
-      memoryMb: result.memoryMb,
-      runtimePercentile: result.runtimePercentile,
-      memoryPercentile: result.memoryPercentile,
-      results: result.results.slice(0, 3) // Return only public feedback
+      simulated: !!result.simulated,
+      error: result.error || undefined,
+      results: publicResults
     });
   } catch (error) {
     console.error('[CODE SUBMIT ERROR]', error);
