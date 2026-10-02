@@ -1546,7 +1546,8 @@ async function buildResumePdf(body) {
     return await renderResumePdf(body.html, { format: body.format, fontsHref: EXPORT_FONTS_HREF });
   } catch (err) {
     if (err?.code === 'BROWSER_UNAVAILABLE') {
-      const e = new Error('PDF export is not available on this server right now.');
+      // Keep Playwright's error as the cause so the server log shows the missing browser path
+      const e = new Error('PDF export is not available on this server right now.', { cause: err.cause || err });
       e.status = 503;
       throw e;
     }
