@@ -80,7 +80,7 @@ export default function ProfilePage({ problems, onOpen }: ProfilePageProps) {
         <div className="cx-avatar" aria-hidden="true">{(user?.name || 'Y').charAt(0).toUpperCase()}</div>
         <div className="cx-profile-id">
           <h1>{user?.name || 'Your profile'}</h1>
-          <p>{user?.email || 'Not signed in'} · Progress is saved on this device.</p>
+          <p>{user?.email || 'Not signed in'} · {user ? 'Progress is saved to your account.' : 'Sign in to save your progress to your account.'}</p>
         </div>
         <div className="cx-profile-actions">
           {confirming ? (

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { authFetch } from '../lib/authFetch';
 import {
   Award, FileText, CheckCircle2, AlertTriangle,
   RotateCcw, Printer, ArrowRight, Target, Check, AlertCircle, Copy,
@@ -109,7 +110,7 @@ export default function Dashboard({ setCurrentPage, analysisResult, resumeText, 
       const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
-      const res = await fetch(`${baseUrl}/api/optimize`, {
+      const res = await authFetch(`${baseUrl}/api/optimize`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ 

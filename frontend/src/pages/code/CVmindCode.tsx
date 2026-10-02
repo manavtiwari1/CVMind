@@ -8,7 +8,7 @@ import ProfilePage from './ProfilePage';
 import RoadmapPage from './RoadmapPage';
 import PracticePage from './PracticePage';
 import AIGenerator from './AIGenerator';
-import { computeStreak, summarize, useProgress } from './codeStore';
+import { computeStreak, summarize, syncProgress, useProgress } from './codeStore';
 
 interface CVmindCodeProps {
   customApiKey?: string;
@@ -51,6 +51,15 @@ function initialTheme(): 'light' | 'dark' {
 
 export default function CVmindCode({ customApiKey = '', initialTab = 'problems' }: CVmindCodeProps) {
   const progress = useProgress();
+
+  // Pull the account's progress from MongoDB on open and whenever the tab regains focus
+  useEffect(() => {
+    void syncProgress(true);
+    const onFocus = () => { void syncProgress(); };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, []);
+
   const [custom, setCustom] = useState<CodingProblem[]>(loadCustomProblems);
   const problems = useMemo(() => [...CODING_PROBLEMS, ...custom], [custom]);
   const [theme, setTheme] = useState<'light' | 'dark'>(initialTheme);
