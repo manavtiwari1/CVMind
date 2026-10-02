@@ -1,6 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { Search, ChevronDown, Rocket, FileText, UserCog, CreditCard, ShieldCheck, MessageCircle } from 'lucide-react';
+import { Search, ChevronRight, Rocket, FileText, UserCog, CreditCard, ShieldCheck } from 'lucide-react';
 import ContactDialog from '../components/ContactDialog';
+import { SOCIALS } from '../data/socials';
+import { SUPPORT_EMAIL } from '../data/support';
+import cvmindLogo from '../assets/cvmind_logo_transparent.png';
 import './HelpCenter.css';
 
 interface HelpCenterProps {
@@ -16,6 +19,7 @@ interface Article {
 interface Topic {
   id: string;
   title: string;
+  description: string;
   icon: ReactNode;
   articles: Article[];
 }
@@ -23,6 +27,7 @@ interface Topic {
 const TOPICS: Topic[] = [
   {
     id: 'start',
+    description: 'Create your first resume, import what you already have and check your ATS score',
     title: 'Getting started',
     icon: <Rocket size={20} />,
     articles: [
@@ -48,6 +53,7 @@ const TOPICS: Topic[] = [
   },
   {
     id: 'builder',
+    description: 'Templates, sections, photos and downloading your resume as a PDF',
     title: 'Resume builder',
     icon: <FileText size={20} />,
     articles: [
@@ -72,6 +78,7 @@ const TOPICS: Topic[] = [
   },
   {
     id: 'account',
+    description: 'Sign-in, passwords, profile details and deleting your account',
     title: 'Account & settings',
     icon: <UserCog size={20} />,
     articles: [
@@ -97,6 +104,7 @@ const TOPICS: Topic[] = [
   },
   {
     id: 'billing',
+    description: 'What the Free and Pro plans include, prices and refunds',
     title: 'Plans & billing',
     icon: <CreditCard size={20} />,
     articles: [
@@ -119,6 +127,7 @@ const TOPICS: Topic[] = [
   },
   {
     id: 'privacy',
+    description: 'How your data is used and who can see what you share',
     title: 'Privacy & security',
     icon: <ShieldCheck size={20} />,
     articles: [
@@ -135,103 +144,200 @@ const TOPICS: Topic[] = [
   },
 ];
 
+// Shown in the "Popular articles" card on the Help Center home, as topicId:articleIndex
+const POPULAR = ['start:0', 'builder:0', 'start:1', 'account:0', 'billing:1', 'billing:2', 'account:3'];
+
+type View =
+  | { kind: 'home' }
+  | { kind: 'topic'; topicId: string }
+  | { kind: 'article'; topicId: string; index: number };
+
+interface ArticleRef {
+  topicId: string;
+  index: number;
+  article: Article;
+}
+
+const findTopic = (id: string) => TOPICS.find(t => t.id === id);
+
 export default function HelpCenter({ setCurrentPage }: HelpCenterProps) {
   const [query, setQuery] = useState('');
-  const [topic, setTopic] = useState<string>('all');
-  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [view, setView] = useState<View>({ kind: 'home' });
   const [contactOpen, setContactOpen] = useState(false);
 
-  const visible = useMemo(() => {
+  const go = (next: View) => {
+    setView(next);
+    setQuery('');
+    window.scrollTo({ top: 0 });
+  };
+
+  const popular = useMemo(
+    () =>
+      POPULAR.map(ref => {
+        const [topicId, i] = ref.split(':');
+        const article = findTopic(topicId)?.articles[Number(i)];
+        return article ? { topicId, index: Number(i), article } : null;
+      }).filter((x): x is ArticleRef => x !== null),
+    []
+  );
+
+  const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return TOPICS
-      .filter(t => topic === 'all' || t.id === topic || q)
-      .map(t => ({
-        ...t,
-        articles: q
-          ? t.articles.filter(a => a.q.toLowerCase().includes(q) || a.a.toLowerCase().includes(q))
-          : t.articles,
-      }))
-      .filter(t => t.articles.length > 0);
-  }, [query, topic]);
+    if (!q) return [];
+    return TOPICS.flatMap(t =>
+      t.articles
+        .map((article, index) => ({ topicId: t.id, topicTitle: t.title, index, article }))
+        .filter(({ article }) => article.q.toLowerCase().includes(q) || article.a.toLowerCase().includes(q))
+    );
+  }, [query]);
+
+  const articleRow = (key: string, title: string, onClick: () => void, sub?: string) => (
+    <li key={key}>
+      <button type="button" className="help-row" onClick={onClick}>
+        <span className="help-row-text">
+          <span className="help-row-title">{title}</span>
+          {sub && <span className="help-row-sub">{sub}</span>}
+        </span>
+        <ChevronRight size={16} className="help-row-chevron" />
+      </button>
+    </li>
+  );
+
+  const openArticle = (topicId: string, index: number) => () => go({ kind: 'article', topicId, index });
+
+  const renderHome = () => (
+    <>
+      <section className="help-card">
+        <h2 className="help-card-title">Popular articles</h2>
+        <ul className="help-rows">
+          {popular.map(p => articleRow(`${p.topicId}:${p.index}`, p.article.q, openArticle(p.topicId, p.index)))}
+        </ul>
+      </section>
+
+      <div className="help-collections">
+        {TOPICS.map(t => (
+          <button key={t.id} type="button" className="help-collection" onClick={() => go({ kind: 'topic', topicId: t.id })}>
+            <span className="help-collection-icon">{t.icon}</span>
+            <span className="help-collection-title">{t.title}</span>
+            <span className="help-collection-desc">{t.description}</span>
+            <span className="help-collection-count">{t.articles.length} articles</span>
+          </button>
+        ))}
+      </div>
+    </>
+  );
+
+  const renderTopic = (topic: Topic) => (
+    <>
+      <nav className="help-crumbs" aria-label="Breadcrumb">
+        <button type="button" onClick={() => go({ kind: 'home' })}>All collections</button>
+        <ChevronRight size={14} />
+        <span>{topic.title}</span>
+      </nav>
+      <header className="help-topic-head">
+        <span className="help-collection-icon">{topic.icon}</span>
+        <h1>{topic.title}</h1>
+        <p>{topic.description}</p>
+        <span className="help-collection-count">{topic.articles.length} articles</span>
+      </header>
+      <section className="help-card">
+        <ul className="help-rows">
+          {topic.articles.map((a, i) => articleRow(String(i), a.q, openArticle(topic.id, i)))}
+        </ul>
+      </section>
+    </>
+  );
+
+  const renderArticle = (topic: Topic, index: number) => {
+    const article = topic.articles[index];
+    const related = topic.articles.map((a, i) => ({ a, i })).filter(({ i }) => i !== index);
+    return (
+      <>
+        <nav className="help-crumbs" aria-label="Breadcrumb">
+          <button type="button" onClick={() => go({ kind: 'home' })}>All collections</button>
+          <ChevronRight size={14} />
+          <button type="button" onClick={() => go({ kind: 'topic', topicId: topic.id })}>{topic.title}</button>
+        </nav>
+        <article className="help-article">
+          <h1>{article.q}</h1>
+          <p>{article.a}</p>
+          {article.link && (
+            <button type="button" className="help-article-link" onClick={() => setCurrentPage(article.link!.page)}>
+              {article.link.label}
+              <ChevronRight size={16} />
+            </button>
+          )}
+        </article>
+        {related.length > 0 && (
+          <section className="help-card">
+            <h2 className="help-card-title">More in {topic.title}</h2>
+            <ul className="help-rows">
+              {related.map(({ a, i }) => articleRow(String(i), a.q, openArticle(topic.id, i)))}
+            </ul>
+          </section>
+        )}
+      </>
+    );
+  };
+
+  const renderResults = () => (
+    <section className="help-card">
+      <h2 className="help-card-title">
+        {results.length} {results.length === 1 ? 'result' : 'results'} for "{query.trim()}"
+      </h2>
+      {results.length === 0 ? (
+        <p className="help-empty">No articles match your search. Try other words, or contact us below.</p>
+      ) : (
+        <ul className="help-rows">
+          {results.map(r => articleRow(`${r.topicId}:${r.index}`, r.article.q, openArticle(r.topicId, r.index), r.topicTitle))}
+        </ul>
+      )}
+    </section>
+  );
+
+  const renderView = () => {
+    if (query.trim()) return renderResults();
+    if (view.kind === 'home') return renderHome();
+    const topic = findTopic(view.topicId);
+    if (!topic) return renderHome();
+    if (view.kind === 'topic') return renderTopic(topic);
+    return topic.articles[view.index] ? renderArticle(topic, view.index) : renderTopic(topic);
+  };
 
   return (
     <div className="help-page">
       <section className="help-hero">
-        <h1 className="help-hero-title">How can we help?</h1>
-        <label className="help-search">
-          <Search size={18} />
-          <input
-            type="search"
-            placeholder="Search for answers"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            aria-label="Search help articles"
-          />
-        </label>
+        <div className="help-inner">
+          <h1 className="help-hero-title">Answers to frequently asked questions about your CV Mind account</h1>
+          <label className="help-search">
+            <Search size={20} />
+            <input
+              type="search"
+              placeholder="Search for articles..."
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              aria-label="Search help articles"
+            />
+          </label>
+        </div>
       </section>
 
-      <div className="help-body">
-        {!query && (
-          <div className="help-topics" role="tablist" aria-label="Help topics">
-            {TOPICS.map(t => (
-              <button
-                key={t.id}
-                role="tab"
-                aria-selected={topic === t.id}
-                className={`help-topic${topic === t.id ? ' active' : ''}`}
-                onClick={() => setTopic(topic === t.id ? 'all' : t.id)}
-              >
-                <span className="help-topic-icon">{t.icon}</span>
-                <span className="help-topic-title">{t.title}</span>
-                <span className="help-topic-count">{t.articles.length} articles</span>
-              </button>
-            ))}
-          </div>
-        )}
+      <div className="help-inner help-body">{renderView()}</div>
 
-        {visible.length === 0 ? (
-          <p className="help-empty">No articles match "{query}". Try another search, or contact us below.</p>
-        ) : (
-          visible.map(t => (
-            <section key={t.id} className="help-section">
-              <h2 className="help-section-title">{t.title}</h2>
-              <div className="help-list">
-                {t.articles.map(a => {
-                  const key = `${t.id}:${a.q}`;
-                  const open = openKey === key || Boolean(query);
-                  return (
-                    <div key={key} className={`help-item${open ? ' open' : ''}`}>
-                      <button className="help-q" aria-expanded={open} onClick={() => setOpenKey(openKey === key ? null : key)}>
-                        <span>{a.q}</span>
-                        <ChevronDown size={18} className="help-q-chevron" />
-                      </button>
-                      {open && (
-                        <div className="help-a">
-                          <p>{a.a}</p>
-                          {a.link && (
-                            <button className="help-a-link" onClick={() => setCurrentPage(a.link!.page)}>
-                              {a.link.label} →
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          ))
-        )}
-
-        <section className="help-contact">
-          <MessageCircle size={26} className="help-contact-icon" />
-          <div className="help-contact-text">
-            <h2>Still need help?</h2>
-            <p>Message us on WhatsApp or send an email and the CV Mind team will get back to you.</p>
-          </div>
-          <button className="help-contact-btn" onClick={() => setContactOpen(true)}>Contact us</button>
-        </section>
-      </div>
+      <footer className="help-foot">
+        <img src={cvmindLogo} alt="CV Mind" className="help-foot-logo" />
+        <p>
+          If you can't find the answer to your question, contact us at <span className="help-foot-email">{SUPPORT_EMAIL}</span> or{' '}
+          <button type="button" className="help-foot-link" onClick={() => setContactOpen(true)}>message us on WhatsApp</button>.
+        </p>
+        <div className="help-foot-socials">
+          {SOCIALS.map(s => (
+            <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} title={s.label}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d={s.path} /></svg>
+            </a>
+          ))}
+        </div>
+      </footer>
 
       <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} />
     </div>

@@ -7,6 +7,7 @@ import { API_BASE } from '../lib/apiBase';
 import { authFetch } from '../lib/authFetch';
 import { readUser, saveUser, isProUser, USER_CHANGE_EVENT } from '../lib/currentUser';
 import { getErrorMessage } from '../utils/errors';
+import { workLabel, workPage } from '../lib/works';
 import type { LoadedWork, SavedWork, StoredUser } from '../types/api';
 import './Account.css';
 
@@ -18,20 +19,6 @@ interface AccountProps {
   handleSignOut: () => void;
   setLoadedWork: (work: LoadedWork | null) => void;
 }
-
-const WORK_LABELS: Record<string, string> = {
-  'cover-letter': 'Cover Letter',
-  linkedin: 'LinkedIn Audit',
-  'linkedin-bio': 'LinkedIn Bio',
-  'linkedin-outreach': 'Outreach DM',
-  'career-courses': 'Skill Gaps',
-  'elevator-pitch': 'Elevator Pitch',
-  'career-roadmap': 'Roadmap AI',
-  prep: 'AI Prep',
-};
-
-// Tool pages that can reopen their own saved work; everything else opens in the resume builder
-const WORK_PAGES = ['linkedin', 'linkedin-bio', 'linkedin-outreach', 'career-courses', 'elevator-pitch', 'career-roadmap', 'prep'];
 
 const PRO_PERKS = [
   { icon: Crown, text: 'Pro resume sections' },
@@ -251,7 +238,7 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
 
   const openWork = (w: ListedWork) => {
     setLoadedWork(w);
-    setCurrentPage(WORK_PAGES.includes(w.type) ? w.type : 'resume-builder');
+    setCurrentPage(workPage(w.type));
   };
 
   const shareWork = (workId: string) => {
@@ -479,7 +466,7 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
                         <div className="acct-doc-info">
                           <span className="acct-doc-title" title={w.title}>{w.title}</span>
                           <span className="acct-doc-meta">
-                            {WORK_LABELS[w.type] || 'Resume'} ·{' '}
+                            {workLabel(w.type)} ·{' '}
                             {new Date(w.updatedAt || w.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                           </span>
                         </div>

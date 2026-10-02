@@ -7,6 +7,7 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Account from './pages/Account';
 import HelpCenter from './pages/HelpCenter';
+import MyDocuments from './pages/MyDocuments';
 import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
 import Tailor from './pages/Tailor';
@@ -59,7 +60,7 @@ export default function App() {
       return 'portfolio';
     }
     const urlPage = pathname.replace(/^\//, '');
-    const validPages = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'career-copilot', 'copyright-policy', 'account', 'help-center', ...ARTICLES.map(a => a.slug)];
+    const validPages = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'career-copilot', 'copyright-policy', 'account', 'help-center', 'my-documents', ...ARTICLES.map(a => a.slug)];
     if (urlPage && validPages.includes(urlPage)) {
       return urlPage;
     }
@@ -192,7 +193,7 @@ export default function App() {
 
   // Private route interceptor — all private pages require sign-in only (no paid gating)
   useEffect(() => {
-    const privatePages = ['prep', 'resume-editor', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'proofreading', 'tailor', 'voice-prep', 'portfolio-gen', 'job-finder', 'career-courses', 'elevator-pitch', 'career-roadmap', 'auto-apply', 'career-copilot', 'account'];
+    const privatePages = ['prep', 'resume-editor', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'proofreading', 'tailor', 'voice-prep', 'portfolio-gen', 'job-finder', 'career-courses', 'elevator-pitch', 'career-roadmap', 'auto-apply', 'career-copilot', 'account', 'my-documents'];
 
     if (privatePages.includes(currentPage) && !isLoggedIn) {
       // setCurrentPage also updates browser history, so this redirect has to run in an effect
@@ -320,6 +321,8 @@ export default function App() {
         return <Contact />;
       case 'account':
         return <Account setCurrentPage={setCurrentPage} handleSignOut={handleSignOut} setLoadedWork={setLoadedWork} />;
+      case 'my-documents':
+        return <MyDocuments setCurrentPage={setCurrentPage} handleSignOut={handleSignOut} setLoadedWork={setLoadedWork} />;
       case 'help-center':
         return <HelpCenter setCurrentPage={setCurrentPage} />;
       case 'privacy':
@@ -498,7 +501,11 @@ export default function App() {
   const isAdminPage = currentPage === 'admin';
   const isCodePage = currentPage === 'code-arena' || currentPage === 'cvmind-code-arena';
   const isFocusFlow = currentPage === 'resume-editor' && builderFocus !== false;
-  const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || isCodePage || isFocusFlow;
+  // My Documents is a standalone app view with its own top bar
+  const isAppPage = currentPage === 'my-documents';
+  const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || isCodePage || isFocusFlow || isAppPage;
+  // The Help Center is full-width and ends with its own contact block instead of the site footer
+  const isHelpPage = currentPage === 'help-center';
 
   // Mark the focused builder flow on <body> (used to keep floating widgets out of the way).
   useEffect(() => {
@@ -506,7 +513,7 @@ export default function App() {
   }, [isFocusFlow]);
 
   return (
-    <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''} ${isFocusFlow ? 'focus-shell' : ''}`}>
+    <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''} ${isFocusFlow ? 'focus-shell' : ''} ${isHelpPage ? 'help-shell' : ''} ${isAppPage ? 'app-shell' : ''}`}>
 
       {/* ── Global Digital Serenity Background (for both dark & light modes) ── */}
       {!isMinimalPage && <DigitalSerenityBackground theme={theme} />}
@@ -534,7 +541,7 @@ export default function App() {
         {renderPage()}
       </main>
 
-      {!isMinimalPage && <Footer setCurrentPage={setCurrentPage} />}
+      {!isMinimalPage && !isHelpPage && <Footer setCurrentPage={setCurrentPage} />}
       {!isMinimalPage && <Chatbot customApiKey={customApiKey} />}
 
       <AuthModal

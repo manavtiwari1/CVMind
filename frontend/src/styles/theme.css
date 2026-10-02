@@ -663,6 +663,18 @@ textarea.form-input {
   margin: 0;
 }
 
+/* ════ My Documents app shell override ══════════════════════════ */
+.app-shell .main-content {
+  max-width: none;
+  padding: 0;
+}
+
+/* ════ Help Center full-bleed shell override ════════════════════ */
+.help-shell .main-content {
+  max-width: none;
+  padding: 64px 0 0;
+}
+
 /* ════ Responsive ════════════════════════════════════════════════ */
 @media (max-width: 768px) {
   .main-content { padding: 6rem 1.25rem 3rem; }

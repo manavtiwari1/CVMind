@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronDown, Menu, X, Globe, Check } from 'lucide-react';
+import { ChevronDown, Menu, X } from 'lucide-react';
 import { 
   NavigationMenu,
   NavigationMenuItem,
@@ -8,9 +8,7 @@ import {
 import NavMegaMenu from './NavMegaMenu';
 import { NAV_MENUS } from './navMenus';
 import cvmindIcon from '../assets/cvmind_icon.png';
-import ContactDialog from './ContactDialog';
-import { readUser, isProUser, USER_CHANGE_EVENT } from '../lib/currentUser';
-import type { LoadedWork, StoredUser } from '../types/api';
+import type { LoadedWork } from '../types/api';
 import './Navbar.css';
 
 interface NavbarProps {
@@ -32,40 +30,12 @@ export default function Navbar({
   handleSignOut,
 }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
   const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
   const [mobileLinkedInOpen, setMobileLinkedInOpen] = useState(false);
   const [mobileCareerOpen, setMobileCareerOpen] = useState(false);
   const [mobileCareerAiOpen, setMobileCareerAiOpen] = useState(false);
-  const [showLanguages, setShowLanguages] = useState(false);
-  const [contactOpen, setContactOpen] = useState(false);
-  const [user, setUser] = useState<StoredUser | null>(null);
-
-  // Sync user details reactively on login (adjusting state during render when isLoggedIn changes,
-  // see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
-  const [syncedLogin, setSyncedLogin] = useState<boolean | null>(null);
-  if (isLoggedIn !== syncedLogin) {
-    setSyncedLogin(isLoggedIn);
-    setUser(isLoggedIn ? readUser() : null);
-  }
-
-  // Pick up profile edits made on the Account page (name, photo, plan)
-  useEffect(() => {
-    const sync = () => setUser(readUser());
-    window.addEventListener(USER_CHANGE_EVENT, sync);
-    return () => window.removeEventListener(USER_CHANGE_EVENT, sync);
-  }, []);
 
   const [scrolled, setScrolled] = useState(false);
-
-  // Click outside listener for dropdowns
-  useEffect(() => {
-    const handleOutsideClick = () => {
-      setShowDropdown(false);
-    };
-    window.addEventListener('click', handleOutsideClick);
-    return () => window.removeEventListener('click', handleOutsideClick);
-  }, []);
 
   // Scroll shadow effect
   useEffect(() => {
@@ -128,67 +98,9 @@ export default function Navbar({
         {/* Right actions */}
         <div className="navbar-actions">
           {isLoggedIn ? (
-            <>
-            <button className="navbar-login-link" onClick={() => go('dashboard')}>Dashboard</button>
-            {!isProUser(user) && (
-              <button className="nav-upgrade-btn" onClick={() => go('pricing')}>Upgrade</button>
-            )}
-            <div className="nav-profile-container" onClick={e => e.stopPropagation()}>
-              <button
-                className="nav-profile-trigger"
-                onClick={() => { setShowDropdown(prev => !prev); setShowLanguages(false); }}
-                aria-haspopup="menu"
-                aria-expanded={showDropdown}
-                title="Profile Menu"
-              >
-                {user?.avatar ? (
-                  <img src={user.avatar} alt={user.name} className="nav-profile-avatar" />
-                ) : (
-                  <div className="nav-profile-monogram">
-                    {String(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <ChevronDown size={16} className={`nav-profile-caret${showDropdown ? ' open' : ''}`} />
-              </button>
-
-              {showDropdown && (
-                <div className="nav-profile-dropdown animate-scale-up" role="menu">
-                  <button role="menuitem" className="nav-profile-dropdown-item" onClick={() => { setShowDropdown(false); go('pricing'); }}>
-                    Plans
-                  </button>
-                  <button role="menuitem" className="nav-profile-dropdown-item" onClick={() => { setShowDropdown(false); go('account'); }}>
-                    Account
-                  </button>
-                  <button role="menuitem" className="nav-profile-dropdown-item" onClick={() => { setShowDropdown(false); go('help-center'); }}>
-                    Help Center
-                  </button>
-                  <button role="menuitem" className="nav-profile-dropdown-item" onClick={() => { setShowDropdown(false); setContactOpen(true); }}>
-                    Contact Us
-                  </button>
-                  <button
-                    role="menuitem"
-                    className="nav-profile-dropdown-item"
-                    aria-expanded={showLanguages}
-                    onClick={() => setShowLanguages(v => !v)}
-                  >
-                    Language
-                    <Globe size={16} className="nav-profile-dropdown-trail" />
-                  </button>
-                  {showLanguages && (
-                    <div className="nav-language-list">
-                      <div className="nav-language-option selected">
-                        English <Check size={15} />
-                      </div>
-                      <div className="nav-language-note">More languages coming soon</div>
-                    </div>
-                  )}
-                  <button role="menuitem" className="nav-profile-dropdown-item" onClick={() => { setShowDropdown(false); handleSignOut(); }}>
-                    Log Out
-                  </button>
-                </div>
-              )}
-            </div>
-            </>
+            <button className="navbar-cta" onClick={() => go('my-documents')}>
+              My Documents
+            </button>
           ) : (
             <>
               <button
@@ -370,7 +282,7 @@ export default function Navbar({
 
         {/* Remaining links */}
         {[
-          ...(isLoggedIn ? [{ label: 'Account', page: 'account' }] : []),
+          ...(isLoggedIn ? [{ label: 'My Documents', page: 'my-documents' }, { label: 'Account', page: 'account' }] : []),
           { label: 'Help Center', page: 'help-center' },
           { label: 'About CV Mind', page: 'about' },
           { label: 'Contact Support', page: 'contact' },
@@ -421,8 +333,6 @@ export default function Navbar({
         )}
       </div>
     </header>
-
-    <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} />
     </>
   );
 }
