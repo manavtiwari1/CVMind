@@ -4,6 +4,7 @@ import { AlertTriangle, CheckCircle2, Link2, Loader2, Search, Sparkles, Target, 
 import { authFetch } from '../lib/authFetch';
 import { API_BASE } from '../lib/apiBase';
 import { getErrorMessage } from '../utils/errors';
+import { printResume } from '../lib/printPdf';
 import './ResumeDownload.css';
 
 interface ResumeDownloadProps {
@@ -43,6 +44,8 @@ export default function ResumeDownload({ defaultName, paper, getHtml, getText, c
   const [scanBusy, setScanBusy] = useState(false);
   const [scanError, setScanError] = useState('');
   const [blob, setBlob] = useState<Blob | null>(null);
+  // True when the server couldn't make the PDF and the browser's print dialog was used instead
+  const [printed, setPrinted] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const fileName = (name.trim() || 'My Resume');
 
@@ -65,12 +68,24 @@ export default function ResumeDownload({ defaultName, paper, getHtml, getText, c
     setStage('working');
     setProgress(8);
     setError('');
+    setPrinted(false);
+    // The server can't render PDFs (no browser available): save it through the print dialog instead
+    const printInstead = async () => {
+      await printResume(getHtml(), fileName, paper);
+      setPrinted(true);
+      setProgress(100);
+      setStage('done');
+    };
     try {
       const res = await authFetch(`${API_BASE}/api/resume/${kind === 'pdf' ? 'pdf' : 'email-pdf'}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ html: getHtml(), fileName, paper }),
       });
+      if (kind === 'pdf' && res.status === 503) {
+        await printInstead();
+        return;
+      }
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || (res.status === 401 ? 'Please sign in again to download.' : 'Could not create the PDF.'));
@@ -165,7 +180,11 @@ export default function ResumeDownload({ defaultName, paper, getHtml, getText, c
               <>
                 <p className="rd-progress-label" aria-live="polite">
                   {stage === 'done'
-                    ? (mode === 'pdf' ? <><CheckCircle2 size={16} /> {fileName}.pdf downloaded</> : <><CheckCircle2 size={16} /> PDF sent to {sentTo}</>)
+                    ? (mode === 'email'
+                      ? <><CheckCircle2 size={16} /> PDF sent to {sentTo}</>
+                      : printed
+                        ? <><CheckCircle2 size={16} /> Choose "Save as PDF" in the print window</>
+                        : <><CheckCircle2 size={16} /> {fileName}.pdf downloaded</>)
                     : `${progress}% Complete...`}
                 </p>
                 <div className="rd-bar" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
@@ -195,7 +214,7 @@ export default function ResumeDownload({ defaultName, paper, getHtml, getText, c
               {scanError && <p className="rd-scan-error"><AlertTriangle size={13} /> {scanError}</p>}
             </section>
 
-            {mode === 'pdf' && stage !== 'error' && (
+            {mode === 'pdf' && stage !== 'error' && !printed && (
               <p className="rd-foot">
                 * If the download doesn't start automatically in a few seconds, please{' '}
                 <button type="button" disabled={!blob} onClick={() => blob && saveBlob(blob, `${fileName}.pdf`)}>click here</button>.
