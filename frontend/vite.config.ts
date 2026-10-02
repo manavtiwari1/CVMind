@@ -15,6 +15,8 @@ export default defineConfig({
     },
   },
   server: {
+    // www.lvh.me / app.lvh.me resolve to localhost for testing the site/app host split
+    allowedHosts: ['.lvh.me'],
     proxy: {
       '/_/backend': {
         target: backendTarget,

@@ -1,6 +1,7 @@
 import type { StoredUser } from '../types/api';
+import { USER_CHANGE_EVENT, syncSessionCookie } from './session';
 
-export const USER_CHANGE_EVENT = 'cvmind-user-change';
+export { USER_CHANGE_EVENT };
 
 export function readUser(): StoredUser | null {
   try {
@@ -14,6 +15,7 @@ export function readUser(): StoredUser | null {
 // Persist the signed-in user and let other mounted components (e.g. the Navbar avatar) refresh
 export function saveUser(user: StoredUser) {
   localStorage.setItem('cvmind_user', JSON.stringify(user));
+  syncSessionCookie(user);
   window.dispatchEvent(new Event(USER_CHANGE_EVENT));
 }
 

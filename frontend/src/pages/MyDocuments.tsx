@@ -14,6 +14,7 @@ import cvmindIcon from '../assets/cvmind_icon.png';
 import cvmindLogo from '../assets/cvmind_logo_transparent.png';
 import type { LoadedWork, SavedWork, StoredUser } from '../types/api';
 import './MyDocuments.css';
+import { siteOrigin } from '../lib/hosts';
 
 type Tab = 'dashboard' | 'documents' | 'saved-jobs';
 type ListedWork = SavedWork & { _id: string; createdAt: string };
@@ -117,7 +118,7 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
   };
 
   const copyShareLink = async (w: ListedWork) => {
-    const url = `${window.location.origin}/portfolio/${workId(w)}`;
+    const url = `${siteOrigin()}/portfolio/${workId(w)}`;
     try {
       await navigator.clipboard.writeText(url);
       setToast('Share link copied');
@@ -217,7 +218,7 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
   };
 
   const createButton = (
-    <button type="button" className="md-btn md-btn--solid" onClick={() => setCurrentPage('resume-builder')}>
+    <button type="button" className="md-btn md-btn--solid" onClick={() => setCurrentPage('resume-editor')}>
       <Plus size={16} /> Create
     </button>
   );
@@ -227,7 +228,7 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
       <FileText size={28} />
       <strong>No documents yet</strong>
       <span>Resumes and cover letters you save in the builder will show up here.</span>
-      <button type="button" className="md-btn md-btn--solid" onClick={() => setCurrentPage('resume-builder')}>Create a resume</button>
+      <button type="button" className="md-btn md-btn--solid" onClick={() => setCurrentPage('resume-editor')}>Create a resume</button>
     </div>
   );
 
@@ -289,7 +290,7 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
               <FileText size={28} />
               <strong>Nothing saved yet</strong>
               <span>Resumes, cover letters and results you save from CV Mind tools will show up here.</span>
-              <button type="button" className="md-btn md-btn--solid" onClick={() => setCurrentPage('resume-builder')}>Create a resume</button>
+              <button type="button" className="md-btn md-btn--solid" onClick={() => setCurrentPage('resume-editor')}>Create a resume</button>
             </div>
           ))}
         </section>
@@ -406,7 +407,7 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
             <button type="button" className="md-foot-brand" onClick={() => setCurrentPage('home')}>CVMind</button>. All Rights Reserved.
           </span>
           <nav className="md-foot-links" aria-label="Footer">
-            <button type="button" onClick={() => setCurrentPage('resume-builder')}>Resume Builder</button>
+            <button type="button" onClick={() => setCurrentPage('resume-editor')}>Resume Builder</button>
             <button type="button" onClick={() => setCurrentPage('pricing')}>{isPro ? 'Plans' : 'Upgrade'}</button>
             <button type="button" onClick={() => setCurrentPage('terms')}>Terms</button>
             <button type="button" onClick={() => setCurrentPage('privacy')}>Privacy</button>
