@@ -201,6 +201,21 @@
   color: #0d0d0d;
 }
 
+/* Outlined Sign In button (Enhancv style) */
+.navbar-login-link.navbar-signin {
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  color: #111827;
+  border: 1.5px solid #1f2937;
+  border-radius: 6px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.navbar-login-link.navbar-signin:hover {
+  color: #fff;
+  background: #111827;
+}
+
 /* Green primary CTA */
 .navbar-cta {
   background: #2dc08d;

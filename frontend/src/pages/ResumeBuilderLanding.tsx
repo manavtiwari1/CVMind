@@ -1,20 +1,19 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle2, ChevronDown, ArrowRight, FileText, Zap, Target, Shield, Users, Star } from 'lucide-react';
 import { useLiveStats, formatStat } from '../utils/stats';
+import TemplatePreview from '../components/TemplatePreview';
+import { TEMPLATES as ALL_TEMPLATES, type Template } from '../data/resumeTemplates';
 import './ResumeBuilderLanding.css';
 
 interface ResumeBuilderLandingProps {
   setCurrentPage: (page: string) => void;
 }
 
-const TEMPLATES = [
-  { name: 'Double Column', color: '#6366f1' },
-  { name: 'Ivy League',    color: '#0ea5e9' },
-  { name: 'Elegant',       color: '#8b5cf6' },
-  { name: 'Contemporary',  color: '#2dc08d' },
-  { name: 'Modern',        color: '#f59e0b' },
-  { name: 'Minimal',       color: '#374151' },
-];
+const FEATURED_IDS = ['cvmind-executive', 'executive-sidebar', 'classic-pro', 'modern-blue', 'tech-minimal', 'minimalist-serif'];
+const FEATURED_TEMPLATES = FEATURED_IDS
+  .map(id => ALL_TEMPLATES.find(t => t.id === id))
+  .filter((t): t is Template => Boolean(t));
+const RESUME_TEMPLATE_COUNT = ALL_TEMPLATES.filter(t => (t.type || 'resume') === 'resume').length;
 
 const TESTIMONIALS = [
   { name: 'Priya S.', role: 'Software Engineer · Google', text: 'The AI rewriter transformed my bullet points overnight. Got 3 callbacks in a week after using CVMind.' },
@@ -256,38 +255,26 @@ export default function ResumeBuilderLanding({ setCurrentPage }: ResumeBuilderLa
         <div className="rbl-section-inner">
           <div className="rbl-section-tag">Resume Templates</div>
           <h2 className="rbl-section-h2">Start from a Recruiter-Reviewed Layout</h2>
-          <p className="rbl-section-sub">22 ATS-tested templates with 90%+ parsing rate — no graphics, no text-in-images, no ATS traps.</p>
+          <p className="rbl-section-sub">{RESUME_TEMPLATE_COUNT} ATS-tested templates with 90%+ parsing rate — no graphics, no text-in-images, no ATS traps.</p>
           <div className="rbl-templates-grid">
-            {TEMPLATES.map(({ name, color }) => (
-              <div key={name} className="rbl-template-card" onClick={() => setCurrentPage('resume-editor')}>
-                <div className="rbl-template-preview" style={{ '--t-color': color } as React.CSSProperties}>
-                  <div className="rbl-tpl-header" style={{ background: color }}>
-                    <div className="rbl-tpl-avatar" />
-                    <div>
-                      <div className="rbl-tpl-name-line" />
-                      <div className="rbl-tpl-role-line" />
-                    </div>
-                  </div>
-                  <div className="rbl-tpl-body">
-                    <div className="rbl-tpl-section-label" style={{ color }} />
-                    <div className="rbl-tpl-line" style={{ width: '90%' }} />
-                    <div className="rbl-tpl-line" style={{ width: '75%' }} />
-                    <div className="rbl-tpl-line" style={{ width: '60%' }} />
-                    <div className="rbl-tpl-section-label" style={{ color, marginTop: '0.5rem' }} />
-                    <div className="rbl-tpl-line" style={{ width: '80%' }} />
-                    <div className="rbl-tpl-line" style={{ width: '65%' }} />
-                  </div>
-                </div>
-                <div className="rbl-template-label">{name}</div>
-                <div className="rbl-template-overlay">
-                  <span>Use Template</span>
-                </div>
-              </div>
+            {FEATURED_TEMPLATES.map(t => (
+              <button
+                key={t.id}
+                type="button"
+                className="rbl-template-card"
+                style={{ '--t-color': t.color } as React.CSSProperties}
+                onClick={() => setCurrentPage('resume-editor')}
+                aria-label={`Use the ${t.name} template`}
+              >
+                <TemplatePreview html={t.html} name={t.name} />
+                <span className="rbl-template-label">{t.name}</span>
+                <span className="rbl-template-overlay"><span>Use Template</span></span>
+              </button>
             ))}
           </div>
           <div className="rbl-templates-cta">
             <button className="rbl-btn-primary" onClick={() => setCurrentPage('resume-editor')}>
-              View All 22 Templates <ArrowRight size={16} />
+              View All {RESUME_TEMPLATE_COUNT} Templates <ArrowRight size={16} />
             </button>
           </div>
         </div>
