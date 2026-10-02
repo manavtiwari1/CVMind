@@ -301,7 +301,7 @@ export default function Prep({ customApiKey, resumeText, setResumeText, setCurre
       let response;
       if (useCached && resumeText) {
         headers['Content-Type'] = 'application/json';
-        response = await fetch(`${baseUrl}/api/prep`, {
+        response = await authFetch(`${baseUrl}/api/prep`, {
           method: 'POST',
           headers,
           body: JSON.stringify({
@@ -313,7 +313,7 @@ export default function Prep({ customApiKey, resumeText, setResumeText, setCurre
       } else if (selectedFile) {
         const formData = new FormData();
         formData.append('resume', selectedFile);
-        response = await fetch(`${baseUrl}/api/prep`, {
+        response = await authFetch(`${baseUrl}/api/prep`, {
           method: 'POST',
           headers,
           body: formData
@@ -321,7 +321,7 @@ export default function Prep({ customApiKey, resumeText, setResumeText, setCurre
       } else if (prepResumeUrl) {
         const formData = new FormData();
         formData.append('resumeUrl', prepResumeUrl.trim());
-        response = await fetch(`${baseUrl}/api/prep`, {
+        response = await authFetch(`${baseUrl}/api/prep`, {
           method: 'POST',
           headers,
           body: formData

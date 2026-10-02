@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { authFetch } from '../lib/authFetch';
 import {
   CheckCircle2, Copy, Check, ArrowRight, RefreshCw, FileText,
   AlertCircle, Zap, MessageSquare, BookOpen, Target, Upload, X, Link
@@ -143,7 +144,7 @@ export default function Proofreading({ customApiKey }: ProofreadingProps) {
         body = JSON.stringify({ text: inputText.trim(), industry, userId });
       }
 
-      const response = await fetch(`${baseUrl}/api/ai/proofread`, {
+      const response = await authFetch(`${baseUrl}/api/ai/proofread`, {
         method: 'POST',
         headers,
         body

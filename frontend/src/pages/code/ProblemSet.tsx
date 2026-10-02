@@ -225,7 +225,7 @@ export default function ProblemSet({ problems, onOpen, onOpenAi, onOpenPractice 
               ))}
             </div>
           </div>
-          {summary.solved === 0 && <p className="cx-note">Solve your first problem and your progress shows up here. It is saved on this device.</p>}
+          {summary.solved === 0 && <p className="cx-note">Solve your first problem and your progress shows up here. It is saved to your account when you are signed in.</p>}
         </section>
 
         <section className="cx-card cx-side-card">
