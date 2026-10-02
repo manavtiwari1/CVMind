@@ -13,7 +13,7 @@ import bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
 import { parsePdf, parseDocx, parseTxt, fetchResumeFromUrl } from './services/parser.js';
 import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, findJobsWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek } from './services/gemini.js';
-import { getPublicStats, getAdminStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveJobFinderLog, savePaymentLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, getWhitelistedEmails, addWhitelistedEmail, deleteWhitelistedEmail, getAutoApplyAccessList, grantAutoApplyAccess, revokeAutoApplyAccess, hasAutoApplyAccess, getCareerCopilotAccessList, grantCareerCopilotAccess, revokeCareerCopilotAccess, hasCareerCopilotAccess, getAllUsersForAdmin, setUserStatus } from './db.js';
+import { getPublicStats, getAdminStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveJobFinderLog, saveProofreadLog, savePaymentLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, getWhitelistedEmails, addWhitelistedEmail, deleteWhitelistedEmail, getAutoApplyAccessList, grantAutoApplyAccess, revokeAutoApplyAccess, hasAutoApplyAccess, getCareerCopilotAccessList, grantCareerCopilotAccess, revokeCareerCopilotAccess, hasCareerCopilotAccess, getAllUsersForAdmin, setUserStatus } from './db.js';
 import { Resend } from 'resend';
 import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser } from './services/authToken.js';
 import mongoose from 'mongoose';
@@ -32,6 +32,29 @@ const withSessionToken = (payload) => ({
   ...payload,
   token: signToken({ sub: payload.id, kind: 'user', email: payload.email })
 });
+
+// Save a generated result to the signed-in user's My Works. A failed save must never throw away
+// an AI result the user already waited for, so errors are logged and the response goes out anyway.
+async function safeSaveWork(args) {
+  try {
+    return await saveWork(args);
+  } catch (err) {
+    console.error('[works] could not save result:', err.message);
+    return null;
+  }
+}
+
+// Saves a feature result as My Works JSON; no-op for signed-out visitors
+function saveFeatureWork(userId, { title, type, templateId, payload }) {
+  if (!userId) return Promise.resolve(null);
+  return safeSaveWork({
+    userId,
+    title: String(title || 'Untitled').slice(0, 120),
+    type,
+    templateId,
+    htmlContent: JSON.stringify(payload)
+  });
+}
 
 // Initialize Resend Client
 const resend = new Resend(process.env.RESEND_API_KEY || '');
@@ -116,7 +139,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-gemini-key', 'x-admin-secret']
 }));
 
-app.use(express.json());
+// Saved resumes / portfolios carry full HTML (often with an embedded photo); the 100kb default
+// body limit made those saves fail with a 413 and the work never reached MongoDB.
+app.use(express.json({ limit: '10mb' }));
 
 // Public routes that call an AI model: limit each IP so scripted requests can't burn AI credits.
 // Signed-in-only AI routes (auto-apply, agent, company parse-job) are not included.
@@ -1105,7 +1130,7 @@ async function importCheckerResumeForAgent(req, file) {
   }
 }
 
-apiRouter.post('/api/analyze', upload.single('resume'), async (req, res) => {
+apiRouter.post('/api/analyze', optionalUser, upload.single('resume'), async (req, res) => {
   try {
     const { file } = req;
     const resumeUrl = req.body?.resumeUrl || '';
@@ -1139,14 +1164,24 @@ apiRouter.post('/api/analyze', upload.single('resume'), async (req, res) => {
     const evaluation = await analyzeResumeWithGemini(extractedText, customApiKey);
 
     // Persist admin analytics after successful parsing.
+    const userId = req.auth?.sub || '';
+    const fileName = file ? file.originalname : 'Link Upload';
+    let savedWork = null;
     if (evaluation && evaluation.score) {
-      saveScan({
-        fileName: file ? file.originalname : 'Link Upload',
+      await saveScan({
+        fileName,
         fileType: file ? file.mimetype : 'link',
         fileSize: file ? file.size : 0,
-        evaluation
+        evaluation,
+        userId
       });
       invalidatePublicStats();
+      savedWork = await saveFeatureWork(userId, {
+        title: `Resume Check - ${fileName}`,
+        type: 'resume-check',
+        templateId: 'resume-checker',
+        payload: { fileName, resumeText: extractedText, evaluation }
+      });
     }
 
     const agentResume = await importCheckerResumeForAgent(req, file);
@@ -1156,7 +1191,8 @@ apiRouter.post('/api/analyze', upload.single('resume'), async (req, res) => {
       success: true,
       data: evaluation,
       resumeText: extractedText,
-      agentResume
+      agentResume,
+      work: savedWork
     });
 
   } catch (error) {
@@ -1175,7 +1211,7 @@ apiRouter.post('/api/analyze', upload.single('resume'), async (req, res) => {
 });
 
 // AI Resume Optimizer Endpoint
-apiRouter.post('/api/optimize', async (req, res) => {
+apiRouter.post('/api/optimize', optionalUser, async (req, res) => {
   try {
     const { resumeText, analysisResult } = req.body || {};
     const customApiKey = req.headers['x-gemini-key'] || null;
@@ -1191,17 +1227,21 @@ apiRouter.post('/api/optimize', async (req, res) => {
     const optimizedResume = await optimizeResumeWithGemini(resumeText, analysisResult, customApiKey);
 
     // Record the optimization fix safely in admin diagnostics
-    try {
-      const fileName = req.body.fileName || analysisResult.fileName || 'Unknown Resume';
-      const priorScore = Number(analysisResult.score || 0);
-      await saveFix({ fileName, priorScore });
-    } catch (dbErr) {
-      console.error('Error saving optimization fix log:', dbErr);
-    }
+    const userId = req.auth?.sub || '';
+    const fileName = req.body.fileName || analysisResult.fileName || 'Unknown Resume';
+    const priorScore = Number(analysisResult.score || 0);
+    await saveFix({ fileName, priorScore, userId });
+    const savedWork = await saveFeatureWork(userId, {
+      title: `Optimized Resume - ${fileName}`,
+      type: 'resume-optimized',
+      templateId: 'resume-optimizer',
+      payload: { fileName, priorScore, optimizedResume }
+    });
 
     return res.json({
       success: true,
-      data: { optimizedResume }
+      data: { optimizedResume },
+      work: savedWork
     });
   } catch (error) {
     console.error('Optimize API Error:', error);
@@ -1212,7 +1252,7 @@ apiRouter.post('/api/optimize', async (req, res) => {
 });
 
 // AI Resume Tailoring Endpoint
-apiRouter.post('/api/tailor', upload.single('resume'), async (req, res) => {
+apiRouter.post('/api/tailor', optionalUser, upload.single('resume'), async (req, res) => {
   try {
     const { file } = req;
     const { jobDescription, resumeUrl } = req.body || {};
@@ -1240,18 +1280,28 @@ apiRouter.post('/api/tailor', upload.single('resume'), async (req, res) => {
     const result = await tailorResumeWithGemini(extractedText, jobDescription, customApiKey);
 
     // Record the tailoring event in MongoDB / Local DB
-    saveTailorLog({
-      fileName: file ? file.originalname : 'Link Upload',
+    const userId = req.auth?.sub || '';
+    const tailorFileName = file ? file.originalname : 'Link Upload';
+    await saveTailorLog({
+      fileName: tailorFileName,
       fileSize: file ? file.size : 0,
       score: result.matchScore,
       jobDescription: jobDescription,
       matchedSkills: result.matchedSkills,
-      missingSkills: result.missingSkillsRecommended
-    }).catch(err => console.error('Error logging tailoring scan:', err));
+      missingSkills: result.missingSkillsRecommended,
+      userId
+    });
+    const savedWork = await saveFeatureWork(userId, {
+      title: `Tailored Resume - ${tailorFileName}`,
+      type: 'resume-tailor',
+      templateId: 'resume-tailorer',
+      payload: { fileName: tailorFileName, jobDescription, resumeText: extractedText, result }
+    });
 
     return res.json({
       success: true,
-      data: result
+      data: result,
+      work: savedWork
     });
   } catch (error) {
     console.error('Tailor API Error:', error);
@@ -1262,7 +1312,7 @@ apiRouter.post('/api/tailor', upload.single('resume'), async (req, res) => {
 });
 
 // AI Interview Prep Endpoint
-apiRouter.post('/api/prep', upload.single('resume'), async (req, res) => {
+apiRouter.post('/api/prep', optionalUser, upload.single('resume'), async (req, res) => {
   try {
     const { file } = req;
     const { resumeText, resumeUrl } = req.body || {};
@@ -1296,11 +1346,12 @@ apiRouter.post('/api/prep', upload.single('resume'), async (req, res) => {
 
     // Save logs to MongoDB / Local DB
     if (result && result.questions) {
-      savePrepLog({
+      await savePrepLog({
         fileName: fileName,
         fileSize: fileSize,
-        questionsCount: result.questions.length
-      }).catch(err => console.error('Error logging prep action:', err));
+        questionsCount: result.questions.length,
+        userId: req.auth?.sub || ''
+      });
     }
 
     return res.json({
@@ -1472,7 +1523,7 @@ apiRouter.post('/api/linkedin/analyze', optionalUser, upload.single('linkedinPdf
 
     // Save logs to MongoDB / Local JSON DB
     if (evaluation && evaluation.score !== undefined) {
-      await saveLinkedinLog({ email: email || '', score: evaluation.score });
+      await saveLinkedinLog({ email: req.auth?.email || email || '', userId: userId || '', score: evaluation.score });
     }
 
     let savedWork = null;
@@ -1481,7 +1532,7 @@ apiRouter.post('/api/linkedin/analyze', optionalUser, upload.single('linkedinPdf
         profileText: extractedText,
         evaluation
       };
-      savedWork = await saveWork({
+      savedWork = await safeSaveWork({
         userId,
         title: `LinkedIn Optimizer - ${new Date().toLocaleDateString()}`,
         type: 'linkedin',
@@ -1524,13 +1575,13 @@ apiRouter.post('/api/linkedin/bio', optionalUser, async (req, res) => {
 
     // Save log
     await saveLinkedinBioLog({
-      email: email || '',
+      email: req.auth?.email || email || '', userId: userId || '',
       jobTitle: jobTitle
     });
 
     let savedWork = null;
     if (userId) {
-      savedWork = await saveWork({
+      savedWork = await safeSaveWork({
         userId,
         title: `LinkedIn Assets - ${jobTitle}`,
         type: 'linkedin-bio',
@@ -1578,13 +1629,13 @@ apiRouter.post('/api/linkedin/outreach', optionalUser, async (req, res) => {
     });
 
     await saveLinkedinOutreachLog({
-      email: email || '',
+      email: req.auth?.email || email || '', userId: userId || '',
       jobTitle: jobTitle
     });
 
     let savedWork = null;
     if (userId) {
-      savedWork = await saveWork({
+      savedWork = await safeSaveWork({
         userId,
         title: `LinkedIn Outreach - ${jobTitle} (${companyName || 'General'})`,
         type: 'linkedin-outreach',
@@ -1632,13 +1683,13 @@ apiRouter.post('/api/career/courses', optionalUser, async (req, res) => {
     });
 
     await saveCareerCoursesLog({
-      email: email || '',
+      email: req.auth?.email || email || '', userId: userId || '',
       jobTitle: targetJob
     });
 
     let savedWork = null;
     if (userId) {
-      savedWork = await saveWork({
+      savedWork = await safeSaveWork({
         userId,
         title: `Career Courses - ${targetJob}`,
         type: 'career-courses',
@@ -1685,13 +1736,13 @@ apiRouter.post('/api/career/pitch', optionalUser, async (req, res) => {
     });
 
     await saveElevatorPitchLog({
-      email: email || '',
+      email: req.auth?.email || email || '', userId: userId || '',
       jobTitle: jobTitle
     });
 
     let savedWork = null;
     if (userId) {
-      savedWork = await saveWork({
+      savedWork = await safeSaveWork({
         userId,
         title: `Elevator Pitch - ${jobTitle}`,
         type: 'elevator-pitch',
@@ -1739,12 +1790,12 @@ apiRouter.post('/api/career/roadmap', optionalUser, async (req, res) => {
     });
 
     await saveCareerRoadmapLog({
-      email: email || ''
+      email: req.auth?.email || email || '', userId: userId || ''
     });
 
     let savedWork = null;
     if (userId) {
-      savedWork = await saveWork({
+      savedWork = await safeSaveWork({
         userId,
         title: `Career Roadmap - ${targetRole}`,
         type: 'career-roadmap',
@@ -1861,7 +1912,7 @@ Return ONLY valid JSON.`;
 
     let savedWork = null;
     if (userId) {
-      savedWork = await saveWork({
+      savedWork = await safeSaveWork({
         userId,
         title: `LinkedIn Post - ${topic.substring(0, 40)}`,
         type: 'linkedin-post',
@@ -1870,7 +1921,7 @@ Return ONLY valid JSON.`;
       });
       const user = await findUserById(userId);
       if (user) {
-        await saveLinkedinPostLog({ email: user.email, topic });
+        await saveLinkedinPostLog({ email: user.email, userId, topic });
       }
     }
 
@@ -1976,7 +2027,7 @@ Return ONLY this JSON:
 
     let savedWork = null;
     if (userId) {
-      savedWork = await saveWork({
+      savedWork = await safeSaveWork({
         userId,
         title: `Voice Practice - ${jobTitle || 'General'}`,
         type: 'voice-prep',
@@ -1985,7 +2036,7 @@ Return ONLY this JSON:
       });
       const user = await findUserById(userId);
       if (user) {
-        await saveVoicePrepLog({ email: user.email, jobTitle: jobTitle || 'General', score: data.overallScore || 0 });
+        await saveVoicePrepLog({ email: user.email, userId, jobTitle: jobTitle || 'General', score: data.overallScore || 0 });
       }
     }
 
@@ -2076,7 +2127,7 @@ Return this exact JSON structure:
 
     let savedWork = null;
     if (userId) {
-      savedWork = await saveWork({
+      savedWork = await safeSaveWork({
         userId,
         title: `Portfolio - ${portfolioData.name || 'My Portfolio'}`,
         type: 'portfolio-gen',
@@ -2085,7 +2136,7 @@ Return this exact JSON structure:
       });
       const user = await findUserById(userId);
       if (user) {
-        await savePortfolioGenLog({ email: user.email, theme: colorTheme || 'dark-pro' });
+        await savePortfolioGenLog({ email: user.email, userId, theme: colorTheme || 'dark-pro' });
       }
     }
 
@@ -2372,7 +2423,7 @@ apiRouter.post('/api/user/password', requireUser, async (req, res) => {
 });
 
 // AI Job Finder Endpoint
-apiRouter.post('/api/job-finder', upload.single('resume'), async (req, res) => {
+apiRouter.post('/api/job-finder', optionalUser, upload.single('resume'), async (req, res) => {
   try {
     const { file } = req;
     const { jobDescription, jobType } = req.body || {};
@@ -2404,18 +2455,26 @@ apiRouter.post('/api/job-finder', upload.single('resume'), async (req, res) => {
     const preferredJobType = jobType || 'All';
     const result = await findJobsWithGemini(extractedText, jobDescription.trim(), preferredJobType, customApiKey);
 
-    // Log the usage asynchronously
-    saveJobFinderLog({
-      email: req.body.email || '',
+    const userId = req.auth?.sub || '';
+    await saveJobFinderLog({
+      email: req.auth?.email || req.body.email || '',
+      userId,
       jobsCount: result?.jobs?.length || 0,
       jobDescription: jobDescription.trim().substring(0, 200),
       jobType: preferredJobType
-    }).catch(err => console.error('Error logging job finder usage:', err));
+    });
+    const savedWork = await saveFeatureWork(userId, {
+      title: `Job Search - ${jobDescription.trim().substring(0, 50)}`,
+      type: 'job-finder',
+      templateId: 'ai-job-finder',
+      payload: { jobDescription: jobDescription.trim(), jobType: preferredJobType, result }
+    });
 
     return res.json({
       success: true,
       data: result,
-      resumeText: extractedText
+      resumeText: extractedText,
+      work: savedWork
     });
   } catch (error) {
     console.error('Job Finder API Error:', error);
@@ -2474,7 +2533,7 @@ apiRouter.get('/api/payments/check-access/:email', async (req, res) => {
 });
 
 // AI Proofreading Endpoint
-apiRouter.post('/api/ai/proofread', upload.single('resume'), async (req, res) => {
+apiRouter.post('/api/ai/proofread', optionalUser, upload.single('resume'), async (req, res) => {
   try {
     const customApiKey = req.headers['x-gemini-key'] || null;
     const industry = req.body?.industry || 'General';
@@ -2507,7 +2566,23 @@ apiRouter.post('/api/ai/proofread', upload.single('resume'), async (req, res) =>
       customApiKey
     });
 
-    return res.json({ success: true, data: result, extractedText: (req.file || resumeUrl) ? text.trim() : undefined, usage: usageInfo });
+    const userId = req.auth?.sub || '';
+    const issues = Array.isArray(result?.changes) ? result.changes : [];
+    await saveProofreadLog({
+      email: req.auth?.email || '',
+      userId,
+      industry,
+      charCount: text.trim().length,
+      issuesCount: issues.length
+    });
+    const savedWork = await saveFeatureWork(userId, {
+      title: `Proofread - ${text.trim().substring(0, 40)}`,
+      type: 'proofread',
+      templateId: 'ai-proofreader',
+      payload: { industry, originalText: text.trim(), result }
+    });
+
+    return res.json({ success: true, data: result, extractedText: (req.file || resumeUrl) ? text.trim() : undefined, usage: usageInfo, work: savedWork });
   } catch (error) {
     console.error('Proofreading API Error:', error);
     return res.status(500).json({

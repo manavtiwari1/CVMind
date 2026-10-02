@@ -1,10 +1,13 @@
 import { useSyncExternalStore } from 'react';
 import type { CodingProblem } from '../../data/codingProblems';
+import { authFetch, getSessionToken } from '../../lib/authFetch';
+import { apiBase } from './codeApi';
 
 /**
- * Local-first progress store for CVMind Code.
- * Everything here comes from what the user actually ran and submitted on this device:
- * there are no seeded or placeholder values.
+ * Progress store for CVMind Code.
+ * Everything here comes from what the user actually submitted: there are no seeded or placeholder values.
+ * It works offline from localStorage; when signed in, syncProgress() makes the account's MongoDB copy the
+ * source of truth so progress and drafts follow the user across devices.
  */
 
 export interface SubmissionRecord {
@@ -150,21 +153,143 @@ export function setLastProblem(problemId: string) {
 
 export function resetProgress() {
   commit(empty());
+  clearLocalDrafts();
+  if (getSessionToken()) {
+    // the account's copy in MongoDB goes too, otherwise the next sync would bring it back
+    void authFetch(`${apiBase()}/api/code/progress`, { method: 'DELETE' }).catch(() => { /* offline: retried never, user can erase again */ });
+  }
 }
 
 // ── Drafts: the code you were typing survives reloads, per problem and language ──
-const draftKey = (problemId: string, language: string) => `cvmind_code_draft:${problemId}:${language}`;
+const DRAFT_PREFIX = 'cvmind_code_draft:';
+const DRAFT_TS_PREFIX = 'cvmind_code_draft_ts:';
+const draftKey = (problemId: string, language: string) => `${DRAFT_PREFIX}${problemId}:${language}`;
+const draftTsKey = (problemId: string, language: string) => `${DRAFT_TS_PREFIX}${problemId}:${language}`;
 
 export function loadDraft(problemId: string, language: string): string | null {
   try { return localStorage.getItem(draftKey(problemId, language)); } catch { return null; }
 }
 
+const draftTimers = new Map<string, number>();
+
+function pushDraft(problemId: string, language: string, code: string) {
+  if (!getSessionToken()) return;
+  void authFetch(`${apiBase()}/api/code/drafts`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ problemId, language, code }),
+  }).catch(() => { /* offline: the local copy is kept and pushed on the next sync */ });
+}
+
 export function saveDraft(problemId: string, language: string, code: string) {
-  try { localStorage.setItem(draftKey(problemId, language), code); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(draftKey(problemId, language), code);
+    localStorage.setItem(draftTsKey(problemId, language), String(Date.now()));
+  } catch { /* ignore */ }
+  // save to the account a moment after typing stops, not on every keystroke
+  const key = draftKey(problemId, language);
+  window.clearTimeout(draftTimers.get(key));
+  draftTimers.set(key, window.setTimeout(() => { draftTimers.delete(key); pushDraft(problemId, language, code); }, 1500));
 }
 
 export function clearDraft(problemId: string, language: string) {
-  try { localStorage.removeItem(draftKey(problemId, language)); } catch { /* ignore */ }
+  try {
+    localStorage.removeItem(draftKey(problemId, language));
+    localStorage.removeItem(draftTsKey(problemId, language));
+  } catch { /* ignore */ }
+  window.clearTimeout(draftTimers.get(draftKey(problemId, language)));
+  if (getSessionToken()) {
+    const qs = new URLSearchParams({ problemId, language });
+    void authFetch(`${apiBase()}/api/code/drafts?${qs}`, { method: 'DELETE' }).catch(() => { /* ignore */ });
+  }
+}
+
+function clearLocalDrafts() {
+  try {
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith(DRAFT_PREFIX) || k.startsWith(DRAFT_TS_PREFIX))
+      .forEach((k) => localStorage.removeItem(k));
+  } catch { /* ignore */ }
+}
+
+// ── Account sync: MongoDB is the source of truth once you are signed in ──
+
+interface ServerProgress {
+  success: boolean;
+  solved: Record<string, SolvedInfo>;
+  submissions: SubmissionRecord[];
+  drafts: { problemId: string; language: string; code: string; updatedAt: number }[];
+}
+
+const SYNC_EVERY_MS = 30000;
+let lastSync = 0;
+let syncing: Promise<boolean> | null = null;
+
+function applyServerProgress(server: ServerProgress) {
+  // Local-only entries (for example a result that was never judged) stay; anything the server has wins.
+  const localOnly = state.submissions.filter((l) =>
+    !server.submissions.some((s) => s.problemId === l.problemId && s.language === l.language && Math.abs(s.at - l.at) < 15000),
+  );
+  const submissions = [...server.submissions, ...localOnly]
+    .sort((a, b) => b.at - a.at)
+    .slice(0, MAX_SUBMISSIONS)
+    .map((s, i) => (i < MAX_WITH_CODE ? s : { ...s, code: undefined }));
+
+  const attempted: Record<string, number> = {};
+  const activity: Record<string, number> = {};
+  for (const s of submissions) {
+    attempted[s.problemId] = (attempted[s.problemId] || 0) + 1;
+    if (s.at) activity[dayKey(s.at)] = (activity[dayKey(s.at)] || 0) + 1;
+  }
+  commit({ ...state, solved: { ...state.solved, ...server.solved }, submissions, attempted, activity });
+
+  for (const d of server.drafts) {
+    try {
+      const local = localStorage.getItem(draftKey(d.problemId, d.language));
+      const localTs = Number(localStorage.getItem(draftTsKey(d.problemId, d.language)) || 0);
+      if (local === null || d.updatedAt > localTs) {
+        localStorage.setItem(draftKey(d.problemId, d.language), d.code);
+        localStorage.setItem(draftTsKey(d.problemId, d.language), String(d.updatedAt));
+      } else if (localTs > d.updatedAt || local !== d.code) {
+        pushDraft(d.problemId, d.language, local);
+      }
+    } catch { /* ignore */ }
+  }
+
+  // drafts that only exist on this device go up to the account
+  try {
+    for (const k of Object.keys(localStorage).filter((x) => x.startsWith(DRAFT_PREFIX))) {
+      const rest = k.slice(DRAFT_PREFIX.length);
+      const cut = rest.lastIndexOf(':');
+      const problemId = rest.slice(0, cut);
+      const language = rest.slice(cut + 1);
+      if (!server.drafts.some((d) => d.problemId === problemId && d.language === language)) {
+        const code = localStorage.getItem(k);
+        if (code) pushDraft(problemId, language, code);
+      }
+    }
+  } catch { /* ignore */ }
+}
+
+/** Pull this account's progress and drafts from MongoDB. Resolves true when the store was refreshed. */
+export function syncProgress(force = false): Promise<boolean> {
+  if (!getSessionToken()) return Promise.resolve(false);
+  if (syncing) return syncing;
+  if (!force && Date.now() - lastSync < SYNC_EVERY_MS) return Promise.resolve(false);
+  syncing = (async () => {
+    try {
+      const res = await authFetch(`${apiBase()}/api/code/progress`);
+      if (!res.ok) return false;
+      applyServerProgress((await res.json()) as ServerProgress);
+      lastSync = Date.now();
+      return true;
+    } catch {
+      return false; // offline or server asleep: the local copy keeps working
+    } finally {
+      syncing = null;
+    }
+  })();
+  return syncing;
 }
 
 // ── Derived numbers ─────────────────────────────────────────────

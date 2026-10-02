@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { authFetch } from '../lib/authFetch';
 import {
   Upload, FileText, Search, RefreshCw, ShieldCheck,
   Briefcase, MapPin, Clock, ExternalLink, AlertCircle, Sparkles
@@ -194,7 +195,7 @@ export default function JobFinder({ customApiKey }: JobFinderProps) {
       const headers: Record<string, string> = {};
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
 
-      const response = await fetch(`${baseUrl}/api/job-finder`, {
+      const response = await authFetch(`${baseUrl}/api/job-finder`, {
         method: 'POST',
         headers,
         body: formData,

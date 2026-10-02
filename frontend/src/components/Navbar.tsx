@@ -32,7 +32,32 @@ interface NavbarProps {
   setLoadedWork: (work: LoadedWork | null) => void;
 }
 
-export default function Navbar({ 
+// How each saved-work type shows up in "My Works": badge label, colours and the page it opens
+const WORK_TYPES: Record<string, { label: string; page: string; bg?: string; color?: string }> = {
+  'resume': { label: 'Resume', page: 'resume-builder' },
+  'cover-letter': { label: 'Cover Letter', page: 'resume-builder' },
+  'resume-check': { label: 'Resume Check', page: 'home', bg: 'rgba(41,151,255,0.12)', color: '#2997ff' },
+  'resume-optimized': { label: 'Optimized Resume', page: 'home', bg: 'rgba(41,151,255,0.12)', color: '#2997ff' },
+  'resume-tailor': { label: 'Tailored Resume', page: 'tailor', bg: 'rgba(16,185,129,0.12)', color: '#10b981' },
+  'proofread': { label: 'Proofread', page: 'proofreading', bg: 'rgba(250,204,21,0.14)', color: '#ca8a04' },
+  'job-finder': { label: 'Job Search', page: 'job-finder', bg: 'rgba(99,102,241,0.12)', color: '#6366f1' },
+  'prep': { label: 'AI Prep', page: 'prep', bg: 'rgba(99,102,241,0.12)', color: '#6366f1' },
+  'voice-prep': { label: 'Voice Practice', page: 'voice-prep', bg: 'rgba(236,72,153,0.12)', color: '#ec4899' },
+  'portfolio-gen': { label: 'Portfolio', page: 'portfolio-gen', bg: 'rgba(167,139,250,0.12)', color: '#a78bfa' },
+  'linkedin': { label: 'LinkedIn Audit', page: 'linkedin' },
+  'linkedin-bio': { label: 'LinkedIn Bio', page: 'linkedin-bio', bg: 'rgba(41,151,255,0.12)', color: '#2997ff' },
+  'linkedin-outreach': { label: 'Outreach DM', page: 'linkedin-outreach', bg: 'rgba(41,151,255,0.12)', color: '#2997ff' },
+  'linkedin-post': { label: 'LinkedIn Post', page: 'linkedin-post', bg: 'rgba(41,151,255,0.12)', color: '#2997ff' },
+  'career-courses': { label: 'Skill Gaps', page: 'career-courses', bg: 'rgba(16,185,129,0.12)', color: '#10b981' },
+  'elevator-pitch': { label: 'Elevator Pitch', page: 'elevator-pitch', bg: 'rgba(167,139,250,0.12)', color: '#a78bfa' },
+  'career-roadmap': { label: 'Roadmap AI', page: 'career-roadmap', bg: 'rgba(251,146,60,0.12)', color: '#fb923c' },
+};
+
+function workTypeInfo(type: string) {
+  return WORK_TYPES[type] || { label: 'Saved Work', page: 'resume-builder' };
+}
+
+export default function Navbar({
   currentPage, 
   setCurrentPage, 
   isLoggedIn, 
@@ -1006,27 +1031,10 @@ export default function Navbar({
                     <div key={w.id || w._id} className="work-item-card">
                       <div className="work-card-top">
                         <span className={`work-type-badge ${w.type}`} style={{
-                          background: w.type === 'prep' ? 'rgba(99,102,241,0.12)' : 
-                                      w.type === 'linkedin-bio' ? 'rgba(41,151,255,0.12)' : 
-                                      w.type === 'linkedin-outreach' ? 'rgba(41,151,255,0.12)' : 
-                                      w.type === 'career-courses' ? 'rgba(16,185,129,0.12)' : 
-                                      w.type === 'elevator-pitch' ? 'rgba(167,139,250,0.12)' : 
-                                      w.type === 'career-roadmap' ? 'rgba(251,146,60,0.12)' : undefined,
-                          color: w.type === 'prep' ? '#6366f1' : 
-                                 w.type === 'linkedin-bio' ? '#2997ff' : 
-                                 w.type === 'linkedin-outreach' ? '#2997ff' : 
-                                 w.type === 'career-courses' ? '#10b981' : 
-                                 w.type === 'elevator-pitch' ? '#a78bfa' : 
-                                 w.type === 'career-roadmap' ? '#fb923c' : undefined
+                          background: workTypeInfo(w.type).bg,
+                          color: workTypeInfo(w.type).color
                         }}>
-                          {w.type === 'cover-letter' ? 'Cover Letter' : 
-                           w.type === 'linkedin' ? 'LinkedIn Audit' : 
-                           w.type === 'linkedin-bio' ? 'LinkedIn Bio' : 
-                           w.type === 'linkedin-outreach' ? 'Outreach DM' : 
-                           w.type === 'career-courses' ? 'Skill Gaps' : 
-                           w.type === 'elevator-pitch' ? 'Elevator Pitch' : 
-                           w.type === 'career-roadmap' ? 'Roadmap AI' : 
-                           w.type === 'prep' ? 'AI Prep' : 'Resume'}
+                          {workTypeInfo(w.type).label}
                         </span>
                         <span className="work-date">
                           {new Date(w.updatedAt || w.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -1040,23 +1048,7 @@ export default function Navbar({
                         <button className="work-action-btn edit-btn" title="Open in Editor" onClick={() => {
                           setActiveModal(null);
                           setLoadedWork(w);
-                          if (w.type === 'linkedin') {
-                            go('linkedin');
-                          } else if (w.type === 'linkedin-bio') {
-                            go('linkedin-bio');
-                          } else if (w.type === 'linkedin-outreach') {
-                            go('linkedin-outreach');
-                          } else if (w.type === 'career-courses') {
-                            go('career-courses');
-                          } else if (w.type === 'elevator-pitch') {
-                            go('elevator-pitch');
-                          } else if (w.type === 'career-roadmap') {
-                            go('career-roadmap');
-                          } else if (w.type === 'prep') {
-                            go('prep');
-                          } else {
-                            go('resume-builder');
-                          }
+                          go(workTypeInfo(w.type).page);
                         }}>
                           <Edit3 size={13} /> Open
                         </button>
