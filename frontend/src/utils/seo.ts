@@ -24,6 +24,16 @@ const PAGE_SEO: Record<string, PageSEO> = {
     description: 'Get in touch with the CV Mind team. We welcome your feedback, partnership inquiries, and questions about our AI resume checker and ATS optimization tools.',
     keywords: 'Contact CV Mind, resume checker support, career tool help, feedback, partnership',
   },
+  'help-center': {
+    title: 'Help Center | CV Mind',
+    description: 'Answers to common questions about building resumes, your CV Mind account, plans and billing, and how to reach our support team.',
+    keywords: 'CV Mind help, resume builder help, account help, CV Mind support',
+  },
+  account: {
+    title: 'Account | CV Mind',
+    description: 'Manage your CV Mind profile, password, plan and saved documents.',
+    keywords: 'CV Mind account, profile settings',
+  },
   faq: {
     title: 'Frequently Asked Questions (FAQ) | CV Mind',
     description: 'Find answers to common questions about CV Mind, ATS resume scoring, keyword optimization, privacy, and how to download your recruiter-ready resume.',

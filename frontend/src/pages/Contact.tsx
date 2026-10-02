@@ -1,10 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Send, CheckCircle2, Mail, MessageSquare, Globe } from 'lucide-react';
+import { SUPPORT_EMAIL, WHATSAPP_DISPLAY, whatsappLink } from '../data/support';
 import './Contact.css';
-
-const SUPPORT_EMAIL = 'cvmindofficial@gmail.com';
-const WHATSAPP_NUMBER = '918700683798';
-const WHATSAPP_DISPLAY = '+91 87006 83798';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -89,7 +86,7 @@ export default function Contact() {
 
             <a
               className="info-detail-item"
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi CV Mind team, I need help with ')}`}
+              href={whatsappLink()}
               target="_blank"
               rel="noopener noreferrer"
             >

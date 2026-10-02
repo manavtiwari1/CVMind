@@ -5,6 +5,8 @@ import Chatbot from './components/Chatbot';
 import Home from './pages/Home';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import Account from './pages/Account';
+import HelpCenter from './pages/HelpCenter';
 import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
 import Tailor from './pages/Tailor';
@@ -57,7 +59,7 @@ export default function App() {
       return 'portfolio';
     }
     const urlPage = pathname.replace(/^\//, '');
-    const validPages = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'career-copilot', 'copyright-policy', ...ARTICLES.map(a => a.slug)];
+    const validPages = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'career-copilot', 'copyright-policy', 'account', 'help-center', ...ARTICLES.map(a => a.slug)];
     if (urlPage && validPages.includes(urlPage)) {
       return urlPage;
     }
@@ -190,7 +192,7 @@ export default function App() {
 
   // Private route interceptor — all private pages require sign-in only (no paid gating)
   useEffect(() => {
-    const privatePages = ['prep', 'resume-editor', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'proofreading', 'tailor', 'voice-prep', 'portfolio-gen', 'job-finder', 'career-courses', 'elevator-pitch', 'career-roadmap', 'auto-apply', 'career-copilot'];
+    const privatePages = ['prep', 'resume-editor', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'proofreading', 'tailor', 'voice-prep', 'portfolio-gen', 'job-finder', 'career-courses', 'elevator-pitch', 'career-roadmap', 'auto-apply', 'career-copilot', 'account'];
 
     if (privatePages.includes(currentPage) && !isLoggedIn) {
       // setCurrentPage also updates browser history, so this redirect has to run in an effect
@@ -316,6 +318,10 @@ export default function App() {
         return <About />;
       case 'contact':
         return <Contact />;
+      case 'account':
+        return <Account setCurrentPage={setCurrentPage} handleSignOut={handleSignOut} setLoadedWork={setLoadedWork} />;
+      case 'help-center':
+        return <HelpCenter setCurrentPage={setCurrentPage} />;
       case 'privacy':
         return <Privacy />;
       case 'faq':

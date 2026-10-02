@@ -202,4 +202,7 @@ export interface StoredUser {
   address?: string;
   avatar?: string;
   isGoogleUser?: boolean;
+  plan?: string;
+  isPro?: boolean;
+  token?: string;
 }
