@@ -47,7 +47,7 @@ import { ARTICLES } from './data/articles';
 import DigitalSerenityBackground from './components/DigitalSerenityBackground';
 import { applySEO } from './utils/seo';
 import { getErrorMessage } from './utils/errors';
-import { APP_PAGES, PUBLIC_APP_PAGES, appOrigin, isAppHost, isCrossHost, isSplitHost, siteOrigin, urlForPage } from './lib/hosts';
+import { APP_PAGES, PUBLIC_APP_PAGES, isAppHost, isCrossHost, isSplitHost, siteOrigin, urlForPage } from './lib/hosts';
 import { clearSession, setSession } from './lib/session';
 import { peekPickedTemplate } from './lib/templatePick';
 import type { LoadedWork, ResumeAnalysis } from './types/api';
@@ -181,15 +181,9 @@ export default function App() {
     window.history.pushState({}, '', newPath);
   };
 
-  // Where a fresh sign-in lands: the app host's My Documents on cvmind.in, otherwise `fallback`
-  const enterAfterSignIn = (fallback?: string) => {
-    if (isSplitHost() && !isAppHost()) {
-      window.location.assign(`${appOrigin()}/my-documents`);
-    } else if (isAppHost()) {
-      setCurrentPage('my-documents');
-    } else if (fallback) {
-      setCurrentPage(fallback);
-    }
+  // Where a fresh sign-in lands: the home page, or My Documents when signing in on the app host
+  const enterAfterSignIn = () => {
+    setCurrentPage(isAppHost() ? 'my-documents' : 'home');
   };
 
   useEffect(() => {
@@ -310,7 +304,7 @@ export default function App() {
       // One-time login from the OAuth redirect URL; setCurrentPage also updates browser history
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoggedIn(true);
-      enterAfterSignIn('dashboard');
+      enterAfterSignIn();
     } catch (err) {
       console.error('OAuth Redirect Auth Error:', err);
     }
@@ -591,8 +585,7 @@ export default function App() {
         }}
         onSuccess={() => {
           setIsLoggedIn(true);
-          // On cvmind.in, signing in opens the app; elsewhere stay on the current page
-          if (isSplitHost()) enterAfterSignIn();
+          enterAfterSignIn();
         }}
       />
     </div>
