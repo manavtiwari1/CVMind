@@ -264,12 +264,6 @@ const autoApplyAccessSchema = new mongoose.Schema({
 });
 const AutoApplyAccess = mongoose.models.AutoApplyAccess || mongoose.model('AutoApplyAccess', autoApplyAccessSchema);
 
-const careerCopilotAccessSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true },
-  grantedAt: { type: Date, default: Date.now }
-});
-const CareerCopilotAccess = mongoose.models.CareerCopilotAccess || mongoose.model('CareerCopilotAccess', careerCopilotAccessSchema);
-
 const companySchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   name: { type: String, required: true },
@@ -393,6 +387,8 @@ const workSchema = new mongoose.Schema({
   type: { type: String, required: true }, // 'resume' or 'cover-letter'
   templateId: { type: String, required: true },
   htmlContent: { type: String, required: true },
+  // Where the work came from, e.g. 'resume-tailor' (a resume made by the Resume Tailorer)
+  source: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
@@ -1314,7 +1310,7 @@ export async function getAdminStats() {
   };
 }
 
-export async function saveWork({ userId, title, type, templateId, htmlContent, workId = null }) {
+export async function saveWork({ userId, title, type, templateId, htmlContent, workId = null, source = '' }) {
   await ensureMongoConnection();
   const cleanUserId = String(userId || '').trim();
   const cleanTitle = String(title || 'Untitled Work').trim();
@@ -1324,7 +1320,8 @@ export async function saveWork({ userId, title, type, templateId, htmlContent, w
       try {
         const updated = await Work.findOneAndUpdate(
           { _id: workId, userId: cleanUserId },
-          { title: cleanTitle, type, templateId, htmlContent, updatedAt: Date.now() },
+          // An update never clears the source a work was created with
+          { title: cleanTitle, type, templateId, htmlContent, updatedAt: Date.now(), ...(source ? { source } : {}) },
           { returnDocument: 'after' }
         );
         if (updated) return updated;
@@ -1332,7 +1329,7 @@ export async function saveWork({ userId, title, type, templateId, htmlContent, w
         console.error('MongoDB updateWork error, creating new:', err);
       }
     }
-    const newWork = new Work({ userId: cleanUserId, title: cleanTitle, type, templateId, htmlContent });
+    const newWork = new Work({ userId: cleanUserId, title: cleanTitle, type, templateId, htmlContent, source });
     await newWork.save();
     return newWork;
   }
@@ -1346,6 +1343,7 @@ export async function saveWork({ userId, title, type, templateId, htmlContent, w
       existing.type = type;
       existing.templateId = templateId;
       existing.htmlContent = htmlContent;
+      if (source) existing.source = source;
       existing.updatedAt = new Date().toISOString();
       writeDb(db);
       return existing;
@@ -1358,6 +1356,7 @@ export async function saveWork({ userId, title, type, templateId, htmlContent, w
     type,
     templateId,
     htmlContent,
+    source,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -1662,54 +1661,6 @@ export async function hasAutoApplyAccess(email) {
   }
   const db = readDb();
   return (db.autoApplyAccess || []).some(x => x.email === clean);
-}
-
-export async function getCareerCopilotAccessList() {
-  await ensureMongoConnection();
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    const list = await CareerCopilotAccess.find().sort({ grantedAt: -1 });
-    return list.map(x => ({ email: x.email, grantedAt: x.grantedAt }));
-  }
-  const db = readDb();
-  return (db.careerCopilotAccess || []);
-}
-
-export async function grantCareerCopilotAccess(email) {
-  await ensureMongoConnection();
-  const clean = String(email || '').trim().toLowerCase();
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    const existing = await CareerCopilotAccess.findOne({ email: clean });
-    if (existing) return existing;
-    const entry = new CareerCopilotAccess({ email: clean });
-    return await entry.save();
-  }
-  const db = readDb();
-  if (!(db.careerCopilotAccess || []).some(x => x.email === clean)) {
-    db.careerCopilotAccess = [...(db.careerCopilotAccess || []), { email: clean, grantedAt: new Date().toISOString() }];
-    writeDb(db);
-  }
-}
-
-export async function revokeCareerCopilotAccess(email) {
-  await ensureMongoConnection();
-  const clean = String(email || '').trim().toLowerCase();
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    return await CareerCopilotAccess.deleteOne({ email: clean });
-  }
-  const db = readDb();
-  db.careerCopilotAccess = (db.careerCopilotAccess || []).filter(x => x.email !== clean);
-  writeDb(db);
-}
-
-export async function hasCareerCopilotAccess(email) {
-  await ensureMongoConnection();
-  const clean = String(email || '').trim().toLowerCase();
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    const found = await CareerCopilotAccess.findOne({ email: clean });
-    return !!found;
-  }
-  const db = readDb();
-  return (db.careerCopilotAccess || []).some(x => x.email === clean);
 }
 
 export async function findUserByResetToken(token) {

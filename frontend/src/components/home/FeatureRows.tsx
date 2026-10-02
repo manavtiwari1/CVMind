@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { ArrowRight, Bot, BriefcaseBusiness, CheckCircle2, ScanSearch, Sparkles, UserCheck, MessagesSquare, LineChart, Linkedin } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
 import ScaleToFit from './ScaleToFit';
 import SampleResume, { SAMPLE_RESUME_WIDTH } from './SampleResume';
 import ScoreCard from './ScoreCard';
@@ -79,15 +79,6 @@ const SECTION_STACK = [
   { name: 'Education', hint: 'Degrees and coursework' },
   { name: 'Certifications', hint: 'Licenses and courses' },
   { name: 'Languages', hint: 'With proficiency levels' },
-];
-
-const AGENTS = [
-  { icon: ScanSearch, name: 'Resume Agent', note: 'Fixes and tailors your CV' },
-  { icon: BriefcaseBusiness, name: 'Job Discovery', note: 'Finds roles that fit' },
-  { icon: MessagesSquare, name: 'Interview Coach', note: 'STAR-method feedback' },
-  { icon: LineChart, name: 'Application Intel', note: 'Tracks every application' },
-  { icon: Linkedin, name: 'LinkedIn Agent', note: 'Profile and outreach help' },
-  { icon: UserCheck, name: 'Career Analytics', note: 'Career health score' },
 ];
 
 export default function FeatureRows({ setCurrentPage, onCheck }: FeatureRowsProps) {
@@ -180,30 +171,6 @@ export default function FeatureRows({ setCurrentPage, onCheck }: FeatureRowsProp
                 matched={['React', 'TypeScript', 'Jest', 'REST APIs']}
                 missing={['GraphQL', 'CI/CD', 'Web performance']}
               />
-            </div>
-          }
-        />
-
-        <Row
-          title="Put your whole job search on autopilot"
-          body="AI Career Copilot runs nine specialised agents side by side. They fix your resume, find matching roles, coach your interviews and keep track of every application."
-          points={[
-            'A career health score built from your own resume',
-            'Job discovery with compatibility scores',
-            'Interview coaching with structured feedback',
-          ]}
-          cta={{ label: 'Open Career Copilot', onClick: () => setCurrentPage('career-copilot') }}
-          visual={
-            <div className="hp-visual-frame hp-visual-frame--center">
-              <div className="hp-agents">
-                <div className="hp-float-eyebrow"><Bot size={13} /> AI Career Copilot</div>
-                {AGENTS.map(({ icon: Icon, name, note }) => (
-                  <div key={name} className="hp-agent">
-                    <span className="hp-agent-icon"><Icon size={16} /></span>
-                    <span><b>{name}</b><small>{note}</small></span>
-                  </div>
-                ))}
-              </div>
             </div>
           }
         />

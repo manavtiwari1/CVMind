@@ -211,12 +211,6 @@ export default function Navbar({
                 AI Job Finder
               </button>
               <button
-                className={`mobile-drawer-link mobile-sub-link${currentPage === 'career-copilot' ? ' active' : ''}`}
-                onClick={() => go('career-copilot')}
-              >
-                AI Career Copilot 🧠
-              </button>
-              <button
                 className={`mobile-drawer-link mobile-sub-link${currentPage === 'auto-apply' ? ' active' : ''}`}
                 onClick={() => go('auto-apply')}
               >
@@ -245,7 +239,7 @@ export default function Navbar({
                       Interview Prep AI
                     </button>
                     <button className={`mobile-drawer-link mobile-sub-sub-link${currentPage === 'voice-prep' ? ' active' : ''}`} onClick={() => go('voice-prep')}>
-                      Voice Practice AI
+                      Voice Prep AI
                     </button>
                     <button className={`mobile-drawer-link mobile-sub-sub-link${currentPage === 'proofreading' ? ' active' : ''}`} onClick={() => go('proofreading')}>
                       AI Proofreading

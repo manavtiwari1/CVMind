@@ -38,7 +38,6 @@ import Disclaimer from './pages/Disclaimer';
 import Proofreading from './pages/Proofreading';
 import AutoApply from './pages/AutoApply';
 import CompanyPortal from './pages/CompanyPortal';
-import CareerCopilot from './pages/CareerCopilot';
 import ArticleAtsResume from './pages/ArticleAtsResume';
 import CopyrightPolicy from './pages/CopyrightPolicy';
 import ArticlePage from './pages/ArticlePage';
@@ -61,7 +60,10 @@ import './styles/skeleton.css';
 // How long the loading screen shows when moving to another page
 const ROUTE_LOADER_MS = 450;
 
-const VALID_PAGES = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'career-copilot', 'copyright-policy', 'account', 'help-center', 'my-documents', ...ARTICLES.map(a => a.slug)];
+const VALID_PAGES = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'copyright-policy', 'account', 'help-center', 'my-documents', ...ARTICLES.map(a => a.slug)];
+
+// Leo's pages (Resume Tailorer, Interview Prep AI, Voice Prep AI, AI Proofreading) and the Career tools
+const GUIDED_PAGES = ['tailor', 'prep', 'voice-prep', 'proofreading', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'career-courses', 'elevator-pitch', 'career-roadmap'];
 
 // Sign-in addresses open the AuthModal over the home page
 const AUTH_PATHS = ['/sign-in', '/sign-up', '/login'];
@@ -403,69 +405,82 @@ export default function App() {
       case 'admin':
         return <Admin setCurrentPage={setCurrentPage} />;
       case 'tailor':
-        return <Tailor customApiKey={customApiKey} />;
+        return <Tailor customApiKey={customApiKey} setCurrentPage={setCurrentPage} loadedWork={loadedWork} setLoadedWork={setLoadedWork} onFocusChange={setBuilderFocus} />;
       case 'prep':
         return (
-          <Prep 
+          <Prep
             customApiKey={customApiKey}
             resumeText={resumeText}
             setResumeText={setResumeText}
             setCurrentPage={setCurrentPage}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'linkedin':
         return (
-          <LinkedIn 
+          <LinkedIn
             customApiKey={customApiKey}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'linkedin-bio':
         return (
-          <LinkedInBio 
+          <LinkedInBio
             customApiKey={customApiKey}
             resumeText={resumeText}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'linkedin-outreach':
         return (
-          <LinkedInOutreach 
+          <LinkedInOutreach
             customApiKey={customApiKey}
             resumeText={resumeText}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'career-courses':
         return (
-          <CareerCourses 
+          <CareerCourses
             customApiKey={customApiKey}
             resumeText={resumeText}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'elevator-pitch':
         return (
-          <ElevatorPitch 
+          <ElevatorPitch
             customApiKey={customApiKey}
             resumeText={resumeText}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'career-roadmap':
         return (
-          <CareerRoadmap 
+          <CareerRoadmap
             customApiKey={customApiKey}
             resumeText={resumeText}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'linkedin-post':
@@ -482,6 +497,11 @@ export default function App() {
           <VoicePrep
             customApiKey={customApiKey}
             resumeText={resumeText}
+            setResumeText={setResumeText}
+            setCurrentPage={setCurrentPage}
+            loadedWork={loadedWork}
+            setLoadedWork={setLoadedWork}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'portfolio-gen':
@@ -501,8 +521,7 @@ export default function App() {
             <div style={{fontSize:'3rem'}}>🔍</div>
             <h2 style={{fontSize:'1.8rem',fontWeight:800,margin:0}}>AI Job Finder</h2>
             <div style={{display:'inline-flex',alignItems:'center',gap:'6px',background:'linear-gradient(135deg,#ff9f0a,#ff453a)',color:'#fff',padding:'4px 14px',borderRadius:'99px',fontSize:'0.78rem',fontWeight:700,letterSpacing:'0.05em'}}>TEMPORARILY UNAVAILABLE</div>
-            <p style={{color:'#6e6e73',fontSize:'1rem',maxWidth:'440px',lineHeight:1.6,margin:0}}>AI Job Finder is temporarily unavailable while we upgrade it. It will be back soon — meanwhile, try the AI Career Copilot for curated job matches.</p>
-            <button onClick={() => setCurrentPage('career-copilot')} style={{marginTop:'8px',padding:'12px 28px',borderRadius:'12px',border:'none',background:'linear-gradient(135deg,#2997ff,#bf5af2)',color:'#fff',fontWeight:600,fontSize:'0.95rem',cursor:'pointer'}}>Try AI Career Copilot →</button>
+            <p style={{color:'#6e6e73',fontSize:'1rem',maxWidth:'440px',lineHeight:1.6,margin:0}}>AI Job Finder is temporarily unavailable while we upgrade it. It will be back soon — meanwhile, explore our other AI tools.</p>
             <button onClick={() => setCurrentPage('home')} style={{padding:'10px 24px',borderRadius:'12px',border:'none',background:'#1d1d1f',color:'#fff',fontWeight:600,fontSize:'0.9rem',cursor:'pointer'}}>← Go Home</button>
           </div>
         );
@@ -525,9 +544,16 @@ export default function App() {
       case 'disclaimer':
         return <Disclaimer />;
       case 'proofreading':
-        return <Proofreading customApiKey={customApiKey} />;
-      case 'career-copilot':
-        return <CareerCopilot customApiKey={customApiKey} resumeText={resumeText} setResumeText={setResumeText} />;
+        return (
+          <Proofreading
+            customApiKey={customApiKey}
+            resumeText={resumeText}
+            setCurrentPage={setCurrentPage}
+            loadedWork={loadedWork}
+            setLoadedWork={setLoadedWork}
+            onFocusChange={setBuilderFocus}
+          />
+        );
       case 'company-portal':
         return (
           <CompanyPortal 
@@ -550,13 +576,18 @@ export default function App() {
 
   const isAdminPage = currentPage === 'admin';
   const isCodePage = currentPage === 'code-arena' || currentPage === 'cvmind-code-arena';
-  const isFocusFlow = currentPage === 'resume-editor' && builderFocus !== false;
+  // Guided tools: Leo's pages and the Career tools. They keep the site header and footer on their
+  // intro page; the work and the result run full-screen in the app without them.
+  const isGuidedPage = GUIDED_PAGES.includes(currentPage);
+  // Full-screen guided flows: the resume builder and the guided tools
+  const isFocusFlow = (currentPage === 'resume-editor' || isGuidedPage) && builderFocus !== false;
   // My Documents is a standalone app view with its own top bar
   const isAppPage = currentPage === 'my-documents';
   // The 404 page stands alone, without the site header and footer
   const isNotFound = currentPage === 'not-found';
   // App products (the app.cvmind.in pages) show no site header or footer, just a way back
-  const isProductPage = APP_PAGES.includes(currentPage);
+  // The guided tools keep the site header and footer (see isGuidedPage)
+  const isProductPage = APP_PAGES.includes(currentPage) && !isGuidedPage;
   // Account and My Documents have their own Back button / top bar; the editor's full-screen flows have Exit
   const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && !isFocusFlow;
   const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || isCodePage || isFocusFlow || isAppPage;
@@ -587,7 +618,7 @@ export default function App() {
         />
       )}
 
-      {isFocusFlow && builderFocus === 'flow' && (
+      {isFocusFlow && builderFocus === 'flow' && currentPage === 'resume-editor' && (
         <button type="button" className="focus-exit" onClick={() => setCurrentPage('resume-builder')} aria-label="Exit resume builder">
           Exit ✕
         </button>

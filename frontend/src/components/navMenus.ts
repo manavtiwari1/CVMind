@@ -1,6 +1,6 @@
 import {
   FileText, ScanSearch, Target, Globe, MessageSquare, Mic, SpellCheck, Code2,
-  Briefcase, Bot, Send, UserCheck, PenLine, MessagesSquare, GraduationCap, Presentation,
+  Briefcase, Send, UserCheck, PenLine, MessagesSquare, GraduationCap, Presentation,
   Map as MapIcon, Info, Mail, HelpCircle, BookOpen,
   type LucideIcon,
 } from 'lucide-react';
@@ -64,14 +64,14 @@ export const NAV_MENUS: NavMenu[] = [
   },
   {
     label: 'AI Tools',
-    pages: ['prep', 'voice-prep', 'job-finder', 'proofreading', 'auto-apply', 'career-copilot', 'code'],
+    pages: ['prep', 'voice-prep', 'job-finder', 'proofreading', 'auto-apply', 'code'],
     columns: [
       {
         heading: 'Interview',
         tiles: [
-          { page: 'prep', title: 'Interview Prep AI', desc: 'Behavioral & STAR coaching', icon: MessageSquare },
+          { page: 'prep', title: 'Interview Prep AI', desc: 'Mock interview from your CV and the job', icon: MessageSquare },
           { page: 'code', title: 'CVMind Code', desc: 'DSA practice, AI code judge & assessments', icon: Code2, badge: 'new' },
-          { page: 'voice-prep', title: 'Voice Practice AI', desc: 'Real-time speaking feedback', icon: Mic },
+          { page: 'voice-prep', title: 'Voice Prep AI', desc: 'Answer out loud, get speaking feedback', icon: Mic },
           { page: 'proofreading', title: 'AI Proofreading', desc: 'Grammar, tone & power verbs', icon: SpellCheck },
         ],
       },
@@ -79,7 +79,6 @@ export const NAV_MENUS: NavMenu[] = [
         heading: 'Job Search',
         tiles: [
           { page: 'job-finder', title: 'AI Job Finder', desc: 'Curated roles matching your profile', icon: Briefcase },
-          { page: 'career-copilot', title: 'AI Career Copilot', desc: '9 AI agents managing your career', icon: Bot, badge: 'new' },
           { page: 'auto-apply', title: 'Auto Apply Agent', desc: 'Coming soon: AI applies to jobs for you', icon: Send, badge: 'soon' },
         ],
       },

@@ -8,16 +8,16 @@ export const WORK_LABELS: Record<string, string> = {
   'resume-tailor': 'Tailored Resume',
   proofread: 'Proofread',
   'job-finder': 'Job Search',
-  prep: 'AI Prep',
-  'voice-prep': 'Voice Practice',
+  prep: 'Interview Prep',
+  'voice-prep': 'Voice Prep',
   'portfolio-gen': 'Portfolio',
-  linkedin: 'LinkedIn Audit',
-  'linkedin-bio': 'LinkedIn Bio',
-  'linkedin-outreach': 'Outreach DM',
+  linkedin: 'Profile Audit',
+  'linkedin-bio': 'Bio & Banner',
+  'linkedin-outreach': 'Outreach Messages',
   'linkedin-post': 'LinkedIn Post',
   'career-courses': 'Skill Gaps',
   'elevator-pitch': 'Elevator Pitch',
-  'career-roadmap': 'Roadmap AI',
+  'career-roadmap': 'Career Roadmap',
 };
 
 // Pages that reopen a saved work of each type; anything not listed opens in the resume editor

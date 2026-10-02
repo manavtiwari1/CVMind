@@ -26,6 +26,7 @@ import ResumeTemplatePicker from '../components/ResumeTemplatePicker';
 import ResumeOnboarding, { type OnboardingResult, type ResumeGoal } from '../components/ResumeOnboarding';
 import { RESUME_TEMPLATES, TEMPLATES, type Template } from '../data/resumeTemplates';
 import { authFetch } from '../lib/authFetch';
+import { splitFooter, withFooter } from '../lib/resumeFooter';
 import { getErrorMessage } from '../utils/errors';
 import type { ExtractedResume, LoadedWork, WizardFormData } from '../types/api';
 import { siteOrigin } from '../lib/hosts';
@@ -68,22 +69,6 @@ interface CoverLetterProps {
   onExit?: () => void;
 }
 
-const FOOTER_MARKER = '<!-- FOOTER BRANDING';
-
-/** Separates the locked CVMind footer from a template so the AI never rewrites it. */
-function splitFooter(html: string): { body: string; footer: string } {
-  const i = html.indexOf(FOOTER_MARKER);
-  if (i < 0) return { body: html, footer: '' };
-  const end = html.lastIndexOf('</div>');
-  return { body: html.slice(0, i) + html.slice(end), footer: html.slice(i, end) };
-}
-
-function withFooter(html: string, footer: string): string {
-  if (!footer || html.includes(FOOTER_MARKER)) return html;
-  const end = html.lastIndexOf('</div>');
-  return end < 0 ? html + footer : html.slice(0, end) + footer + html.slice(end);
-}
-
 export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, onFocusChange, onExit }: CoverLetterProps) {
   // A template picked on the home page skips Leo and only asks about an existing resume.
   const [pickedTemplate] = useState<Template | null>(() =>
@@ -108,6 +93,8 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
   // Work Persistence States
   const [activeWorkId, setActiveWorkId] = useState<string | null>(null);
   const [activeWorkTitle, setActiveWorkTitle] = useState<string>('');
+  // Resumes from the Resume Tailorer are already tailored, so Fix Resume / Check & Tailor are hidden
+  const [fromTailor, setFromTailor] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -180,6 +167,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
       setSelectedTemplate(template);
       setActiveWorkId(loadedWork.id || loadedWork._id || null);
       setActiveWorkTitle(loadedWork.title || 'Untitled Work');
+      setFromTailor(loadedWork.source === 'resume-tailor');
       setActiveTab(loadedWork.type === 'cover-letter' ? 'cover-letter' : 'resume');
       setStep('editor');
     }
@@ -438,7 +426,8 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
               type: activeTab,
               templateId: selectedTemplate?.id || 'classic-pro',
               htmlContent: currentContent,
-              workId: activeWorkId
+              workId: activeWorkId,
+              source: fromTailor ? 'resume-tailor' : undefined
             })
           });
           const data = await response.json();
@@ -456,7 +445,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
     }, 4000);
 
     return () => clearInterval(interval);
-  }, [step, activeWorkId, activeWorkTitle, activeTab, selectedTemplate]);
+  }, [step, activeWorkId, activeWorkTitle, activeTab, selectedTemplate, fromTailor]);
 
   const handleSelectTemplate = (template: Template) => {
     setSelectedTemplate(template);
@@ -866,7 +855,8 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
                 type: 'resume',
                 templateId: template.id,
                 htmlContent: generatedHtml,
-                workId: activeWorkId
+                workId: activeWorkId,
+                source: fromTailor ? 'resume-tailor' : undefined
               })
             });
             const saveData = await saveRes.json();
@@ -1087,6 +1077,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
           onUndo={handleUndo}
           onRedo={() => exec('redo')}
           onDownload={() => setShowDownload(true)}
+          hideAiTools={fromTailor}
         />
       )}
 
@@ -1599,7 +1590,7 @@ ${jd}`)}
           getText={() => editorRef.current?.innerText || ''}
           customApiKey={customApiKey}
           onWord={handleDownloadDOCX}
-          onScan={jd => { setShowDownload(false); setTailorSeed(t => ({ jd, n: t.n + 1 })); setStudioPanel('tailor'); }}
+          onScan={fromTailor ? undefined : jd => { setShowDownload(false); setTailorSeed(t => ({ jd, n: t.n + 1 })); setStudioPanel('tailor'); }}
           onClose={() => setShowDownload(false)}
         />
       )}

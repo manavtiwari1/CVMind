@@ -1,123 +1,34 @@
-.career-roadmap-container {
-  width: 100%;
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 2.5rem 1.5rem;
-  position: relative;
-  min-height: 85vh;
-}
+/* Career Roadmap. Builds on Career.css (crt-) and Tailor.css (tlr-). */
+.rm-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; }
+.rm-step { position: relative; display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px; }
+/* The line joining the phases */
+.rm-step:not(:last-child)::before { content: ''; position: absolute; left: 19px; top: 44px; bottom: -18px; width: 2px; background: var(--line); }
+.rm-step.is-done:not(:last-child)::before { background: var(--green); }
+.rm-dot { position: relative; z-index: 1; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: #fff; border: 2px solid var(--line); font-weight: 800; color: var(--muted); }
+.rm-step.is-now .rm-dot { border-color: var(--purple); color: var(--purple); box-shadow: 0 0 0 4px var(--violet-bg); }
+.rm-step.is-done .rm-dot { background: var(--green); border-color: var(--green); color: #fff; }
+.rm-step.is-now .rm-card { border-color: #d9cff8; box-shadow: 0 12px 30px rgba(111, 79, 214, .08); }
+.rm-card header > div { display: grid; gap: 4px; }
+.rm-card h2 { font-size: 1.15rem; }
+.rm-card .rm-inline { display: inline; vertical-align: -2px; color: var(--green-dark); }
+.rm-milestone { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 1.5px dashed #d5dbe5; border-radius: 10px; background: #fbfcfe; text-align: left; cursor: pointer; color: var(--ink); }
+.rm-milestone > svg { flex: none; color: var(--amber); }
+.rm-milestone > span { flex: 1; display: grid; gap: 2px; font-size: .9rem; line-height: 1.5; }
+.rm-milestone b { font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.rm-milestone em { flex: none; font-style: normal; font-size: .78rem; font-weight: 700; color: var(--muted); }
+.rm-milestone:hover { border-color: var(--green); }
+.rm-milestone.is-on { border-style: solid; border-color: var(--green); background: #f6fdfa; }
+.rm-milestone.is-on > svg, .rm-milestone.is-on em { color: var(--green-dark); }
+.rm-skills { list-style: decimal; margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: .92rem; font-weight: 600; }
+.rm-skills li { display: list-item; }
+.rm-skills li::marker { color: var(--green-dark); font-weight: 800; }
+.rm-risks { padding: 20px; }
+.rm-risks .crt-panel-head h2 { font-size: .95rem; }
+.rm-risks .crt-panel-head h2 svg { color: var(--amber); }
 
-.career-roadmap-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 2rem;
-  margin-bottom: 2.5rem;
-}
-
-@media (max-width: 768px) {
-  .career-roadmap-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-}
-
-.career-roadmap-title-section {
-  text-align: left;
-}
-
-.career-roadmap-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: var(--blue-dim);
-  color: var(--blue);
-  border: 1px solid rgba(41, 151, 255, 0.25);
-  border-radius: 980px;
-  padding: 0.35rem 1rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  margin-bottom: 0.75rem;
-}
-
-.career-roadmap-title-text {
-  font-size: clamp(2rem, 4vw, 2.75rem);
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  color: var(--text-primary);
-  margin: 0 0 0.5rem;
-}
-
-.career-roadmap-subtitle-text {
-  color: var(--text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.5;
-  margin: 0;
-  max-width: 600px;
-}
-
-/* Input layout */
-.career-roadmap-input-card {
-  padding: 2.5rem;
-  border-radius: 20px;
-  max-width: 640px;
-  margin: 0 auto;
-  text-align: left;
-}
-
-.career-roadmap-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-/* Spinner & loading */
-.career-roadmap-loading-card {
-  padding: 4rem 2rem;
-  border-radius: 24px;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  max-width: 500px;
-  margin: 4rem auto;
-}
-
-.career-roadmap-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(41, 151, 255, 0.1);
-  border-top-color: var(--blue);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 1.5rem;
-}
-
-.career-roadmap-loading-card h3 {
-  font-size: 1.25rem;
-  font-weight: 800;
-  margin: 0 0 0.5rem;
-}
-
-/* Timeline specific animations & visual effects */
-.roadmap-step-card {
-  transition: all 0.25s ease;
-}
-
-.roadmap-step-card:hover {
-  border-color: var(--border-strong) !important;
-  transform: translateX(4px);
-  background: rgba(255, 255, 255, 0.02) !important;
-}
-
-.timeline-node-circle {
-  transition: all 0.2s ease;
-}
-
-.timeline-block:hover .timeline-node-circle {
-  background: var(--blue) !important;
-  color: #fff !important;
-  transform: scale(1.15);
+@media (max-width: 560px) {
+  .rm-step { grid-template-columns: 30px minmax(0, 1fr); gap: 10px; }
+  .rm-dot { width: 30px; height: 30px; font-size: .85rem; }
+  .rm-step:not(:last-child)::before { left: 14px; top: 34px; }
+  .rm-milestone { flex-wrap: wrap; }
 }

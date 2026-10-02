@@ -94,19 +94,19 @@ const PAGE_SEO: Record<string, PageSEO> = {
     keywords: 'Free Resume Builder, CV Maker Online, Make CV Online Free, AI Resume Builder, ATS Resume Templates, Resume Maker, CV Format for Freshers, Professional Resume Builder',
   },
   tailor: {
-    title: 'AI Resume Tailoring Tool | Match Job Descriptions - CV Mind',
-    description: 'Tailor your resume to any job description instantly. Our AI matches keywords, optimizes achievements, and aligns your experience for maximum ATS compatibility.',
-    keywords: 'Resume Tailorer, Job Matching, Resume Alignment, ATS Keyword Match',
+    title: 'AI Resume Tailor - Match Your Resume to Any Job Description | CV Mind',
+    description: 'Upload your CV and paste a job description. CV Mind rewrites your summary, bullets and skills for the role, keeps your facts, and gives you a designed resume to download as PDF, Word or TXT or edit further.',
+    keywords: 'Resume Tailor, Tailor Resume to Job Description, AI Resume Tailoring, ATS Keyword Match, Job Description Resume Match',
   },
   prep: {
-    title: 'AI Interview Preparation & Mock Interviews | CV Mind',
-    description: 'Prepare for interviews with personalized AI coaching. Get simulated behavioral questions, instant answers assessment, and industry-specific prep tips based on your resume.',
-    keywords: 'AI Interview Prep, Mock Interview, Interview Coaching, Behavioral Questions',
+    title: 'Interview Prep AI - Mock Interview from Your CV & the Job | CV Mind',
+    description: 'Practise a mock interview built from your CV and the job description. Answer each question and get a score, what was missing, a stronger answer, and a full interview report.',
+    keywords: 'AI Interview Prep, Mock Interview, Interview Questions, Job Description Interview, STAR Method',
   },
   'voice-prep': {
-    title: 'Voice Interview Practice | AI Coaching - CV Mind',
-    description: 'Practice interviews by speaking your answers aloud. AI transcribes, analyzes confidence, detects filler words, and gives real-time coaching feedback.',
-    keywords: 'Voice Interview Practice, AI Interview Coach, Mock Interview, Speech Analysis',
+    title: 'Voice Prep AI - Practise Interviews Out Loud | CV Mind',
+    description: 'Leo asks interview questions out loud, built from your CV and the job. Answer by speaking and get feedback on your content, pace, filler words and confidence.',
+    keywords: 'Voice Interview Practice, AI Interview Coach, Mock Interview, Speaking Feedback, Filler Words',
   },
   'job-finder': {
     title: 'AI Job Finder | Match Jobs to Your CV - CV Mind',
@@ -157,11 +157,6 @@ const PAGE_SEO: Record<string, PageSEO> = {
     title: 'AI Career Path Roadmap Generator | Career Planning - CV Mind',
     description: 'Map out your long-term career growth with our AI Career Roadmap generator. Get step-by-step career milestones, certification paths, and skill progression plans.',
     keywords: 'Career Roadmap Generator, Career Path Planner, Skill Progression, Career Strategy',
-  },
-  'career-copilot': {
-    title: 'AI Career Copilot - 9 AI Agents Managing Your Career | CV Mind',
-    description: 'Meet your AI Career Copilot: 9 AI agents working together on your resume, job search, LinkedIn, skills, interviews, networking, salary, and career analytics — all in one dashboard.',
-    keywords: 'AI Career Copilot, AI Career Agents, Career Management AI, Job Search Automation, Career Health Score',
   },
   'auto-apply': {
     title: 'Auto Apply Agent - AI Applies to Jobs for You | CV Mind',

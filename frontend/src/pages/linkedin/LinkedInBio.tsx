@@ -1,15 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import type React from 'react';
 import {
-  Copy, Check, Linkedin, ArrowRight, RefreshCw
+  CheckCircle2, Download, Eye, Hash, Image as ImageIcon, LayoutTemplate, Palette, PenLine, Sparkles, Type, UserRound,
 } from 'lucide-react';
-import SkeletonLoader from '../../components/SkeletonLoader';
-import { getErrorMessage } from '../../utils/errors';
-import { authFetch } from '../../lib/authFetch';
+import {
+  CareerApp, CareerIntro, CareerNext, CareerWorking, CharCount, Chips, CopyButton, CvPicker, Field, Panel,
+} from '../../components/career/CareerKit';
+import type { IntroCopy } from '../../components/career/CareerKit';
+import { cvLabel, downloadText, postCareer, resultKey, useCareerRun, useCvInput } from '../../components/career/careerApi';
+import { readUser } from '../../lib/currentUser';
 import { parseSavedContent } from '../../utils/savedWork';
 import type { LoadedWork } from '../../types/api';
 import './LinkedInBio.css';
 
-// /api/linkedin/bio
+// /api/linkedin/bio (linkedinBioSchema in backend/src/services/gemini.js)
 interface BannerIdea {
   text: string;
   bgStyle: string;
@@ -24,380 +28,380 @@ interface BioResult {
 }
 
 // Page state saved in a 'linkedin-bio' work
-interface SavedBioContent {
+interface SavedBio {
   jobTitle?: string;
   skills?: string;
+  tone?: string;
   result?: BioResult | null;
 }
 
 interface LinkedInBioProps {
   customApiKey: string;
   resumeText: string;
+  setCurrentPage?: (page: string) => void;
   loadedWork?: LoadedWork | null;
   setLoadedWork?: (work: LoadedWork | null) => void;
+  onFocusChange?: (mode: false | 'flow') => void;
 }
 
-export default function LinkedInBio({ customApiKey, resumeText, loadedWork, setLoadedWork }: LinkedInBioProps) {
+const TOOL = { name: 'Bio & Banner Generator', icon: PenLine };
+const PHASES = ['Reading your background', 'Writing headlines and your About', 'Designing banner ideas'];
+const TONES = ['Professional', 'Friendly', 'Bold'];
+const HEADLINE_MAX = 220;
+const ABOUT_MAX = 2600;
+
+// Banner colours; the AI's style note is a suggestion, the user picks the look here
+const PALETTES = [
+  { name: 'Midnight', from: '#0b1d3a', to: '#1d4f91', text: '#ffffff', accent: '#5fd3a8' },
+  { name: 'Forest', from: '#0f3b2e', to: '#1f7a5a', text: '#ffffff', accent: '#f5d06f' },
+  { name: 'Violet', from: '#2a1a5e', to: '#6f4fd6', text: '#ffffff', accent: '#ffb4d1' },
+  { name: 'Paper', from: '#f4f1ea', to: '#e6dfd1', text: '#1c2330', accent: '#c2410c' },
+  { name: 'Graphite', from: '#16181d', to: '#3a3f4b', text: '#ffffff', accent: '#2bbf8e' },
+];
+// LinkedIn's banner size
+const BANNER_W = 1584;
+const BANNER_H = 396;
+
+const COPY: IntroCopy = {
+  title: <>A profile that says <em>what you do, fast</em></>,
+  checks: [
+    'Three headlines and two About sections written from your resume, in the tone you pick.',
+    'Banner designs you can download as a 1584 × 396 image, the size LinkedIn uses.',
+    'See it all together in a profile preview before you paste anything.',
+  ],
+  formTitle: 'Write my LinkedIn bio',
+  steps: [
+    { icon: Type, title: 'Tell us the role', text: 'The job you want, a few skills, and the tone that fits you.' },
+    { icon: UserRound, title: 'Add your resume', text: 'Optional, but it means the bio is about your real experience.' },
+    { icon: Eye, title: 'Preview, pick, paste', text: 'Choose a headline, an About and a banner, then copy or download them.' },
+  ],
+  gets: [
+    { icon: Type, title: 'Headlines under 220 characters', text: 'LinkedIn cuts headlines at 220 characters. Each one is counted, so you know it fits.' },
+    { icon: PenLine, title: 'Two About sections', text: 'One easy to scan, one told as a story. Edit either before you copy it.' },
+    { icon: ImageIcon, title: 'Banner images to download', text: 'Your banner text on a clean design in five colour styles, saved as a PNG at 1584 × 396.' },
+    { icon: Hash, title: 'Hashtags for your field', text: 'Tags to follow and use in posts so the right people see your activity.' },
+  ],
+  faqs: [
+    { q: 'Do I need a resume?', a: 'No. With just the role and a few skills you get a solid bio. Adding your resume (file, link or the one you already added) lets the AI use your real experience instead of general wording.' },
+    { q: 'Will it make things up?', a: 'The AI is told to use only what you give it and not to invent employers, numbers or awards. Read everything once before you paste it, and edit the About sections right on the page.' },
+    { q: 'How do I use the banner?', a: 'Download the PNG, then on LinkedIn open your profile, click the camera icon on the background photo and upload it. The text sits on the right so your profile photo doesn\'t cover it.' },
+    { q: 'Is it saved?', a: 'When you are signed in, the result is saved to My Documents so you can reopen it. Your resume text is sent to our AI provider to write the bio. We don\'t sell your data.' },
+  ],
+  finalTitle: 'First impressions happen on your profile',
+  finalText: 'Add the role you want and get a headline, About and banner in under a minute.',
+};
+
+/** Splits banner text into at most two lines that fit the width. */
+function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let line = '';
+  for (const w of words) {
+    const next = line ? `${line} ${w}` : w;
+    if (ctx.measureText(next).width > maxWidth && line) {
+      lines.push(line);
+      line = w;
+    } else {
+      line = next;
+    }
+  }
+  if (line) lines.push(line);
+  return lines.length > 2 ? [lines[0], lines.slice(1).join(' ')] : lines;
+}
+
+/** Draws the banner at LinkedIn's size and downloads it as a PNG. */
+function downloadBanner(text: string, paletteIndex: number) {
+  const p = PALETTES[paletteIndex];
+  const canvas = document.createElement('canvas');
+  canvas.width = BANNER_W;
+  canvas.height = BANNER_H;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const g = ctx.createLinearGradient(0, 0, BANNER_W, BANNER_H);
+  g.addColorStop(0, p.from);
+  g.addColorStop(1, p.to);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, BANNER_W, BANNER_H);
+
+  // Soft circles for depth, kept to the left where the profile photo sits
+  ctx.globalAlpha = 0.12;
+  ctx.fillStyle = p.accent;
+  ctx.beginPath(); ctx.arc(180, 420, 260, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(520, -60, 180, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Text on the right two-thirds, clear of the photo
+  const left = 600;
+  const maxWidth = BANNER_W - left - 90;
+  ctx.fillStyle = p.accent;
+  ctx.fillRect(left, 118, 64, 6);
+  ctx.fillStyle = p.text;
+  ctx.textBaseline = 'top';
+  let size = 58;
+  ctx.font = `800 ${size}px Inter, "Segoe UI", Arial, sans-serif`;
+  let lines = wrapLines(ctx, text, maxWidth);
+  while (size > 34 && lines.some(l => ctx.measureText(l).width > maxWidth)) {
+    size -= 4;
+    ctx.font = `800 ${size}px Inter, "Segoe UI", Arial, sans-serif`;
+    lines = wrapLines(ctx, text, maxWidth);
+  }
+  lines.forEach((l, i) => ctx.fillText(l, left, 146 + i * (size * 1.18)));
+
+  canvas.toBlob(blob => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement('a'), { href: url, download: 'LinkedIn banner.png' });
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  }, 'image/png');
+}
+
+function Banner({ text, palette, className = '' }: { text: string; palette: number; className?: string }) {
+  const p = PALETTES[palette];
+  return (
+    <div className={`lib-banner ${className}`} style={{ '--from': p.from, '--to': p.to, '--fg': p.text, '--accent': p.accent } as React.CSSProperties}>
+      <div className="lib-banner-copy">
+        <i />
+        <strong>{text}</strong>
+      </div>
+    </div>
+  );
+}
+
+export default function LinkedInBio({ customApiKey, resumeText, setCurrentPage, loadedWork, setLoadedWork, onFocusChange }: LinkedInBioProps) {
+  const runner = useCareerRun<BioResult>(onFocusChange);
+  const { stage, result, show, run } = runner;
+  const cvState = useCvInput(resumeText);
   const [jobTitle, setJobTitle] = useState('');
   const [skills, setSkills] = useState('');
-  const [useResumeText, setUseResumeText] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<BioResult | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [copiedSection, setCopiedSection] = useState<string | null>(null);
+  const [tone, setTone] = useState('Professional');
+  const [sourceName, setSourceName] = useState('');
 
-
-  const clearForm = () => {
-    setResult(null);
-    setJobTitle('');
-    setSkills('');
-  };
-
-  // Load saved work if opened from My Works (adjusting state during render,
-  // see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
   const [handledWork, setHandledWork] = useState<LoadedWork | null>(null);
   if (loadedWork && loadedWork !== handledWork) {
     setHandledWork(loadedWork);
-    if (loadedWork.deleted) {
-      clearForm();
-    } else if (loadedWork.type === 'linkedin-bio') {
-      const saved = parseSavedContent<SavedBioContent>(loadedWork.htmlContent);
-      if (saved) {
+    if (!loadedWork.deleted && loadedWork.type === 'linkedin-bio') {
+      const saved = parseSavedContent<SavedBio>(loadedWork.htmlContent);
+      if (saved?.result) {
         setJobTitle(saved.jobTitle || '');
         setSkills(saved.skills || '');
-        setResult(saved.result || null);
-      } else {
-        console.error('Error parsing loaded LinkedIn bio work');
+        setTone(saved.tone || 'Professional');
+        setSourceName('');
+        show(saved.result);
       }
     }
   }
-
-  // A deletion notice has been handled; clear it in the parent
   useEffect(() => {
-    if (loadedWork?.deleted && setLoadedWork) setLoadedWork(null);
+    if (loadedWork) setLoadedWork?.(null);
   }, [loadedWork, setLoadedWork]);
 
-  const handleCopy = (text: string, sectionId: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedSection(sectionId);
-    setTimeout(() => setCopiedSection(null), 2000);
+  const generate = () => {
+    const role = jobTitle.trim();
+    if (!role || !cvState.ready) return;
+    run(async () => {
+      const data = await postCareer<BioResult>('/api/linkedin/bio', { jobTitle: role, skills: skills.trim(), tone }, cvState, customApiKey);
+      if (!data.headlines?.length && !data.aboutSummaries?.length) throw new Error('The AI did not write a bio this time. Please try again.');
+      setSourceName(cvLabel(cvState));
+      return data;
+    });
   };
 
-  const handleGenerate = async () => {
-    if (!jobTitle.trim()) {
-      setErrorMsg('Target Job Title is required.');
-      return;
-    }
+  if (stage === 'working') {
+    return <CareerWorking tool={TOOL} title="Writing your LinkedIn bio…" phases={PHASES} phase={runner.phase} error={runner.error} onRetry={runner.retry} onEdit={runner.toIntro} />;
+  }
 
-    setLoading(true);
-    setErrorMsg(null);
-    setResult(null);
-
-    try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL 
-        || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
-
-      const userStr = localStorage.getItem('cvmind_user');
-      let email = '';
-      let userId = '';
-      if (userStr) {
-        try {
-          const parsedUser = JSON.parse(userStr);
-          email = parsedUser.email || '';
-          userId = parsedUser.id || parsedUser._id || '';
-        } catch {
-          // ignore
-        }
-      }
-
-      if (!userId) {
-        throw new Error('Please sign in to generate and save your LinkedIn branding assets.');
-      }
-
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (customApiKey) {
-        headers['x-gemini-key'] = customApiKey;
-      }
-
-      const response = await authFetch(`${baseUrl}/api/linkedin/bio`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          skills,
-          jobTitle,
-          resumeText: useResumeText ? resumeText : '',
-          email,
-          userId
-        })
-      });
-
-      const resData = await response.json();
-      if (!response.ok) {
-        throw new Error(resData.error || 'Server returned an error');
-      }
-
-      if (resData.success && resData.data) {
-        setResult(resData.data);
-        if (resData.work && setLoadedWork) {
-          setLoadedWork(resData.work);
-        }
-      } else {
-        throw new Error('Invalid output format from server.');
-      }
-    } catch (err) {
-      console.error(err);
-      setErrorMsg(getErrorMessage(err) || 'Generation failed. Make sure the servers are online.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-
-  function removeState() {
-    clearForm();
-    if (setLoadedWork) {
-      setLoadedWork(null);
-    }
+  if (stage === 'result' && result) {
+    return (
+      <BioResultView
+        key={resultKey('linkedin-bio', result)}
+        result={result}
+        jobTitle={jobTitle}
+        meta={[jobTitle, tone, sourceName].filter(Boolean).join(' · ')}
+        onAgain={runner.toIntro}
+        setCurrentPage={setCurrentPage}
+      />
+    );
   }
 
   return (
-    <div className="li-bio-container animate-fade-in-up">
-      <div className="glow-ambient" style={{ top: '15%', left: '10%' }}></div>
-      <div className="glow-ambient" style={{ bottom: '25%', right: '15%' }}></div>
+    <CareerIntro
+      tool={TOOL}
+      copy={COPY}
+      setCurrentPage={setCurrentPage}
+      resumeResult={result ? { label: 'Back to your bio', onClick: runner.toResult } : null}
+      submit={{ label: 'Write my bio', disabled: !jobTitle.trim() || !cvState.ready, onClick: generate, hint: jobTitle.trim() ? undefined : 'Add the role you want to start.' }}
+    >
+      <Field label="Role you want">
+        <input className="tlr-input" value={jobTitle} onChange={e => setJobTitle(e.target.value)} placeholder="e.g. Senior Software Engineer" maxLength={120} />
+      </Field>
+      <Field label="Skills to highlight" optional>
+        <input className="tlr-input" value={skills} onChange={e => setSkills(e.target.value)} placeholder="e.g. React, system design, mentoring" maxLength={600} />
+      </Field>
+      <Chips label="Tone" options={TONES} value={tone} onChange={setTone} />
+      <CvPicker state={cvState} why="Your resume lets the bio mention your real experience." />
+    </CareerIntro>
+  );
+}
 
-      {/* Header */}
-      <div className="li-bio-header">
-        <div className="li-bio-title-section">
-          <div className="li-bio-badge">
-            <Linkedin size={13} style={{ fill: 'currentColor' }} /> Premium LinkedIn Kit
-          </div>
-          <h1 className="li-bio-title-text">LinkedIn Bio & Banner AI</h1>
-          <p className="li-bio-subtitle-text">
-            Generate high-engagement, keyword-rich headlines, professional summaries, and banner copy designs to optimize your digital brand.
-          </p>
-        </div>
-        {result && (
-          <button className="btn-secondary" onClick={removeState}>
-            <RefreshCw size={14} /> Start Over
-          </button>
-        )}
-      </div>
+interface BioResultViewProps {
+  result: BioResult;
+  jobTitle: string;
+  meta: string;
+  onAgain: () => void;
+  setCurrentPage?: (page: string) => void;
+}
 
-      <div className="li-bio-content-area">
-        {!loading && !result && (
-          <div className="li-bio-input-card glass-card">
-            <div className="input-card-info">
-              <h3>Profile Optimization Form</h3>
-              <p>Fill out your target job profile, and let our AI construct premium headlines, bios, and LinkedIn banner slogans.</p>
-            </div>
+function BioResultView({ result, jobTitle, meta, onAgain, setCurrentPage }: BioResultViewProps) {
+  const headlines = result.headlines ?? [];
+  const banners = result.bannerIdeas ?? [];
+  const hashtags = (result.hashtags ?? []).map(h => (h.startsWith('#') ? h : `#${h.replace(/\s+/g, '')}`));
+  const [headline, setHeadline] = useState(0);
+  const [aboutIndex, setAboutIndex] = useState(0);
+  // The About sections can be edited before copying
+  const [abouts, setAbouts] = useState<string[]>(() => result.aboutSummaries ?? []);
+  const [banner, setBanner] = useState(0);
+  const [palette, setPalette] = useState(0);
+  const user = readUser();
+  const name = user?.name?.trim() || 'Your name';
+  const initials = name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const about = abouts[aboutIndex] ?? '';
+  const bannerText = banners[banner]?.text || jobTitle;
 
-            <div className="li-bio-form">
-              <div className="form-group">
-                <label>Target Job Title *</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Senior Software Engineer, Financial Analyst..."
-                  value={jobTitle}
-                  onChange={(e) => setJobTitle(e.target.value)}
-                  className="form-control-input"
-                />
-              </div>
+  const allText = () => [
+    `LinkedIn bio${jobTitle ? ` for ${jobTitle}` : ''}`,
+    '',
+    'HEADLINES',
+    ...headlines.map((h, i) => `${i + 1}. ${h}`),
+    '',
+    ...abouts.flatMap((a, i) => [`ABOUT (VERSION ${i + 1})`, a, '']),
+    'BANNER IDEAS',
+    ...banners.map((b, i) => `${i + 1}. ${b.text}\n   Style: ${b.bgStyle}\n   Tip: ${b.tip}`),
+    '',
+    `HASHTAGS: ${hashtags.join(' ')}`,
+  ].join('\n');
 
-              <div className="form-group">
-                <label>Core Skills & Expertise (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. React, Python, Cloud Architecture, Project Management..."
-                  value={skills}
-                  onChange={(e) => setSkills(e.target.value)}
-                  className="form-control-input"
-                />
-              </div>
-
-              {resumeText && (
-                <div className="resume-context-checkbox" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.5rem', background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                  <input
-                    type="checkbox"
-                    id="useResumeCheck"
-                    checked={useResumeText}
-                    onChange={(e) => setUseResumeText(e.target.checked)}
-                    style={{ cursor: 'pointer', width: '16px', height: '16px' }}
-                  />
-                  <label htmlFor="useResumeCheck" style={{ cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    Include active CV resume context (highly recommended for better customization)
-                  </label>
-                </div>
-              )}
-
-              {errorMsg && (
-                <div className="error-message-bar" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)', padding: '0.75rem', borderRadius: '8px', fontSize: '0.85rem' }}>
-                  <span>⚠️ {errorMsg}</span>
-                </div>
-              )}
-
-              <button className="btn-primary" style={{ marginTop: '1rem', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }} onClick={handleGenerate}>
-                Generate Profile Assets <ArrowRight size={16} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {loading && (
-          <SkeletonLoader
-            type="text"
-            title="Generating LinkedIn Brand Copy..."
-            subtitle="Structuring professional bios, custom headers, and banner visual themes..."
-          />
-        )}
-
-        {result && (
-          <div className="li-bio-results-grid">
-            
-            {/* Sidebar actions / Stats */}
-            <div className="results-sidebar glass-card">
-              <h4>Branding Summary</h4>
-              <div className="sidebar-stat-item">
-                <span>Job Profile:</span>
-                <strong>{jobTitle}</strong>
-              </div>
-              <div className="sidebar-stat-item">
-                <span>Total Assets:</span>
-                <strong>7 suggestions</strong>
-              </div>
-
-              <div className="sidebar-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '1.5rem' }}>
-                {localStorage.getItem('cvmind_user') ? (
-                  <div className="li-autosave-status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)', padding: '0.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', border: '1px solid var(--border)' }}>
-                    <Check size={14} className="text-success" />
-                    <span>Saved automatically to My Works</span>
-                  </div>
-                ) : (
-                  <div className="li-autosave-status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--text-warning)', padding: '0.5rem', background: 'rgba(251,146,60,0.05)', borderRadius: '6px', border: '1px solid rgba(251,146,60,0.2)' }}>
-                    <span>Sign in to auto-save</span>
-                  </div>
-                )}
+  return (
+    <CareerApp
+      tool={TOOL}
+      againLabel="Change my details"
+      onAgain={onAgain}
+      onExit={onAgain}
+      heading="Your LinkedIn bio is ready"
+      summary="Pick a headline, an About and a banner. The preview shows how they look together."
+      meta={meta}
+      actions={
+        <>
+          {headlines[headline] && <CopyButton text={headlines[headline]} label="Copy headline" />}
+          {about && <CopyButton text={about} label="Copy About" />}
+          <button type="button" className="tlr-btn tlr-btn--outline" onClick={() => downloadText(`LinkedIn bio${jobTitle ? ` - ${jobTitle}` : ''}`, allText())}><Download size={17} /> Download .txt</button>
+        </>
+      }
+      footnote={user ? 'Saved to My Documents.' : 'Sign in to save it to My Documents.'}
+    >
+      <div className="crt-layout">
+        <div className="crt-main">
+          <Panel title="Profile preview" icon={Eye}>
+            <div className="lib-preview">
+              <Banner text={bannerText} palette={palette} />
+              <div className="lib-preview-body">
+                <span className="lib-avatar" aria-hidden="true">{initials}</span>
+                <strong>{name}</strong>
+                <p>{headlines[headline] || jobTitle}</p>
+                {about && <div className="lib-preview-about"><b>About</b><p>{about.length > 265 ? `${about.slice(0, 265).trim()}… see more` : about}</p></div>}
               </div>
             </div>
+            <p className="tlr-fine">A preview only. LinkedIn's own layout differs a little on phones.</p>
+          </Panel>
 
-            {/* Main suggestion panels */}
-            <div className="results-main-panel">
-              
-              {/* HEADLINES OPTION */}
-              <div className="result-panel-section glass-card">
-                <div className="panel-section-header">
-                  <h3>🎯 Optimized Headlines (Click to Copy)</h3>
+          <Panel title="Headlines" icon={Type}>
+            {headlines.map((h, i) => (
+              <div key={i} className={`crt-option${headline === i ? ' is-on' : ''}`}>
+                <div className="crt-option-top">
+                  <button type="button" className={`crt-pick${headline === i ? ' is-on' : ''}`} aria-pressed={headline === i} onClick={() => setHeadline(i)}>
+                    {headline === i ? <><CheckCircle2 size={13} /> In preview</> : 'Use in preview'}
+                  </button>
+                  <span className="crt-spacer" />
+                  <CharCount text={h} limit={HEADLINE_MAX} />
+                  <CopyButton text={h} small />
                 </div>
-                <div className="headlines-stack" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.75rem' }}>
-                  {result.headlines && result.headlines.map((headline: string, index: number) => {
-                    const id = `headline-${index}`;
-                    return (
-                      <div 
-                        key={index} 
-                        className="copy-card-row glass-card"
-                        onClick={() => handleCopy(headline, id)}
-                        style={{ cursor: 'pointer', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border)', transition: 'all 0.2s', borderRadius: '8px' }}
-                      >
-                        <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600 }}>{headline}</span>
-                        <button className="copy-action-btn">
-                          {copiedSection === id ? <Check size={14} className="text-success" /> : <Copy size={14} />}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
+                <p>{h}</p>
               </div>
+            ))}
+          </Panel>
 
-              {/* ABOUT SUMMARIES */}
-              <div className="result-panel-section glass-card" style={{ marginTop: '1.5rem' }}>
-                <div className="panel-section-header">
-                  <h3>📝 Professional "About" Bios</h3>
-                </div>
-                <div className="about-stack" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '1rem' }}>
-                  {result.aboutSummaries && result.aboutSummaries.map((bio: string, index: number) => {
-                    const id = `bio-${index}`;
-                    return (
-                      <div key={index} className="bio-card glass-card" style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border)', borderRadius: '8px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                          <h5 style={{ margin: 0, fontWeight: 700, color: 'var(--blue)' }}>
-                            {index === 0 ? 'Option 1: Structured / Bulleted' : 'Option 2: Narrative / Storytelling'}
-                          </h5>
-                          <button 
-                            className="btn-secondary btn-sm" 
-                            onClick={() => handleCopy(bio, id)}
-                            style={{ padding: '0.3rem 0.6rem' }}
-                          >
-                            {copiedSection === id ? <><Check size={12} className="text-success" /> Copied!</> : <><Copy size={12} /> Copy Bio</>}
-                          </button>
-                        </div>
-                        <p style={{ fontSize: '0.85rem', lineHeight: '1.6', margin: 0, color: 'var(--text-secondary)', whiteSpace: 'pre-line' }}>{bio}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* BANNER IDEAS */}
-              <div className="result-panel-section glass-card" style={{ marginTop: '1.5rem' }}>
-                <div className="panel-section-header">
-                  <h3>🎨 LinkedIn Profile Banner Visual Ideas</h3>
-                </div>
-                <div className="banner-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
-                  {result.bannerIdeas && result.bannerIdeas.map((banner, index: number) => {
-                    const id = `banner-${index}`;
-                    return (
-                      <div key={index} className="banner-card glass-card" style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border)', borderRadius: '8px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                          <h5 style={{ margin: 0, fontWeight: 700, color: 'var(--color-primary)' }}>Idea 0{index + 1}</h5>
-                          <button 
-                            className="btn-secondary btn-sm" 
-                            onClick={() => handleCopy(banner.text, id)}
-                            style={{ padding: '0.3rem 0.6rem' }}
-                          >
-                            {copiedSection === id ? <><Check size={12} className="text-success" /> Copied!</> : <><Copy size={12} /> Copy Text</>}
-                          </button>
-                        </div>
-                        <div style={{ fontSize: '0.82rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          <p style={{ margin: 0 }}>
-                            <strong>Main Banner Text:</strong>
-                            <span style={{ display: 'block', margin: '0.2rem 0', padding: '0.4rem', background: 'rgba(255,255,255,0.02)', borderRadius: '4px', fontStyle: 'italic' }}>"{banner.text}"</span>
-                          </p>
-                          <p style={{ margin: 0 }}><strong>Visual Styling:</strong> {banner.bgStyle}</p>
-                          <p style={{ margin: 0 }}><strong>Recruiter Tip:</strong> {banner.tip}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* RECOMMENDED HASHTAGS */}
-              {result.hashtags && result.hashtags.length > 0 && (
-                <div className="result-panel-section glass-card" style={{ marginTop: '1.5rem' }}>
-                  <div className="panel-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ margin: 0 }}>#️⃣ Recommended Hashtags</h3>
-                    <button 
-                      className="btn-secondary btn-sm" 
-                      onClick={() => handleCopy((result.hashtags || []).join(' '), 'hashtags')}
-                    >
-                      {copiedSection === 'hashtags' ? <><Check size={12} className="text-success" /> Copied!</> : <><Copy size={12} /> Copy Hashtags</>}
+          {abouts.length > 0 && (
+            <Panel title="About section" icon={PenLine} action={<div className="crt-actions-row"><CharCount text={about} limit={ABOUT_MAX} /><CopyButton text={about} small /></div>}>
+              {abouts.length > 1 && (
+                <div className="crt-tabs" role="tablist" aria-label="About versions">
+                  {abouts.map((_, i) => (
+                    <button key={i} type="button" role="tab" aria-selected={aboutIndex === i} className={aboutIndex === i ? 'is-on' : ''} onClick={() => setAboutIndex(i)}>
+                      {i === 0 ? 'Version 1' : `Version ${i + 1}`}
                     </button>
-                  </div>
-                  <div className="tags-stack" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
-                    {result.hashtags.map((tag: string, index: number) => (
-                      <span key={index} className="filter-badge" style={{ cursor: 'default', background: 'rgba(41,151,255,0.08)', color: 'var(--blue)', border: '1px solid rgba(41,151,255,0.15)' }}>
-                        {tag.startsWith('#') ? tag : `#${tag}`}
-                      </span>
-                    ))}
-                  </div>
+                  ))}
                 </div>
               )}
+              <textarea
+                className="crt-edit lib-about"
+                value={about}
+                onChange={e => setAbouts(prev => prev.map((a, i) => (i === aboutIndex ? e.target.value : a)))}
+                aria-label="About section, editable"
+              />
+              <p className="tlr-fine">Edit it here. Copy and the preview use your changes.</p>
+            </Panel>
+          )}
 
-            </div>
-          </div>
-        )}
+          {banners.length > 0 && (
+            <Panel title="Banner" icon={ImageIcon} action={<button type="button" className="crt-copy" onClick={() => downloadBanner(bannerText, palette)}><Download size={14} /> Download PNG</button>}>
+              {banners.length > 1 && (
+                <div className="crt-tabs" role="tablist" aria-label="Banner ideas">
+                  {banners.map((_, i) => (
+                    <button key={i} type="button" role="tab" aria-selected={banner === i} className={banner === i ? 'is-on' : ''} onClick={() => setBanner(i)}>Idea {i + 1}</button>
+                  ))}
+                </div>
+              )}
+              <Banner text={bannerText} palette={palette} className="lib-banner--big" />
+              <div className="lib-palettes" role="group" aria-label="Banner colours">
+                <Palette size={16} />
+                {PALETTES.map((p, i) => (
+                  <button key={p.name} type="button" className={palette === i ? 'is-on' : ''} aria-pressed={palette === i} aria-label={p.name} onClick={() => setPalette(i)} title={p.name} style={{ '--from': p.from, '--to': p.to } as React.CSSProperties} />
+                ))}
+              </div>
+              {banners[banner] && (
+                <ul className="crt-bullets">
+                  <li><LayoutTemplate size={15} /><span><b>Style idea:</b> {banners[banner].bgStyle}</span></li>
+                  <li><Sparkles size={15} /><span><b>Tip:</b> {banners[banner].tip}</span></li>
+                </ul>
+              )}
+              <p className="tlr-fine">Downloads at 1584 × 396, LinkedIn's banner size. The text sits right of your profile photo.</p>
+            </Panel>
+          )}
+        </div>
 
+        <aside className="crt-side">
+          {hashtags.length > 0 && (
+            <section className="tlr-card">
+              <div className="crt-panel-head lib-tags-head">
+                <h3>Hashtags</h3>
+                <CopyButton text={hashtags.join(' ')} label="Copy all" small />
+              </div>
+              <div className="tlr-chips">{hashtags.map(h => <span key={h} className="tlr-chip tlr-chip--ok">{h}</span>)}</div>
+              <p className="tlr-fine lib-tags-note">Follow them, and add two or three to your posts.</p>
+            </section>
+          )}
+          <section className="tlr-card">
+            <h3>Where each part goes</h3>
+            <ul className="crt-bullets">
+              <li><CheckCircle2 size={15} />Headline: the pencil icon on your profile intro.</li>
+              <li><CheckCircle2 size={15} />About: Add profile section, then About.</li>
+              <li><CheckCircle2 size={15} />Banner: the camera icon on your background photo.</li>
+            </ul>
+          </section>
+          <CareerNext current="linkedin-bio" setCurrentPage={setCurrentPage} pick={['linkedin', 'linkedin-outreach', 'elevator-pitch']} />
+        </aside>
       </div>
-    </div>
+    </CareerApp>
   );
 }

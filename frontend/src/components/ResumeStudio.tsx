@@ -26,6 +26,8 @@ interface StudioBarProps {
   onUndo: () => void;
   onRedo: () => void;
   onDownload: () => void;
+  /** Hides Fix Resume and Check & Tailor (for resumes the Resume Tailorer already tailored). */
+  hideAiTools?: boolean;
 }
 
 export function StudioBar(p: StudioBarProps) {
@@ -48,12 +50,16 @@ export function StudioBar(p: StudioBarProps) {
 
       <div className="rs-bar-tools">
         <div className="rs-tools">
-          <button type="button" className="rs-tool" disabled={p.refining} onClick={p.onFix}>
-            {p.refining ? <Loader2 size={15} className="rs-spin" /> : <Wand2 size={15} />} Fix Resume
-          </button>
-          <button type="button" className={`rs-tool${p.panel === 'tailor' ? ' is-on' : ''}`} onClick={() => p.onPanel(p.panel === 'tailor' ? null : 'tailor')}>
-            <ShieldCheck size={15} /> Check &amp; Tailor
-          </button>
+          {!p.hideAiTools && (
+            <>
+              <button type="button" className="rs-tool" disabled={p.refining} onClick={p.onFix}>
+                {p.refining ? <Loader2 size={15} className="rs-spin" /> : <Wand2 size={15} />} Fix Resume
+              </button>
+              <button type="button" className={`rs-tool${p.panel === 'tailor' ? ' is-on' : ''}`} onClick={() => p.onPanel(p.panel === 'tailor' ? null : 'tailor')}>
+                <ShieldCheck size={15} /> Check &amp; Tailor
+              </button>
+            </>
+          )}
           <button type="button" className="rs-tool" onClick={p.onRearrange}><ArrowUpDown size={15} /> Rearrange</button>
           <button type="button" className={`rs-tool${p.drawer === 'templates' ? ' is-on' : ''}`} aria-pressed={p.drawer === 'templates'} onClick={() => p.onDrawer(p.drawer === 'templates' ? null : 'templates')}>
             <LayoutTemplate size={15} /> Templates

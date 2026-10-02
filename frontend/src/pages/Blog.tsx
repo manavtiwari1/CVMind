@@ -272,7 +272,7 @@ export default function Blog({ setCurrentPage }: BlogProps) {
         </div>
         <h1 className="blog-title">CV Mind Changelog</h1>
         <p className="blog-subtitle">
-          Every feature, fix, and upgrade — tracked from Day 1. Now live with AI Career Copilot, 9 active agents, and a full job-search automation suite.
+          Every feature, fix, and upgrade — tracked from Day 1. Now live with a full suite of AI career tools.
         </p>
       </section>
 
@@ -357,7 +357,7 @@ export default function Blog({ setCurrentPage }: BlogProps) {
           <div className="cta-content">
             <h3 className="cta-title">We're Live! 🎉</h3>
             <p className="cta-desc">
-              CV Mind is officially live at cvmind.online — free ATS resume checks, AI resume building, interview prep, and the new AI Career Copilot. Start with a free resume scan.
+              CV Mind is officially live at cvmind.online — free ATS resume checks, AI resume building, and interview prep. Start with a free resume scan.
             </p>
             <button className="cta-btn" onClick={() => setCurrentPage('home')}>
               Try CV Mind Now <ArrowRight size={16} />
