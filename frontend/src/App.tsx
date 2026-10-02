@@ -110,6 +110,7 @@ export default function App() {
     return Boolean(searchParams.get('authError'));
   });
   const [loadedWork, setLoadedWork] = useState<LoadedWork | null>(null);
+  const [builderFocus, setBuilderFocus] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('cvmind_aa_access', 'true');
@@ -447,7 +448,7 @@ export default function App() {
       case 'resume-builder':
         return <ResumeBuilderLanding setCurrentPage={setCurrentPage} />;
       case 'resume-editor':
-        return <CoverLetter customApiKey={customApiKey} loadedWork={loadedWork} setLoadedWork={setLoadedWork} />;
+        return <CoverLetter customApiKey={customApiKey} loadedWork={loadedWork} setLoadedWork={setLoadedWork} onFocusChange={setBuilderFocus} />;
       case 'pricing':
         return <Pricing setCurrentPage={setCurrentPage} isLoggedIn={isLoggedIn} setShowAuthModal={setShowAuthModal} />;
       case 'terms':
@@ -491,10 +492,11 @@ export default function App() {
 
   const isAdminPage = currentPage === 'admin';
   const isCodePage = currentPage === 'code-arena' || currentPage === 'cvmind-code-arena';
-  const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || isCodePage;
+  const isFocusFlow = currentPage === 'resume-editor' && builderFocus;
+  const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || isCodePage || isFocusFlow;
 
   return (
-    <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''}`}>
+    <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''} ${isFocusFlow ? 'focus-shell' : ''}`}>
 
       {/* ── Global Digital Serenity Background (for both dark & light modes) ── */}
       {!isMinimalPage && <DigitalSerenityBackground theme={theme} />}
@@ -510,6 +512,12 @@ export default function App() {
           handleSignOut={handleSignOut}
           setLoadedWork={setLoadedWork}
         />
+      )}
+
+      {isFocusFlow && (
+        <button type="button" className="focus-exit" onClick={() => setCurrentPage('resume-builder')} aria-label="Exit resume builder">
+          Exit ✕
+        </button>
       )}
 
       <main className="main-content">

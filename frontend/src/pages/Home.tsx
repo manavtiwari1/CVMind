@@ -379,7 +379,7 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
         <h2 className="hp-h2 hp-h2--light">Ready to send a better resume?</h2>
         <p className="hp-body hp-body--light">Start from a template, or upload the resume you already have for a free ATS check.</p>
         <div className="hp-actions">
-          <button className="hp-btn hp-btn--primary" onClick={() => setCurrentPage('resume-builder')}>Build your resume</button>
+          <button className="hp-btn hp-btn--primary" onClick={() => setCurrentPage('resume-editor')}>Build your resume</button>
           <button className="hp-btn hp-btn--outline" onClick={scrollToScore}>Get your resume score</button>
         </div>
       </section>

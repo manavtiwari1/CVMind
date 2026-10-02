@@ -39,7 +39,7 @@ export default function HomeHero({ setCurrentPage, onAnalyzeClick }: HomeHeroPro
             Or upload the resume you already have and get a free score first.
           </p>
           <div className="hp-actions">
-            <button className="hp-btn hp-btn--primary" onClick={() => setCurrentPage('resume-builder')}>
+            <button className="hp-btn hp-btn--primary" onClick={() => setCurrentPage('resume-editor')}>
               Build your resume
             </button>
             <button className="hp-btn hp-btn--outline" onClick={onAnalyzeClick}>

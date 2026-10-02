@@ -11,6 +11,9 @@ import {
 import './CoverLetter.css';
 import ResumeWizard from '../components/ResumeWizard';
 import TemplateGallery from '../components/TemplateGallery';
+import ResumeLinkedInStep from '../components/ResumeLinkedInStep';
+import ResumeTemplatePicker from '../components/ResumeTemplatePicker';
+import ResumeOnboarding, { type OnboardingResult, type ResumeGoal } from '../components/ResumeOnboarding';
 import { TEMPLATES, type Template } from '../data/resumeTemplates';
 import { authFetch } from '../lib/authFetch';
 import { getErrorMessage } from '../utils/errors';
@@ -48,10 +51,17 @@ interface CoverLetterProps {
   customApiKey: string;
   loadedWork?: LoadedWork | null;
   setLoadedWork?: (work: LoadedWork | null) => void;
+  /** Tells the app shell to hide the navbar/footer while the user is in the guided builder flow. */
+  onFocusChange?: (focused: boolean) => void;
 }
 
-export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }: CoverLetterProps) {
-  const [step, setStep] = useState<'gallery' | 'onboard-question' | 'onboard-upload' | 'form' | 'loading' | 'editor'>('gallery');
+export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, onFocusChange }: CoverLetterProps) {
+  const [step, setStep] = useState<'onboarding' | 'gallery' | 'linkedin' | 'onboard-upload' | 'form' | 'loading' | 'editor'>(
+    // A fresh visit to the resume builder starts with Leo's guided onboarding.
+    () => (window.location.hash === '#cover-letter' || loadedWork ? 'gallery' : 'onboarding'),
+  );
+  const [onboardingDone, setOnboardingDone] = useState(false);
+  const [resumeGoal, setResumeGoal] = useState<ResumeGoal | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [refining, setRefining] = useState(false);
   const [refineError, setRefineError] = useState('');
@@ -88,6 +98,13 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
     window.addEventListener('hashchange', handleHash);
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
+
+  const inFocusFlow = ['onboarding', 'linkedin', 'onboard-upload', 'form'].includes(step)
+    || (step === 'gallery' && activeTab === 'resume');
+  useEffect(() => {
+    onFocusChange?.(inFocusFlow);
+  }, [inFocusFlow, onFocusChange]);
+  useEffect(() => () => onFocusChange?.(false), [onFocusChange]);
 
   // Handle Loading Work from Dashboard / Global Modals.
   // Local state is adjusted during render; the editor DOM and clearing the
@@ -380,8 +397,39 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
     if (template.type === 'cover-letter') {
       setStep('editor');
     } else {
-      setStep('onboard-question');
+      setStep('linkedin');
     }
+  };
+
+  // Fill only the gaps in what the user already gave us with data imported from LinkedIn.
+  const handleLinkedInDone = (imported: ExtractedResume | null) => {
+    if (imported) {
+      setExtractedData(prev => {
+        if (!prev) return imported;
+        const merged: ExtractedResume = { ...imported, ...prev };
+        merged.personalInfo = { ...imported.personalInfo, ...Object.fromEntries(Object.entries(prev.personalInfo || {}).filter(([, v]) => v)) };
+        for (const key of ['workExperiences', 'educations', 'skills', 'courses', 'languages', 'achievements'] as const) {
+          if (!prev[key]?.length && imported[key]?.length) (merged as Record<string, unknown>)[key] = imported[key];
+        }
+        if (!prev.summary && imported.summary) merged.summary = imported.summary;
+        return merged;
+      });
+    }
+    setStep('form');
+  };
+
+  const handleOnboardingComplete = ({ extracted, jobTitle, goal }: OnboardingResult) => {
+    const data: ExtractedResume | null = extracted
+      ? extracted
+      : jobTitle ? { personalInfo: { jobTitle } } : null;
+    // Keep the uploaded resume's own title; only fill it in when missing.
+    if (data && jobTitle && !data.personalInfo?.jobTitle) {
+      data.personalInfo = { ...data.personalInfo, jobTitle };
+    }
+    setExtractedData(data);
+    setResumeGoal(goal);
+    setOnboardingDone(true);
+    setStep('gallery');
   };
 
   const handleUploadAndExtract = async (file: File) => {
@@ -760,64 +808,9 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
 
   const closeAllPopups = () => { setShowTextColor(false); setShowHighlight(false); setShowTableDialog(false); };
 
-  // ── ONBOARDING: Do you have an existing resume? ─────────────────────────
-  if (step === 'onboard-question') {
-    return (
-      <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg, #f8fafc)', padding: '2rem' }}>
-        {/* Illustration */}
-        <div style={{ marginBottom: '2rem', position: 'relative', width: 220, height: 160 }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(34,197,94,0.12)', borderRadius: '50%', transform: 'scale(1.3)' }} />
-          <svg width="220" height="160" viewBox="0 0 220 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* Floating resume papers */}
-            <rect x="30" y="20" width="44" height="56" rx="4" fill="#fff" stroke="#d1d5db" strokeWidth="1.5" transform="rotate(-12 30 20)" />
-            <rect x="34" y="28" width="28" height="3" rx="1.5" fill="#9ca3af" transform="rotate(-12 34 28)" />
-            <rect x="34" y="35" width="20" height="2" rx="1" fill="#d1d5db" transform="rotate(-12 34 35)" />
-            <rect x="34" y="40" width="24" height="2" rx="1" fill="#d1d5db" transform="rotate(-12 34 40)" />
-            <rect x="145" y="15" width="44" height="56" rx="4" fill="#fff" stroke="#d1d5db" strokeWidth="1.5" transform="rotate(10 145 15)" />
-            <rect x="150" y="24" width="28" height="3" rx="1.5" fill="#9ca3af" transform="rotate(10 150 24)" />
-            <rect x="150" y="31" width="20" height="2" rx="1" fill="#d1d5db" transform="rotate(10 150 31)" />
-            <rect x="150" y="36" width="24" height="2" rx="1" fill="#d1d5db" transform="rotate(10 150 36)" />
-            {/* Center resume with profile */}
-            <rect x="80" y="30" width="60" height="80" rx="6" fill="#fff" stroke="#22c55e" strokeWidth="2" />
-            <circle cx="110" cy="52" r="10" fill="#bbf7d0" />
-            <rect x="90" y="68" width="40" height="3" rx="1.5" fill="#22c55e" />
-            <rect x="90" y="75" width="30" height="2" rx="1" fill="#d1d5db" />
-            <rect x="90" y="81" width="35" height="2" rx="1" fill="#d1d5db" />
-            <rect x="90" y="87" width="28" height="2" rx="1" fill="#d1d5db" />
-            {/* Sparkle dots */}
-            <circle cx="68" cy="55" r="3" fill="#22c55e" />
-            <circle cx="152" cy="60" r="3" fill="#22c55e" />
-            <circle cx="110" cy="130" r="3" fill="#22c55e" opacity="0.5" />
-          </svg>
-        </div>
-
-        <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary, #1a1a1a)', textAlign: 'center', marginBottom: '0.6rem', lineHeight: 1.3 }}>
-          Do you have an existing resume?
-        </h2>
-        <p style={{ color: 'var(--text-secondary, #6b7280)', textAlign: 'center', marginBottom: '2rem', maxWidth: '400px', fontSize: '0.95rem', lineHeight: 1.6 }}>
-          Save time by uploading your resume. We will pre-fill the template with your data.
-        </p>
-
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <button
-            onClick={() => setStep('onboard-upload')}
-            style={{ background: '#22c55e', color: '#fff', border: 'none', borderRadius: '8px', padding: '12px 48px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s' }}
-            onMouseOver={e => (e.currentTarget.style.background = '#16a34a')}
-            onMouseOut={e => (e.currentTarget.style.background = '#22c55e')}
-          >
-            Yes
-          </button>
-          <button
-            onClick={() => { setExtractedData(null); setStep('form'); }}
-            style={{ background: '#fff', color: '#374151', border: '1.5px solid #d1d5db', borderRadius: '8px', padding: '12px 48px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer', transition: 'border-color 0.2s' }}
-            onMouseOver={e => (e.currentTarget.style.borderColor = '#9ca3af')}
-            onMouseOut={e => (e.currentTarget.style.borderColor = '#d1d5db')}
-          >
-            No
-          </button>
-        </div>
-      </div>
-    );
+  // ── GUIDED ONBOARDING (Leo) ─────────────────────────────────────────────
+  if (step === 'onboarding') {
+    return <ResumeOnboarding customApiKey={customApiKey} onComplete={handleOnboardingComplete} />;
   }
 
   // ── ONBOARDING: Upload resume ────────────────────────────────────────────
@@ -884,13 +877,18 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
         </div>
 
         <button
-          onClick={() => setStep('onboard-question')}
+          onClick={() => setStep('onboarding')}
           style={{ marginTop: '1.5rem', background: 'none', border: 'none', color: '#9ca3af', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}
         >
           ← Go back
         </button>
       </div>
     );
+  }
+
+  // ── LINKEDIN IMPORT (step 6) ────────────────────────────────
+  if (step === 'linkedin') {
+    return <ResumeLinkedInStep customApiKey={customApiKey} onDone={handleLinkedInDone} />;
   }
 
   // ── WIZARD FORM ─────────────────────────────────────────────
@@ -928,26 +926,36 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
   }
 
   // ── GALLERY ─────────────────────────────────────────────────
+  if (step === 'gallery' && activeTab === 'resume') {
+    if (!onboardingDone) return <ResumeOnboarding customApiKey={customApiKey} onComplete={handleOnboardingComplete} />;
+    // Float the templates that suit the user's goal (from onboarding) to the top.
+    const goalFit = resumeGoal === 'ats' ? /ats|classic|minimal|clean|corporate|traditional/i
+      : resumeGoal === 'recruiters' ? /creative|modern|bold|elegant|executive|design/i : null;
+    const fit = (t: Template) => (goalFit && goalFit.test(`${t.id} ${t.name} ${t.tag}`) ? 0 : 1);
+    const resumeTemplates = TEMPLATES.filter(t => (t.type || 'resume') === 'resume').sort((x, y) => fit(x) - fit(y));
+    return (
+      <ResumeTemplatePicker
+        templates={resumeTemplates}
+        goal={resumeGoal}
+        onSelect={handleSelectTemplate}
+        onBack={() => setOnboardingDone(false)}
+      />
+    );
+  }
+
+  // ── COVER LETTER GALLERY ────────────────────────────────────
   if (step === 'gallery') {
-    const filteredTemplates = TEMPLATES.filter(t => {
-      const type = t.type || 'resume';
-      return type === activeTab;
-    });
+    const filteredTemplates = TEMPLATES.filter(t => t.type === 'cover-letter');
 
     return (
       <div className="cl-page animate-fade-in-up">
         <div className="cl-hero">
-          <div className="cl-hero-badge">
-            {activeTab === 'resume' ? <FileText size={14} /> : <Sparkles size={14} />} 
-            {activeTab === 'resume' ? 'ATS Resume Builder' : 'AI Cover Letter Builder'}
-          </div>
+          <div className="cl-hero-badge"><Sparkles size={14} /> AI Cover Letter Builder</div>
           <h1 className="cl-hero-title">
-            Choose Your <span className="cl-gradient-text">{activeTab === 'resume' ? 'ATS Template' : 'Cover Letter'}</span>
+            Choose Your <span className="cl-gradient-text">Cover Letter</span>
           </h1>
           <p className="cl-hero-sub">
-            {activeTab === 'resume'
-              ? '22 powerful ATS-optimized resume templates. Select one and customize with our full Word-like editor — fonts, tables, colors, headings & more.'
-              : 'Select a premium cover letter layout and edit using our professional writing environment. Perfect format, zero guesswork.'}
+            Select a premium cover letter layout and edit using our professional writing environment. Perfect format, zero guesswork.
           </p>
         </div>
 
@@ -966,7 +974,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork }:
             <Sparkles size={14} /> Cover Letters
           </button>
         </div>
-        <TemplateGallery templates={filteredTemplates} kind={activeTab} onSelect={handleSelectTemplate} />
+        <TemplateGallery templates={filteredTemplates} kind="cover-letter" onSelect={handleSelectTemplate} />
       </div>
     );
   }
