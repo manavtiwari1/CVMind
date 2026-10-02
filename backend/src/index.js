@@ -129,6 +129,7 @@ const AI_ROUTE_PATHS = [
   '/api/cover-letter/refine',
   '/api/resume/generate',
   '/api/resume/parse-data',
+  '/api/resume/import-linkedin',
   '/api/linkedin',
   '/api/career',
   '/api/voice-prep',
@@ -1441,6 +1442,55 @@ apiRouter.post('/api/resume/parse-data', upload.single('resume'), async (req, re
     return res.status(500).json({
       error: error.message || 'Failed to extract resume data. Please try again.'
     });
+  }
+});
+
+// Import resume data from a public LinkedIn profile URL.
+// LinkedIn often serves an auth wall to server-side requests; in that case we say so
+// and the client falls back to a "Save to PDF" upload via /api/resume/parse-data.
+const decodeEntities = (t) => t.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+
+function parseLinkedInProfileUrl(raw) {
+  let u;
+  try { u = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`); } catch { return null; }
+  // Strict host/path allow-list so this can't be used to fetch arbitrary URLs.
+  if (!/^([a-z]{2,3}\.)?linkedin\.com$/i.test(u.hostname) && u.hostname.toLowerCase() !== 'www.linkedin.com') return null;
+  if (!/^\/in\/[^/]+/i.test(u.pathname)) return null;
+  return `https://www.linkedin.com${u.pathname.replace(/\/+$/, '')}/`;
+}
+
+function profileTextFromHtml(html) {
+  const parts = [];
+  for (const m of html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)) {
+    try { parts.push(JSON.stringify(JSON.parse(m[1]))); } catch { /* ignore malformed block */ }
+  }
+  for (const m of html.matchAll(/<meta[^>]+(?:property|name)="(?:og:title|og:description|description)"[^>]+content="([^"]*)"/gi)) {
+    parts.push(decodeEntities(m[1]));
+  }
+  return parts.join('\n');
+}
+
+apiRouter.post('/api/resume/import-linkedin', async (req, res) => {
+  const profileUrl = parseLinkedInProfileUrl(String(req.body?.url || '').trim());
+  if (!profileUrl) {
+    return res.status(400).json({ error: 'Please enter a valid LinkedIn profile link, like https://linkedin.com/in/your-name' });
+  }
+  const walled = { error: "LinkedIn didn't share this profile publicly. On LinkedIn open your profile → More → Save to PDF, then upload that PDF instead.", code: 'LINKEDIN_PRIVATE' };
+  try {
+    const page = await fetch(profileUrl, {
+      redirect: 'manual',
+      signal: AbortSignal.timeout(8000),
+      headers: { 'Accept': 'text/html', 'Accept-Language': 'en-US,en;q=0.9', 'User-Agent': 'Mozilla/5.0 (compatible; CVMindImport/1.0)' },
+    });
+    if (page.status !== 200) return res.status(422).json(walled);
+    const profileText = profileTextFromHtml((await page.text()).slice(0, 500000));
+    if (profileText.trim().length < 80) return res.status(422).json(walled);
+
+    const data = await extractResumeDataWithAI(profileText, req.headers['x-gemini-key'] || null);
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('LinkedIn import error:', error);
+    return res.status(422).json(walled);
   }
 });
 
