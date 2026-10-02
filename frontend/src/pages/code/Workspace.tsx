@@ -8,7 +8,7 @@ import {
   LANGUAGES, requestDebug, requestHint, requestReview, runCode, submitCode,
   type AiDebug, type AiHint, type AiReview, type JudgeResult, type Language,
 } from './codeApi';
-import { loadDraft, recordSubmission, saveDraft, clearDraft, setLastProblem, useProgress } from './codeStore';
+import { loadDraft, recordSubmission, saveDraft, clearDraft, setLastProblem, syncProgress, useProgress } from './codeStore';
 import DescriptionPane, { type LeftTab } from './workspace/DescriptionPane';
 import ConsolePane, { type AiState, type ConsoleTab, type ResultState } from './workspace/ConsolePane';
 import './code-workspace.css';
@@ -121,6 +121,21 @@ export default function Workspace({ problem, problems, theme, customApiKey = '',
   const currentLang = LANGUAGES.find((l) => l.id === language) ?? LANGUAGES[0];
 
   useEffect(() => { setLastProblem(problem.id); }, [problem.id]);
+
+  // A draft saved on another device arrives after the first render: use it if this editor is still untouched
+  const codeRef = useRef(code);
+  useEffect(() => { codeRef.current = code; }, [code]);
+  useEffect(() => {
+    let cancelled = false;
+    void syncProgress().then((refreshed) => {
+      if (!refreshed || cancelled) return;
+      const starter = problem.starterCode[language] ?? '';
+      const remote = loadDraft(problem.id, language);
+      if (remote && codeRef.current === starter && remote !== starter) setCode(remote);
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [problem.id]);
 
   // keep the draft: write 400ms after the last keystroke
   useEffect(() => {
