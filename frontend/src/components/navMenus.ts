@@ -5,7 +5,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-export type NavBadge = 'new' | 'unlocked';
+export type NavBadge = 'new' | 'soon';
 
 /** A row with an icon tile, a title and a one-line description. */
 export interface NavTile {
@@ -80,7 +80,7 @@ export const NAV_MENUS: NavMenu[] = [
         tiles: [
           { page: 'job-finder', title: 'AI Job Finder', desc: 'Curated roles matching your profile', icon: Briefcase },
           { page: 'career-copilot', title: 'AI Career Copilot', desc: '9 AI agents managing your career', icon: Bot, badge: 'new' },
-          { page: 'auto-apply', title: 'Auto Apply Agent', desc: 'AI applies to jobs for you', icon: Send, badge: 'unlocked' },
+          { page: 'auto-apply', title: 'Auto Apply Agent', desc: 'Coming soon: AI applies to jobs for you', icon: Send, badge: 'soon' },
         ],
       },
       {

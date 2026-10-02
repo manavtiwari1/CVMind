@@ -123,7 +123,41 @@ function CompanyLogo({ domain, company }: { domain: string; company: string }) {
   return <div className="aa-company-avatar" style={{ background: `linear-gradient(135deg,${grad})` }}>{company.charAt(0)}</div>;
 }
 
-export default function AutoApply({ customApiKey, resumeText: initialResumeText = '', setResumeText: setGlobalResumeText }: AutoApplyProps) {
+// The agent is still being built: only emails on the admin Auto Apply access list can open it,
+// everyone else sees a Coming Soon screen
+export default function AutoApply(props: AutoApplyProps) {
+  const [access, setAccess] = useState<'checking' | 'granted' | 'denied'>('checking');
+
+  useEffect(() => {
+    const email = (() => { try { return JSON.parse(localStorage.getItem('cvmind_user') || '{}').email || ''; } catch { return ''; } })();
+    if (!email) { setAccess('denied'); return; }
+    let cancelled = false;
+    fetch(`${API}/api/auto-apply/check-access?email=${encodeURIComponent(email)}`)
+      .then(r => r.json())
+      .then(d => { if (!cancelled) setAccess(d?.hasAccess ? 'granted' : 'denied'); })
+      .catch(() => { if (!cancelled) setAccess('denied'); });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (access === 'granted') return <AutoApplyAgent {...props} />;
+  if (access === 'checking') {
+    return <div className="aa-landing"><div className="aa-landing-hero"><RefreshCw size={22} className="aa-spin" /></div></div>;
+  }
+  return (
+    <div className="aa-landing">
+      <div className="aa-landing-hero aa-coming-soon">
+        <div className="aa-landing-badge"><Clock size={14} /><span>Coming Soon</span></div>
+        <h1 className="aa-landing-title">CVMind Auto Apply <span className="aa-gradient-text">Agent</span></h1>
+        <p className="aa-landing-sub">
+          An AI agent that finds jobs matching your profile and applies for you with a tailored resume and cover letter.
+          We're putting the finishing touches on it. Check back soon.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function AutoApplyAgent({ customApiKey, resumeText: initialResumeText = '', setResumeText: setGlobalResumeText }: AutoApplyProps) {
   const [view, setView] = useState<View>('landing');
   // Resume to open in Agent Resumes when the user clicks Edit next to a job's resume
   const [editResumeId, setEditResumeId] = useState<string | null>(null);

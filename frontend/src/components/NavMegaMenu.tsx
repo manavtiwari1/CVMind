@@ -2,7 +2,7 @@ import { NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, Navigati
 import type { NavMenu, NavBadge } from './navMenus';
 import './NavMegaMenu.css';
 
-const BADGE_LABEL: Record<NavBadge, string> = { new: 'NEW', unlocked: 'UNLOCKED' };
+const BADGE_LABEL: Record<NavBadge, string> = { new: 'NEW', soon: 'SOON' };
 
 interface NavMegaMenuProps {
   menu: NavMenu;

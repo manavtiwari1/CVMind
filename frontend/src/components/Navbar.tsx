@@ -488,7 +488,7 @@ export default function Navbar({
                 className={`mobile-drawer-link mobile-sub-link${currentPage === 'auto-apply' ? ' active' : ''}`}
                 onClick={() => go('auto-apply')}
               >
-                Auto Apply Agent ✨
+                Auto Apply Agent (Soon)
               </button>
               <button
                 className={`mobile-drawer-link mobile-sub-link${['code', 'cvmind-code', 'code-arena'].includes(currentPage) ? ' active' : ''}`}

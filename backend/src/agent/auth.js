@@ -22,6 +22,27 @@ export async function requireExtension(req, res, next) {
   next();
 }
 
+// Auto Apply is still being built: only emails on the admin access list may use it. Requests without
+// a valid token pass through so the route's own auth check answers them (401 / PAIR_REQUIRED).
+export function requireAgentAccess(checkAccess = defaultCheckAccess) {
+  return async (req, res, next) => {
+    const header = req.headers.authorization || '';
+    const payload = header.startsWith('Bearer ') ? verifyToken(header.slice(7).trim()) : null;
+    if (!payload) return next();
+    try {
+      if (payload.email && await checkAccess(payload.email)) return next();
+    } catch (err) {
+      console.error('[agent] access check failed:', err.message);
+    }
+    return res.status(403).json({ success: false, code: 'AGENT_COMING_SOON', error: 'Auto Apply Agent is coming soon.' });
+  };
+}
+
+async function defaultCheckAccess(email) {
+  const { hasAutoApplyAccess } = await import('../db.js');
+  return hasAutoApplyAccess(email);
+}
+
 // The agent needs real MongoDB (queue leases, GridFS); there is no JSON-file fallback
 export function requireMongo({ waitMs = 5000 } = {}) {
   return async (req, res, next) => {

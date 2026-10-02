@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { getCentralJobs, saveCentralApplication, getCandidateApplications } from '../db.js';
 import { requireUser, requireSelf } from '../services/authToken.js';
+import { requireAgentAccess } from '../agent/auth.js';
 import { scrapeJobFromUrl, parseJobContent } from '../services/jobScraper.js';
 import { fetchLiveAtsJobs } from '../services/atsCrawler.js';
 
@@ -359,7 +360,7 @@ Return ONLY valid JSON:
 });
 
 // ── POST /api/auto-apply/apply ─────────────────────────────────────────────────
-router.post('/apply', requireUser, async (req, res) => {
+router.post('/apply', requireUser, requireAgentAccess(), async (req, res) => {
   const { candidateName, candidateEmail, job, tailoredResume, coverLetter, matchScore, mode, notes } = req.body || {};
   // Owner always comes from the signed token, never the request body
   const userId = req.auth.sub;
