@@ -42,7 +42,7 @@ export default function RefundPolicy() {
           <h2>4. How to Request a Refund</h2>
           <p>To request a refund, please contact our support team:</p>
           <ul>
-            <li><strong>Email:</strong> <a href="mailto:contact@manavtiwari.in">contact@manavtiwari.in</a></li>
+            <li><strong>Email:</strong> <a href="mailto:cvmindofficial@gmail.com">cvmindofficial@gmail.com</a></li>
             <li><strong>Subject:</strong> Refund Request – [Your Registered Email]</li>
             <li><strong>Include:</strong> Your name, registered email address, purchase date, and reason for the refund request.</li>
           </ul>
@@ -66,7 +66,7 @@ export default function RefundPolicy() {
 
         <section className="legal-section">
           <h2>8. Contact</h2>
-          <p>For any refund-related queries, reach us at <a href="mailto:contact@manavtiwari.in">contact@manavtiwari.in</a>.</p>
+          <p>For any refund-related queries, reach us at <a href="mailto:cvmindofficial@gmail.com">cvmindofficial@gmail.com</a>.</p>
         </section>
 
       </div>

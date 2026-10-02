@@ -42,7 +42,6 @@ import CVmindCode from './pages/code/CVmindCode';
 import CVmindCodeLanding from './pages/code/CVmindCodeLanding';
 import { ARTICLES } from './data/articles';
 import DigitalSerenityBackground from './components/DigitalSerenityBackground';
-import TawkChat from './components/TawkChat';
 import { applySEO } from './utils/seo';
 import { getErrorMessage } from './utils/errors';
 import type { LoadedWork, ResumeAnalysis } from './types/api';
@@ -526,7 +525,6 @@ export default function App() {
 
       {!isMinimalPage && <Footer setCurrentPage={setCurrentPage} />}
       {!isMinimalPage && <Chatbot customApiKey={customApiKey} />}
-      {!isMinimalPage && <TawkChat />}
 
       <AuthModal
         isOpen={showAuthModal}

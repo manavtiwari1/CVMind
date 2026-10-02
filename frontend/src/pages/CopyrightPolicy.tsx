@@ -44,7 +44,7 @@ export default function CopyrightPolicy() {
 
         <section className="legal-section">
           <h2>6. Reporting Copyright Infringement</h2>
-          <p>We respect the intellectual-property rights of others and expect our users to do the same. If you believe any content on CV Mind infringes your copyright, please send a notice to <a href="mailto:contact@manavtiwari.in">contact@manavtiwari.in</a> including:</p>
+          <p>We respect the intellectual-property rights of others and expect our users to do the same. If you believe any content on CV Mind infringes your copyright, please send a notice to <a href="mailto:cvmindofficial@gmail.com">cvmindofficial@gmail.com</a> including:</p>
           <ul>
             <li>Identification of the copyrighted work you claim has been infringed.</li>
             <li>The exact URL on cvmind.in where the allegedly infringing material appears.</li>
@@ -66,7 +66,7 @@ export default function CopyrightPolicy() {
 
         <section className="legal-section">
           <h2>9. Contact</h2>
-          <p>For copyright questions or permission requests, contact us at <a href="mailto:contact@manavtiwari.in">contact@manavtiwari.in</a>.</p>
+          <p>For copyright questions or permission requests, contact us at <a href="mailto:cvmindofficial@gmail.com">cvmindofficial@gmail.com</a>.</p>
         </section>
 
       </div>

@@ -27,7 +27,7 @@ export default function Terms() {
           <ul>
             <li>Maintaining the confidentiality of your account credentials.</li>
             <li>All activity that occurs under your account.</li>
-            <li>Notifying us immediately of any unauthorised use at <a href="mailto:contact@manavtiwari.in">contact@manavtiwari.in</a>.</li>
+            <li>Notifying us immediately of any unauthorised use at <a href="mailto:cvmindofficial@gmail.com">cvmindofficial@gmail.com</a>.</li>
           </ul>
           <p>We reserve the right to terminate accounts that violate these Terms.</p>
         </section>
@@ -86,7 +86,7 @@ export default function Terms() {
 
         <section className="legal-section">
           <h2>13. Contact Us</h2>
-          <p>Questions about these Terms? Contact us at <a href="mailto:contact@manavtiwari.in">contact@manavtiwari.in</a>.</p>
+          <p>Questions about these Terms? Contact us at <a href="mailto:cvmindofficial@gmail.com">cvmindofficial@gmail.com</a>.</p>
         </section>
 
       </div>

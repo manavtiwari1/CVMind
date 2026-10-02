@@ -282,3 +282,8 @@
     padding: 1.5rem;
   }
 }
+
+/* Email and WhatsApp rows are links */
+a.info-detail-item { color: inherit; text-decoration: none; border-radius: 10px; transition: background .15s; }
+a.info-detail-item:hover { background: rgba(41, 151, 255, .06); }
+a.info-detail-item:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
