@@ -272,7 +272,8 @@ export default function App() {
 
         setSession(data.user);
         setIsLoggedIn(true);
-        enterAfterSignIn('dashboard');
+        // Google returns to the www home page (see AuthModal); the user stays there, signed in
+        setCurrentPage('home');
       } catch (err) {
         console.error('Google Redirect Auth Error:', err);
         // Surface the failure (e.g. banned/suspended account) in the auth modal
@@ -284,8 +285,6 @@ export default function App() {
     };
 
     handleGoogleRedirect();
-    // Runs once, for the Google redirect back to the site
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle GitHub/LinkedIn OAuth Redirect Callback (backend sends ?oauthUser= / ?authError=)
