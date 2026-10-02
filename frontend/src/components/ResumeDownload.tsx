@@ -14,8 +14,8 @@ interface ResumeDownloadProps {
   getText: () => string;
   customApiKey: string;
   onWord: (fileName: string) => void;
-  /** Opens "Check & Tailor" with this job description. */
-  onScan: (jobDescription: string) => void;
+  /** Opens "Check & Tailor" with this job description. Without it the bonus scan step is hidden. */
+  onScan?: (jobDescription: string) => void;
   onClose: () => void;
 }
 
@@ -125,7 +125,7 @@ export default function ResumeDownload({ defaultName, paper, getHtml, getText, c
         if (!res.ok || !d || d.source !== 'ai_scraper' || !d.description || d.description.length < 150) {
           throw new Error("We couldn't read that link. Paste the job description text instead.");
         }
-        onScan([`${d.title || ''}${d.company ? ` at ${d.company}` : ''}`, d.description, d.skills?.length ? `Skills: ${d.skills.join(', ')}` : ''].filter(Boolean).join('\n\n'));
+        onScan?.([`${d.title || ''}${d.company ? ` at ${d.company}` : ''}`, d.description, d.skills?.length ? `Skills: ${d.skills.join(', ')}` : ''].filter(Boolean).join('\n\n'));
       } catch (err) {
         setScanError(getErrorMessage(err) || "We couldn't read that link.");
       } finally {
@@ -134,7 +134,7 @@ export default function ResumeDownload({ defaultName, paper, getHtml, getText, c
       return;
     }
     if (text.length < 60) { setScanError('Paste a bit more of the job description so we can compare it.'); return; }
-    onScan(text);
+    onScan?.(text);
   };
 
   return createPortal(
@@ -194,7 +194,7 @@ export default function ResumeDownload({ defaultName, paper, getHtml, getText, c
               </>
             )}
 
-            <section className="rd-bonus" aria-label="Check your resume against a job">
+            {onScan && <section className="rd-bonus" aria-label="Check your resume against a job">
               <span className="rd-chip"><Zap size={13} /> Bonus step</span>
               <h3>Will it beat the ATS?</h3>
               <p>Don't guess. Paste your target job link or description to see missing keywords and tailor your resume to it.</p>
@@ -213,7 +213,7 @@ export default function ResumeDownload({ defaultName, paper, getHtml, getText, c
                 </button>
               </form>
               {scanError && <p className="rd-scan-error"><AlertTriangle size={13} /> {scanError}</p>}
-            </section>
+            </section>}
 
             {mode === 'pdf' && stage !== 'error' && !printed && (
               <p className="rd-foot">

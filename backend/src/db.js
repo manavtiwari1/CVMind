@@ -393,6 +393,8 @@ const workSchema = new mongoose.Schema({
   type: { type: String, required: true }, // 'resume' or 'cover-letter'
   templateId: { type: String, required: true },
   htmlContent: { type: String, required: true },
+  // Where the work came from, e.g. 'resume-tailor' (a resume made by the Resume Tailorer)
+  source: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
@@ -1314,7 +1316,7 @@ export async function getAdminStats() {
   };
 }
 
-export async function saveWork({ userId, title, type, templateId, htmlContent, workId = null }) {
+export async function saveWork({ userId, title, type, templateId, htmlContent, workId = null, source = '' }) {
   await ensureMongoConnection();
   const cleanUserId = String(userId || '').trim();
   const cleanTitle = String(title || 'Untitled Work').trim();
@@ -1324,7 +1326,8 @@ export async function saveWork({ userId, title, type, templateId, htmlContent, w
       try {
         const updated = await Work.findOneAndUpdate(
           { _id: workId, userId: cleanUserId },
-          { title: cleanTitle, type, templateId, htmlContent, updatedAt: Date.now() },
+          // An update never clears the source a work was created with
+          { title: cleanTitle, type, templateId, htmlContent, updatedAt: Date.now(), ...(source ? { source } : {}) },
           { returnDocument: 'after' }
         );
         if (updated) return updated;
@@ -1332,7 +1335,7 @@ export async function saveWork({ userId, title, type, templateId, htmlContent, w
         console.error('MongoDB updateWork error, creating new:', err);
       }
     }
-    const newWork = new Work({ userId: cleanUserId, title: cleanTitle, type, templateId, htmlContent });
+    const newWork = new Work({ userId: cleanUserId, title: cleanTitle, type, templateId, htmlContent, source });
     await newWork.save();
     return newWork;
   }
@@ -1346,6 +1349,7 @@ export async function saveWork({ userId, title, type, templateId, htmlContent, w
       existing.type = type;
       existing.templateId = templateId;
       existing.htmlContent = htmlContent;
+      if (source) existing.source = source;
       existing.updatedAt = new Date().toISOString();
       writeDb(db);
       return existing;
@@ -1358,6 +1362,7 @@ export async function saveWork({ userId, title, type, templateId, htmlContent, w
     type,
     templateId,
     htmlContent,
+    source,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };

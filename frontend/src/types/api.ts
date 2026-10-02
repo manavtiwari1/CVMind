@@ -180,6 +180,8 @@ export interface SavedWork {
   type: string; // 'resume' | 'cover-letter' | tool-specific types
   templateId: string;
   htmlContent: string;
+  /** 'resume-tailor' for resumes made by the Resume Tailorer */
+  source?: string;
   createdAt?: string;
   updatedAt?: string;
   deleted?: false;

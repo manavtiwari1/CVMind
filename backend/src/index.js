@@ -2465,13 +2465,15 @@ ${education.length > 0 ? `
 
 apiRouter.post('/api/user/work', requireUser, async (req, res) => {
 
-  const { title, type, templateId, htmlContent, workId } = req.body || {};
+  const { title, type, templateId, htmlContent, workId, source } = req.body || {};
   const userId = req.auth.sub;
   if (!userId || !title || !type || !templateId || !htmlContent) {
     return res.status(400).json({ error: 'Missing required work fields.' });
   }
+  // Only known sources are stored (the editor uses it to hide tools that don't fit that resume)
+  const cleanSource = source === 'resume-tailor' ? source : '';
   try {
-    const saved = await saveWork({ userId, title, type, templateId, htmlContent, workId });
+    const saved = await saveWork({ userId, title, type, templateId, htmlContent, workId, source: cleanSource });
     return res.json({ success: true, data: saved });
   } catch (error) {
     console.error('Save work error:', error);

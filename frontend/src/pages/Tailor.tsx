@@ -432,7 +432,7 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
     const template = templateFor(result.templateId);
     const name = result.tailoredData?.personalInfo?.fullName?.trim();
     const title = (name ? `${name} - Tailored Resume` : `Tailored Resume - ${template.name}`).slice(0, 120);
-    let work: SavedWork = { title, type: 'resume', templateId: template.id, htmlContent: html };
+    let work: SavedWork = { title, type: 'resume', templateId: template.id, htmlContent: html, source: 'resume-tailor' };
     const user = readUser();
     const userId = user?.id || user?._id;
     if (userId) {
@@ -441,10 +441,10 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
         const res = await authFetch(`${API_BASE}/api/user/work`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, title, type: 'resume', templateId: template.id, htmlContent: html }),
+          body: JSON.stringify({ userId, title, type: 'resume', templateId: template.id, htmlContent: html, source: 'resume-tailor' }),
         });
         const body = await res.json();
-        if (res.ok && body.data) work = { ...work, ...body.data, htmlContent: html };
+        if (res.ok && body.data) work = { ...work, ...body.data, htmlContent: html, source: 'resume-tailor' };
       } catch (err) {
         console.error('Could not save the tailored resume before opening the editor:', err);
       }
