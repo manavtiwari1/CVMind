@@ -57,18 +57,42 @@ function writeDb(db) {
 // ─── CLOUD MONGODB (MONGOOSE) SETUP ──────────────────────────────────────────
 const mongoURI = process.env.MONGODB_URI;
 
-if (mongoURI) {
-  mongoose.connect(mongoURI)
-    .then(() => {
-      console.log('MongoDB connected successfully!');
+// One shared connection attempt. Every DB helper awaits it, so a request that arrives
+// while a serverless instance is still cold-starting never falls through to the local JSON file.
+let connectPromise = null;
+
+function connectMongo() {
+  if (!mongoURI) return null;
+  if (mongoose.connection.readyState === 1) return Promise.resolve();
+  if (!connectPromise) {
+    connectPromise = mongoose.connect(mongoURI, {
+      serverSelectionTimeoutMS: 8000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10
     })
-    .catch((err) => {
-      console.error('MongoDB connection error. Falling back to Local JSON database. Error:', err.message);
-    });
+      .then(() => {
+        console.log('MongoDB connected successfully!');
+      })
+      .catch((err) => {
+        connectPromise = null; // allow a retry on the next request
+        console.error('MongoDB connection error. Falling back to Local JSON database. Error:', err.message);
+      });
+  }
+  return connectPromise;
 }
+
+connectMongo();
+
+mongoose.connection.on('disconnected', () => {
+  connectPromise = null;
+});
+
+// Mongo is the source of truth whenever it is configured and connected
+const mongoReady = () => !!mongoURI && mongoose.connection.readyState === 1;
 
 // ─── MONGOOSE MODELS ─────────────────────────────────────────────────────────
 const scanSchema = new mongoose.Schema({
+  userId: { type: String, default: '', index: true },
   fileName: { type: String, required: true },
   fileType: { type: String, required: true },
   fileSize: { type: Number, required: true },
@@ -92,6 +116,7 @@ const contactSchema = new mongoose.Schema({
 const Contact = mongoose.models.Contact || mongoose.model('Contact', contactSchema);
 
 const fixSchema = new mongoose.Schema({
+  userId: { type: String, default: '', index: true },
   fileName: { type: String, required: true },
   priorScore: { type: Number, required: true },
   createdAt: { type: Date, default: Date.now }
@@ -100,6 +125,7 @@ const fixSchema = new mongoose.Schema({
 const Fix = mongoose.models.Fix || mongoose.model('Fix', fixSchema);
 
 const tailorSchema = new mongoose.Schema({
+  userId: { type: String, default: '', index: true },
   fileName: { type: String, required: true },
   fileSize: { type: Number, required: true },
   score: { type: Number, required: true },
@@ -112,6 +138,7 @@ const tailorSchema = new mongoose.Schema({
 const TailorLog = mongoose.models.TailorLog || mongoose.model('TailorLog', tailorSchema);
 
 const prepLogSchema = new mongoose.Schema({
+  userId: { type: String, default: '', index: true },
   fileName: { type: String, required: true },
   fileSize: { type: Number, required: true },
   questionsCount: { type: Number, required: true },
@@ -122,6 +149,7 @@ const PrepLog = mongoose.models.PrepLog || mongoose.model('PrepLog', prepLogSche
 
 const linkedinLogSchema = new mongoose.Schema({
   email: { type: String, default: '' },
+  userId: { type: String, default: '', index: true },
   score: { type: Number, required: true },
   createdAt: { type: Date, default: Date.now }
 });
@@ -130,6 +158,7 @@ const LinkedinLog = mongoose.models.LinkedinLog || mongoose.model('LinkedinLog',
 
 const linkedinBioLogSchema = new mongoose.Schema({
   email: { type: String, default: '' },
+  userId: { type: String, default: '', index: true },
   jobTitle: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
@@ -138,6 +167,7 @@ const LinkedinBioLog = mongoose.models.LinkedinBioLog || mongoose.model('Linkedi
 
 const linkedinOutreachLogSchema = new mongoose.Schema({
   email: { type: String, default: '' },
+  userId: { type: String, default: '', index: true },
   jobTitle: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
@@ -145,6 +175,7 @@ const LinkedinOutreachLog = mongoose.models.LinkedinOutreachLog || mongoose.mode
 
 const careerCoursesLogSchema = new mongoose.Schema({
   email: { type: String, default: '' },
+  userId: { type: String, default: '', index: true },
   jobTitle: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
@@ -152,6 +183,7 @@ const CareerCoursesLog = mongoose.models.CareerCoursesLog || mongoose.model('Car
 
 const elevatorPitchLogSchema = new mongoose.Schema({
   email: { type: String, default: '' },
+  userId: { type: String, default: '', index: true },
   jobTitle: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
@@ -159,12 +191,14 @@ const ElevatorPitchLog = mongoose.models.ElevatorPitchLog || mongoose.model('Ele
 
 const careerRoadmapLogSchema = new mongoose.Schema({
   email: { type: String, default: '' },
+  userId: { type: String, default: '', index: true },
   createdAt: { type: Date, default: Date.now }
 });
 const CareerRoadmapLog = mongoose.models.CareerRoadmapLog || mongoose.model('CareerRoadmapLog', careerRoadmapLogSchema);
 
 const voicePrepLogSchema = new mongoose.Schema({
   email: { type: String, default: '' },
+  userId: { type: String, default: '', index: true },
   jobTitle: { type: String, default: '' },
   score: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
@@ -173,6 +207,7 @@ const VoicePrepLog = mongoose.models.VoicePrepLog || mongoose.model('VoicePrepLo
 
 const portfolioGenLogSchema = new mongoose.Schema({
   email: { type: String, default: '' },
+  userId: { type: String, default: '', index: true },
   theme: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
@@ -180,6 +215,7 @@ const PortfolioGenLog = mongoose.models.PortfolioGenLog || mongoose.model('Portf
 
 const linkedinPostLogSchema = new mongoose.Schema({
   email: { type: String, default: '' },
+  userId: { type: String, default: '', index: true },
   topic: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
@@ -187,12 +223,23 @@ const LinkedinPostLog = mongoose.models.LinkedinPostLog || mongoose.model('Linke
 
 const jobFinderLogSchema = new mongoose.Schema({
   email: { type: String, default: '' },
+  userId: { type: String, default: '', index: true },
   jobsCount: { type: Number, default: 0 },
   jobDescription: { type: String, default: '' },
   jobType: { type: String, default: 'All' },
   createdAt: { type: Date, default: Date.now }
 });
 const JobFinderLog = mongoose.models.JobFinderLog || mongoose.model('JobFinderLog', jobFinderLogSchema);
+
+const proofreadLogSchema = new mongoose.Schema({
+  userId: { type: String, default: '', index: true },
+  email: { type: String, default: '' },
+  industry: { type: String, default: 'General' },
+  charCount: { type: Number, default: 0 },
+  issuesCount: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now }
+});
+const ProofreadLog = mongoose.models.ProofreadLog || mongoose.model('ProofreadLog', proofreadLogSchema);
 
 const paymentLogSchema = new mongoose.Schema({
   email: { type: String, required: true },
@@ -365,6 +412,7 @@ const LoginLog = mongoose.models.LoginLog || mongoose.model('LoginLog', loginLog
 const codingSubmissionSchema = new mongoose.Schema({
   id: { type: String, required: true, index: true },
   userId: { type: String, default: 'anonymous', index: true },
+  kind: { type: String, default: 'submit' }, // 'run' (sample tests) | 'submit' (full judge)
   problemId: { type: String, required: true, index: true },
   problemTitle: { type: String, default: '' },
   language: { type: String, required: true },
@@ -379,12 +427,23 @@ const codingSubmissionSchema = new mongoose.Schema({
 });
 const CodingSubmission = mongoose.models.CodingSubmission || mongoose.model('CodingSubmission', codingSubmissionSchema);
 
+// The code a user was typing, per problem and language, so it follows them across devices
+const codingDraftSchema = new mongoose.Schema({
+  userId: { type: String, required: true },
+  problemId: { type: String, required: true },
+  language: { type: String, required: true },
+  code: { type: String, default: '' },
+  updatedAt: { type: Date, default: Date.now }
+});
+codingDraftSchema.index({ userId: 1, problemId: 1, language: 1 }, { unique: true });
+const CodingDraft = mongoose.models.CodingDraft || mongoose.model('CodingDraft', codingDraftSchema);
+
 const codingProfileSchema = new mongoose.Schema({
   userId: { type: String, required: true, unique: true, index: true },
   solvedProblemIds: [{ type: String }],
   totalSubmissions: { type: Number, default: 0 },
-  rating: { type: Number, default: 1640 },
-  streak: { type: Number, default: 14 },
+  rating: { type: Number, default: 1200 },
+  streak: { type: Number, default: 0 },
   lastActiveDate: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
@@ -433,11 +492,11 @@ export async function saveLoginLog({ email, name, provider }) {
 
   // 1. MongoDB Mode (Non-blocking)
   if (mongoURI && mongoose.connection.readyState === 1) {
-    LoginLog.create({
-      email: cleanEmail,
-      name: cleanName,
-      provider: cleanProvider
-    }).catch(err => console.error('MongoDB saveLoginLog error:', err));
+    try {
+      await LoginLog.create({ email: cleanEmail, name: cleanName, provider: cleanProvider });
+    } catch (err) {
+      console.error('MongoDB saveLoginLog error:', err.message);
+    }
     return;
   }
 
@@ -521,79 +580,86 @@ export async function createUser({ email, name, password, isGoogleUser = false, 
 
 // Await active MongoDB connection during startup to prevent race condition fallback
 async function ensureMongoConnection() {
-  if (mongoURI && mongoose.connection.readyState === 2) {
-    let attempts = 0;
-    while (mongoose.connection.readyState === 2 && attempts < 50) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      attempts++;
+  if (!mongoURI || mongoose.connection.readyState === 1) return;
+  await connectMongo();
+}
+
+// Never lets a failed analytics write break the user's request. Mongo writes are awaited
+// (not fire-and-forget) so serverless hosts cannot freeze the function before they finish.
+async function saveLog(Model, listKey, record, label) {
+  await ensureMongoConnection();
+  try {
+    if (mongoReady()) {
+      await Model.create(record);
+      return;
     }
+    const db = readDb();
+    if (!db[listKey]) db[listKey] = [];
+    db[listKey].unshift({ id: randomUUID(), ...record, createdAt: new Date().toISOString() });
+    writeDb(db);
+  } catch (err) {
+    console.error(`[DB] ${label} failed:`, err.message);
   }
 }
 
 // ─── HYBRID DATABASE EXPORTS ──────────────────────────────────────────────────
 
-export async function saveScan({ fileName, fileType, fileSize, evaluation }) {
-  await ensureMongoConnection();
+export async function saveScan({ fileName, fileType, fileSize, evaluation, userId = '' }) {
   const score = Number(evaluation?.score || 0);
-  const missing = Array.isArray(evaluation?.atsKeywords?.missing)
-    ? evaluation.atsKeywords.missing
-    : [];
+  const missing = Array.isArray(evaluation?.atsKeywords?.missing) ? evaluation.atsKeywords.missing : [];
+  await ensureMongoConnection();
+  try {
+    if (mongoReady()) {
+      await Scan.create({
+        userId: String(userId || ''),
+        fileName,
+        fileType,
+        fileSize,
+        score,
+        summary: evaluation?.summary || '',
+        missingKeywords: missing
+      });
+      return;
+    }
 
-  // 1. MongoDB Mode (Non-blocking)
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    Scan.create({
+    const db = readDb();
+    db.scans.unshift({
+      id: randomUUID(),
+      userId: String(userId || ''),
       fileName,
       fileType,
       fileSize,
       score,
       summary: evaluation?.summary || '',
-      missingKeywords: missing
-    }).catch(err => console.error('MongoDB saveScan error:', err));
-    return;
+      missingKeywords: missing,
+      createdAt: new Date().toISOString()
+    });
+    missing.forEach((keyword) => {
+      const cleanKeyword = String(keyword || '').trim();
+      if (cleanKeyword) {
+        db.keywordCounts[cleanKeyword] = (db.keywordCounts[cleanKeyword] || 0) + 1;
+      }
+    });
+    writeDb(db);
+  } catch (err) {
+    console.error('[DB] saveScan failed:', err.message);
   }
-
-  // 2. Local JSON DB Mode (Fallback)
-  const db = readDb();
-  db.scans.unshift({
-    id: randomUUID(),
-    fileName,
-    fileType,
-    fileSize,
-    score,
-    summary: evaluation?.summary || '',
-    missingKeywords: missing,
-    createdAt: new Date().toISOString()
-  });
-
-  missing.forEach((keyword) => {
-    const cleanKeyword = String(keyword || '').trim();
-    if (cleanKeyword) {
-      db.keywordCounts[cleanKeyword] = (db.keywordCounts[cleanKeyword] || 0) + 1;
-    }
-  });
-
-  writeDb(db);
 }
 
+// Contact messages are the one write the caller must know about: if it fails, the user is told.
 export async function saveContactMessage({ name, email, subject, message }) {
   await ensureMongoConnection();
-  // 1. MongoDB Mode (Non-blocking)
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    const contact = new Contact({
+  if (mongoReady()) {
+    const contact = await Contact.create({
       name,
       email,
       subject: subject || 'General inquiry',
       message,
       status: 'new'
     });
-    contact.save().catch(err => console.error('MongoDB saveContactMessage error:', err));
-    return {
-      id: contact._id,
-      createdAt: contact.createdAt
-    };
+    return { id: contact._id, createdAt: contact.createdAt };
   }
 
-  // 2. Local JSON DB Mode (Fallback)
   const db = readDb();
   const contact = {
     id: randomUUID(),
@@ -604,292 +670,77 @@ export async function saveContactMessage({ name, email, subject, message }) {
     status: 'new',
     createdAt: new Date().toISOString()
   };
-
   db.contacts.unshift(contact);
   writeDb(db);
   return contact;
 }
 
-export async function saveFix({ fileName, priorScore }) {
-  await ensureMongoConnection();
-  const score = Number(priorScore || 0);
+export const saveFix = ({ fileName, priorScore, userId = '' }) =>
+  saveLog(Fix, 'fixes', { userId: String(userId || ''), fileName, priorScore: Number(priorScore || 0) }, 'saveFix');
 
-  // 1. MongoDB Mode (Non-blocking)
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    Fix.create({
-      fileName,
-      priorScore: score
-    }).catch(err => console.error('MongoDB saveFix error:', err));
-    return;
-  }
-
-  // 2. Local JSON DB Mode (Fallback)
-  const db = readDb();
-  if (!db.fixes) db.fixes = [];
-  db.fixes.unshift({
-    id: randomUUID(),
+export const saveTailorLog = ({ fileName, fileSize, score, jobDescription, matchedSkills, missingSkills, userId = '' }) =>
+  saveLog(TailorLog, 'tailorLogs', {
+    userId: String(userId || ''),
     fileName,
-    priorScore: score,
-    createdAt: new Date().toISOString()
-  });
-
-  writeDb(db);
-}
-
-export async function saveTailorLog({ fileName, fileSize, score, jobDescription, matchedSkills, missingSkills }) {
-  await ensureMongoConnection();
-  const scoreVal = Number(score || 0);
-  const sizeVal = Number(fileSize || 0);
-
-  // 1. MongoDB Mode (Non-blocking)
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    TailorLog.create({
-      fileName,
-      fileSize: sizeVal,
-      score: scoreVal,
-      jobDescription,
-      matchedSkills: matchedSkills || [],
-      missingSkills: missingSkills || []
-    }).catch(err => console.error('MongoDB saveTailorLog error:', err));
-    return;
-  }
-
-  // 2. Local JSON DB Mode (Fallback)
-  const db = readDb();
-  if (!db.tailorLogs) db.tailorLogs = [];
-  db.tailorLogs.unshift({
-    id: randomUUID(),
-    fileName,
-    fileSize: sizeVal,
-    score: scoreVal,
+    fileSize: Number(fileSize || 0),
+    score: Number(score || 0),
     jobDescription,
     matchedSkills: matchedSkills || [],
-    missingSkills: missingSkills || [],
-    createdAt: new Date().toISOString()
-  });
+    missingSkills: missingSkills || []
+  }, 'saveTailorLog');
 
-  writeDb(db);
-}
-
-export async function savePrepLog({ fileName, fileSize, questionsCount }) {
-  await ensureMongoConnection();
-  const sizeVal = Number(fileSize || 0);
-  const countVal = Number(questionsCount || 0);
-
-  // 1. MongoDB Mode (Non-blocking)
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    PrepLog.create({
-      fileName,
-      fileSize: sizeVal,
-      questionsCount: countVal
-    }).catch(err => console.error('MongoDB savePrepLog error:', err));
-    return;
-  }
-
-  // 2. Local JSON DB Mode (Fallback)
-  const db = readDb();
-  if (!db.prepLogs) db.prepLogs = [];
-  db.prepLogs.unshift({
-    id: randomUUID(),
+export const savePrepLog = ({ fileName, fileSize, questionsCount, userId = '' }) =>
+  saveLog(PrepLog, 'prepLogs', {
+    userId: String(userId || ''),
     fileName,
-    fileSize: sizeVal,
-    questionsCount: countVal,
-    createdAt: new Date().toISOString()
-  });
+    fileSize: Number(fileSize || 0),
+    questionsCount: Number(questionsCount || 0)
+  }, 'savePrepLog');
 
-  writeDb(db);
-}
+export const saveLinkedinLog = ({ email, score, userId = '' }) =>
+  saveLog(LinkedinLog, 'linkedinLogs', { userId: String(userId || ''), email: email || '', score: Number(score || 0) }, 'saveLinkedinLog');
 
-export async function saveLinkedinLog({ email, score }) {
-  await ensureMongoConnection();
-  const scoreVal = Number(score || 0);
+export const saveLinkedinBioLog = ({ email, jobTitle, userId = '' }) =>
+  saveLog(LinkedinBioLog, 'linkedinBioLogs', { userId: String(userId || ''), email: email || '', jobTitle: jobTitle || '' }, 'saveLinkedinBioLog');
 
-  // 1. MongoDB Mode (Non-blocking)
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    LinkedinLog.create({
-      email: email || '',
-      score: scoreVal
-    }).catch(err => console.error('MongoDB saveLinkedinLog error:', err));
-    return;
-  }
+export const saveLinkedinOutreachLog = ({ email, jobTitle, userId = '' }) =>
+  saveLog(LinkedinOutreachLog, 'linkedinOutreachLogs', { userId: String(userId || ''), email: email || '', jobTitle: jobTitle || '' }, 'saveLinkedinOutreachLog');
 
-  // 2. Local JSON DB Fallback
-  const db = readDb();
-  if (!db.linkedinLogs) db.linkedinLogs = [];
-  db.linkedinLogs.unshift({
-    id: randomUUID(),
-    email: email || '',
-    score: scoreVal,
-    createdAt: new Date().toISOString()
-  });
-  writeDb(db);
-}
+export const saveCareerCoursesLog = ({ email, jobTitle, userId = '' }) =>
+  saveLog(CareerCoursesLog, 'careerCoursesLogs', { userId: String(userId || ''), email: email || '', jobTitle: jobTitle || '' }, 'saveCareerCoursesLog');
 
-export async function saveLinkedinBioLog({ email, jobTitle }) {
-  await ensureMongoConnection();
+export const saveElevatorPitchLog = ({ email, jobTitle, userId = '' }) =>
+  saveLog(ElevatorPitchLog, 'elevatorPitchLogs', { userId: String(userId || ''), email: email || '', jobTitle: jobTitle || '' }, 'saveElevatorPitchLog');
 
-  // 1. MongoDB Mode (Non-blocking)
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    LinkedinBioLog.create({
-      email: email || '',
-      jobTitle: jobTitle || ''
-    }).catch(err => console.error('MongoDB saveLinkedinBioLog error:', err));
-    return;
-  }
+export const saveCareerRoadmapLog = ({ email, userId = '' }) =>
+  saveLog(CareerRoadmapLog, 'careerRoadmapLogs', { userId: String(userId || ''), email: email || '' }, 'saveCareerRoadmapLog');
 
-  // 2. Local JSON DB Fallback
-  const db = readDb();
-  if (!db.linkedinBioLogs) db.linkedinBioLogs = [];
-  db.linkedinBioLogs.unshift({
-    id: randomUUID(),
-    email: email || '',
-    jobTitle: jobTitle || '',
-    createdAt: new Date().toISOString()
-  });
-  writeDb(db);
-}
+export const saveVoicePrepLog = ({ email, jobTitle, score, userId = '' }) =>
+  saveLog(VoicePrepLog, 'voicePrepLogs', { userId: String(userId || ''), email: email || '', jobTitle: jobTitle || '', score: Number(score || 0) }, 'saveVoicePrepLog');
 
-export async function saveLinkedinOutreachLog({ email, jobTitle }) {
-  await ensureMongoConnection();
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    LinkedinOutreachLog.create({ email: email || '', jobTitle: jobTitle || '' }).catch(err => console.error('MongoDB saveLinkedinOutreachLog error:', err));
-    return;
-  }
-  const db = readDb();
-  if (!db.linkedinOutreachLogs) db.linkedinOutreachLogs = [];
-  db.linkedinOutreachLogs.unshift({
-    id: randomUUID(),
-    email: email || '',
-    jobTitle: jobTitle || '',
-    createdAt: new Date().toISOString()
-  });
-  writeDb(db);
-}
+export const savePortfolioGenLog = ({ email, theme, userId = '' }) =>
+  saveLog(PortfolioGenLog, 'portfolioGenLogs', { userId: String(userId || ''), email: email || '', theme: theme || '' }, 'savePortfolioGenLog');
 
-export async function saveCareerCoursesLog({ email, jobTitle }) {
-  await ensureMongoConnection();
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    CareerCoursesLog.create({ email: email || '', jobTitle: jobTitle || '' }).catch(err => console.error('MongoDB saveCareerCoursesLog error:', err));
-    return;
-  }
-  const db = readDb();
-  if (!db.careerCoursesLogs) db.careerCoursesLogs = [];
-  db.careerCoursesLogs.unshift({
-    id: randomUUID(),
-    email: email || '',
-    jobTitle: jobTitle || '',
-    createdAt: new Date().toISOString()
-  });
-  writeDb(db);
-}
+export const saveLinkedinPostLog = ({ email, topic, userId = '' }) =>
+  saveLog(LinkedinPostLog, 'linkedinPostLogs', { userId: String(userId || ''), email: email || '', topic: topic || '' }, 'saveLinkedinPostLog');
 
-export async function saveElevatorPitchLog({ email, jobTitle }) {
-  await ensureMongoConnection();
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    ElevatorPitchLog.create({ email: email || '', jobTitle: jobTitle || '' }).catch(err => console.error('MongoDB saveElevatorPitchLog error:', err));
-    return;
-  }
-  const db = readDb();
-  if (!db.elevatorPitchLogs) db.elevatorPitchLogs = [];
-  db.elevatorPitchLogs.unshift({
-    id: randomUUID(),
-    email: email || '',
-    jobTitle: jobTitle || '',
-    createdAt: new Date().toISOString()
-  });
-  writeDb(db);
-}
-
-export async function saveCareerRoadmapLog({ email }) {
-  await ensureMongoConnection();
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    CareerRoadmapLog.create({ email: email || '' }).catch(err => console.error('MongoDB saveCareerRoadmapLog error:', err));
-    return;
-  }
-  const db = readDb();
-  if (!db.careerRoadmapLogs) db.careerRoadmapLogs = [];
-  db.careerRoadmapLogs.unshift({
-    id: randomUUID(),
-    email: email || '',
-    createdAt: new Date().toISOString()
-  });
-  writeDb(db);
-}
-
-export async function saveVoicePrepLog({ email, jobTitle, score }) {
-  await ensureMongoConnection();
-  const scoreVal = Number(score || 0);
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    VoicePrepLog.create({ email: email || '', jobTitle: jobTitle || '', score: scoreVal }).catch(err => console.error('MongoDB saveVoicePrepLog error:', err));
-    return;
-  }
-  const db = readDb();
-  if (!db.voicePrepLogs) db.voicePrepLogs = [];
-  db.voicePrepLogs.unshift({
-    id: randomUUID(),
-    email: email || '',
-    jobTitle: jobTitle || '',
-    score: scoreVal,
-    createdAt: new Date().toISOString()
-  });
-  writeDb(db);
-}
-
-export async function savePortfolioGenLog({ email, theme }) {
-  await ensureMongoConnection();
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    PortfolioGenLog.create({ email: email || '', theme: theme || '' }).catch(err => console.error('MongoDB savePortfolioGenLog error:', err));
-    return;
-  }
-  const db = readDb();
-  if (!db.portfolioGenLogs) db.portfolioGenLogs = [];
-  db.portfolioGenLogs.unshift({
-    id: randomUUID(),
-    email: email || '',
-    theme: theme || '',
-    createdAt: new Date().toISOString()
-  });
-  writeDb(db);
-}
-
-export async function saveLinkedinPostLog({ email, topic }) {
-  await ensureMongoConnection();
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    LinkedinPostLog.create({ email: email || '', topic: topic || '' }).catch(err => console.error('MongoDB saveLinkedinPostLog error:', err));
-    return;
-  }
-  const db = readDb();
-  if (!db.linkedinPostLogs) db.linkedinPostLogs = [];
-  db.linkedinPostLogs.unshift({
-    id: randomUUID(),
-    email: email || '',
-    topic: topic || '',
-    createdAt: new Date().toISOString()
-  });
-  writeDb(db);
-}
-
-export async function saveJobFinderLog({ email, jobsCount, jobDescription, jobType }) {
-  await ensureMongoConnection();
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    JobFinderLog.create({
-      email: email || '',
-      jobsCount: Number(jobsCount || 0),
-      jobDescription: jobDescription || '',
-      jobType: jobType || 'All'
-    }).catch(err => console.error('MongoDB saveJobFinderLog error:', err));
-    return;
-  }
-  db.jobFinderLogs.unshift({
-    id: randomUUID(),
+export const saveJobFinderLog = ({ email, jobsCount, jobDescription, jobType, userId = '' }) =>
+  saveLog(JobFinderLog, 'jobFinderLogs', {
+    userId: String(userId || ''),
     email: email || '',
     jobsCount: Number(jobsCount || 0),
     jobDescription: jobDescription || '',
-    jobType: jobType || 'All',
-    createdAt: new Date().toISOString()
-  });
-  writeDb(db);
-}
+    jobType: jobType || 'All'
+  }, 'saveJobFinderLog');
+
+export const saveProofreadLog = ({ email, industry, charCount, issuesCount, userId = '' }) =>
+  saveLog(ProofreadLog, 'proofreadLogs', {
+    userId: String(userId || ''),
+    email: email || '',
+    industry: industry || 'General',
+    charCount: Number(charCount || 0),
+    issuesCount: Number(issuesCount || 0)
+  }, 'saveProofreadLog');
 
 export async function savePaymentLog({ email, amount, paymentMethod, transactionId, status }) {
   await ensureMongoConnection();
@@ -1033,6 +884,7 @@ export async function getWorkById(workId) {
 
   // 1. MongoDB Mode
   if (mongoURI && mongoose.connection.readyState === 1) {
+    if (!mongoose.isValidObjectId(cleanWorkId)) return null;
     return await Work.findById(cleanWorkId);
   }
 
@@ -1095,6 +947,8 @@ export async function getAdminStats() {
       const linkedinPostLogs = await LinkedinPostLog.find().sort({ createdAt: -1 }).limit(100);
       const jobFinderLogs = await JobFinderLog.find().sort({ createdAt: -1 }).limit(100);
       const paymentLogs = await PaymentLog.find().sort({ createdAt: -1 }).limit(100);
+      const proofreadLogs = await ProofreadLog.find().sort({ createdAt: -1 }).limit(100);
+      const totalProofreads = await ProofreadLog.countDocuments();
       const resumes = await Work.find({ type: 'resume' }).sort({ updatedAt: -1 }).limit(100);
       const coverLetters = await Work.find({ type: 'cover-letter' }).sort({ updatedAt: -1 }).limit(100);
       
@@ -1302,6 +1156,15 @@ export async function getAdminStats() {
           jobType: jf.jobType,
           createdAt: jf.createdAt
         })),
+        totalProofreads,
+        recentProofreads: proofreadLogs.slice(0, 15).map(p => ({
+          id: p._id,
+          email: p.email,
+          industry: p.industry,
+          charCount: p.charCount,
+          issuesCount: p.issuesCount,
+          createdAt: p.createdAt
+        })),
         totalPayments,
         recentPayments: paymentLogs.slice(0, 50).map(p => ({
           id: p._id,
@@ -1404,6 +1267,8 @@ export async function getAdminStats() {
     totalLinkedinPosts,
     totalJobFinders,
     totalPayments,
+    totalProofreads: (db.proofreadLogs || []).length,
+    recentProofreads: (db.proofreadLogs || []).slice(0, 15),
     recentLinkedins: linkedinLogs.slice(0, 15),
     recentLinkedinBios: linkedinBioLogs.slice(0, 15),
     recentLinkedinOutreachs: linkedinOutreachLogs.slice(0, 15),
@@ -1618,6 +1483,7 @@ export async function deleteAccount(userId) {
   const cleanId = String(userId || '').trim();
   if (mongoURI && mongoose.connection.readyState === 1) {
     await Work.deleteMany({ userId: cleanId });
+    await resetUserCodingProgress(cleanId);
     await LoginLog.deleteMany({ $or: [{ userId: cleanId }] });
     await User.deleteOne({ _id: cleanId });
     return;
@@ -1860,8 +1726,11 @@ export async function findUserByResetToken(token) {
 
   // 2. Local JSON DB Fallback
   const db = readDb();
-  if (!db.users) db.users = [];
-  return u;
+  const now = Date.now();
+  return (db.users || []).find(u =>
+    u.resetPasswordToken && u.resetPasswordToken === searchToken &&
+    u.resetPasswordExpires && new Date(u.resetPasswordExpires).getTime() > now
+  ) || null;
 }
 
 // ─── COMPANY, JOB & APPLICATION DATA HELPERS ───────────────────────────────
@@ -2097,6 +1966,7 @@ export async function saveCodingSubmission(subData) {
   const record = {
     id: subData.id || `sub_${Date.now()}_${Math.random().toString(36).substring(7)}`,
     userId: subData.userId || 'anonymous',
+    kind: subData.kind === 'run' ? 'run' : 'submit',
     problemId: subData.problemId,
     problemTitle: subData.problemTitle || '',
     language: subData.language,
@@ -2145,6 +2015,109 @@ export async function getUserCodingSubmissions(userId, problemId = null) {
     .slice(0, 50);
 }
 
+// Everything the CVMind Code UI shows for a signed-in user: real submissions (not sample runs),
+// which problems are solved (and when), and the saved code drafts.
+export async function getUserCodingProgress(userId) {
+  await ensureMongoConnection();
+  const uid = String(userId || '');
+  let subs;
+  let drafts;
+  let solvedIds;
+
+  if (mongoReady()) {
+    [subs, drafts] = await Promise.all([
+      CodingSubmission.find({ userId: uid, kind: { $ne: 'run' } }).sort({ createdAt: -1 }).limit(1000).lean(),
+      CodingDraft.find({ userId: uid }).lean()
+    ]);
+    const profile = await CodingProfile.findOne({ userId: uid }).lean();
+    solvedIds = profile?.solvedProblemIds || [];
+  } else {
+    const local = readDb();
+    subs = (local.codingSubmissions || []).filter(s => s.userId === uid && s.kind !== 'run').slice(0, 1000);
+    drafts = (local.codingDrafts || []).filter(d => d.userId === uid);
+    solvedIds = (local.codingProfiles || []).find(p => p.userId === uid)?.solvedProblemIds || [];
+  }
+
+  const at = (s) => new Date(s.createdAt).getTime();
+  const solved = {};
+  for (const id of solvedIds) {
+    // earliest accepted submission tells us when and in which language it was first solved
+    const first = subs.filter(s => s.problemId === id && s.verdict === 'Accepted').sort((a, b) => at(a) - at(b))[0];
+    solved[id] = { at: first ? at(first) : 0, language: first?.language || 'javascript' };
+  }
+
+  return {
+    solved,
+    submissions: subs.map(s => ({
+      id: s.id,
+      problemId: s.problemId,
+      problemTitle: s.problemTitle || '',
+      verdict: s.verdict,
+      language: s.language,
+      passedTests: s.passedTests,
+      totalTests: s.totalTests,
+      runtimeMs: s.runtimeMs,
+      at: at(s),
+      code: s.code
+    })),
+    drafts: drafts.map(d => ({
+      problemId: d.problemId,
+      language: d.language,
+      code: d.code,
+      updatedAt: new Date(d.updatedAt).getTime()
+    }))
+  };
+}
+
+export async function saveCodingDraft({ userId, problemId, language, code }) {
+  await ensureMongoConnection();
+  const doc = { userId: String(userId), problemId: String(problemId), language: String(language), code: String(code || '') };
+  if (mongoReady()) {
+    await CodingDraft.updateOne(
+      { userId: doc.userId, problemId: doc.problemId, language: doc.language },
+      { $set: { code: doc.code, updatedAt: new Date() } },
+      { upsert: true }
+    );
+    return;
+  }
+  const local = readDb();
+  if (!local.codingDrafts) local.codingDrafts = [];
+  const existing = local.codingDrafts.find(d => d.userId === doc.userId && d.problemId === doc.problemId && d.language === doc.language);
+  if (existing) { existing.code = doc.code; existing.updatedAt = new Date().toISOString(); }
+  else local.codingDrafts.push({ ...doc, updatedAt: new Date().toISOString() });
+  writeDb(local);
+}
+
+export async function deleteCodingDraft({ userId, problemId, language }) {
+  await ensureMongoConnection();
+  if (mongoReady()) {
+    await CodingDraft.deleteOne({ userId: String(userId), problemId: String(problemId), language: String(language) });
+    return;
+  }
+  const local = readDb();
+  local.codingDrafts = (local.codingDrafts || []).filter(d => !(d.userId === userId && d.problemId === problemId && d.language === language));
+  writeDb(local);
+}
+
+// "Erase progress" in the profile page: removes this user's coding history, drafts and profile
+export async function resetUserCodingProgress(userId) {
+  await ensureMongoConnection();
+  const uid = String(userId || '');
+  if (mongoReady()) {
+    await Promise.all([
+      CodingSubmission.deleteMany({ userId: uid }),
+      CodingDraft.deleteMany({ userId: uid }),
+      CodingProfile.deleteOne({ userId: uid })
+    ]);
+    return;
+  }
+  const local = readDb();
+  local.codingSubmissions = (local.codingSubmissions || []).filter(s => s.userId !== uid);
+  local.codingDrafts = (local.codingDrafts || []).filter(d => d.userId !== uid);
+  local.codingProfiles = (local.codingProfiles || []).filter(p => p.userId !== uid);
+  writeDb(local);
+}
+
 export async function getUserCodingProfile(userId) {
   await ensureMongoConnection();
   const uid = userId || 'anonymous';
@@ -2153,13 +2126,7 @@ export async function getUserCodingProfile(userId) {
     try {
       let profile = await CodingProfile.findOne({ userId: uid });
       if (!profile) {
-        profile = await CodingProfile.create({
-          userId: uid,
-          solvedProblemIds: ['two-sum'],
-          totalSubmissions: 1,
-          rating: 1655,
-          streak: 14
-        });
+        profile = await CodingProfile.create({ userId: uid });
       }
       return profile.toObject();
     } catch (err) {
@@ -2173,10 +2140,10 @@ export async function getUserCodingProfile(userId) {
   if (!p) {
     p = {
       userId: uid,
-      solvedProblemIds: ['two-sum'],
-      totalSubmissions: 1,
-      rating: 1655,
-      streak: 14,
+      solvedProblemIds: [],
+      totalSubmissions: 0,
+      rating: 1200,
+      streak: 0,
       lastActiveDate: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -2184,6 +2151,15 @@ export async function getUserCodingProfile(userId) {
     writeDb(db);
   }
   return p;
+}
+
+// Consecutive-day streak: same day keeps it, next day extends it, a gap restarts at 1
+function nextStreak(prevStreak, lastActive) {
+  const day = (d) => new Date(d).toISOString().slice(0, 10);
+  if (!lastActive || !prevStreak) return 1;
+  const diff = Math.round((Date.parse(day(new Date())) - Date.parse(day(lastActive))) / 86400000);
+  if (diff <= 0) return prevStreak;
+  return diff === 1 ? prevStreak + 1 : 1;
 }
 
 export async function updateUserCodingProfile(userId, { problemId, verdict }) {
@@ -2194,8 +2170,9 @@ export async function updateUserCodingProfile(userId, { problemId, verdict }) {
     try {
       let profile = await CodingProfile.findOne({ userId: uid });
       if (!profile) {
-        profile = new CodingProfile({ userId: uid, solvedProblemIds: [], totalSubmissions: 0, rating: 1640 });
+        profile = new CodingProfile({ userId: uid });
       }
+      profile.streak = nextStreak(profile.streak, profile.totalSubmissions > 0 ? profile.lastActiveDate : null);
       profile.totalSubmissions += 1;
       profile.lastActiveDate = new Date();
       profile.updatedAt = new Date();
@@ -2215,9 +2192,10 @@ export async function updateUserCodingProfile(userId, { problemId, verdict }) {
   if (!db.codingProfiles) db.codingProfiles = [];
   let p = db.codingProfiles.find(x => x.userId === uid);
   if (!p) {
-    p = { userId: uid, solvedProblemIds: [], totalSubmissions: 0, rating: 1640, streak: 14 };
+    p = { userId: uid, solvedProblemIds: [], totalSubmissions: 0, rating: 1200, streak: 0 };
     db.codingProfiles.push(p);
   }
+  p.streak = nextStreak(p.streak, p.totalSubmissions > 0 ? p.lastActiveDate : null);
   p.totalSubmissions += 1;
   p.lastActiveDate = new Date().toISOString();
   p.updatedAt = new Date().toISOString();
