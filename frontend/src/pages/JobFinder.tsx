@@ -210,7 +210,7 @@ export default function JobFinder({ customApiKey }: JobFinderProps) {
         throw new Error('Job search completed but returned no results.');
       }
     } catch (err) {
-      setErrorMsg(getErrorMessage(err) || 'Connection failed. Please check that the backend server is running.');
+      setErrorMsg(getErrorMessage(err) || 'Something went wrong on our side. Please try again in a moment.');
     } finally {
       clearInterval(stepInterval);
       setLoading(false);

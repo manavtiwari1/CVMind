@@ -1,58 +1,5 @@
 /* My Documents: a standalone app view with its own top bar (no site navbar or footer) */
 
-/* ── Splash ───────────────────────────────── */
-.md-splash {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 28px;
-  background: #ffffff;
-}
-
-.md-splash-logo {
-  width: 120px;
-  height: auto;
-  animation: md-breathe 1.4s ease-in-out infinite;
-}
-
-.md-splash-bar {
-  width: 160px;
-  height: 3px;
-  border-radius: 3px;
-  background: #e6f6ef;
-  overflow: hidden;
-}
-
-.md-splash-bar span {
-  display: block;
-  width: 40%;
-  height: 100%;
-  border-radius: 3px;
-  background: #2dc08d;
-  animation: md-slide 1.1s ease-in-out infinite;
-}
-
-@keyframes md-breathe {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(0.96); opacity: 0.85; }
-}
-
-@keyframes md-slide {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(250%); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .md-splash-logo,
-  .md-splash-bar span {
-    animation: none;
-  }
-}
-
 /* ── App shell ────────────────────────────── */
 .md-app {
   min-height: 100vh;
@@ -760,7 +707,13 @@
 }
 
 .md-foot-email {
-  user-select: all;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.md-foot-email:hover {
+  color: #1a8a63;
+  opacity: 1;
 }
 
 .md-foot-lang {

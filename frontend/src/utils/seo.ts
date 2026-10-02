@@ -9,6 +9,9 @@ interface PageSEO {
 
 const SITE_URL = 'https://www.cvmind.in';
 
+// Account-only and error pages stay out of search results
+const NO_INDEX_PAGES = ['account', 'my-documents', 'admin', 'dashboard', 'resume-editor', 'not-found'];
+
 const PAGE_SEO: Record<string, PageSEO> = {
   home: {
     title: 'Free AI Resume Builder & CV Maker Online | CV Mind',
@@ -165,6 +168,33 @@ const PAGE_SEO: Record<string, PageSEO> = {
     description: "CV Mind's Auto Apply Agent finds matching jobs and applies on your behalf with a tailored resume and cover letter. Coming soon.",
     keywords: 'Auto Apply, AI Job Application, Automated Job Applying, Job Application Agent',
   },
+  'company-portal': {
+    title: 'Recruiter Portal - Post Jobs & Review Candidates | CV Mind',
+    description: 'Post openings, review AI-matched applicants and shortlist candidates from one recruiter dashboard on CV Mind.',
+    keywords: 'Recruiter Portal, Post Jobs, Candidate Screening, Applicant Tracking, CV Mind for Recruiters',
+  },
+  'resume-editor': {
+    title: 'Resume Editor - Edit Your CV with AI | CV Mind',
+    description: 'Edit your resume or cover letter in a live editor: pick an ATS-friendly template, rewrite bullets with AI, and download as PDF or DOCX.',
+    keywords: 'Resume Editor, CV Editor, Online Resume Editor, AI Resume Writer, Cover Letter Editor',
+  },
+  'my-documents': {
+    title: 'My Documents | CV Mind',
+    description: 'Open, edit, duplicate and download the resumes and cover letters saved to your CV Mind account.',
+    keywords: 'CV Mind documents, saved resumes, my resumes',
+  },
+  portfolio: {
+    title: 'Portfolio | Built with CV Mind',
+    description: 'A personal portfolio website generated from a resume with CV Mind.',
+  },
+  admin: {
+    title: 'Admin | CV Mind',
+    description: 'CV Mind admin console.',
+  },
+  'not-found': {
+    title: 'Page Not Found | CV Mind',
+    description: "The page you're looking for doesn't exist or has moved. Head back to CV Mind to check or build your resume.",
+  },
   code: {
     title: 'CVmind Code - AI Coding Judge, Practice & Career Assessments | CV Mind',
     description: 'Master Data Structures & Algorithms with an in-browser isolated code judge, 6-tier progressive AI assistance, contests, and standardized skill scores that recruiters verify.',
@@ -203,7 +233,7 @@ function setMeta(name: string, content: string, attr: 'name' | 'property' = 'nam
 }
 
 export function applySEO(page: string) {
-  const seo = PAGE_SEO[page] || PAGE_SEO.home;
+  const seo = PAGE_SEO[page] || PAGE_SEO['not-found'];
 
   document.title = seo.title;
   setMeta('description', seo.description);
@@ -225,6 +255,7 @@ export function applySEO(page: string) {
   }
   canonical.setAttribute('href', url);
 
-  // app.cvmind.in duplicates the site build; keep it out of search results
-  if (isAppHost()) setMeta('robots', 'noindex, nofollow');
+  // app.cvmind.in duplicates the site build, and signed-in or missing pages have nothing to index
+  const noIndex = isAppHost() || NO_INDEX_PAGES.includes(page) || !PAGE_SEO[page];
+  setMeta('robots', noIndex ? 'noindex, nofollow' : 'index, follow');
 }

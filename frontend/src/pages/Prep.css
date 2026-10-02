@@ -873,3 +873,11 @@
     border-radius: 0 4px 4px 0;
   }
 }
+
+/* Inline error under a practice answer's evaluate button */
+.prep-eval-error {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: #dc2626;
+  text-align: right;
+}

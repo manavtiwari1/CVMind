@@ -1,6 +1,6 @@
 /* Full-width help center: light-blue header band, then a centred column of cards */
 .help-page {
-  min-height: calc(100vh - 64px);
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   background: #fff;
@@ -13,6 +13,64 @@
   margin: 0 auto;
   padding-inline: 24px;
   box-sizing: border-box;
+}
+
+/* ── Top bar ──────────────────────────────── */
+.help-top {
+  background: #fff;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.help-top-inner {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  padding-block: 12px;
+}
+
+.help-top-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #111827;
+}
+
+.help-top-brand img {
+  width: 36px;
+  height: 36px;
+}
+
+.help-top-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+
+.help-top-links button {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1f9e72;
+}
+
+.help-top-links button:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 /* ── Header band ──────────────────────────── */
@@ -283,58 +341,6 @@
   background: #25a87b;
 }
 
-/* ── Closing contact block ────────────────── */
-.help-foot {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-  padding: 40px 24px 48px;
-  text-align: center;
-}
-
-.help-foot-logo {
-  height: 40px;
-  width: auto;
-}
-
-.help-foot p {
-  margin: 0;
-  font-size: 0.92rem;
-  color: #374151;
-}
-
-.help-foot-email {
-  user-select: all;
-}
-
-.help-foot-link {
-  padding: 0;
-  border: none;
-  background: none;
-  font: inherit;
-  color: #1f9e72;
-  cursor: pointer;
-}
-
-.help-foot-link:hover {
-  text-decoration: underline;
-}
-
-.help-foot-socials {
-  display: flex;
-  gap: 18px;
-}
-
-.help-foot-socials a {
-  color: #374151;
-  display: flex;
-}
-
-.help-foot-socials a:hover {
-  color: #1f9e72;
-}
-
 @media (max-width: 640px) {
   .help-hero {
     padding: 40px 0 28px;
@@ -342,6 +348,14 @@
 
   .help-inner {
     padding-inline: 16px;
+  }
+
+  .help-top-links {
+    gap: 6px 16px;
+  }
+
+  .help-top-links button {
+    font-size: 0.85rem;
   }
 
   .help-collections {

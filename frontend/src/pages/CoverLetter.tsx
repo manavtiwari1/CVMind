@@ -109,6 +109,13 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
   const [activeWorkId, setActiveWorkId] = useState<string | null>(null);
   const [activeWorkTitle, setActiveWorkTitle] = useState<string>('');
   const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3500);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   // Existing Resume Onboarding States
   const [extractedData, setExtractedData] = useState<ExtractedResume | null>(null);
@@ -536,15 +543,21 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
     setStep('gallery');
   };
 
+  const copyShareLink = (url: string) => {
+    navigator.clipboard.writeText(url)
+      .then(() => setToast({ ok: true, text: 'Portfolio link copied to your clipboard.' }))
+      .catch(() => setToast({ ok: true, text: 'Portfolio opened in a new tab. Copy the link from there.' }));
+  };
+
   const handleSharePortfolio = async () => {
     if (selectedTemplate?.type === 'cover-letter') {
-      alert('Sharing is currently only supported for Resumes.');
+      setToast({ ok: false, text: 'Sharing is currently only supported for resumes.' });
       return;
     }
 
     if (activeWorkId) {
       const shareUrl = `${siteOrigin()}/portfolio/${activeWorkId}`;
-      navigator.clipboard.writeText(shareUrl);
+      copyShareLink(shareUrl);
       window.open(shareUrl, '_blank');
       return;
     }
@@ -554,7 +567,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
 
     const userStr = localStorage.getItem('cvmind_user');
     if (!userStr) {
-      alert('Please sign in to save and share your portfolio.');
+      setToast({ ok: false, text: 'Please sign in to save and share your portfolio.' });
       return;
     }
 
@@ -563,7 +576,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
       const user = JSON.parse(userStr);
       userId = user.id || user._id;
     } catch {
-      alert('Session invalid. Please sign in again.');
+      setToast({ ok: false, text: 'Your session has expired. Please sign in again.' });
       return;
     }
 
@@ -591,11 +604,11 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
         const newId = data.data.id || data.data._id;
         setActiveWorkId(newId);
         const shareUrl = `${siteOrigin()}/portfolio/${newId}`;
-        navigator.clipboard.writeText(shareUrl);
+        copyShareLink(shareUrl);
         window.open(shareUrl, '_blank');
       }
     } catch (err) {
-      alert(getErrorMessage(err) || 'An error occurred while preparing your portfolio.');
+      setToast({ ok: false, text: getErrorMessage(err) || 'An error occurred while preparing your portfolio.' });
     } finally {
       setSaving(false);
     }
@@ -1259,7 +1272,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
                     <button className="cl-table-action-link" onClick={() => setShowCustomTable(true)}>
                       <Table size={13} /> Insert Table...
                     </button>
-                    <button className="cl-table-action-link" onClick={() => alert('Draw Table mode is not supported on web editors yet, please use standard insert!')}>
+                    <button className="cl-table-action-link" onClick={() => setToast({ ok: false, text: "Drawing tables isn't available in the web editor yet. Use Insert Table instead." })}>
                       <Pencil size={13} /> Draw Table
                     </button>
                   </>
@@ -1364,7 +1377,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
                     <div className="img-modal-preview">
                       <img
                         src={pendingImageBase64}
-                        alt="Preview"
+                        alt="Preview of the image to insert"
                         style={{
                           maxWidth: '100%',
                           maxHeight: '120px',
@@ -1618,6 +1631,7 @@ ${jd}`)}
       </div>
       )}
 
+      {toast && <div className={`cl-toast${toast.ok ? '' : ' cl-toast--error'}`} role={toast.ok ? 'status' : 'alert'}>{toast.text}</div>}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Mail, ChevronRight } from 'lucide-react';
-import { SUPPORT_EMAIL, WHATSAPP_DISPLAY, whatsappLink, mailLink } from '../data/support';
+import { X, Mail, Phone, ChevronRight } from 'lucide-react';
+import { SUPPORT_EMAIL, WHATSAPP_DISPLAY, whatsappLink, mailLink, telLink } from '../data/support';
 import './ContactDialog.css';
 
 interface ContactDialogProps {
@@ -62,6 +62,15 @@ export default function ContactDialog({ open, onClose }: ContactDialogProps) {
             <span className="contact-dlg-text">
               <span className="contact-dlg-label">Email</span>
               <span className="contact-dlg-value">{SUPPORT_EMAIL}</span>
+            </span>
+            <ChevronRight size={18} className="contact-dlg-chevron" />
+          </a>
+
+          <a className="contact-dlg-option" href={telLink} onClick={onClose}>
+            <span className="contact-dlg-icon phone"><Phone size={20} /></span>
+            <span className="contact-dlg-text">
+              <span className="contact-dlg-label">Call</span>
+              <span className="contact-dlg-value">{WHATSAPP_DISPLAY}</span>
             </span>
             <ChevronRight size={18} className="contact-dlg-chevron" />
           </a>

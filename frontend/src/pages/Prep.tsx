@@ -55,6 +55,7 @@ export default function Prep({ customApiKey, resumeText, setResumeText, setCurre
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
   const [evaluations, setEvaluations] = useState<Record<number, InterviewFeedback>>({});
   const [evaluatingIndex, setEvaluatingIndex] = useState<number | null>(null);
+  const [evalErrors, setEvalErrors] = useState<Record<number, string>>({});
   const [savingPrep, setSavingPrep] = useState(false);
 
   
@@ -95,11 +96,13 @@ export default function Prep({ customApiKey, resumeText, setResumeText, setCurre
 
   const handleEvaluateAnswer = async (idx: number) => {
     const answer = userAnswers[idx];
+    const setEvalError = (message: string) => setEvalErrors(prev => ({ ...prev, [idx]: message }));
     if (!answer || !answer.trim()) {
-      alert('Please type your answer first before evaluating.');
+      setEvalError('Type your answer first, then ask for an evaluation.');
       return;
     }
 
+    setEvalError('');
     setEvaluatingIndex(idx);
     try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
@@ -132,7 +135,7 @@ export default function Prep({ customApiKey, resumeText, setResumeText, setCurre
         await autoSavePrepSession(questions, userAnswers, nextEvaluations);
       }
     } catch (err) {
-      alert(getErrorMessage(err) || 'Evaluation failed. Make sure the backend server is running.');
+      setEvalError(getErrorMessage(err) || "We couldn't evaluate this answer. Please try again.");
     } finally {
       setEvaluatingIndex(null);
     }
@@ -347,7 +350,7 @@ export default function Prep({ customApiKey, resumeText, setResumeText, setCurre
       }
     } catch (err) {
       console.error(err);
-      setErrorMsg(getErrorMessage(err) || 'Connection failed. Make sure the backend server is running.');
+      setErrorMsg(getErrorMessage(err) || 'Something went wrong on our side. Please try again in a moment.');
     } finally {
       clearInterval(stepInterval);
       setLoading(false);
@@ -689,6 +692,9 @@ export default function Prep({ customApiKey, resumeText, setResumeText, setCurre
                                   {evaluatingIndex === idx ? 'Analyzing Answer...' : 'AI Evaluation & Score'}
                                 </button>
                                 </div>
+                                {evalErrors[idx] && (
+                                  <p className="prep-eval-error" role="alert">{evalErrors[idx]}</p>
+                                )}
                               </div>
 
                               {/* Evaluation results */}

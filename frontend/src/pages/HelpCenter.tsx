@@ -1,9 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Search, ChevronRight, Rocket, FileText, UserCog, CreditCard, ShieldCheck } from 'lucide-react';
-import ContactDialog from '../components/ContactDialog';
-import { SOCIALS } from '../data/socials';
-import { SUPPORT_EMAIL } from '../data/support';
-import cvmindLogo from '../assets/cvmind_logo_transparent.png';
+import cvmindIcon from '../assets/cvmind_icon.png';
 import './HelpCenter.css';
 
 interface HelpCenterProps {
@@ -163,7 +160,6 @@ const findTopic = (id: string) => TOPICS.find(t => t.id === id);
 export default function HelpCenter({ setCurrentPage }: HelpCenterProps) {
   const [query, setQuery] = useState('');
   const [view, setView] = useState<View>({ kind: 'home' });
-  const [contactOpen, setContactOpen] = useState(false);
 
   const go = (next: View) => {
     setView(next);
@@ -306,6 +302,20 @@ export default function HelpCenter({ setCurrentPage }: HelpCenterProps) {
 
   return (
     <div className="help-page">
+      <header className="help-top">
+        <div className="help-inner help-top-inner">
+          <button type="button" className="help-top-brand" onClick={() => setCurrentPage('home')} aria-label="CVMind home">
+            <img src={cvmindIcon} alt="" />
+            <span>CVMind</span>
+          </button>
+          <nav className="help-top-links" aria-label="Your account">
+            <button type="button" onClick={() => setCurrentPage('my-documents')}>My Documents</button>
+            <button type="button" onClick={() => setCurrentPage('account')}>Account</button>
+            <button type="button" onClick={() => setCurrentPage('account?tab=billing')}>Billing &amp; Subscription Management</button>
+          </nav>
+        </div>
+      </header>
+
       <section className="help-hero">
         <div className="help-inner">
           <h1 className="help-hero-title">Answers to frequently asked questions about your CV Mind account</h1>
@@ -324,22 +334,6 @@ export default function HelpCenter({ setCurrentPage }: HelpCenterProps) {
 
       <div className="help-inner help-body">{renderView()}</div>
 
-      <footer className="help-foot">
-        <img src={cvmindLogo} alt="CV Mind" className="help-foot-logo" />
-        <p>
-          If you can't find the answer to your question, contact us at <span className="help-foot-email">{SUPPORT_EMAIL}</span> or{' '}
-          <button type="button" className="help-foot-link" onClick={() => setContactOpen(true)}>message us on WhatsApp</button>.
-        </p>
-        <div className="help-foot-socials">
-          {SOCIALS.map(s => (
-            <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} title={s.label}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d={s.path} /></svg>
-            </a>
-          ))}
-        </div>
-      </footer>
-
-      <ContactDialog open={contactOpen} onClose={() => setContactOpen(false)} />
     </div>
   );
 }

@@ -9,9 +9,9 @@ import { authFetch } from '../lib/authFetch';
 import { readUser, isProUser, USER_CHANGE_EVENT } from '../lib/currentUser';
 import { DOCUMENT_TYPES, workLabel, workPage } from '../lib/works';
 import { getErrorMessage } from '../utils/errors';
-import { SUPPORT_EMAIL } from '../data/support';
+import { SUPPORT_EMAIL, mailLink } from '../data/support';
 import cvmindIcon from '../assets/cvmind_icon.png';
-import cvmindLogo from '../assets/cvmind_logo_transparent.png';
+import PageLoader from '../components/PageLoader';
 import type { LoadedWork, SavedWork, StoredUser } from '../types/api';
 import './MyDocuments.css';
 import { siteOrigin } from '../lib/hosts';
@@ -355,10 +355,7 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
 
   if (splash) {
     return (
-      <div className="md-splash" role="status" aria-label="Loading your documents">
-        <img src={cvmindLogo} alt="CV Mind" className="md-splash-logo" />
-        <div className="md-splash-bar"><span /></div>
-      </div>
+      <PageLoader label="Loading your documents" />
     );
   }
 
@@ -412,7 +409,7 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
             <button type="button" onClick={() => setCurrentPage('terms')}>Terms</button>
             <button type="button" onClick={() => setCurrentPage('privacy')}>Privacy</button>
             <button type="button" onClick={() => setCurrentPage('blog')}>Blog</button>
-            <span className="md-foot-email">{SUPPORT_EMAIL}</span>
+            <a className="md-foot-email" href={mailLink()}>{SUPPORT_EMAIL}</a>
             <button type="button" onClick={handleSignOut}>Log Out</button>
           </nav>
           <span className="md-foot-lang" title="More languages coming soon">

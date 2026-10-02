@@ -588,8 +588,42 @@ textarea.form-input {
 /* ════ Help Center full-bleed shell override ════════════════════ */
 .help-shell .main-content {
   max-width: none;
-  padding: 64px 0 0;
+  padding: 0;
 }
+
+/* App products have no site navbar, so they don't need the space kept for it */
+.product-shell .main-content {
+  padding-top: 1.25rem;
+}
+
+.product-back-bar {
+  margin-bottom: 1rem;
+}
+
+.product-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1f2937;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.product-back:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+/* Sticky panels sat under the 64px navbar; without it they can ride near the top */
+.product-shell .cl-word-toolbar { top: 0.75rem; }
+.product-shell .aa-job-detail { top: 1rem; }
 
 /* ════ Responsive ════════════════════════════════════════════════ */
 @media (max-width: 768px) {

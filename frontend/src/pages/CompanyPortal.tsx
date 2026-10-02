@@ -448,7 +448,7 @@ export default function CompanyPortal({ customApiKey, onNavigateCandidateApp }: 
                   </div>
                 </div>
                 <div className="cp-kpi-value">{displayApplicants.length}</div>
-                <div style={{ fontSize: '0.8rem', color: '#34d399', marginTop: '0.4rem' }}>+12% auto-matched today</div>
+                <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '0.4rem' }}>Across all your open roles</div>
               </div>
 
               <div className="cp-kpi-card">
@@ -458,7 +458,7 @@ export default function CompanyPortal({ customApiKey, onNavigateCandidateApp }: 
                     <UserCheck size={20} />
                   </div>
                 </div>
-                <div className="cp-kpi-value">{displayApplicants.filter(a => a.status === 'Shortlisted').length || 1}</div>
+                <div className="cp-kpi-value">{displayApplicants.filter(a => a.status === 'Shortlisted').length}</div>
                 <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '0.4rem' }}>Ready for interview scheduling</div>
               </div>
 
@@ -469,7 +469,7 @@ export default function CompanyPortal({ customApiKey, onNavigateCandidateApp }: 
                     <Calendar size={20} />
                   </div>
                 </div>
-                <div className="cp-kpi-value">{displayApplicants.filter(a => a.status === 'Interview').length || 1}</div>
+                <div className="cp-kpi-value">{displayApplicants.filter(a => a.status === 'Interview').length}</div>
                 <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '0.4rem' }}>AI Interview Prep active for candidate</div>
               </div>
             </div>
@@ -787,6 +787,13 @@ export default function CompanyPortal({ customApiKey, onNavigateCandidateApp }: 
                   </tr>
                 </thead>
                 <tbody>
+                  {filteredApplicants.length === 0 && (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#9ca3af' }}>
+                        {searchQuery ? `No candidates match "${searchQuery}".` : 'No applications yet. Candidates will appear here once they apply.'}
+                      </td>
+                    </tr>
+                  )}
                   {filteredApplicants.map((app, idx) => (
                     <tr key={idx}>
                       <td>
@@ -971,7 +978,13 @@ export default function CompanyPortal({ customApiKey, onNavigateCandidateApp }: 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--cp-border)', paddingBottom: '1rem' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.3rem', color: 'white' }}>{selectedApplicant.candidateName}</h3>
-                <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>{selectedApplicant.candidateEmail} • {selectedApplicant.candidatePhone || 'Verified Candidate'}</div>
+                <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
+                  <a href={`mailto:${selectedApplicant.candidateEmail}`} style={{ color: 'inherit', textDecoration: 'underline' }}>{selectedApplicant.candidateEmail}</a>
+                  {' • '}
+                  {selectedApplicant.candidatePhone
+                    ? <a href={`tel:${selectedApplicant.candidatePhone.replace(/[^\d+]/g, '')}`} style={{ color: 'inherit', textDecoration: 'underline' }}>{selectedApplicant.candidatePhone}</a>
+                    : 'Verified Candidate'}
+                </div>
               </div>
               <span className="cp-match-pill cp-match-high" style={{ fontSize: '1rem' }}>
                 <Sparkles size={16} /> {selectedApplicant.matchScore}% Match

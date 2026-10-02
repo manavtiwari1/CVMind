@@ -1,5 +1,7 @@
 import { useState } from "react"
 import { Crown } from "lucide-react"
+import ScaleToFit from "../components/home/ScaleToFit"
+import SampleResume, { SAMPLE_RESUME_WIDTH } from "../components/home/SampleResume"
 import "./Pricing.css"
 
 interface PricingProps {
@@ -219,17 +221,6 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
         </div>
       </div>
 
-      {/* ── 3. BILLING TRUST SECTION ────────────────────────────── */}
-      <section className="pricing-payment-trust">
-        <span className="pricing-trust-header">We accept:</span>
-        <div className="pricing-payment-logos">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Logo_2021.svg" alt="Visa" />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg" alt="American Express" />
-        </div>
-      </section>
-
       {/* ── 4. FEATURE INTRO SECTION: Resume Builder ────────────── */}
       <section className="pricing-intro-section">
         <div className="pricing-intro-inner">
@@ -243,11 +234,11 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
             </button>
           </div>
           <div className="pricing-intro-visual">
-            <img 
-              src="https://images.unsplash.com/photo-1586281380349-632531db7ed4?q=80&w=600&auto=format&fit=crop" 
-              alt="Feature Mockups" 
-              className="pricing-intro-img"
-            />
+            <div className="pricing-intro-img pricing-sample" role="img" aria-label="Sample resume made in the CV Mind resume builder">
+              <ScaleToFit width={SAMPLE_RESUME_WIDTH} cropHeight={520}>
+                <SampleResume highlight="bullet" />
+              </ScaleToFit>
+            </div>
           </div>
         </div>
       </section>
@@ -256,11 +247,11 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
       <section className="pricing-tailor-section">
         <div className="pricing-tailor-inner">
           <div className="pricing-tailor-visual">
-            <img 
-              src="https://images.unsplash.com/photo-1450133064473-71024230f91b?q=80&w=500&auto=format&fit=crop" 
-              alt="Tailoring visual" 
-              className="pricing-tailor-img"
-            />
+            <div className="pricing-tailor-img pricing-sample" role="img" aria-label="Sample resume with skills added by tailoring it to a job post">
+              <ScaleToFit width={SAMPLE_RESUME_WIDTH} cropHeight={520}>
+                <SampleResume tailored />
+              </ScaleToFit>
+            </div>
           </div>
           <div className="pricing-tailor-content">
             <h2 className="pricing-tailor-title">Tailor your resume to the job with a single click</h2>

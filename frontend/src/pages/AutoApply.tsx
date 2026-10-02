@@ -126,18 +126,19 @@ function CompanyLogo({ domain, company }: { domain: string; company: string }) {
 // The agent is still being built: only emails on the admin Auto Apply access list can open it,
 // everyone else sees a Coming Soon screen
 export default function AutoApply(props: AutoApplyProps) {
-  const [access, setAccess] = useState<'checking' | 'granted' | 'denied'>('checking');
+  const [email] = useState<string>(() => { try { return JSON.parse(localStorage.getItem('cvmind_user') || '{}').email || ''; } catch { return ''; } });
+  // Signed-out visitors are denied straight away; everyone else waits for the access check
+  const [access, setAccess] = useState<'checking' | 'granted' | 'denied'>(email ? 'checking' : 'denied');
 
   useEffect(() => {
-    const email = (() => { try { return JSON.parse(localStorage.getItem('cvmind_user') || '{}').email || ''; } catch { return ''; } })();
-    if (!email) { setAccess('denied'); return; }
+    if (!email) return;
     let cancelled = false;
     fetch(`${API}/api/auto-apply/check-access?email=${encodeURIComponent(email)}`)
       .then(r => r.json())
       .then(d => { if (!cancelled) setAccess(d?.hasAccess ? 'granted' : 'denied'); })
       .catch(() => { if (!cancelled) setAccess('denied'); });
     return () => { cancelled = true; };
-  }, []);
+  }, [email]);
 
   if (access === 'granted') return <AutoApplyAgent {...props} />;
   if (access === 'checking') {

@@ -1,0 +1,95 @@
+.nf {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1rem;
+  padding: 2rem 1rem;
+}
+
+/* No navbar on this page, so drop the space main-content keeps for it */
+.notfound-shell .main-content {
+  padding: 0 1.25rem;
+}
+
+.nf-logo {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+.nf-logo img {
+  width: 120px;
+  height: auto;
+  display: block;
+}
+
+.nf-code {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #2dc08d;
+  margin: 0;
+}
+
+.nf-title {
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  font-weight: 800;
+  margin: 0;
+}
+
+.nf-body {
+  max-width: 460px;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.nf-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.nf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.7rem 1.3rem;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #1f2937;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.nf-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.nf-btn--primary {
+  background: #2dc08d;
+  border-color: #2dc08d;
+  color: #ffffff;
+}
+
+.nf-btn--primary:hover {
+  background: #22a577;
+  border-color: #22a577;
+}
+
+@media (max-width: 480px) {
+  .nf-actions { flex-direction: column; width: 100%; }
+  .nf-btn { justify-content: center; }
+}

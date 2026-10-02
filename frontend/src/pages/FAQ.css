@@ -12,6 +12,7 @@
   margin: 0 auto;
   padding: 2rem 1.5rem 6rem 1.5rem;
   position: relative;
+  overflow-x: clip;
 }
 
 /* Ambient glow nodes */

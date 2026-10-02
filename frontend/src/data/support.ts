@@ -6,5 +6,7 @@ export const WHATSAPP_DISPLAY = '+91 87006 83798';
 export const whatsappLink = (text = 'Hi CV Mind team, I need help with ') =>
   `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
 
+export const telLink = `tel:+${WHATSAPP_NUMBER}`;
+
 export const mailLink = (subject = 'CV Mind support') =>
   `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}`;

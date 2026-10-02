@@ -160,7 +160,7 @@ export default function Tailor({ customApiKey }: TailorProps) {
       }
     } catch (err) {
       console.error(err);
-      setErrorMsg(getErrorMessage(err) || 'Connection failed. Make sure the backend server is running.');
+      setErrorMsg(getErrorMessage(err) || 'Something went wrong on our side. Please try again in a moment.');
     } finally {
       clearInterval(stepInterval);
       setLoading(false);

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Chatbot from './components/Chatbot';
@@ -43,6 +44,8 @@ import CopyrightPolicy from './pages/CopyrightPolicy';
 import ArticlePage from './pages/ArticlePage';
 import CVmindCode from './pages/code/CVmindCode';
 import CVmindCodeLanding from './pages/code/CVmindCodeLanding';
+import NotFound from './pages/NotFound';
+import PageLoader from './components/PageLoader';
 import { ARTICLES } from './data/articles';
 import DigitalSerenityBackground from './components/DigitalSerenityBackground';
 import { applySEO } from './utils/seo';
@@ -55,27 +58,44 @@ import './styles/theme.css';
 import './styles/3d-effects.css';
 import './styles/skeleton.css';
 
+// How long the loading screen shows when moving to another page
+const ROUTE_LOADER_MS = 450;
+
+const VALID_PAGES = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'career-copilot', 'copyright-policy', 'account', 'help-center', 'my-documents', ...ARTICLES.map(a => a.slug)];
+
+// Sign-in addresses open the AuthModal over the home page
+const AUTH_PATHS = ['/sign-in', '/sign-up', '/login'];
+
+// The page an address shows: null for the site root, 'not-found' for anything the app doesn't serve
+function pageFromPath(pathname: string): string | null {
+  if (pathname.startsWith('/portfolio/')) return 'portfolio';
+  if (AUTH_PATHS.includes(pathname)) return 'home';
+  const page = pathname.replace(/^\/+|\/+$/g, '');
+  if (!page || page === 'index.html') return null;
+  return VALID_PAGES.includes(page) ? page : 'not-found';
+}
 
 export default function App() {
   const [currentPage, setCurrentPageState] = useState<string>(() => {
-    const pathname = window.location.pathname;
-    if (pathname.startsWith('/portfolio/')) {
-      return 'portfolio';
-    }
-    const urlPage = pathname.replace(/^\//, '');
-    const validPages = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'career-copilot', 'copyright-policy', 'account', 'help-center', 'my-documents', ...ARTICLES.map(a => a.slug)];
-    if (urlPage && validPages.includes(urlPage)) {
-      return urlPage;
-    }
+    const urlPage = pageFromPath(window.location.pathname);
+    if (urlPage) return urlPage;
     // On cvmind.in the address always decides the page, so a remembered app page can't open on www
     const savedPage = isSplitHost() ? null : localStorage.getItem('cvmind_current_page');
-    if (savedPage && validPages.includes(savedPage)) {
+    if (savedPage && VALID_PAGES.includes(savedPage)) {
       return savedPage;
     }
     return 'home';
   });
 
   const theme = 'light';
+
+  // Loading screen between pages; started by navigation handlers, cleared by the timer below
+  const [routeLoading, setRouteLoading] = useState(false);
+  useEffect(() => {
+    if (!routeLoading) return;
+    const t = setTimeout(() => setRouteLoading(false), ROUTE_LOADER_MS);
+    return () => clearTimeout(t);
+  }, [routeLoading]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', 'light');
@@ -109,7 +129,7 @@ export default function App() {
   });
   const [showAuthModal, setShowAuthModal] = useState<boolean>(() => {
     const pathname = window.location.pathname;
-    if (pathname === '/sign-in' || pathname === '/sign-up' || pathname === '/login') return true;
+    if (AUTH_PATHS.includes(pathname)) return true;
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.get('resetToken') && searchParams.get('email')) return true;
     // AuthModal reads and clears ?authError itself to show the message
@@ -167,18 +187,29 @@ export default function App() {
     return () => document.removeEventListener('visibilitychange', onFocus);
   }, [isLoggedIn]);
 
-  const setCurrentPage = (page: string) => {
+  // `page` may carry a query string, e.g. 'account?tab=billing'
+  const setCurrentPage = (target: string) => {
+    const [page, query = ''] = target.split('?');
+    const search = query ? `?${query}` : '';
     // Pages on the other cvmind.in host (site vs app) need a full page load
     if (isCrossHost(page)) {
       // sessionStorage doesn't cross hosts, so a template picked on the site travels in the URL
       const template = page === 'resume-editor' ? peekPickedTemplate() : null;
-      window.location.assign(urlForPage(page, template ? `?template=${encodeURIComponent(template)}` : ''));
+      window.location.assign(urlForPage(page, template ? `?template=${encodeURIComponent(template)}` : search));
       return;
     }
+    if (page !== currentPage) setRouteLoading(true);
     setCurrentPageState(page);
     localStorage.setItem('cvmind_current_page', page);
     const newPath = page === 'home' ? '/' : `/${page}`;
-    window.history.pushState({}, '', newPath);
+    const depth = (window.history.state?.cvDepth ?? 0) + 1;
+    window.history.pushState({ cvDepth: depth }, '', newPath + search);
+  };
+
+  // Back on app product pages: the previous in-app page, or My Documents when the page was opened directly
+  const goBack = () => {
+    if ((window.history.state?.cvDepth ?? 0) > 0) window.history.back();
+    else setCurrentPage('my-documents');
   };
 
   // Where a fresh sign-in lands: the home page, or My Documents when signing in on the app host
@@ -188,14 +219,10 @@ export default function App() {
 
   useEffect(() => {
     const handlePopState = () => {
-      const pathname = window.location.pathname;
-      if (pathname.startsWith('/portfolio/')) {
-        setCurrentPageState('portfolio');
-        return;
-      }
-      const page = pathname.replace(/^\//, '') || 'home';
+      const page = pageFromPath(window.location.pathname) || 'home';
+      setRouteLoading(true);
       setCurrentPageState(page);
-      localStorage.setItem('cvmind_current_page', page);
+      if (VALID_PAGES.includes(page)) localStorage.setItem('cvmind_current_page', page);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -231,7 +258,7 @@ export default function App() {
     const pathname = window.location.pathname;
     // The app host keeps /sign-in: its '/' means My Documents
     if (isAppHost()) return;
-    if (pathname === '/sign-in' || pathname === '/sign-up' || pathname === '/login') {
+    if (AUTH_PATHS.includes(pathname)) {
       window.history.replaceState({}, '', '/');
     }
   }, []);
@@ -517,14 +544,7 @@ export default function App() {
       case 'cvmind-code-arena':
         return <CVmindCode customApiKey={customApiKey} />;
       default:
-        return (
-          <Home 
-            setCurrentPage={setCurrentPage} 
-            setAnalysisResult={setAnalysisResult}
-            setResumeText={setResumeText}
-            customApiKey={customApiKey}
-          />
-        );
+        return <NotFound setCurrentPage={setCurrentPage} />;
     }
   };
 
@@ -533,6 +553,12 @@ export default function App() {
   const isFocusFlow = currentPage === 'resume-editor' && builderFocus !== false;
   // My Documents is a standalone app view with its own top bar
   const isAppPage = currentPage === 'my-documents';
+  // The 404 page stands alone, without the site header and footer
+  const isNotFound = currentPage === 'not-found';
+  // App products (the app.cvmind.in pages) show no site header or footer, just a way back
+  const isProductPage = APP_PAGES.includes(currentPage);
+  // Account and My Documents have their own Back button / top bar; the editor's full-screen flows have Exit
+  const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && !isFocusFlow;
   const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || isCodePage || isFocusFlow || isAppPage;
   // The Help Center is full-width and ends with its own contact block instead of the site footer
   const isHelpPage = currentPage === 'help-center';
@@ -543,12 +569,12 @@ export default function App() {
   }, [isFocusFlow]);
 
   return (
-    <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''} ${isFocusFlow ? 'focus-shell' : ''} ${isHelpPage ? 'help-shell' : ''} ${isAppPage ? 'app-shell' : ''}`}>
+    <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''} ${isFocusFlow ? 'focus-shell' : ''} ${isHelpPage ? 'help-shell' : ''} ${isAppPage ? 'app-shell' : ''} ${isNotFound ? 'notfound-shell' : ''} ${isProductPage ? 'product-shell' : ''}`}>
 
       {/* ── Global Digital Serenity Background (for both dark & light modes) ── */}
       {!isMinimalPage && <DigitalSerenityBackground theme={theme} />}
 
-      {!isMinimalPage && (
+      {!isMinimalPage && !isNotFound && !isHelpPage && !isProductPage && (
         <Navbar 
           currentPage={currentPage} 
           setCurrentPage={setCurrentPage} 
@@ -568,10 +594,19 @@ export default function App() {
       )}
 
       <main className="main-content">
+        {showBackBar && (
+          <div className="product-back-bar">
+            <button type="button" className="product-back" onClick={goBack}>
+              <ArrowLeft size={16} /> Back
+            </button>
+          </div>
+        )}
         {renderPage()}
       </main>
 
-      {!isMinimalPage && !isHelpPage && <Footer setCurrentPage={setCurrentPage} />}
+      {routeLoading && <PageLoader />}
+
+      {!isMinimalPage && !isHelpPage && !isNotFound && !isProductPage && <Footer setCurrentPage={setCurrentPage} />}
       {!isMinimalPage && <Chatbot customApiKey={customApiKey} />}
 
       <AuthModal
