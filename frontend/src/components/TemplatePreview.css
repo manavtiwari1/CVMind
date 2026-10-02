@@ -1,0 +1,43 @@
+.tp-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 794 / 1123;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 6px;
+  contain: layout paint;
+}
+
+.tp-skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, #f1f5f9 30%, #f8fafc 50%, #f1f5f9 70%);
+  background-size: 200% 100%;
+  animation: tp-shimmer 1.4s linear infinite;
+  transition: opacity 0.35s ease;
+}
+
+.tp-ready .tp-skeleton { opacity: 0; animation: none; }
+
+.tp-page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  background: #ffffff;
+  overflow: hidden;
+  opacity: 0;
+  animation: tp-fade-in 0.4s ease 0.05s forwards;
+  /* previews are decorative: no text selection, no clicking through to links */
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+@keyframes tp-shimmer { to { background-position: -200% 0; } }
+@keyframes tp-fade-in { to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .tp-skeleton, .tp-page { animation: none; }
+  .tp-page { opacity: 1; }
+}

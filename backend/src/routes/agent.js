@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import mongoose from 'mongoose';
 import { requireUser } from '../services/authToken.js';
-import { requireMongo } from '../agent/auth.js';
+import { requireMongo, requireAgentAccess } from '../agent/auth.js';
 import { getModel, getEmbedModel, getEmbedDims } from '../agent/ai/geminiClient.js';
 import { ResumeStructured } from '../agent/ai/schemas.js';
 import ResumeProfile from '../agent/models/ResumeProfile.js';
@@ -131,8 +131,9 @@ function findOwnedResume(id, userId) {
 }
 
 // Autonomous apply agent API (resumes, preferences, applications); endpoints land milestone by milestone
-export function createAgentRouter({ loadWork = defaultLoadWork, loadLatestResumeWork, buildPlan } = {}) {
+export function createAgentRouter({ loadWork = defaultLoadWork, loadLatestResumeWork, buildPlan, checkAccess } = {}) {
   const router = express.Router();
+  router.use(requireAgentAccess(checkAccess));
   // Extension routes authenticate with their own device token, so they mount before the user-only guard
   router.use('/extension', createExtensionRouter({ ...(buildPlan ? { buildPlan } : {}), ...(loadLatestResumeWork ? { loadLatestResumeWork } : {}) }));
   router.use(requireUser, requireMongo());

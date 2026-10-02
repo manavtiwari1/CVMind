@@ -6,12 +6,11 @@ import {
 } from 'lucide-react';
 import { 
   NavigationMenu,
-  NavigationMenuContent,
   NavigationMenuItem,
-  NavigationMenuLink,
   NavigationMenuList,
-  NavigationMenuTrigger,
 } from './ui/navigation-menu';
+import NavMegaMenu from './NavMegaMenu';
+import { NAV_MENUS } from './navMenus';
 import cvmindIcon from '../assets/cvmind_icon.png';
 import { getErrorMessage } from '../utils/errors';
 import type { LoadedWork, SavedWork, StoredUser } from '../types/api';
@@ -334,167 +333,9 @@ export default function Navbar({
           <NavigationMenu viewport={false}>
             <NavigationMenuList>
 
-              {/* 1. Resume ▾ */}
-              <NavigationMenuItem>
-                <NavigationMenuTrigger
-                  className={`nav-link nav-link-trigger${['home','resume-builder','tailor','portfolio-gen'].includes(currentPage) ? ' active' : ''}`}
-                >
-                  Resume
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="nav-menu-grid-2cols" style={{ minWidth: '420px' }}>
-                    <div className="nav-menu-column">
-                      <span className="nav-menu-column-header">Build</span>
-                      <NavigationMenuLink render={<button onClick={() => go('resume-builder')} />}>
-                        <div className="font-medium">Resume Builder</div>
-                        <div className="text-muted-foreground">Create a professional resume in minutes.</div>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink render={<button onClick={() => go('portfolio-gen')} />}>
-                        <div className="font-medium">Portfolio Generator</div>
-                        <div className="text-muted-foreground">Build a shareable portfolio site.</div>
-                      </NavigationMenuLink>
-                    </div>
-                    <div className="nav-menu-column">
-                      <span className="nav-menu-column-header">Optimize</span>
-                      <NavigationMenuLink render={<button onClick={() => go('home')} />}>
-                        <div className="font-medium">Resume Checker</div>
-                        <div className="text-muted-foreground">Audit your ATS score & keywords.</div>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink render={<button onClick={() => go('tailor')} />}>
-                        <div className="font-medium">Resume Tailorer</div>
-                        <div className="text-muted-foreground">Match any job description instantly.</div>
-                      </NavigationMenuLink>
-                    </div>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              {/* 2. AI Tools ▾ */}
-              <NavigationMenuItem>
-                <NavigationMenuTrigger
-                  className={`nav-link nav-link-trigger${['prep','voice-prep','job-finder','proofreading','auto-apply','career-copilot'].includes(currentPage) ? ' active' : ''}`}
-                >
-                  AI Tools
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="nav-menu-grid-2cols" style={{ minWidth: '440px' }}>
-                    <div className="nav-menu-column">
-                      <span className="nav-menu-column-header">Interview</span>
-                      <NavigationMenuLink render={<button onClick={() => go('prep')} />}>
-                        <div className="font-medium">Interview Prep AI</div>
-                        <div className="text-muted-foreground">Behavioral & STAR coaching.</div>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink render={<button onClick={() => go('code')} />}>
-                        <div className="font-medium" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          CVMind Code
-                          <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '1px 6px', borderRadius: '99px', background: 'linear-gradient(135deg,#10b981,#06b6d4)', color: '#fff', letterSpacing: '0.04em' }}>NEW</span>
-                        </div>
-                        <div className="text-muted-foreground">DSA practice, AI code judge & assessments.</div>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink render={<button onClick={() => go('voice-prep')} />}>
-                        <div className="font-medium">Voice Practice AI</div>
-                        <div className="text-muted-foreground">Real-time speaking feedback.</div>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink render={<button onClick={() => go('proofreading')} />}>
-                        <div className="font-medium">AI Proofreading</div>
-                        <div className="text-muted-foreground">Grammar, tone & power verbs.</div>
-                      </NavigationMenuLink>
-                    </div>
-                    <div className="nav-menu-column">
-                      <span className="nav-menu-column-header">Job Search</span>
-                      <NavigationMenuLink render={<button onClick={() => go('job-finder')} />}>
-                        <div className="font-medium">AI Job Finder</div>
-                        <div className="text-muted-foreground">Curated roles matching your profile.</div>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink render={<button onClick={() => go('career-copilot')} />}>
-                        <div className="font-medium" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          AI Career Copilot
-                          <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '1px 6px', borderRadius: '99px', background: 'linear-gradient(135deg,#2997ff,#bf5af2)', color: '#fff', letterSpacing: '0.04em' }}>NEW</span>
-                        </div>
-                        <div className="text-muted-foreground">9 AI agents managing your entire career.</div>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink render={<button onClick={() => go('auto-apply')} />}>
-                        <div className="font-medium" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          Auto Apply Agent
-                          <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '1px 6px', borderRadius: '99px', background: 'linear-gradient(135deg,#10b981,#34d399)', color: '#fff', letterSpacing: '0.04em' }}>UNLOCKED</span>
-                        </div>
-                        <div className="text-muted-foreground">AI applies to jobs for you automatically.</div>
-                      </NavigationMenuLink>
-                    </div>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              {/* 3. LinkedIn & Career ▾ */}
-              <NavigationMenuItem>
-                <NavigationMenuTrigger
-                  className={`nav-link nav-link-trigger${['linkedin','linkedin-bio','linkedin-outreach','linkedin-post','career-courses','elevator-pitch','career-roadmap'].includes(currentPage) ? ' active' : ''}`}
-                >
-                  Career
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="nav-menu-grid-2cols" style={{ minWidth: '420px' }}>
-                    <div className="nav-menu-column">
-                      <span className="nav-menu-column-header">LinkedIn</span>
-                      <NavigationMenuLink render={<button onClick={() => go('linkedin')} />}>
-                        <div className="font-medium">Profile PDF Audit</div>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink render={<button onClick={() => go('linkedin-bio')} />}>
-                        <div className="font-medium">Bio & Banner Generator</div>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink render={<button onClick={() => go('linkedin-outreach')} />}>
-                        <div className="font-medium">Outreach & DM Writer</div>
-                      </NavigationMenuLink>
-                    </div>
-                    <div className="nav-menu-column">
-                      <span className="nav-menu-column-header">Career Path</span>
-                      <NavigationMenuLink render={<button onClick={() => go('career-courses')} />}>
-                        <div className="font-medium">Skill Gaps & Courses</div>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink render={<button onClick={() => go('elevator-pitch')} />}>
-                        <div className="font-medium">Elevator Pitch Builder</div>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink render={<button onClick={() => go('career-roadmap')} />}>
-                        <div className="font-medium">Career Roadmap</div>
-                      </NavigationMenuLink>
-                    </div>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              {/* 4. Resources ▾ */}
-              <NavigationMenuItem>
-                <NavigationMenuTrigger
-                  className={`nav-link nav-link-trigger${['about','contact','faq','blog','privacy'].includes(currentPage) ? ' active' : ''}`}
-                >
-                  Resources
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="nav-menu-grid-2cols" style={{ minWidth: '420px' }}>
-                    <div className="nav-menu-column">
-                      <span className="nav-menu-column-header">Company</span>
-                      <NavigationMenuLink render={<button onClick={() => go('about')} />}>
-                        <div className="font-medium">About Us</div>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink render={<button onClick={() => go('contact')} />}>
-                        <div className="font-medium">Contact Us</div>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink render={<button onClick={() => go('faq')} />}>
-                        <div className="font-medium">FAQ's</div>
-                      </NavigationMenuLink>
-                    </div>
-                    <div className="nav-menu-column">
-                      <span className="nav-menu-column-header">More</span>
-                      <NavigationMenuLink render={<button onClick={() => go('blog')} />}>
-                        <div className="font-medium">Blog & Articles</div>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink render={<button onClick={() => go('privacy')} />}>
-                        <div className="font-medium">Privacy Policy</div>
-                      </NavigationMenuLink>
-                    </div>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
+              {NAV_MENUS.map((menu) => (
+                <NavMegaMenu key={menu.label} menu={menu} currentPage={currentPage} onNavigate={go} />
+              ))}
 
               {/* 5. CVmind Code */}
               <NavigationMenuItem>
@@ -504,6 +345,17 @@ export default function Navbar({
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: 'transparent', border: 'none' }}
                 >
                   <span style={{ fontWeight: 600 }}>CVMind Code</span>
+                </button>
+              </NavigationMenuItem>
+
+              {/* 6. Pricing */}
+              <NavigationMenuItem>
+                <button
+                  onClick={() => go('pricing')}
+                  className={`nav-link${currentPage === 'pricing' ? ' active' : ''}`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  Pricing
                 </button>
               </NavigationMenuItem>
 
@@ -572,16 +424,16 @@ export default function Navbar({
           ) : (
             <>
               <button
-                className="navbar-login-link"
+                className="navbar-login-link navbar-signin"
                 onClick={() => setShowAuthModal(true)}
               >
-                Log in
+                Sign In
               </button>
               <button
                 className="navbar-cta"
                 onClick={() => go('resume-builder')}
               >
-                Get Started for free
+                Get Started
               </button>
             </>
           )}
@@ -661,7 +513,7 @@ export default function Navbar({
                 className={`mobile-drawer-link mobile-sub-link${currentPage === 'auto-apply' ? ' active' : ''}`}
                 onClick={() => go('auto-apply')}
               >
-                Auto Apply Agent ✨
+                Auto Apply Agent (Soon)
               </button>
               <button
                 className={`mobile-drawer-link mobile-sub-link${['code', 'cvmind-code', 'code-arena'].includes(currentPage) ? ' active' : ''}`}
