@@ -1260,10 +1260,12 @@ apiRouter.post('/api/optimize', optionalUser, async (req, res) => {
 apiRouter.post('/api/tailor', optionalUser, upload.single('resume'), async (req, res) => {
   try {
     const { file } = req;
-    const { jobDescription, resumeUrl } = req.body || {};
+    const { jobDescription, resumeUrl, templateHtml, templateId, resumeText } = req.body || {};
     const customApiKey = req.headers['x-gemini-key'] || null;
+    // Re-runs (new JD or a reopened saved tailor) send the text read on the first run instead of the file.
+    const priorText = typeof resumeText === 'string' && resumeText.trim().length >= 50 ? resumeText.slice(0, 20000) : '';
 
-    if (!file && !resumeUrl) {
+    if (!file && !resumeUrl && !priorText) {
       return res.status(400).json({ error: 'No resume file uploaded. Please upload a PDF, DOCX, or TXT file.' });
     }
 
@@ -1271,11 +1273,13 @@ apiRouter.post('/api/tailor', optionalUser, upload.single('resume'), async (req,
       return res.status(400).json({ error: 'Job Description is required and must be at least 15 characters.' });
     }
 
-    let extractedText = '';
-    try {
-      extractedText = await extractResumeText(file, resumeUrl);
-    } catch (parseErr) {
-      return res.status(parseErr.status || 400).json({ error: parseErr.message });
+    let extractedText = priorText;
+    if (!extractedText) {
+      try {
+        extractedText = await extractResumeText(file, resumeUrl);
+      } catch (parseErr) {
+        return res.status(parseErr.status || 400).json({ error: parseErr.message });
+      }
     }
 
     if (!extractedText || extractedText.trim().length < 50) {
@@ -1283,10 +1287,34 @@ apiRouter.post('/api/tailor', optionalUser, upload.single('resume'), async (req,
     }
 
     const result = await tailorResumeWithGemini(extractedText, jobDescription, customApiKey);
+    const data = result.tailoredData || {};
+    if (!data.personalInfo?.fullName && !data.workExperiences?.length && !data.summary) {
+      return res.status(502).json({ error: 'The AI returned an incomplete resume. Please try again.' });
+    }
+
+    // Fill the chosen CVMind template (sent without its locked footer; the client re-attaches it).
+    let generatedHtml = '';
+    if (typeof templateHtml === 'string' && templateHtml.trim()) {
+      const formData = {
+        personalInfo: data.personalInfo || {},
+        jobTitle: data.personalInfo?.jobTitle || '',
+        summary: data.summary || '',
+        education: data.educations || [],
+        workExperiences: data.workExperiences || [],
+        skills: data.skills || [],
+        courses: data.courses || [],
+        languages: data.languages || [],
+        achievements: data.achievements || [],
+        timeBreakdown: []
+      };
+      generatedHtml = String(await generateResumeWithGemini({ templateHtml, formData, customApiKey, keepFacts: true }))
+        .replace(/^```(?:html)?\s*/i, '').replace(/```\s*$/, '').trim();
+    }
+    const tailorTemplateId = typeof templateId === 'string' ? templateId.slice(0, 60) : '';
 
     // Record the tailoring event in MongoDB / Local DB
     const userId = req.auth?.sub || '';
-    const tailorFileName = file ? file.originalname : 'Link Upload';
+    const tailorFileName = file ? file.originalname : resumeUrl ? 'Link Upload' : 'Saved Resume';
     await saveTailorLog({
       fileName: tailorFileName,
       fileSize: file ? file.size : 0,
@@ -1300,12 +1328,12 @@ apiRouter.post('/api/tailor', optionalUser, upload.single('resume'), async (req,
       title: `Tailored Resume - ${tailorFileName}`,
       type: 'resume-tailor',
       templateId: 'resume-tailorer',
-      payload: { fileName: tailorFileName, jobDescription, resumeText: extractedText, result }
+      payload: { fileName: tailorFileName, jobDescription, resumeText: extractedText, result, generatedHtml, templateId: tailorTemplateId }
     });
 
     return res.json({
       success: true,
-      data: result,
+      data: { ...result, generatedHtml, templateId: tailorTemplateId, resumeText: extractedText },
       work: savedWork
     });
   } catch (error) {
@@ -1435,7 +1463,7 @@ apiRouter.post('/api/cover-letter/refine', async (req, res) => {
 // AI Resume Generation Endpoint
 apiRouter.post('/api/resume/generate', async (req, res) => {
   try {
-    const { templateHtml, formData } = req.body || {};
+    const { templateHtml, formData, keepFacts } = req.body || {};
     const customApiKey = req.headers['x-gemini-key'] || null;
 
     if (!templateHtml || typeof templateHtml !== 'string') {
@@ -1448,7 +1476,8 @@ apiRouter.post('/api/resume/generate', async (req, res) => {
     const generatedHtml = await generateResumeWithGemini({
       templateHtml,
       formData,
-      customApiKey
+      customApiKey,
+      keepFacts: keepFacts === true
     });
 
     return res.json({

@@ -302,13 +302,67 @@ const careerRoadmapSchema = {
   required: ['steps']
 };
 
+const str = (description) => ({ type: 'string', description });
+
+// Same shape as the resume editor's ExtractedResume (frontend/src/types/api.ts), so the result can fill a template.
+const tailoredDataSchema = {
+  type: 'object',
+  description: 'The complete resume rewritten for the Job Description, as structured data. Keep every real fact from the original.',
+  properties: {
+    personalInfo: {
+      type: 'object',
+      properties: {
+        fullName: str('Candidate full name'),
+        jobTitle: str('Headline title aligned to the target role, but true to the candidate\'s experience'),
+        email: str('Email'),
+        phone: str('Phone'),
+        location: str('City, Country'),
+        linkedin: str('LinkedIn URL or handle')
+      }
+    },
+    summary: str('2-3 sentence professional summary aimed at the JD'),
+    workExperiences: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          company: str('Company (unchanged)'),
+          jobTitle: str('Job title (unchanged)'),
+          location: str('Location'),
+          startDate: str('Start date (unchanged)'),
+          endDate: str('End date or Present (unchanged)'),
+          description: str('3-5 achievement bullets, one per line starting with "• ", rephrased for the JD')
+        }
+      }
+    },
+    educations: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: { university: str('Institution'), degree: str('Degree'), gradYear: str('Year or dates'), cgpa: str('GPA if given') }
+      }
+    },
+    skills: { type: 'array', items: { type: 'string' }, description: 'Skills, JD-relevant ones first. Only skills the candidate actually has.' },
+    courses: {
+      type: 'array',
+      items: { type: 'object', properties: { name: str('Course or certification'), platform: str('Issuer'), date: str('Year') } }
+    },
+    languages: {
+      type: 'array',
+      items: { type: 'object', properties: { name: str('Language'), level: str('Level'), dots: { type: 'integer' } } }
+    },
+    achievements: {
+      type: 'array',
+      items: { type: 'object', properties: { title: str('Achievement or project'), description: str('Result or impact') } }
+    }
+  },
+  required: ['personalInfo', 'summary', 'workExperiences', 'educations', 'skills']
+};
+
 const tailorSchema = {
   type: 'object',
   properties: {
-    tailoredResume: {
-      type: 'string',
-      description: 'The complete rewritten resume in plain text format, perfectly tailored to the provided Job Description (JD). Naturally integrate skills, emphasize relevant accomplishments, and format cleanly.'
-    },
+    tailoredData: tailoredDataSchema,
     matchScore: {
       type: 'integer',
       description: 'An estimated match rating between the tailored resume and the job description, from 0 to 100.'
@@ -330,7 +384,7 @@ const tailorSchema = {
     }
   },
   required: [
-    'tailoredResume',
+    'tailoredData',
     'matchScore',
     'keyTailoringInsights',
     'matchedSkills',
@@ -603,19 +657,16 @@ Rewrite it now as a fully ATS-optimized resume following all the rules above.`;
  */
 export async function tailorResumeWithGemini(resumeText, jobDescription, customApiKey = null) {
   const systemPrompt = `You are an elite corporate resume writer, talent acquisition specialist, and hiring consultant.
-  Your task is to completely rewrite and optimize the candidate's CV so it matches the provided Job Description (JD) / Target Role guidelines perfectly.
-  
+  Your task is to rewrite the candidate's CV so it matches the provided Job Description (JD) / Target Role, and return it as structured data in "tailoredData".
+
   RULES:
-  1. Strictly preserve all factual information from the original resume — do NOT invent companies, titles, dates, or degrees.
-  2. Naturally inject matched skills and primary keywords from the JD into the summary, skills list, and experience bullets.
-  3. Re-phrase work experience highlights to emphasize contributions and achievements that directly match the responsibilities requested in the JD.
-  4. Ensure a premium, ATS-compliant plain-text output structure:
-     PROFESSIONAL SUMMARY
-     SKILLS
-     EXPERIENCE
-     EDUCATION
-  5. Provide an estimated match score (0-100), key tailoring insights, matched skills, and recommended missing skills.
-  6. You MUST strictly return your response in the specified JSON structure. Do not wrap it in any HTML or markdown, only raw JSON matching the schema.`;
+  1. Strictly preserve all factual information from the original resume — do NOT invent companies, titles, dates, degrees, numbers, or skills the candidate does not have.
+  2. Naturally use matched skills and primary keywords from the JD in the summary, skills list, and experience bullets, only where they are true for the candidate.
+  3. Re-phrase work experience bullets to emphasize contributions and achievements that directly match the responsibilities requested in the JD.
+  4. Keep every role, education entry, course, language and achievement from the original; only reorder or reword them.
+  5. matchScore is an honest estimate (0-100) of how well the tailored resume fits the JD. Do not inflate it.
+  6. Give 3-4 key tailoring insights, the JD skills you used, and important JD skills the candidate is missing or weak in.
+  7. You MUST strictly return your response in the specified JSON structure. Do not wrap it in any HTML or markdown, only raw JSON matching the schema.`;
 
   const userPrompt = `Target Job Description / Role Guidelines:
   """
@@ -635,7 +686,8 @@ export async function tailorResumeWithGemini(resumeText, jobDescription, customA
       prompt: userPrompt,
       responseSchema: tailorSchema,
       customApiKey,
-      temperature: 0.25
+      temperature: 0.25,
+      maxTokens: 6000
     });
   } catch (error) {
     console.error('DeepSeek Tailor Error:', error);
@@ -741,14 +793,18 @@ ${coverLetterText}
  * @param {string} [params.customApiKey] - Optional API key.
  * @returns {Promise<string>} - Fully populated resume HTML.
  */
-export async function generateResumeWithGemini({ templateHtml, formData, customApiKey = null }) {
+export async function generateResumeWithGemini({ templateHtml, formData, customApiKey = null, keepFacts = false }) {
+  // Tailored data is already rewritten for a job; expanding it again would add claims the candidate never made.
+  const contentRule = keepFacts
+    ? '3. Use the provided content as written. Do NOT add responsibilities, metrics, skills or achievements that are not in the data. If a template section has no matching data, remove that section\'s placeholder content.'
+    : '3. Enhance the provided work experience descriptions. Rewrite them to be extremely professional, high-impact, and metrics-driven (use action verbs like Led, Spearheaded, Optimized, Engineered, etc.). If descriptions are sparse, expand them with professional responsibilities typical for that job title.';
   const systemPrompt = `You are an elite professional resume writer, ATS optimization expert, and corporate recruiter.
 Your task is to take a raw HTML resume template and populate it with beautifully written, professional, and ATS-optimized content based on the user's details.
 
 CRITICAL RULES:
 1. You MUST preserve the exact HTML structure, tags, CSS inline styles, wrappers, tables, columns, divisions, fonts, and colors of the template. Do NOT add new main wrapper containers, outer boundaries, or alter layout structure.
 2. Only replace the placeholder values (such as "YOUR NAME", "The role you are applying for?", "john.doe@email.com", job titles, dates, locations, bullet points, school names, university names, skill lists, professional summaries, key achievements, languages, etc.) with the user's actual information.
-3. Enhance the provided work experience descriptions. Rewrite them to be extremely professional, high-impact, and metrics-driven (use action verbs like Led, Spearheaded, Optimized, Engineered, etc.). If descriptions are sparse, expand them with professional responsibilities typical for that job title.
+${contentRule}
 4. If the template contains a KEY ACHIEVEMENTS section, populate it with the user's top achievements or high-impact projects, keeping all SVG icons and dashed borders intact.
 5. If the template contains a LANGUAGES section with visual dot indicators, keep the dot indicators and populate with the user's languages.
 6. If the template contains a MY TIME section / Donut chart, update the legend activities (A to F) to reflect the candidate's actual day-to-day focus areas (e.g. System Architecture, Sprint Planning, Code Reviews, Client Demos, Mentorship, Innovation).

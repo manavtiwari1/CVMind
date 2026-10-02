@@ -1,727 +1,729 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  AlertTriangle, ArrowLeft, ArrowRight, ArrowUpDown, CheckCircle2, ChevronDown, Download, FileText, Home,
+  LayoutTemplate, Link2, Loader2, Lock, Palette, PencilLine, RefreshCw, Share2, Sparkles, Target, Upload, Wand2, X,
+} from 'lucide-react';
+import TemplatePreview from '../components/TemplatePreview';
+import ResumeDownload from '../components/ResumeDownload';
+import { RESUME_TEMPLATES, TEMPLATES, type Template } from '../data/resumeTemplates';
 import { authFetch } from '../lib/authFetch';
-import { Upload, FileText, ChevronRight, Check, Copy, Sparkles, BrainCircuit, RefreshCw, Cpu, CheckCircle2, ShieldCheck, FileCheck, Download, ChevronDown, Link } from 'lucide-react';
+import { API_BASE } from '../lib/apiBase';
+import { readUser } from '../lib/currentUser';
+import { GOOGLE_FONTS_HREF } from '../lib/resumeDesign';
+import { splitFooter, withFooter } from '../lib/resumeFooter';
+import { sanitizeResumeHtml } from '../lib/sanitizeHtml';
+import { parseSavedContent } from '../utils/savedWork';
 import { getErrorMessage } from '../utils/errors';
+import type { ExtractedResume, LoadedWork, SavedWork, WizardFormData } from '../types/api';
 import './Tailor.css';
 
 interface TailorProps {
   customApiKey: string;
+  setCurrentPage: (page: string) => void;
+  loadedWork: LoadedWork | null;
+  setLoadedWork: (work: LoadedWork | null) => void;
 }
 
 interface TailorResult {
-  tailoredResume: string;
   matchScore: number;
   keyTailoringInsights: string[];
   matchedSkills: string[];
   missingSkillsRecommended: string[];
+  tailoredData?: ExtractedResume;
+  generatedHtml?: string;
+  templateId?: string;
+  resumeText?: string;
 }
 
-export default function Tailor({ customApiKey }: TailorProps) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+// What the server saves for a tailor run (backend/src/index.js /api/tailor)
+interface SavedTailor {
+  fileName?: string;
+  jobDescription?: string;
+  resumeText?: string;
+  result?: TailorResult;
+  generatedHtml?: string;
+  templateId?: string;
+}
+
+const DEFAULT_TEMPLATE = 'cv-ivy-league';
+const PAGE_W = 794;
+const PAGE_H = 1123;
+
+const templateFor = (id?: string): Template =>
+  TEMPLATES.find(t => t.id === id) ?? TEMPLATES.find(t => t.id === DEFAULT_TEMPLATE) ?? RESUME_TEMPLATES[0];
+
+/** Fills the locked CVMind footer back in after the AI filled the template body. */
+const finishHtml = (generated: string, templateId?: string) =>
+  withFooter(sanitizeResumeHtml(generated), splitFooter(templateFor(templateId).html).footer);
+
+const toFormData = (d: ExtractedResume): WizardFormData => ({
+  personalInfo: {
+    fullName: d.personalInfo?.fullName || '', email: d.personalInfo?.email || '', phone: d.personalInfo?.phone || '',
+    location: d.personalInfo?.location || '', linkedin: d.personalInfo?.linkedin || '', jobTitle: d.personalInfo?.jobTitle || '',
+  },
+  jobTitle: d.personalInfo?.jobTitle || '',
+  summary: d.summary || '',
+  education: d.educations || [],
+  workExperiences: d.workExperiences || [],
+  skills: d.skills || [],
+  courses: d.courses || [],
+  languages: d.languages || [],
+  achievements: d.achievements || [],
+  timeBreakdown: [],
+});
+
+/** Plain text of the resume as laid out (used for TXT export). */
+function htmlToText(html: string): string {
+  const el = document.createElement('div');
+  el.style.cssText = `position:fixed;left:-10000px;top:0;width:${PAGE_W}px`;
+  el.innerHTML = html;
+  document.body.appendChild(el);
+  const text = el.innerText;
+  el.remove();
+  return text.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+/** AI skill lists sometimes come back as sentences; turn them into short chips. */
+function toChips(items: string[] | undefined): string[] {
+  if (!Array.isArray(items)) return [];
+  const out = new Set<string>();
+  for (const item of items) {
+    if (!item) continue;
+    const inner = item.match(/\((?:e\.g\.,?|such as)\s*(.*?)\)/i)?.[1];
+    const parts = inner || (item.length > 30 && /[,;]/.test(item)) ? (inner || item).split(/[,;]+/) : [item];
+    for (const p of parts) {
+      const clean = p.replace(/[()'"*#]/g, '').trim();
+      if (clean.length > 1 && clean.length < 36) out.add(clean);
+    }
+  }
+  return Array.from(out).slice(0, 15);
+}
+
+function scoreBand(score: number) {
+  if (score >= 75) return { label: 'Strong match', tone: 'good', text: 'Your tailored resume covers most of what this job asks for. Read it through and add any numbers only you know.' };
+  if (score >= 50) return { label: 'Good start', tone: 'ok', text: 'Several requirements are covered. Look at the missing skills and add the ones you really have.' };
+  return { label: 'Partial match', tone: 'low', text: 'This job asks for a lot your resume doesn\'t show yet. Add missing skills you have, or aim at roles closer to your experience.' };
+}
+
+const STEPS = [
+  { icon: Upload, title: 'Upload your CV', text: 'PDF, DOCX or TXT, or paste a Google Drive, Dropbox or OneDrive link.' },
+  { icon: Target, title: 'Paste the job description', text: 'The whole posting works best: responsibilities, requirements and skills.' },
+  { icon: Download, title: 'Download or keep editing', text: 'Get a designed PDF, Word or TXT file, or open it in the CVMind resume editor.' },
+];
+
+const CHANGES = [
+  'Summary rewritten for the role',
+  'Bullets reworded around what the job asks for',
+  'Relevant skills moved to the front',
+  'Keywords from the posting used where they are true for you',
+];
+const KEPT = [
+  'Companies, job titles and dates',
+  'Degrees, schools and grades',
+  'Every role and project you listed',
+  'No skills or numbers you never had',
+];
+
+const EDITOR_TOOLS = [
+  { icon: LayoutTemplate, title: 'Switch templates', text: 'Move your content into any CVMind template, A4 or US Letter.' },
+  { icon: Palette, title: 'Design & fonts', text: 'Accent colour, font, size, spacing and margins.' },
+  { icon: ArrowUpDown, title: 'Rearrange sections', text: 'Drag sections between columns and reorder entries.' },
+  { icon: Wand2, title: 'AI assistant', text: 'Fix wording, shorten bullets, or tailor again to another job.' },
+  { icon: PencilLine, title: 'Edit every line', text: 'Click any text to change it, add entries, links or a photo.' },
+  { icon: Share2, title: 'Share & export', text: 'PDF, Word, TXT, email to yourself, or a shareable link.' },
+];
+
+const FAQS = [
+  { q: 'Will it make things up?', a: 'It is told to keep your companies, titles, dates and degrees exactly as they are, and not to add skills or numbers you never had. AI can still get things wrong, so read the result before you send it. You can edit every line.' },
+  { q: 'What does the match score mean?', a: 'It is the AI\'s estimate of how well the tailored resume fits the job description, from 0 to 100. Use it as a rough guide, not a guarantee of how an ATS or recruiter will score you.' },
+  { q: 'Which formats can I download?', a: 'PDF, Word (.doc) and plain text. Signed-in users get a server-made PDF; otherwise your browser\'s "Save as PDF" is used. The PDF keeps selectable text, which ATS software can read.' },
+  { q: 'Why is there a CVMind footer?', a: 'Every resume made with CVMind templates carries a small "cvmind.in · Powered by CVMind" line at the bottom. It is locked in the editor and appears in the downloads.' },
+  { q: 'What happens to my CV and the job description?', a: 'The text of your CV and the job description are sent to our AI provider to write the tailored version. When you are signed in, the result is saved to your account so you can reopen it. We also keep a usage record (file name, score, skills and the job description). We don\'t sell your data.' },
+];
+
+const PHASES = ['Reading your CV', 'Matching it to the job', 'Filling your template'];
+
+/** The finished resume at real size, scaled to fit. Sandboxed with no scripts. */
+function ResumeSheet({ html }: { html: string }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  const [scale, setScale] = useState(0);
+  const [height, setHeight] = useState(PAGE_H);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const update = () => setScale(Math.min(1, el.clientWidth / PAGE_W));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const measure = () => {
+    const d = frameRef.current?.contentDocument;
+    if (d) setHeight(Math.max(PAGE_H, d.documentElement.scrollHeight));
+  };
+
+  const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="${GOOGLE_FONTS_HREF}">
+<style>:root{--rs-h:${PAGE_H}px}html,body{margin:0;background:#fff}body{font-family:Arial,sans-serif;font-size:13px;line-height:1.6;color:#111}*{box-sizing:border-box}</style>
+</head><body>${html}</body></html>`;
+
+  return (
+    <div ref={wrapRef} className="tlr-sheet" style={{ height: scale ? height * scale : undefined }}>
+      {scale > 0 && (
+        <iframe
+          ref={frameRef}
+          title="Tailored resume preview"
+          sandbox="allow-same-origin"
+          srcDoc={doc}
+          onLoad={() => { measure(); setTimeout(measure, 700); }}
+          style={{ width: PAGE_W, height, transform: `scale(${scale})` }}
+        />
+      )}
+    </div>
+  );
+}
+
+export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLoadedWork }: TailorProps) {
   const [uploadMode, setUploadMode] = useState<'file' | 'link'>('file');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [resumeUrl, setResumeUrl] = useState('');
   const [jobDescription, setJobDescription] = useState('');
+  const [templateId, setTemplateId] = useState(DEFAULT_TEMPLATE);
   const [dragActive, setDragActive] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState(0);
+  const [phase, setPhase] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [result, setResult] = useState<TailorResult | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedText, setEditedText] = useState('');
-
+  const [html, setHtml] = useState('');
+  const [resumeText, setResumeText] = useState('');
+  const [sourceName, setSourceName] = useState('');
+  const [showDownload, setShowDownload] = useState(false);
+  const [retemplating, setRetemplating] = useState(false);
+  const [handingOff, setHandingOff] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const toolRef = useRef<HTMLDivElement>(null);
+  const templatesRef = useRef<HTMLElement>(null);
 
-  const loaderSteps = [
-    'Reading original CV structures...',
-    'Parsing credentials & work history...',
-    'Matching keyword requirements from the JD...',
-    'Emphasizing high-impact accomplishments...',
-    'Injecting required industry skills naturally...',
-    'Generating polished, ATS-optimized layout...'
-  ];
+  // Full-bleed sections, like the resume builder landing page
+  useEffect(() => {
+    const main = document.querySelector('.main-content') as HTMLElement | null;
+    if (!main) return;
+    main.style.maxWidth = 'none';
+    main.style.padding = '0';
+    main.style.margin = '0';
+    return () => {
+      main.style.maxWidth = '';
+      main.style.padding = '';
+      main.style.margin = '';
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!loading) return;
+    const timers = [setTimeout(() => setPhase(1), 4000), setTimeout(() => setPhase(2), 14000)];
+    return () => timers.forEach(clearTimeout);
+  }, [loading]);
+
+  // Reopen a saved tailor run from Account / documents. Local state is adjusted during render;
+  // clearing the parent's one-shot loadedWork happens in the effect below.
+  const [handledWork, setHandledWork] = useState<LoadedWork | null>(null);
+  if (loadedWork && loadedWork !== handledWork) {
+    setHandledWork(loadedWork);
+    if (!loadedWork.deleted && loadedWork.type === 'resume-tailor') {
+      const saved = parseSavedContent<SavedTailor>(loadedWork.htmlContent);
+      if (saved?.result) {
+        const tid = saved.templateId || DEFAULT_TEMPLATE;
+        setResult({ ...saved.result, templateId: tid });
+        setHtml(saved.generatedHtml ? finishHtml(saved.generatedHtml, tid) : '');
+        setTemplateId(tid);
+        setJobDescription(saved.jobDescription || '');
+        setResumeText(saved.resumeText || '');
+        setSourceName(saved.fileName || '');
+        setErrorMsg(null);
+      }
+    }
+  }
+  useEffect(() => {
+    if (loadedWork) setLoadedWork(null);
+  }, [loadedWork, setLoadedWork]);
+
+  const validateFile = (file: File) => {
+    setErrorMsg(null);
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (!ext || !['pdf', 'docx', 'txt'].includes(ext)) {
+      setErrorMsg('Please upload a PDF, DOCX or TXT file.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMsg('That file is over 5 MB. Please upload a smaller one.');
+      return;
+    }
+    setSelectedFile(file);
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
+    setDragActive(e.type === 'dragenter' || e.type === 'dragover');
   };
 
   const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+    handleDrag(e);
     setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      validateFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      validateFile(e.target.files[0]);
-    }
-  };
-
-  const validateFile = (file: File) => {
-    setErrorMsg(null);
-    const allowed = ['pdf', 'docx', 'txt'];
-    const ext = file.name.split('.').pop()?.toLowerCase();
-
-    if (!ext || !allowed.includes(ext)) {
-      setErrorMsg('Invalid file type. Please upload a PDF, DOCX, or TXT file.');
-      setSelectedFile(null);
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMsg('File is too large. Max size is 5MB.');
-      setSelectedFile(null);
-      return;
-    }
-
-    setSelectedFile(file);
-  };
-
-  const triggerUpload = () => {
-    fileInputRef.current?.click();
+    if (e.dataTransfer.files?.[0]) validateFile(e.dataTransfer.files[0]);
   };
 
   const removeFile = () => {
     setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleTailor = async () => {
-    if (uploadMode === 'file' && !selectedFile) {
-      setErrorMsg('Please upload your current CV first.');
-      return;
-    }
-    if (uploadMode === 'link' && !resumeUrl.trim()) {
-      setErrorMsg('Please paste a link to your CV.');
-      return;
-    }
-    if (!jobDescription.trim() || jobDescription.trim().length < 15) {
-      setErrorMsg('Please paste a target Job Description (min 15 characters).');
-      return;
-    }
+  const apiHeaders = (json = false) => {
+    const h: Record<string, string> = json ? { 'Content-Type': 'application/json' } : {};
+    if (customApiKey) h['x-gemini-key'] = customApiKey;
+    return h;
+  };
 
+  /** Runs the tailor. With `fromText`, re-uses the CV text read on an earlier run instead of the file. */
+  const runTailor = async (jd: string, fromText = '') => {
+    if (!fromText && uploadMode === 'file' && !selectedFile) { setErrorMsg('Please upload your CV first.'); return; }
+    if (!fromText && uploadMode === 'link' && !resumeUrl.trim()) { setErrorMsg('Please paste a link to your CV.'); return; }
+    if (jd.trim().length < 15) { setErrorMsg('Please paste the job description (at least a few lines).'); return; }
+
+    const template = templateFor(templateId);
+    const form = new FormData();
+    if (fromText) form.append('resumeText', fromText);
+    else if (uploadMode === 'file' && selectedFile) form.append('resume', selectedFile);
+    else form.append('resumeUrl', resumeUrl.trim());
+    form.append('jobDescription', jd.trim());
+    form.append('templateHtml', splitFooter(template.html).body);
+    form.append('templateId', template.id);
+
+    setPhase(0);
     setLoading(true);
-    setLoadingStep(0);
     setErrorMsg(null);
-
-    const stepInterval = setInterval(() => {
-      setLoadingStep((prev) => {
-        if (prev < loaderSteps.length - 1) return prev + 1;
-        return prev;
-      });
-    }, 1500);
-
-    const formData = new FormData();
-    if (uploadMode === 'file' && selectedFile) {
-      formData.append('resume', selectedFile);
-    } else {
-      formData.append('resumeUrl', resumeUrl.trim());
-    }
-    formData.append('jobDescription', jobDescription.trim());
-
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
-      
-      const headers: Record<string, string> = {};
-      if (customApiKey) {
-        headers['x-gemini-key'] = customApiKey;
-      }
-
-      const response = await authFetch(`${baseUrl}/api/tailor`, {
-        method: 'POST',
-        headers,
-        body: formData
-      });
-
-      const resData = await response.json();
-
-      if (!response.ok) {
-        throw new Error(resData.error || 'Server error during tailoring');
-      }
-
-      if (resData.success && resData.data) {
-        setResult(resData.data);
-        setEditedText(resData.data.tailoredResume);
-        setIsEditing(false);
-      } else {
-        throw new Error('Completed, but failed to retrieve tailored output.');
-      }
+      const res = await authFetch(`${API_BASE}/api/tailor`, { method: 'POST', headers: apiHeaders(), body: form });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Tailoring failed. Please try again.');
+      const data: TailorResult = body.data;
+      if (!data?.generatedHtml) throw new Error('We tailored your CV but could not lay it out. Please try again.');
+      setResult(data);
+      setHtml(finishHtml(data.generatedHtml, data.templateId || template.id));
+      setResumeText(data.resumeText || fromText);
+      if (!fromText) setSourceName(selectedFile?.name || 'Linked CV');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      console.error(err);
       setErrorMsg(getErrorMessage(err) || 'Something went wrong on our side. Please try again in a moment.');
     } finally {
-      clearInterval(stepInterval);
       setLoading(false);
     }
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(editedText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const changeTemplate = async (id: string) => {
+    if (!result?.tailoredData || id === result.templateId || retemplating) return;
+    const template = templateFor(id);
+    setRetemplating(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/resume/generate`, {
+        method: 'POST',
+        headers: apiHeaders(true),
+        body: JSON.stringify({ templateHtml: splitFooter(template.html).body, formData: toFormData(result.tailoredData), keepFacts: true }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || !body.data?.generatedHtml) throw new Error(body.error || 'Could not switch the template.');
+      const generated = String(body.data.generatedHtml).replace(/^```(?:html)?\s*/i, '').replace(/```\s*$/, '');
+      setHtml(finishHtml(generated, template.id));
+      setResult({ ...result, templateId: template.id });
+      setTemplateId(template.id);
+    } catch (err) {
+      setErrorMsg(getErrorMessage(err) || 'Could not switch the template.');
+    } finally {
+      setRetemplating(false);
+    }
   };
 
-  const convertResumeTextToHTML = (text: string) => {
-    const lines = text.split('\n');
-    let html = '';
-    let inList = false;
-    
-    let name = '';
-    const contactLines: string[] = [];
-    let bodyStartIndex = 0;
-    
-    for (let i = 0; i < Math.min(lines.length, 6); i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
-      
-      if (/summary|skills|competencies|internship|experience|employment|responsibility|education|projects|certifications|achievements/i.test(line)) {
-        bodyStartIndex = i;
-        break;
-      }
-      
-      if (!name && line.length > 2 && line.length < 40 && !line.includes('|') && !line.includes('@') && !line.includes(':') && !line.includes('Phone')) {
-        name = line;
-        bodyStartIndex = i + 1;
-      } else if (line.includes('@') || line.includes('|') || line.includes('Phone') || line.includes('Email') || line.includes('LinkedIn') || line.includes('github.com')) {
-        contactLines.push(line);
-        bodyStartIndex = i + 1;
-      }
-    }
-
-    if (!name && lines[0]) {
-      name = lines[0].trim().replace(/[#*]/g, '');
-      bodyStartIndex = 1;
-    }
-
-    html += '<div class="resume-header">';
-    html += '<h1 class="candidate-name">' + name + '</h1>';
-    if (contactLines.length > 0) {
-      const contactText = contactLines.join(' | ').replace(/\s*\|\s*\|\s*/g, ' | ');
-      html += '<div class="contact-info">' + contactText + '</div>';
-    }
-    html += '</div>';
-    html += '<hr class="header-divider"/>';
-
-    for (let i = bodyStartIndex; i < lines.length; i++) {
-      let line = lines[i].trim();
-      if (!line) {
-        if (inList) {
-          html += '</ul>';
-          inList = false;
-        }
-        continue;
-      }
-
-      line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-      line = line.replace(/\*(.*?)\*/g, '<em>$1</em>');
-
-      const cleanHeaderLine = line.replace(/^[#\s\-*]+/, '').replace(/<[^>]*>/g, '').trim();
-      const isSectionHeader = /^(professional\s+)?summary$|^(technical\s+)?skills$|^(core\s+)?competencies$|^internship$|^(work\s+)?experience$|^(professional\s+)?experience$|^employment\s+history$|^position(s)?\s+of\s+responsibility$|^education$|^(academic\s+)?projects$|^projects$|^certifications$|^achievements$/i.test(cleanHeaderLine);
-
-      if (isSectionHeader) {
-        if (inList) {
-          html += '</ul>';
-          inList = false;
-        }
-        html += '<h2 class="section-title">' + cleanHeaderLine.toUpperCase() + '</h2>';
-        continue;
-      }
-
-      const isListItem = /^[•\-*\s]+/.test(lines[i]) || line.startsWith('-') || line.startsWith('*');
-      if (isListItem) {
-        const cleanContent = line.replace(/^[•\-*\s]+/, '').trim();
-        if (!inList) {
-          html += '<ul class="bullet-list">';
-          inList = true;
-        }
-        html += '<li>' + cleanContent + '</li>';
-      } else {
-        if (inList) {
-          html += '</ul>';
-          inList = false;
-        }
-        
-        if (line.includes('|') || line.includes(' - ') || line.includes('Present') || line.includes('202')) {
-          html += '<div class="info-line">' + line + '</div>';
-        } else {
-          html += '<p class="normal-paragraph">' + line + '</p>';
-        }
-      }
-    }
-
-    if (inList) {
-      html += '</ul>';
-    }
-
-    return html;
-  };
-
-  const handleDownloadDocx = () => {
-    const header = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
-      '<head>' +
-      '<title>Tailored Resume</title>' +
-      '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->' +
-      '<style>' +
-      'body { font-family: Arial, sans-serif; font-size: 10.5pt; line-height: 1.4; color: #111111; margin: 1in; }' +
-      '.resume-header { text-align: center; margin-bottom: 8px; }' +
-      '.candidate-name { font-size: 20pt; font-weight: bold; color: #102a43; margin-bottom: 4px; }' +
-      '.contact-info { font-size: 9.5pt; color: #486581; }' +
-      '.header-divider { border-top: 2px solid #102a43; height: 0; margin-bottom: 12px; }' +
-      '.section-title { font-size: 11pt; font-weight: bold; color: #102a43; text-transform: uppercase; border-bottom: 1.5px solid #102a43; padding-bottom: 2px; margin-top: 14px; margin-bottom: 6px; }' +
-      '.bullet-list { margin-bottom: 6px; padding-left: 20px; }' +
-      '.bullet-list li { font-size: 10.5pt; color: #243e56; margin-bottom: 3px; }' +
-      '.info-line { font-weight: bold; font-size: 10.5pt; color: #102a43; margin-top: 6px; margin-bottom: 3px; }' +
-      '.normal-paragraph { font-size: 10.5pt; color: #243e56; margin-bottom: 6px; text-align: justify; }' +
-      '</style>' +
-      '</head>' +
-      '<body>';
-    const footer = '</body></html>';
-    const formattedBody = convertResumeTextToHTML(editedText);
-    const html = header + formattedBody + footer;
-    const blob = new Blob(['\ufeff' + html], {
-      type: 'application/msword'
-    });
-    
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const filename = selectedFile ? selectedFile.name.split('.').slice(0, -1).join('.') + '_Tailored.doc' : 'Tailored_Resume.doc';
-    a.download = filename;
+  const downloadWord = (fileName: string) => {
+    const doc = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'><title>Resume</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
+<style>body{font-family:Arial,sans-serif;margin:1in;}@page{margin:1in;}</style>
+</head><body>${html}</body></html>`;
+    const url = URL.createObjectURL(new Blob(['﻿', doc], { type: 'application/msword' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: `${fileName}.doc` });
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
   };
 
-  const handleDownloadPDF = () => {
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    document.body.appendChild(iframe);
-
-    const doc = iframe.contentWindow?.document || iframe.contentDocument;
-    if (!doc) return;
-
-    const htmlContent = '<html>' +
-      '<head>' +
-      '<title>Tailored_Resume</title>' +
-      '<style>' +
-      '@page { size: A4; margin: 20mm; }' +
-      'body { font-family: Arial, Helvetica, sans-serif; font-size: 10.5pt; line-height: 1.45; color: #1a1a1a; background: #ffffff; padding: 0; margin: 0; }' +
-      '.resume-header { text-align: center; margin-bottom: 8px; }' +
-      '.candidate-name { font-size: 20pt; font-weight: 800; color: #102a43; margin: 0 0 4px; }' +
-      '.contact-info { font-size: 9.5pt; color: #486581; margin: 0; font-weight: 500; }' +
-      '.header-divider { border: 0; border-top: 2px solid #102a43; margin: 8px 0 12px; }' +
-      '.section-title { font-size: 11pt; font-weight: 800; color: #102a43; text-transform: uppercase; border-bottom: 1.5px solid #102a43; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px; letter-spacing: 0.02em; }' +
-      '.bullet-list { margin: 0 0 6px; padding-left: 20px; list-style-type: disc; }' +
-      '.bullet-list li { margin-bottom: 3px; font-size: 10.5pt; color: #243e56; text-align: justify; }' +
-      '.info-line { font-weight: bold; font-size: 10.5pt; color: #102a43; margin-top: 6px; margin-bottom: 3px; }' +
-      '.normal-paragraph { font-size: 10.5pt; color: #243e56; margin: 0 0 6px; text-align: justify; }' +
-      'strong { color: #102a43; font-weight: bold; }' +
-      '</style>' +
-      '</head>' +
-      '<body>' +
-      convertResumeTextToHTML(editedText) +
-      '<script>' +
-      'window.onload = function() {' +
-      '  window.print();' +
-      '  setTimeout(function() {' +
-      '    window.frameElement.remove();' +
-      '  }, 100);' +
-      '};' +
-      '</script>' +
-      '</body>' +
-      '</html>';
-
-    doc.write(htmlContent);
-    doc.close();
-  };
-
-  const parseSkillsBadges = (skillsArray: string[] | undefined): string[] => {
-    if (!skillsArray || !Array.isArray(skillsArray)) return [];
-    
-    let processed: string[] = [];
-    
-    skillsArray.forEach(item => {
-      if (!item) return;
-      
-      const itemLower = item.toLowerCase();
-      
-      if ((item.includes(',') || item.includes(';')) && (item.length > 30 || itemLower.includes('related to') || itemLower.includes('such as') || itemLower.includes('e.g.'))) {
-        let listText = item;
-        const egi = item.search(/\((e\.g\.|such as)/i);
-        if (egi !== -1) {
-          const match = item.substring(egi).match(/\((.*?)\)/);
-          if (match && match[1]) {
-            listText = match[1].replace(/e\.g\.,?\s*|such as\s*/i, '');
-          }
-        }
-        
-        const parts = listText.split(/[,;]+/);
-        parts.forEach(part => {
-          const cleanPart = part.replace(/[()'".*]/g, '').trim();
-          if (cleanPart && cleanPart.length > 1 && cleanPart.length < 35 && !/specific|related|skills|begging|e\.g\./i.test(cleanPart)) {
-            processed.push(cleanPart);
-          }
+  const openInEditor = async () => {
+    if (!result || !html || handingOff) return;
+    setHandingOff(true);
+    const template = templateFor(result.templateId);
+    const name = result.tailoredData?.personalInfo?.fullName?.trim();
+    const title = (name ? `${name} - Tailored Resume` : `Tailored Resume - ${template.name}`).slice(0, 120);
+    let work: SavedWork = { title, type: 'resume', templateId: template.id, htmlContent: html };
+    const user = readUser();
+    const userId = user?.id || user?._id;
+    if (userId) {
+      // Saved first so it shows up in My Documents straight away
+      try {
+        const res = await authFetch(`${API_BASE}/api/user/work`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, title, type: 'resume', templateId: template.id, htmlContent: html }),
         });
-      } else {
-        const clean = item.replace(/[()'".*]/g, '').trim();
-        if (clean && clean.length > 1 && clean.length < 35) {
-          processed.push(clean);
-        }
+        const body = await res.json();
+        if (res.ok && body.data) work = { ...work, ...body.data, htmlContent: html };
+      } catch (err) {
+        console.error('Could not save the tailored resume before opening the editor:', err);
       }
-    });
-
-    processed = Array.from(new Set(processed));
-    
-    if (processed.length === 0) {
-      skillsArray.forEach(item => {
-        const clean = item.replace(/[#*]/g, '').trim();
-        if (clean) processed.push(clean.substring(0, 40));
-      });
     }
-    
-    return processed.slice(0, 15);
+    setLoadedWork(work);
+    setCurrentPage('resume-editor');
   };
 
-  const handleReset = () => {
+  const reset = () => {
     setResult(null);
+    setHtml('');
+    setResumeText('');
     setJobDescription('');
     setResumeUrl('');
+    setErrorMsg(null);
     removeFile();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  return (
-    <div className="tailor-page-container animate-fade-in-up">
-      <div className="tailor-stage" aria-hidden="true">
-        <div className="stage-glow-left"></div>
-        <div className="stage-glow-right"></div>
-      </div>
+  const goToTool = () => toolRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const chosen = templateFor(templateId);
+  const canSubmit = !loading && (uploadMode === 'file' ? Boolean(selectedFile) : Boolean(resumeUrl.trim())) && jobDescription.trim().length >= 15;
 
-      <header className="tailor-header">
-        <div className="tailor-badge">
-          <Cpu size={14} /> AI Tailorer Console
+  // ── RESULT ───────────────────────────────────────────────────
+  if (result) {
+    const band = scoreBand(result.matchScore || 0);
+    const matched = toChips(result.matchedSkills);
+    const missing = toChips(result.missingSkillsRecommended);
+    const score = Math.max(0, Math.min(100, Math.round(result.matchScore || 0)));
+    return (
+      <div className="tlr tlr-result">
+        <div className="tlr-wrap">
+          <div className="tlr-result-top">
+            <button type="button" className="tlr-back" onClick={reset}><ArrowLeft size={16} /> Tailor another resume</button>
+            <div>
+              <h1>Your tailored resume</h1>
+              <p>{sourceName ? `${sourceName} · ` : ''}{templateFor(result.templateId).name} template</p>
+            </div>
+          </div>
+
+          {errorMsg && <div className="tlr-error" role="alert"><AlertTriangle size={16} /> {errorMsg}</div>}
+
+          <div className="tlr-result-grid">
+            <div className="tlr-paper">
+              {html ? (
+                <div className={retemplating ? 'is-busy' : undefined}>
+                  <ResumeSheet html={html} />
+                  {retemplating && <div className="tlr-paper-busy"><Loader2 size={22} className="tlr-spin" /> Switching template…</div>}
+                </div>
+              ) : (
+                <div className="tlr-paper-empty">
+                  <FileText size={28} />
+                  <h3>This tailor was saved before designed resumes were added</h3>
+                  <p>Run it again to get a resume in a CVMind template that you can download or edit.</p>
+                  <button type="button" className="tlr-btn" disabled={loading || !resumeText} onClick={() => runTailor(jobDescription, resumeText)}>
+                    {loading ? <><Loader2 size={16} className="tlr-spin" /> {PHASES[phase]}…</> : <><RefreshCw size={16} /> Run it again</>}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <aside className="tlr-side">
+              <section className="tlr-card tlr-actions">
+                <button type="button" className="tlr-btn tlr-btn--block" disabled={!html || handingOff} onClick={openInEditor}>
+                  {handingOff ? <Loader2 size={17} className="tlr-spin" /> : <PencilLine size={17} />} Edit in CVMind Resume Editor
+                </button>
+                <button type="button" className="tlr-btn tlr-btn--outline tlr-btn--block" disabled={!html} onClick={() => setShowDownload(true)}>
+                  <Download size={17} /> Download PDF, Word or TXT
+                </button>
+                <p className="tlr-fine"><Lock size={12} /> The cvmind.in · Powered by CVMind footer stays on every page.</p>
+                {!readUser() && <p className="tlr-fine">Sign in to save it to My Documents.</p>}
+              </section>
+
+              <section className={`tlr-card tlr-score tlr-score--${band.tone}`}>
+                <div className="tlr-ring" style={{ '--p': score } as React.CSSProperties}>
+                  <b>{score}<small>%</small></b>
+                </div>
+                <div>
+                  <span className="tlr-score-label">{band.label}</span>
+                  <p>{band.text}</p>
+                  <small className="tlr-fine">Estimated by AI. Use it as a guide.</small>
+                </div>
+              </section>
+
+              {result.tailoredData && (
+                <section className="tlr-card">
+                  <h3>Template</h3>
+                  <div className="tlr-mini-templates">
+                    {RESUME_TEMPLATES.slice(0, 8).map(t => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        className={`tlr-mini${t.id === result.templateId ? ' is-on' : ''}`}
+                        onClick={() => changeTemplate(t.id)}
+                        disabled={retemplating}
+                        aria-pressed={t.id === result.templateId}
+                        title={t.name}
+                      >
+                        <TemplatePreview html={t.html} name={t.name} aspect="1 / 1.2" />
+                        <span>{t.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {(matched.length > 0 || missing.length > 0) && (
+                <section className="tlr-card">
+                  {matched.length > 0 && (
+                    <>
+                      <h3>Skills from the job you now show</h3>
+                      <div className="tlr-chips">{matched.map(s => <span key={s} className="tlr-chip tlr-chip--ok">{s}</span>)}</div>
+                    </>
+                  )}
+                  {missing.length > 0 && (
+                    <>
+                      <h3 className={matched.length ? 'tlr-mt' : undefined}>Missing or weak</h3>
+                      <p className="tlr-fine">Add these only if you really have them.</p>
+                      <div className="tlr-chips">{missing.map(s => <span key={s} className="tlr-chip tlr-chip--miss">{s}</span>)}</div>
+                    </>
+                  )}
+                </section>
+              )}
+
+              {result.keyTailoringInsights?.length > 0 && (
+                <section className="tlr-card">
+                  <h3>What changed</h3>
+                  <ul className="tlr-list">
+                    {result.keyTailoringInsights.map(i => <li key={i}><CheckCircle2 size={15} />{i}</li>)}
+                  </ul>
+                </section>
+              )}
+            </aside>
+          </div>
         </div>
-        <h1 className="tailor-title">Tailor Your Resume to Any Job</h1>
-        <p className="tailor-subtitle">
-          Upload your CV, paste your target Job Description (JD), and let our artificial corporate recruiter craft a beautifully aligned, ATS-perfect resume.
-        </p>
-      </header>
 
-      {!result ? (
-        <div className="tailor-workspace">
-          <div className="tailor-inputs-wrapper glass-card">
-            <h2 className="workspace-card-title">1. Upload Your Current CV</h2>
+        {showDownload && (
+          <ResumeDownload
+            defaultName={result.tailoredData?.personalInfo?.fullName ? `${result.tailoredData.personalInfo.fullName} Resume` : 'Tailored Resume'}
+            paper="a4"
+            getHtml={() => html}
+            getText={() => htmlToText(html)}
+            customApiKey={customApiKey}
+            onWord={downloadWord}
+            onScan={jd => { setShowDownload(false); setJobDescription(jd); if (resumeText) runTailor(jd, resumeText); }}
+            onClose={() => setShowDownload(false)}
+          />
+        )}
+      </div>
+    );
+  }
 
-            {/* Mode toggle */}
-            <div className="upload-mode-toggle" style={{ marginBottom: '0.75rem' }}>
-              <button
-                className={`upload-mode-btn${uploadMode === 'file' ? ' active' : ''}`}
-                onClick={() => { setUploadMode('file'); setErrorMsg(null); }}
-                disabled={loading}
-              >
-                <Upload size={14} /> Upload File
+  // ── INTRO + TOOL ─────────────────────────────────────────────
+  return (
+    <div className="tlr">
+      <section className="tlr-hero">
+        <div className="tlr-wrap tlr-hero-grid">
+          <div className="tlr-hero-copy">
+            <nav className="tlr-crumb" aria-label="Breadcrumb">
+              <button type="button" onClick={() => setCurrentPage('home')} aria-label="Home"><Home size={14} /></button>
+              <span aria-hidden="true">›</span>
+              <span>Resume Tailorer</span>
+            </nav>
+            <h1>Tailor your resume to <em>the job you want</em></h1>
+            <ul className="tlr-checks">
+              <li><CheckCircle2 size={18} />Upload your CV and paste the job description. AI rewrites your summary, bullets and skills around what the job asks for.</li>
+              <li><CheckCircle2 size={18} />Your facts stay yours: companies, titles, dates and degrees are kept as they are.</li>
+              <li><CheckCircle2 size={18} />Get it in a CVMind template. Download PDF, Word or TXT, or keep editing in the resume editor.</li>
+            </ul>
+            <p className="tlr-note">Free to try. No card needed.</p>
+          </div>
+
+          <div className="tlr-tool" ref={toolRef}>
+            <div className="tlr-tool-step">
+              <span className="tlr-num">1</span>
+              <h2>Your current CV</h2>
+            </div>
+            <div className="tlr-toggle" role="tablist" aria-label="How to add your CV">
+              <button type="button" role="tab" aria-selected={uploadMode === 'file'} className={uploadMode === 'file' ? 'is-on' : ''} onClick={() => { setUploadMode('file'); setErrorMsg(null); }} disabled={loading}>
+                <Upload size={14} /> Upload file
               </button>
-              <button
-                className={`upload-mode-btn${uploadMode === 'link' ? ' active' : ''}`}
-                onClick={() => { setUploadMode('link'); setErrorMsg(null); }}
-                disabled={loading}
-              >
-                <Link size={14} /> Paste Link
+              <button type="button" role="tab" aria-selected={uploadMode === 'link'} className={uploadMode === 'link' ? 'is-on' : ''} onClick={() => { setUploadMode('link'); setErrorMsg(null); }} disabled={loading}>
+                <Link2 size={14} /> Paste link
               </button>
             </div>
 
             {uploadMode === 'file' ? (
-              <div
-                className={`tailor-upload-zone ${dragActive ? 'drag-active' : ''} ${selectedFile ? 'has-file' : ''} ${loading ? 'is-loading' : ''}`}
-                onDragEnter={handleDrag}
-                onDragOver={handleDrag}
-                onDragLeave={handleDrag}
-                onDrop={handleDrop}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  className="tailor-hidden-input"
-                  accept=".pdf,.docx,.txt"
-                  onChange={handleFileChange}
-                  disabled={loading}
-                />
-                {loading ? (
-                  <div className="skeleton-loading-state">
-                    <div className="skeleton-header-mini">
-                      <p className="skeleton-step-label">{loaderSteps[loadingStep]}</p>
-                      <div className="sk-loader-progress" style={{ width: 'min(260px,100%)' }}>
-                        <div className="sk-loader-progress-fill" style={{ width: `${((loadingStep + 1) / loaderSteps.length) * 100}%` }} />
-                      </div>
-                    </div>
-                    <div className="skeleton-preview">
-                      <div className="skeleton-score-row">
-                        <div className="skeleton-circle skeleton-pulse" />
-                        <div className="skeleton-score-text">
-                          <div className="skeleton-mini-line skeleton-pulse" style={{ width: '100px', height: '13px' }} />
-                          <div className="skeleton-mini-line skeleton-pulse" style={{ width: '68px', height: '10px' }} />
-                        </div>
-                      </div>
-                      <div className="skeleton-bars-mini">
-                        {[85, 70, 58, 44].map((w, i) => (
-                          <div key={i} className="skeleton-bar-row-mini">
-                            <div className="skeleton-bar-label-mini skeleton-pulse" style={{ width: `${36 + i * 8}px` }} />
-                            <div className="skeleton-bar-track-mini">
-                              <div className="skeleton-bar-fill-mini skeleton-pulse" style={{ width: `${w}%` }} />
-                            </div>
-                            <div className="skeleton-bar-pct-mini skeleton-pulse" />
-                          </div>
-                        ))}
-                      </div>
-                      <div className="skeleton-chips-mini">
-                        <div className="skeleton-chip-mini skeleton-pulse" />
-                        <div className="skeleton-chip-mini skeleton-pulse" />
-                      </div>
-                    </div>
-                  </div>
-                ) : selectedFile ? (
-                  <div className="tailor-file-details">
-                    <div className="tailor-file-icon"><FileText size={32} /></div>
-                    <div className="tailor-file-meta">
-                      <span className="file-name">{selectedFile.name}</span>
-                      <span className="file-size">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
-                    </div>
-                    <button className="btn-secondary remove-file-btn" onClick={removeFile}>Remove File</button>
-                  </div>
-                ) : (
-                  <div className="tailor-prompt" onClick={triggerUpload}>
-                    <Upload className="upload-icon" />
-                    <button className="upload-cta-btn" type="button">Select CV File</button>
-                    <p className="file-formats-note">PDF, DOCX, or TXT (Max 5MB)</p>
-                  </div>
-                )}
-              </div>
+              selectedFile ? (
+                <div className="tlr-file">
+                  <FileText size={22} />
+                  <div><strong>{selectedFile.name}</strong><small>{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</small></div>
+                  <button type="button" onClick={removeFile} disabled={loading} aria-label="Remove file"><X size={16} /></button>
+                </div>
+              ) : (
+                <label
+                  className={`tlr-drop${dragActive ? ' is-drag' : ''}`}
+                  onDragEnter={handleDrag}
+                  onDragOver={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDrop={handleDrop}
+                >
+                  <input ref={fileInputRef} type="file" accept=".pdf,.docx,.txt" onChange={e => e.target.files?.[0] && validateFile(e.target.files[0])} disabled={loading} />
+                  <Upload size={22} />
+                  <span><b>Choose a file</b> or drag it here</span>
+                  <small>PDF, DOCX or TXT · up to 5 MB</small>
+                </label>
+              )
             ) : (
-              <div className="tailor-upload-zone link-input-zone" style={{ cursor: 'default', minHeight: '140px' }}>
-                {loading ? (
-                  <div className="skeleton-loading-state">
-                    <div className="skeleton-header-mini">
-                      <p className="skeleton-step-label">{loaderSteps[loadingStep]}</p>
-                      <div className="sk-loader-progress" style={{ width: 'min(260px,100%)' }}>
-                        <div className="sk-loader-progress-fill" style={{ width: `${((loadingStep + 1) / loaderSteps.length) * 100}%` }} />
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="link-input-state">
-                    <Link size={24} className="link-input-icon" />
-                    <p className="link-input-label">Paste a shareable link to your CV</p>
-                    <input
-                      type="url"
-                      className="resume-link-input"
-                      placeholder="https://drive.google.com/... or any direct PDF/DOCX link"
-                      value={resumeUrl}
-                      onChange={(e) => setResumeUrl(e.target.value)}
-                      disabled={loading}
-                    />
-                    <p className="link-input-hint">Supports Google Drive, Dropbox, OneDrive, or any direct link</p>
-                  </div>
-                )}
-              </div>
+              <input
+                type="url"
+                className="tlr-input"
+                placeholder="https://drive.google.com/… or a direct PDF/DOCX link"
+                value={resumeUrl}
+                onChange={e => setResumeUrl(e.target.value)}
+                disabled={loading}
+                aria-label="Link to your CV"
+              />
             )}
 
-            <h2 className="workspace-card-title mt-4">2. Paste Target Job Description (JD)</h2>
+            <div className="tlr-tool-step">
+              <span className="tlr-num">2</span>
+              <h2>The job description</h2>
+            </div>
             <textarea
-              className="tailor-textarea"
-              placeholder="Paste the target Job Description (JD), key responsibilities, or role guidelines here..."
+              className="tlr-textarea"
+              placeholder="Paste the full job posting: responsibilities, requirements and skills."
               value={jobDescription}
-              onChange={(e) => setJobDescription(e.target.value)}
+              onChange={e => setJobDescription(e.target.value)}
               disabled={loading}
+              aria-label="Job description"
             />
 
-            {errorMsg && (
-              <div className="tailor-error-banner animate-fade-in-up">
-                <span>{errorMsg}</span>
-              </div>
-            )}
+            <div className="tlr-tool-step">
+              <span className="tlr-num">3</span>
+              <h2>Template</h2>
+              <button type="button" className="tlr-link" onClick={() => templatesRef.current?.scrollIntoView({ behavior: 'smooth' })}>Change</button>
+            </div>
+            <div className="tlr-chosen">
+              <span className="tlr-chosen-dot" style={{ background: chosen.accent }} />
+              <strong>{chosen.name}</strong>
+              <small>{chosen.tag}</small>
+            </div>
 
-            <button
-              className="btn-primary tailor-submit-btn"
-              onClick={handleTailor}
-              disabled={loading || (uploadMode === 'file' ? !selectedFile : !resumeUrl.trim()) || !jobDescription.trim()}
-            >
-              Tailor Resume <ChevronRight size={18} />
+            {errorMsg && <div className="tlr-error" role="alert"><AlertTriangle size={16} /> {errorMsg}</div>}
+
+            <button type="button" className="tlr-btn tlr-btn--block tlr-btn--big" onClick={() => runTailor(jobDescription)} disabled={!canSubmit}>
+              {loading ? <><Loader2 size={18} className="tlr-spin" /> {PHASES[phase]}…</> : <><Sparkles size={18} /> Tailor my resume</>}
             </button>
-          </div>
-
-          <div className="tailor-features-card glass-card">
-            <h2 className="features-card-title"><Sparkles size={16} /> Targeted Optimization</h2>
-            <p className="features-card-desc">How our AI Tailorer transforms your application to pass the screening:</p>
-            
-            <div className="features-bullet-list">
-              <div className="features-bullet-item">
-                <CheckCircle2 className="bullet-icon-check" />
-                <div>
-                  <strong>Semantic Keyword Alignment:</strong>
-                  <p>Injects high-impact terms and technical stack requirements mentioned in the JD naturally into your profile.</p>
-                </div>
-              </div>
-              <div className="features-bullet-item">
-                <CheckCircle2 className="bullet-icon-check" />
-                <div>
-                  <strong>Achievement Tailoring:</strong>
-                  <p>Reframes your work history bullets to showcase accomplishments that match the primary responsibilities sought by the hiring team.</p>
-                </div>
-              </div>
-              <div className="features-bullet-item">
-                <CheckCircle2 className="bullet-icon-check" />
-                <div>
-                  <strong>ATS Integrity Protection:</strong>
-                  <p>Re-structures the resume sections strictly following standard structural headers (Summary, Skills, Experience, Education).</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="security-guarantee">
-              <ShieldCheck size={18} />
-              <span>Parsed securely in-memory. Zero data persistency.</span>
-            </div>
+            {loading && <p className="tlr-fine tlr-center">This usually takes 20 to 40 seconds.</p>}
           </div>
         </div>
-      ) : (
-        <div className="tailor-results-workspace">
-          <div className="results-toolbar">
-            <button className="btn-secondary reset-workspace-btn" onClick={handleReset}>
-              <RefreshCw size={14} /> Start Fresh
-            </button>
+      </section>
+
+      <section className="tlr-light">
+        <div className="tlr-wrap">
+          <p className="tlr-kicker">How it works</p>
+          <h2 className="tlr-center">Three steps to a resume written for the job</h2>
+          <ol className="tlr-steps">
+            {STEPS.map((s, i) => (
+              <li key={s.title}>
+                <span className="tlr-step-ico"><s.icon size={20} /></span>
+                <small>Step {i + 1}</small>
+                <h3>{s.title}</h3>
+                <p>{s.text}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section className="tlr-light tlr-light--tint">
+        <div className="tlr-wrap tlr-compare">
+          <div>
+            <span className="tlr-tag">What changes</span>
+            <h2>Rewritten around the job</h2>
+            <ul className="tlr-list">{CHANGES.map(c => <li key={c}><CheckCircle2 size={16} />{c}</li>)}</ul>
           </div>
-
-          <div className="results-split-pane">
-            {/* Left Pane - Tailored Resume text editor */}
-            <div className="results-editor-pane glass-card">
-              <div className="pane-header">
-                <h3><FileCheck size={18} className="highlight-cyan" /> Optimized Resume Draft</h3>
-                <div className="editor-controls">
-                  <button 
-                    className={`btn-secondary control-btn ${isEditing ? 'active-edit-mode' : ''}`} 
-                    onClick={() => setIsEditing(!isEditing)}
-                  >
-                    {isEditing ? 'Done Tweak' : 'Tweak Text'}
-                  </button>
-                  <button className="btn-secondary control-btn" onClick={handleCopy}>
-                    {copied ? <Check size={15} /> : <Copy size={15} />}
-                    {copied ? 'Copied' : 'Copy Text'}
-                  </button>
-
-                  <div className="download-dropdown-container">
-                    <button className="btn-primary control-btn download-toggle-btn">
-                      <Download size={14} /> Download <ChevronDown size={12} className="download-arrow" />
-                    </button>
-                    <div className="download-dropdown-menu glass-card">
-                      <button 
-                        className="download-dropdown-item"
-                        onClick={handleDownloadDocx}
-                      >
-                        <FileText size={14} className="dropdown-item-icon color-blue" />
-                        <span>Word Document (.doc)</span>
-                      </button>
-                      <button 
-                        className="download-dropdown-item"
-                        onClick={handleDownloadPDF}
-                      >
-                        <FileCheck size={14} className="dropdown-item-icon color-cyan" />
-                        <span>PDF Document (.pdf)</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="editor-workspace-container">
-                {isEditing ? (
-                  <textarea
-                    className="tailored-textarea-editor"
-                    value={editedText}
-                    onChange={(e) => setEditedText(e.target.value)}
-                  />
-                ) : (
-                  <pre className="tailored-resume-pre">{editedText}</pre>
-                )}
-              </div>
-            </div>
-
-            {/* Right Pane - Tailoring Metrics & Insights */}
-            <div className="results-insights-pane">
-              {/* Match Score Card */}
-              <div className="glass-card match-score-card">
-                <div className="gauge-wrapper" style={{ '--percentage': `${result.matchScore}%` } as React.CSSProperties}>
-                  <div className="gauge-content">
-                    <span className="gauge-number">{result.matchScore}%</span>
-                    <span className="gauge-label">Match Score</span>
-                  </div>
-                </div>
-                <div className="score-feedback">
-                  <h4>Excellent JD Alignment!</h4>
-                  <p>Your resume highlights the core requirements requested in the Job Description, greatly increasing call-back chances.</p>
-                </div>
-              </div>
-
-              {/* Keyword Badges */}
-              {((result.matchedSkills && parseSkillsBadges(result.matchedSkills).length > 0) || 
-                (result.missingSkillsRecommended && parseSkillsBadges(result.missingSkillsRecommended).length > 0)) && (
-                <div className="glass-card keywords-card">
-                  {result.matchedSkills && parseSkillsBadges(result.matchedSkills).length > 0 && (
-                    <>
-                      <h4><BrainCircuit size={16} /> Matched Skills & Keywords</h4>
-                      <div className="keyword-badges-grid">
-                        {parseSkillsBadges(result.matchedSkills).map((skill) => (
-                          <span key={skill} className="keyword-badge matched">{skill}</span>
-                        ))}
-                      </div>
-                    </>
-                  )}
-
-                  {result.missingSkillsRecommended && parseSkillsBadges(result.missingSkillsRecommended).length > 0 && (
-                    <>
-                      <h4 className={result.matchedSkills && parseSkillsBadges(result.matchedSkills).length > 0 ? "mt-4" : ""}><Sparkles size={16} /> Recommended Additions</h4>
-                      <div className="keyword-badges-grid">
-                        {parseSkillsBadges(result.missingSkillsRecommended).map((skill) => (
-                          <span key={skill} className="keyword-badge missing">{skill}</span>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Action Insights */}
-              <div className="glass-card insights-list-card">
-                <h4>AI Tailoring Insights</h4>
-                <div className="insights-checklist">
-                  {result.keyTailoringInsights.map((insight, idx) => (
-                    <div key={idx} className="insight-checklist-item">
-                      <Check className="check-bullet" />
-                      <span>{insight}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+          <div>
+            <span className="tlr-tag tlr-tag--kept">What stays the same</span>
+            <h2>Your facts, untouched</h2>
+            <ul className="tlr-list tlr-list--kept">{KEPT.map(c => <li key={c}><Lock size={15} />{c}</li>)}</ul>
           </div>
         </div>
-      )}
+      </section>
+
+      <section className="tlr-light" ref={templatesRef}>
+        <div className="tlr-wrap">
+          <h2 className="tlr-center">Choose the template for your tailored resume</h2>
+          <p className="tlr-center tlr-sub">Real layouts, rendered here as they will download. You can switch later, too.</p>
+          <div className="tlr-templates">
+            {RESUME_TEMPLATES.map(t => (
+              <button
+                key={t.id}
+                type="button"
+                className={`tlr-tpl${t.id === templateId ? ' is-on' : ''}`}
+                style={{ '--t': t.accent } as React.CSSProperties}
+                onClick={() => { setTemplateId(t.id); goToTool(); }}
+                aria-pressed={t.id === templateId}
+              >
+                <TemplatePreview html={t.html} name={t.name} />
+                <span className="tlr-tpl-name">{t.id === templateId && <CheckCircle2 size={15} />}{t.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="tlr-dark">
+        <div className="tlr-wrap">
+          <h2 className="tlr-center">Then keep going in the CVMind resume editor</h2>
+          <p className="tlr-center tlr-dark-sub">One click opens your tailored resume in the full editor, with every tool it has.</p>
+          <div className="tlr-tools">
+            {EDITOR_TOOLS.map(t => (
+              <div key={t.title} className="tlr-tool-item">
+                <t.icon size={20} />
+                <h3>{t.title}</h3>
+                <p>{t.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="tlr-light tlr-light--tint">
+        <div className="tlr-wrap tlr-faq">
+          <h2 className="tlr-center">Frequently asked questions</h2>
+          {FAQS.map((f, i) => (
+            <div key={f.q} className={`tlr-faq-item${openFaq === i ? ' is-open' : ''}`}>
+              <button type="button" aria-expanded={openFaq === i} onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+                <span>{f.q}</span><ChevronDown size={18} />
+              </button>
+              {openFaq === i && <p>{f.a}</p>}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="tlr-final">
+        <div className="tlr-wrap tlr-center">
+          <h2>Ready for your next application?</h2>
+          <p>Upload your CV, paste the job, and get a tailored resume in under a minute.</p>
+          <button type="button" className="tlr-btn tlr-btn--big" onClick={goToTool}>Tailor my resume <ArrowRight size={18} /></button>
+        </div>
+      </section>
     </div>
   );
 }

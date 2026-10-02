@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, CheckCircle2, Link2, Loader2, Search, Sparkles, Target, X, Zap } from 'lucide-react';
-import { authFetch } from '../lib/authFetch';
+import { authFetch, getSessionToken } from '../lib/authFetch';
 import { API_BASE } from '../lib/apiBase';
 import { getErrorMessage } from '../utils/errors';
 import { printResume } from '../lib/printPdf';
@@ -82,7 +82,8 @@ export default function ResumeDownload({ defaultName, paper, getHtml, getText, c
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ html: getHtml(), fileName, paper }),
       });
-      if (kind === 'pdf' && res.status === 503) {
+      // Signed-out users (e.g. on the Resume Tailorer) can't use the server PDF; print instead of failing
+      if (kind === 'pdf' && (res.status === 503 || (res.status === 401 && !getSessionToken()))) {
         await printInstead();
         return;
       }

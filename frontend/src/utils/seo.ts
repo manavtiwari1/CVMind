@@ -94,9 +94,9 @@ const PAGE_SEO: Record<string, PageSEO> = {
     keywords: 'Free Resume Builder, CV Maker Online, Make CV Online Free, AI Resume Builder, ATS Resume Templates, Resume Maker, CV Format for Freshers, Professional Resume Builder',
   },
   tailor: {
-    title: 'AI Resume Tailoring Tool | Match Job Descriptions - CV Mind',
-    description: 'Tailor your resume to any job description instantly. Our AI matches keywords, optimizes achievements, and aligns your experience for maximum ATS compatibility.',
-    keywords: 'Resume Tailorer, Job Matching, Resume Alignment, ATS Keyword Match',
+    title: 'AI Resume Tailor - Match Your Resume to Any Job Description | CV Mind',
+    description: 'Upload your CV and paste a job description. CV Mind rewrites your summary, bullets and skills for the role, keeps your facts, and gives you a designed resume to download as PDF, Word or TXT or edit further.',
+    keywords: 'Resume Tailor, Tailor Resume to Job Description, AI Resume Tailoring, ATS Keyword Match, Job Description Resume Match',
   },
   prep: {
     title: 'AI Interview Preparation & Mock Interviews | CV Mind',

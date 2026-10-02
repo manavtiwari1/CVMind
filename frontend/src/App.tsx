@@ -403,7 +403,7 @@ export default function App() {
       case 'admin':
         return <Admin setCurrentPage={setCurrentPage} />;
       case 'tailor':
-        return <Tailor customApiKey={customApiKey} />;
+        return <Tailor customApiKey={customApiKey} setCurrentPage={setCurrentPage} loadedWork={loadedWork} setLoadedWork={setLoadedWork} />;
       case 'prep':
         return (
           <Prep 

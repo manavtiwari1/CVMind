@@ -26,6 +26,7 @@ import ResumeTemplatePicker from '../components/ResumeTemplatePicker';
 import ResumeOnboarding, { type OnboardingResult, type ResumeGoal } from '../components/ResumeOnboarding';
 import { RESUME_TEMPLATES, TEMPLATES, type Template } from '../data/resumeTemplates';
 import { authFetch } from '../lib/authFetch';
+import { splitFooter, withFooter } from '../lib/resumeFooter';
 import { getErrorMessage } from '../utils/errors';
 import type { ExtractedResume, LoadedWork, WizardFormData } from '../types/api';
 import { siteOrigin } from '../lib/hosts';
@@ -66,22 +67,6 @@ interface CoverLetterProps {
   onFocusChange?: (mode: false | 'flow' | 'studio') => void;
   /** Leaves the builder (used by the editor's Home button). */
   onExit?: () => void;
-}
-
-const FOOTER_MARKER = '<!-- FOOTER BRANDING';
-
-/** Separates the locked CVMind footer from a template so the AI never rewrites it. */
-function splitFooter(html: string): { body: string; footer: string } {
-  const i = html.indexOf(FOOTER_MARKER);
-  if (i < 0) return { body: html, footer: '' };
-  const end = html.lastIndexOf('</div>');
-  return { body: html.slice(0, i) + html.slice(end), footer: html.slice(i, end) };
-}
-
-function withFooter(html: string, footer: string): string {
-  if (!footer || html.includes(FOOTER_MARKER)) return html;
-  const end = html.lastIndexOf('</div>');
-  return end < 0 ? html + footer : html.slice(0, end) + footer + html.slice(end);
 }
 
 export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, onFocusChange, onExit }: CoverLetterProps) {
