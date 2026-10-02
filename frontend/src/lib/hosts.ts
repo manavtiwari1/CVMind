@@ -6,6 +6,9 @@
 // Pages that need sign-in; they live on the app host
 export const APP_PAGES = ['prep', 'resume-editor', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'proofreading', 'tailor', 'voice-prep', 'portfolio-gen', 'job-finder', 'career-courses', 'elevator-pitch', 'career-roadmap', 'auto-apply', 'career-copilot', 'account', 'my-documents'];
 
+// App-host pages that signed-out visitors can still use
+export const PUBLIC_APP_PAGES = ['code-arena', 'cvmind-code-arena'];
+
 // Paths the app host handles itself instead of sending them to www
 const AUTH_PATHS = ['/sign-in', '/sign-up', '/login'];
 
@@ -32,7 +35,7 @@ const originFor = (sub: 'www' | 'app') => {
 export const siteOrigin = () => originFor('www');
 export const appOrigin = () => originFor('app');
 
-export const isAppPage = (page: string) => APP_PAGES.includes(page);
+export const isAppPage = (page: string) => APP_PAGES.includes(page) || PUBLIC_APP_PAGES.includes(page);
 
 // Full URL of the page on the host it belongs to
 export function urlForPage(page: string, search = ''): string {

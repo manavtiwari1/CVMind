@@ -1,5 +1,6 @@
 import { BookOpen, Compass, Flame, LogOut, Moon, Sparkles, Sun, Timer, User } from 'lucide-react';
 import cvmindIcon from '../../assets/cvmind_icon.png';
+import { siteOrigin } from '../../lib/hosts';
 
 export type CodeView = 'problems' | 'workspace' | 'roadmap' | 'practice' | 'profile' | 'ai';
 
@@ -48,7 +49,7 @@ export default function CodeTopBar({ view, onView, streak, solved, total, theme,
         <button type="button" className="cx-icon-btn" onClick={onToggleTheme} aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'} title="Toggle theme">
           {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
         </button>
-        <a className="cx-icon-btn" href="/" aria-label="Back to CVMind" title="Back to CVMind"><LogOut size={17} /></a>
+        <a className="cx-icon-btn" href={`${siteOrigin()}/`} aria-label="Back to CVMind" title="Back to CVMind"><LogOut size={17} /></a>
       </div>
     </header>
   );

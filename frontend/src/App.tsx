@@ -47,7 +47,7 @@ import { ARTICLES } from './data/articles';
 import DigitalSerenityBackground from './components/DigitalSerenityBackground';
 import { applySEO } from './utils/seo';
 import { getErrorMessage } from './utils/errors';
-import { APP_PAGES, appOrigin, isAppHost, isCrossHost, isSplitHost, siteOrigin, urlForPage } from './lib/hosts';
+import { APP_PAGES, PUBLIC_APP_PAGES, appOrigin, isAppHost, isCrossHost, isSplitHost, siteOrigin, urlForPage } from './lib/hosts';
 import { clearSession, setSession } from './lib/session';
 import { peekPickedTemplate } from './lib/templatePick';
 import type { LoadedWork, ResumeAnalysis } from './types/api';
@@ -585,8 +585,8 @@ export default function App() {
         isOpen={showAuthModal}
         onClose={() => {
           setShowAuthModal(false);
-          // The app host has nothing to show signed-out visitors, so closing sign-in returns to www
-          if (isAppHost() && localStorage.getItem('cvmind_logged_in') !== 'true') {
+          // Apart from Code Arena the app host has nothing for signed-out visitors, so closing sign-in returns to www
+          if (isAppHost() && localStorage.getItem('cvmind_logged_in') !== 'true' && !PUBLIC_APP_PAGES.includes(currentPage)) {
             window.location.assign(`${siteOrigin()}/`);
           }
         }}
