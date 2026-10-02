@@ -17,6 +17,7 @@ import {
 import { useRef } from 'react';
 import { getErrorMessage } from '../utils/errors';
 import { setSession } from '../lib/session';
+import { siteOrigin } from '../lib/hosts';
 
 /* ─── Types ─────────────────────────────────────────────────────── */
 
@@ -275,7 +276,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
   function startGoogleRedirectFlow() {
     const clientId = '1036904236561-m92usq7j7pso47r9k02n9dtdmm563162.apps.googleusercontent.com';
-    const redirectUri = window.location.origin + '/';
+    // Google only knows www.cvmind.in, so app.cvmind.in sign-ins return there too; www then
+    // shares the session and sends the user on to the app (enterAfterSignIn in App)
+    const redirectUri = siteOrigin() + '/';
     const responseType = 'id_token';
     const scope = 'openid email profile';
     const nonce = 'cvmindnonce' + Math.random().toString(36).substring(2, 15);
