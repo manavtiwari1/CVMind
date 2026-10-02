@@ -1,4 +1,5 @@
 import { ARTICLES } from '../data/articles';
+import { isAppHost } from '../lib/hosts';
 
 interface PageSEO {
   title: string;
@@ -23,6 +24,16 @@ const PAGE_SEO: Record<string, PageSEO> = {
     title: 'Contact Us | Support & Feedback - CV Mind',
     description: 'Get in touch with the CV Mind team. We welcome your feedback, partnership inquiries, and questions about our AI resume checker and ATS optimization tools.',
     keywords: 'Contact CV Mind, resume checker support, career tool help, feedback, partnership',
+  },
+  'help-center': {
+    title: 'Help Center | CV Mind',
+    description: 'Answers to common questions about building resumes, your CV Mind account, plans and billing, and how to reach our support team.',
+    keywords: 'CV Mind help, resume builder help, account help, CV Mind support',
+  },
+  account: {
+    title: 'Account | CV Mind',
+    description: 'Manage your CV Mind profile, password, plan and saved documents.',
+    keywords: 'CV Mind account, profile settings',
   },
   faq: {
     title: 'Frequently Asked Questions (FAQ) | CV Mind',
@@ -213,4 +224,7 @@ export function applySEO(page: string) {
     document.head.appendChild(canonical);
   }
   canonical.setAttribute('href', url);
+
+  // app.cvmind.in duplicates the site build; keep it out of search results
+  if (isAppHost()) setMeta('robots', 'noindex, nofollow');
 }

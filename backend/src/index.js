@@ -18,6 +18,8 @@ import { Resend } from 'resend';
 import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser } from './services/authToken.js';
 import mongoose from 'mongoose';
 import { importUploadedResume, RESUME_MIME_TYPES } from './agent/resume/intake.js';
+import { renderResumePdf } from './agent/resume/pdf.js';
+import { searchJobs, getJobDetail, warmJobSearch, JOB_SEARCH_COMPANIES } from './services/jobSearch.js';
 
 const app = express();
 // Render/Vercel sit behind one proxy; trust it so rate limiting sees the real client IP
@@ -155,6 +157,8 @@ const AI_ROUTE_PATHS = [
   '/api/resume/generate',
   '/api/resume/parse-data',
   '/api/resume/import-linkedin',
+  '/api/resume/pdf',
+  '/api/resume/email-pdf',
   '/api/linkedin',
   '/api/career',
   '/api/voice-prep',
@@ -1496,6 +1500,98 @@ apiRouter.post('/api/resume/parse-data', upload.single('resume'), async (req, re
   }
 });
 
+// ── Live job search (resume builder step 1) ───────────────────────────────────
+apiRouter.get('/api/jobs/search', async (req, res) => {
+  const q = String(req.query.q || '').slice(0, 120);
+  try {
+    const result = await searchJobs(q);
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    return res.json({ success: true, ...result, companies: JOB_SEARCH_COMPANIES });
+  } catch (err) {
+    console.error('Job search error:', err);
+    return res.status(502).json({ error: 'Job search is unavailable right now. Please try again shortly.' });
+  }
+});
+
+apiRouter.get('/api/jobs/detail', async (req, res) => {
+  const id = String(req.query.id || '');
+  if (!/^(gh|lv):[\w-]+:[\w-]+$/.test(id)) return res.status(400).json({ error: 'Invalid job id.' });
+  try {
+    const data = await getJobDetail(id);
+    if (!data) return res.status(404).json({ error: 'This job is no longer available.' });
+    res.setHeader('Cache-Control', 'public, max-age=1800');
+    return res.json({ success: true, ...data });
+  } catch (err) {
+    console.error('Job detail error:', err);
+    return res.status(502).json({ error: 'Could not load this job description.' });
+  }
+});
+
+// ── Resume export: PDF download and "send PDF to my email" ─────────────────────
+const EXPORT_FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Rubik:wght@300;400;500;600;700&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;500;600&family=Open+Sans:wght@400;600;700;800&family=Raleway:wght@300;400;600&family=EB+Garamond:wght@400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&display=swap';
+
+const cleanFileName = (name) => (String(name || '').replace(/[^A-Za-z0-9 _-]/g, '').trim().slice(0, 80) || 'Resume');
+
+function readExportBody(req, res) {
+  const { html, fileName, paper } = req.body || {};
+  if (!html || typeof html !== 'string' || html.trim().length < 20) {
+    res.status(400).json({ error: 'There is no resume content to export.' });
+    return null;
+  }
+  return { html, fileName: cleanFileName(fileName), format: paper === 'letter' ? 'Letter' : 'A4' };
+}
+
+async function buildResumePdf(body) {
+  try {
+    return await renderResumePdf(body.html, { format: body.format, fontsHref: EXPORT_FONTS_HREF });
+  } catch (err) {
+    if (err?.code === 'BROWSER_UNAVAILABLE') {
+      const e = new Error('PDF export is not available on this server right now.');
+      e.status = 503;
+      throw e;
+    }
+    throw err;
+  }
+}
+
+apiRouter.post('/api/resume/pdf', requireUser, async (req, res) => {
+  const body = readExportBody(req, res);
+  if (!body) return;
+  try {
+    const pdf = await buildResumePdf(body);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${body.fileName}.pdf"`);
+    return res.send(Buffer.from(pdf));
+  } catch (err) {
+    console.error('Resume PDF export error:', err);
+    return res.status(err.status || 500).json({ error: err.status ? err.message : 'Could not create the PDF. Please try again.' });
+  }
+});
+
+// Sends the PDF to the signed-in user's own address only (never an address from the request).
+apiRouter.post('/api/resume/email-pdf', requireUser, async (req, res) => {
+  const body = readExportBody(req, res);
+  if (!body) return;
+  if (!process.env.RESEND_API_KEY) return res.status(503).json({ error: 'Email is not configured on this server.' });
+  try {
+    const user = await findUserById(req.auth.sub);
+    if (!user?.email) return res.status(404).json({ error: 'We could not find the email address for your account.' });
+    const pdf = await buildResumePdf(body);
+    const { error } = await resend.emails.send({
+      from: 'CV Mind <no-reply@manavtiwari.in>',
+      to: [user.email],
+      subject: `Your resume: ${body.fileName}`,
+      html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#1e293b;line-height:1.6"><p>Hi${user.name ? ` ${user.name}` : ''},</p><p>Your resume <strong>${body.fileName}.pdf</strong> is attached.</p><p>Good luck with your applications!<br>CV Mind</p></div>`,
+      attachments: [{ filename: `${body.fileName}.pdf`, content: Buffer.from(pdf).toString('base64') }],
+    });
+    if (error) throw new Error(error.message || 'Email provider error');
+    return res.json({ success: true, email: user.email });
+  } catch (err) {
+    console.error('Resume email export error:', err);
+    return res.status(err.status || 500).json({ error: err.status ? err.message : 'Could not send the email. Please try again.' });
+  }
+});
+
 // Import resume data from a public LinkedIn profile URL.
 // LinkedIn often serves an auth wall to server-side requests; in that case we say so
 // and the client falls back to a "Save to PDF" upload via /api/resume/parse-data.
@@ -2680,6 +2776,8 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
+  // Fill the live job-search cache so the first search in the resume builder is quick.
+  if (!process.env.VERCEL) warmJobSearch();
   // Local dev convenience: run agent queue workers in the API process (production uses src/worker.js)
   if (process.env.INLINE_WORKERS === 'true' && !process.env.VERCEL) {
     startWorkers().catch((err) => console.error('[agent] failed to start inline workers:', err.message));

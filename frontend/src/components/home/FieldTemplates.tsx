@@ -5,18 +5,19 @@ import { TEMPLATES } from '../../data/resumeTemplates';
 import { withSampleData } from '../../data/samplePreview';
 
 interface FieldTemplatesProps {
-  onUse: () => void;
+  /** With a template id the editor opens on that template; without one, the template gallery. */
+  onUse: (templateId?: string) => void;
 }
 
 const FIELDS: { label: string; icon: LucideIcon; templateId: string }[] = [
-  { label: 'Tech & Data', icon: Code2, templateId: 'tech-minimal' },
-  { label: 'Business & Finance', icon: Briefcase, templateId: 'finance-authority' },
-  { label: 'Sales & Growth', icon: TrendingUp, templateId: 'sales-kpi' },
-  { label: 'Design & Creative', icon: Palette, templateId: 'creative-bold' },
-  { label: 'Healthcare', icon: HeartPulse, templateId: 'healthcare-pro' },
-  { label: 'Legal', icon: Scale, templateId: 'legal-counsel' },
-  { label: 'Students & Freshers', icon: GraduationCap, templateId: 'fresh-graduate' },
-  { label: 'Academic', icon: BookOpen, templateId: 'academic-cv' },
+  { label: 'Tech & Data', icon: Code2, templateId: 'cv-hybrid' },
+  { label: 'Business & Finance', icon: Briefcase, templateId: 'cv-elegant' },
+  { label: 'Sales & Growth', icon: TrendingUp, templateId: 'cv-bold' },
+  { label: 'Design & Creative', icon: Palette, templateId: 'cv-contemporary' },
+  { label: 'Healthcare', icon: HeartPulse, templateId: 'cv-polished' },
+  { label: 'Legal', icon: Scale, templateId: 'cv-ivy-league' },
+  { label: 'Students & Freshers', icon: GraduationCap, templateId: 'cv-double-column' },
+  { label: 'Academic', icon: BookOpen, templateId: 'cv-crest' },
 ];
 
 export default function FieldTemplates({ onUse }: FieldTemplatesProps) {
@@ -36,7 +37,7 @@ export default function FieldTemplates({ onUse }: FieldTemplatesProps) {
             Layouts differ by industry. Pick your field to preview a template that suits it, then open it in the editor
             and make it yours.
           </p>
-          <button type="button" className="hp-link" onClick={onUse}>Browse all templates <ArrowRight size={14} /></button>
+          <button type="button" className="hp-link" onClick={() => onUse()}>Browse all templates <ArrowRight size={14} /></button>
         </div>
 
         <div className="hp-fields-list" role="tablist" aria-label="Fields">
@@ -61,7 +62,7 @@ export default function FieldTemplates({ onUse }: FieldTemplatesProps) {
               <div className="hp-fields-paper">
                 <TemplatePreview html={template.html} name={template.name} eager aspect="700 / 900" pageWidth={700} />
               </div>
-              <button type="button" className="hp-use-btn" onClick={onUse}>Use this template</button>
+              <button type="button" className="hp-use-btn" onClick={() => onUse(template.id)}>Use this template</button>
               <div className="hp-fields-name">{template.name}</div>
             </div>
           )}

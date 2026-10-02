@@ -5,12 +5,13 @@ import { TEMPLATES, type Template } from '../../data/resumeTemplates';
 import { withSampleData } from '../../data/samplePreview';
 
 interface TemplateMarqueeProps {
-  onUse: () => void;
+  /** With a template id the editor opens on that template; without one, the template gallery. */
+  onUse: (templateId?: string) => void;
 }
 
 const IDS = [
-  'executive-sidebar', 'modern-blue', 'creative-bold', 'data-scientist', 'fresh-graduate',
-  'sales-kpi', 'startup-product', 'ux-designer', 'dev-terminal', 'hospitality-warm',
+  'cv-elegant', 'cv-modern', 'cv-contemporary', 'cv-double-column', 'cv-timeline', 'cv-crest',
+  'cv-polished', 'cv-bold', 'cv-wave', 'cv-ivy-league', 'cv-hybrid', 'cv-minimal',
 ];
 
 /** Pixels per second the belt moves while nobody is interacting with it. */
@@ -90,7 +91,7 @@ export default function TemplateMarquee({ onUse }: TemplateMarqueeProps) {
         type="button"
         className="hp-marq-card"
         style={{ '--tpl-color': t.color } as React.CSSProperties}
-        onClick={onUse}
+        onClick={() => onUse(t.id)}
         tabIndex={hidden ? -1 : 0}
         aria-hidden={hidden || undefined}
         aria-label={hidden ? undefined : `Start with the ${t.name} template`}
@@ -134,7 +135,7 @@ export default function TemplateMarquee({ onUse }: TemplateMarqueeProps) {
         <li><Columns2 size={26} className="is-purple" /><span>Single-column, double-column and multi-page layouts</span></li>
       </ul>
       <div className="hp-center">
-        <button type="button" className="hp-link" onClick={onUse}>Browse resume templates <ArrowRight size={14} /></button>
+        <button type="button" className="hp-link" onClick={() => onUse()}>Browse resume templates <ArrowRight size={14} /></button>
       </div>
     </section>
   );

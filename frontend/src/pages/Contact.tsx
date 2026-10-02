@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Send, CheckCircle2, Mail, MessageSquare, Globe } from 'lucide-react';
+import { SUPPORT_EMAIL, WHATSAPP_DISPLAY, whatsappLink } from '../data/support';
 import './Contact.css';
 
 export default function Contact() {
@@ -73,36 +74,32 @@ export default function Contact() {
           </p>
 
           <div className="info-details-list">
-            <div className="info-detail-item">
+            <a className="info-detail-item" href={`mailto:${SUPPORT_EMAIL}`}>
               <div className="info-icon-circle">
                 <Mail size={16} />
               </div>
               <div className="info-text-group">
                 <span className="info-label">Email Support</span>
-                <span className="info-value">contact@manavtiwari.in</span>
+                <span className="info-value">{SUPPORT_EMAIL}</span>
               </div>
-            </div>
+            </a>
 
-            <div 
-              className="info-detail-item" 
-              style={{ cursor: 'pointer' }}
-              onClick={() => {
-                if (window.Tawk_API) {
-                  window.Tawk_API.showWidget();
-                  window.Tawk_API.maximize();
-                }
-              }}
+            <a
+              className="info-detail-item"
+              href={whatsappLink()}
+              target="_blank"
+              rel="noopener noreferrer"
             >
               <div className="info-icon-circle">
                 <MessageSquare size={16} />
               </div>
               <div className="info-text-group">
-                <span className="info-label">Live Support</span>
+                <span className="info-label">24/7 Support on WhatsApp</span>
                 <span className="info-value" style={{ color: 'var(--blue)' }}>
-                  Chat with our team 24/7
+                  {WHATSAPP_DISPLAY}
                 </span>
               </div>
-            </div>
+            </a>
 
             <div className="info-detail-item">
               <div className="info-icon-circle">

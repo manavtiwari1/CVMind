@@ -1,0 +1,152 @@
+/* ── Profile Circle Dropdown ────────────────────────────── */
+.nav-profile-container {
+  position: relative;
+  display: inline-flex;
+}
+
+.nav-profile-trigger {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--t-fast);
+}
+
+.nav-profile-trigger:hover .nav-profile-monogram,
+.nav-profile-trigger:hover .nav-profile-avatar {
+  filter: brightness(0.95);
+}
+
+.nav-profile-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--blue);
+}
+
+.nav-profile-monogram {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #9ca3af;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Upgrade pill next to the avatar */
+.nav-upgrade-btn {
+  height: 32px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 6px;
+  background: #2dc08d;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+
+.nav-upgrade-btn:hover {
+  background: #25a87b;
+}
+
+.nav-profile-caret {
+  color: #374151;
+  margin-left: 4px;
+  transition: transform var(--t-fast);
+}
+
+.nav-profile-caret.open {
+  transform: rotate(180deg);
+}
+
+/* Profile Dropdown Menu */
+.nav-profile-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 252px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.05);
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-profile-dropdown-item {
+  width: 100%;
+  background: none;
+  border: none;
+  color: #111827;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 400;
+  padding: 0 16px;
+  min-height: 51px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.15s ease;
+}
+
+.nav-profile-dropdown-item + .nav-profile-dropdown-item,
+.nav-language-list + .nav-profile-dropdown-item {
+  border-top: 1px solid #e5e7eb;
+}
+
+.nav-profile-dropdown-item:hover,
+.nav-profile-dropdown-item:focus-visible {
+  background: #f3f4f6;
+  outline: none;
+}
+
+.nav-profile-dropdown-trail {
+  color: #111827;
+  flex-shrink: 0;
+}
+
+.nav-language-list {
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  padding: 6px 0;
+}
+
+.nav-language-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 16px 9px 28px;
+  font-size: 0.9rem;
+  color: #111827;
+}
+
+.nav-language-option.selected {
+  font-weight: 600;
+}
+
+.nav-language-option.selected svg {
+  color: #2dc08d;
+}
+
+.nav-language-note {
+  padding: 2px 16px 8px 28px;
+  font-size: 0.78rem;
+  color: #6b7280;
+}

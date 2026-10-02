@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, ArrowRight, Check, CornerDownLeft, Loader2, Lock, MapPin, Search, X } from 'lucide-react';
+import { AlertTriangle, Check, Loader2, Lock } from 'lucide-react';
 import { API_BASE } from '../lib/apiBase';
 import { getErrorMessage } from '../utils/errors';
 import type { ExtractedResume } from '../types/api';
+import JobSearchStep, { type LiveJob } from './JobSearchStep';
 import './ResumeOnboarding.css';
 
 export type ResumeGoal = 'recruiters' | 'ats';
@@ -18,30 +19,12 @@ interface ResumeOnboardingProps {
   onComplete: (result: OnboardingResult) => void;
 }
 
-interface JobResult {
-  id: string;
-  title: string;
-  company: string;
-  location?: string;
-  type?: string;
-  remote?: string;
-  salary?: string;
-  exp?: string;
-  posted?: string;
-  skills?: string[];
-  industry?: string;
-  logo?: string | null;
-  domain?: string;
-  apply_url?: string;
-}
-
 type Step = 'loading' | 'job' | 'existing' | 'upload' | 'position' | 'goal';
 
 
 // Which of the 5 progress dots is active for each screen.
 const STEP_INDEX: Record<Exclude<Step, 'loading'>, number> = { job: 1, existing: 2, upload: 3, position: 3, goal: 4 };
 
-const initials = (name: string) => name.trim().charAt(0).toUpperCase() || '?';
 
 /** Leo, the CVMind guide — a friendly boy avatar sitting on soft colour blobs. */
 export function Leo() {
@@ -98,12 +81,7 @@ export function Stepper({ active, total = 6 }: { active: number; total?: number 
 
 export default function ResumeOnboarding({ customApiKey, onComplete }: ResumeOnboardingProps) {
   const [step, setStep] = useState<Step>('loading');
-  const [query, setQuery] = useState('');
-  const [jobs, setJobs] = useState<JobResult[] | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [searching, setSearching] = useState(false);
-  const [searchError, setSearchError] = useState('');
-  const [targetJob, setTargetJob] = useState<JobResult | null>(null);
+  const [targetJob, setTargetJob] = useState<LiveJob | null>(null);
   const [position, setPosition] = useState('');
   const [extracted, setExtracted] = useState<ExtractedResume | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -121,41 +99,6 @@ export default function ResumeOnboarding({ customApiKey, onComplete }: ResumeOnb
   const jobTitle = targetJob?.title || position.trim();
   const finish = (goal: ResumeGoal | null, data: ExtractedResume | null = extracted) =>
     onComplete({ extracted: data, jobTitle, goal });
-
-  const runSearch = async () => {
-    const q = query.trim();
-    if (!q || searching) return;
-    setSearching(true);
-    setSearchError('');
-    try {
-      const res = await fetch(`${API_BASE}/api/auto-apply/jobs`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ skills: [], roles: [q], locations: ['India'] }),
-      });
-      const body = await res.json();
-      if (!res.ok || !body.success) throw new Error(body.error || 'Could not load jobs.');
-      const all: JobResult[] = body.data?.jobs || [];
-      // The API falls back to every job when few match, so rank real matches first.
-      const tokens = q.toLowerCase().split(/\s+/).filter(t => t.length > 2 && t !== 'jobs');
-      const hit = (j: JobResult) => tokens.some(t => `${j.title} ${j.industry || ''}`.toLowerCase().includes(t));
-      const ranked = [...all.filter(hit), ...all.filter(j => !hit(j))].slice(0, 12);
-      setJobs(ranked);
-      setSelectedId(ranked[0]?.id ?? null);
-    } catch (err) {
-      setJobs(null);
-      setSearchError(getErrorMessage(err) || 'Could not load jobs. Please try again.');
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  const clearSearch = () => {
-    setQuery('');
-    setJobs(null);
-    setSelectedId(null);
-    setSearchError('');
-  };
 
   const handleUpload = async (file: File) => {
     setIsExtracting(true);
@@ -186,100 +129,13 @@ export default function ResumeOnboarding({ customApiKey, onComplete }: ResumeOnb
     );
   }
 
-  const selected = jobs?.find(j => j.id === selectedId) || null;
 
   return (
     <div className="ro-page">
       <Stepper active={STEP_INDEX[step]} />
 
       {step === 'job' && (
-        <div className="ro-job">
-          <h1 className="ro-title">What job do you want next?</h1>
-          <p className="ro-sub">Search real openings, pick the job you want, and we'll tailor your resume to it.</p>
-
-          <form className="ro-search" onSubmit={e => { e.preventDefault(); runSearch(); }}>
-            <Search size={16} className="ro-search-icon" aria-hidden="true" />
-            <input
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="e.g. Entry Level Marketing jobs"
-              aria-label="Search jobs"
-              autoFocus
-            />
-            {query && <button type="button" className="ro-icon-btn" onClick={clearSearch} aria-label="Clear search"><X size={15} /></button>}
-            <button type="submit" className="ro-go" disabled={!query.trim() || searching} aria-label="Search">
-              {searching ? <Loader2 size={15} className="ro-spin" /> : <CornerDownLeft size={15} />}
-            </button>
-          </form>
-
-          <div className="ro-actions">
-            <button type="button" className="ro-link" onClick={() => setStep('existing')}>Skip this step</button>
-            <button
-              type="button"
-              className="ro-btn ro-btn--green"
-              disabled={!selected}
-              onClick={() => { setTargetJob(selected); setStep('existing'); }}
-            >
-              <Search size={15} /> Target this job
-            </button>
-          </div>
-
-          {searchError && <p className="ro-error"><AlertTriangle size={14} /> {searchError}</p>}
-
-          {jobs && (
-            jobs.length === 0 ? (
-              <p className="ro-empty">No openings found. Try a different title, or skip this step.</p>
-            ) : (
-              <div className="ro-jobs">
-                <div className="ro-jobs-list" role="listbox" aria-label="Job results">
-                  <p className="ro-jobs-count">{jobs.length} jobs found</p>
-                  {jobs.map(j => (
-                    <button
-                      key={j.id}
-                      type="button"
-                      role="option"
-                      aria-selected={j.id === selectedId}
-                      className={`ro-job-card${j.id === selectedId ? ' is-selected' : ''}`}
-                      onClick={() => setSelectedId(j.id)}
-                    >
-                      <span className="ro-logo">{initials(j.company)}</span>
-                      <span className="ro-job-main">
-                        <strong>{j.title}</strong>
-                        <span>{j.company}</span>
-                        <small>{[j.remote, j.location, j.exp].filter(Boolean).join(' • ')}</small>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                {selected && (
-                  <article className="ro-jobs-detail">
-                    <header>
-                      <span className="ro-logo ro-logo--lg">{initials(selected.company)}</span>
-                      <div>
-                        <h2>{selected.title}</h2>
-                        <p>{selected.company}</p>
-                        <small>{[selected.remote, selected.location, selected.salary, selected.exp].filter(Boolean).join(' • ')}</small>
-                      </div>
-                      {selected.posted && <span className="ro-posted">{selected.posted}</span>}
-                    </header>
-                    {selected.location && <p className="ro-detail-line"><MapPin size={14} /> {selected.location}</p>}
-                    {selected.skills && selected.skills.length > 0 && (
-                      <>
-                        <h3>Key skills</h3>
-                        <ul className="ro-skills">{selected.skills.map(s => <li key={s}>{s}</li>)}</ul>
-                      </>
-                    )}
-                    {selected.apply_url && (
-                      <a className="ro-link" href={selected.apply_url} target="_blank" rel="noreferrer">
-                        View full posting <ArrowRight size={13} />
-                      </a>
-                    )}
-                  </article>
-                )}
-              </div>
-            )
-          )}
-        </div>
+        <JobSearchStep onSkip={() => setStep('existing')} onTarget={job => { setTargetJob(job); setStep('existing'); }} />
       )}
 
       {step === 'existing' && (

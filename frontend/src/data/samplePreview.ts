@@ -40,6 +40,18 @@ const PROFILES: Record<string, Partial<Profile>> = {
   'fresh-graduate': { name: 'Arjun Patel', title: 'Software Engineering Intern', prevTitle: 'Teaching Assistant', company: 'Finly', prevCompany: 'College Tech Club', field: 'Computer Science', university: 'VIT Vellore', skills: ['Java', 'React', 'SQL', 'Git', 'Data Structures'] },
   'executive-sidebar': { name: 'Maeve Fernandes', title: 'Strategic Sourcing Leader', prevTitle: 'Category Manager', company: 'Premier Industries', prevCompany: 'Delta Supply Co.', field: 'Supply Chain', university: 'IIM Lucknow', skills: ['Category Management', 'Vendor Negotiation', 'Supply Chain', 'Cost Reduction'] },
   'cvmind-executive': { name: 'Maeve Fernandes', title: 'Strategic Sourcing Leader', prevTitle: 'Category Manager', company: 'Premier Industries', prevCompany: 'Delta Supply Co.', field: 'Supply Chain Management', university: 'IIM Lucknow', skills: ['Category Management', 'Vendor Negotiation', 'Supply Chain', 'Cost Reduction'] },
+  'cv-modern': { name: 'Priya Nair', title: 'Senior Frontend Engineer', prevTitle: 'Frontend Developer', skills: ['React', 'TypeScript', 'Next.js', 'Jest', 'Node.js'] },
+  'cv-hybrid': { name: 'Rohan Verma', title: 'Full Stack Engineer', prevTitle: 'Software Engineer', company: 'Lattice Labs', prevCompany: 'Zenith Software', skills: ['Node.js', 'Python', 'PostgreSQL', 'AWS', 'Docker'] },
+  'cv-elegant': { name: 'Karan Malhotra', title: 'Senior Financial Analyst', prevTitle: 'Financial Analyst', company: 'Meridian Capital', prevCompany: 'Axis Advisory', field: 'Finance', university: 'SRCC, Delhi', skills: ['Financial Modelling', 'Valuation', 'Power BI'] },
+  'cv-bold': { name: 'Aditi Rao', title: 'Regional Sales Manager', prevTitle: 'Account Executive', company: 'Brightline SaaS', prevCompany: 'Cloudmart', field: 'Business Administration', university: 'Symbiosis, Pune', skills: ['Enterprise Sales', 'Forecasting', 'Negotiation'] },
+  'cv-contemporary': { name: 'Meera Kapoor', title: 'Senior Product Designer', prevTitle: 'UX Designer', company: 'Studio Marigold', prevCompany: 'Pixel & Pine', field: 'Interaction Design', university: 'NID Ahmedabad', skills: ['Figma', 'User Research', 'Design Systems'] },
+  'cv-polished': { name: 'Sneha Menon', title: 'Registered Nurse, ICU', prevTitle: 'Staff Nurse', company: 'Sunrise Hospital', prevCompany: 'City Care Clinic', field: 'Nursing', university: 'Christian Medical College', skills: ['Critical Care', 'BLS / ACLS', 'Patient Assessment'] },
+  'cv-ivy-league': { name: 'Vikram Bhatia', title: 'Associate Counsel', prevTitle: 'Legal Associate', company: 'Bhatia & Rao LLP', prevCompany: 'Sen Legal', field: 'Corporate Law', university: 'NLSIU Bangalore', skills: ['Contract Drafting', 'Due Diligence', 'Compliance'] },
+  'cv-double-column': { name: 'Arjun Patel', title: 'Software Engineer', prevTitle: 'Engineering Intern', company: 'Finly', prevCompany: 'College Tech Club', field: 'Computer Science', university: 'VIT Vellore', skills: ['Java', 'React', 'SQL'] },
+  'cv-crest': { name: 'Dr. Lakshmi Narayan', title: 'Assistant Professor', prevTitle: 'Postdoctoral Researcher', company: 'Indian Institute of Science', prevCompany: 'TIFR Mumbai', field: 'Computational Linguistics', university: 'IISc Bangalore', skills: ['NLP', 'Machine Learning', 'Teaching'] },
+  'cv-timeline': { name: 'Nikhil Sharma', title: 'Marketing Manager', prevTitle: 'Marketing Executive', company: 'Quill Labs', prevCompany: 'Tanda', field: 'Marketing', university: 'MICA Ahmedabad', skills: ['Brand Strategy', 'SEO', 'Campaigns'] },
+  'cv-wave': { name: 'Sophia Dsouza', title: 'Guest Relations Manager', prevTitle: 'Front Desk Supervisor', company: 'Azure Hotel Group', prevCompany: 'Palm Court Resort', field: 'Hospitality Management', university: 'IHM Mumbai', skills: ['Guest Relations', 'Opera PMS', 'Team Training'] },
+  'cv-minimal': { name: 'Ananya Iyer', title: 'Data Scientist', prevTitle: 'Data Analyst', company: 'Orbit Analytics', prevCompany: 'Helix Data', field: 'Statistics', university: 'IISc Bangalore', skills: ['Python', 'SQL', 'PyTorch'] },
   'modern-cl': { name: 'Priya Nair', title: 'Senior Frontend Engineer', company: 'Northwind Payments', prevCompany: 'Kite Commerce', field: 'front-end performance', skills: ['React', 'TypeScript', 'web performance'] },
   'classic-cl': { name: 'Priya Nair', title: 'Operations Manager', company: 'Northwind Payments', prevCompany: 'Kite Commerce' },
 };
@@ -57,10 +69,6 @@ const TOKENS: Record<string, string> = {
   Function: 'operations', Area: 'platform engineering', 'System/Product': 'an internal analytics platform',
   'Hospital/Clinic Name': 'Sunrise Hospital', 'Hotel/Property Name': 'Azure Hotel Group', Degree: 'B.Tech', Role: 'Lead',
 };
-
-function escapeRe(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 
 /** Returns the template HTML with sample content filled in, for display only. */
 export function withSampleData(t: Template): string {
@@ -88,7 +96,7 @@ export function withSampleData(t: Template): string {
   html = html.replace(/\[Branch\]|\[Field\]|\[Specialization\]|\[specialization\]|Degree and Field of Study/g, p.field);
 
   let s = 0;
-  html = html.replace(/\[Skill [A-C]\]|\[Skill\]|\[Key Skill\]|Skill (?:One|Two|Three|Four|Five|Six|[1-9])\b/g, () => p.skills[s++ % p.skills.length]);
+  html = html.replace(/\[Skill [A-C]\]|\[Skill\]|\[Key Skill\]|Skill (?:One|Two|Three|Four|Five|Six|[1-9])\b|Your Skill|Another Skill|One More Skill/g, () => p.skills[s++ % p.skills.length]);
 
   // fixed tokens, then drop the brackets on anything unknown so no "[...]" is left on screen
   html = html.replace(/\[([^\][<>'",]{2,45})\]/g, (_m, inner: string) => TOKENS[inner] ?? inner);
@@ -98,10 +106,44 @@ export function withSampleData(t: Template): string {
     .replace(/john\.doe@email\.com/gi, `${parts[0]}.${parts[parts.length - 1]}@example.com`)
     .replace(/johndoe/gi, parts.join(''));
 
+  // placeholders used by the 2026 templates
+  const email = `${parts[0]}.${parts[parts.length - 1]}@example.com`;
+  let d = 0;
+  const DATES = ['2022 – Present', '2019 – 2022', '2017 – 2019', '2015 – 2017', '2011 – 2015'];
+  html = html.replace(/Date period/g, () => DATES[d++ % DATES.length]);
+  const ACH = [
+    ['Launched a flagship product', 'Took the launch from idea to 40k users in six months.'],
+    ['Cut costs by 22%', 'Renegotiated vendors and removed duplicate tools.'],
+    ['Built a high-performing team', 'Hired and mentored six people; two were promoted within a year.'],
+    ['Recognised for impact', 'Received the annual excellence award for cross-team work.'],
+  ];
+  let a = 0;
+  html = html.replace(/Your Achievement/g, () => ACH[a++ % ACH.length][0]);
+  let b = 0;
+  html = html.replace(/Describe what you did and the impact it had\./g, () => ACH[b++ % ACH.length][1]);
+  html = html
+    .replace(/Briefly explain why you're a great fit for the role - use the AI assistant to tailor this summary for each job posting\./g,
+      `${p.title} with 7+ years of experience turning goals into measurable results. Known for clear communication, steady delivery and helping teams do their best work.`)
+    .replace(/(>|<\/svg>)Phone</g, '$1+91 98765 43210<')
+    .replace(/(>|<\/svg>)Email</g, `$1${email}<`)
+    .replace(/(>|<\/svg>)Location</g, '$1Bengaluru, India<')
+    .replace(/\bPhone(?= &nbsp;)/g, '+91 98765 43210')
+    .replace(/&nbsp; Email(?= &nbsp;)/g, `&nbsp; ${email}`)
+    .replace(/&nbsp; Location</g, '&nbsp; Bengaluru, India<')
+    .replace(/LinkedIn\/Portfolio/g, `linkedin.com/in/${parts.join('')}`)
+    .replace(/— Location/g, '— Bengaluru')
+    .replace(/>Location</g, '>Bengaluru<')
+    .replace(/Course Title/g, 'Product Management Certificate')
+    .replace(/Which institution provided the course\?/g, 'Coursera · 2023');
+
+  let ti = 0;
+  html = html.replace(/>Title</g, () => `>${ti++ === 0 ? p.title : p.prevTitle}<`);
+  let tx = 0;
+  const CELLS = ['Payments dashboard', 'Rebuilt reporting used by 2M customers', 'Search revamp', 'Cut query time from 4s to 400ms'];
+  html = html.replace(/>Text</g, () => `>${CELLS[tx++ % CELLS.length]}<`);
+
   // plain-text placeholders used by the newer layouts
   html = html
-    .replace(new RegExp(escapeRe('Date period'), 'g'), '2022 – Present')
-    .replace(/>Title</g, `>${p.title}<`)
     .replace(/Highlight your accomplishments[^<]*/g, 'Led a cross-functional team and delivered the programme 15% ahead of plan.')
     .replace(/School or University/g, p.university)
     .replace(/IIT\/NIT/g, p.university)

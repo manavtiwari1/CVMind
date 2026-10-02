@@ -64,7 +64,7 @@ export default function Disclaimer() {
 
         <section className="legal-section">
           <h2>9. Contact</h2>
-          <p>For questions about this Disclaimer, contact us at <a href="mailto:contact@manavtiwari.in">contact@manavtiwari.in</a>.</p>
+          <p>For questions about this Disclaimer, contact us at <a href="mailto:cvmindofficial@gmail.com">cvmindofficial@gmail.com</a>.</p>
         </section>
 
       </div>
