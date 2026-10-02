@@ -97,7 +97,7 @@ export default function Chatbot({ customApiKey }: ChatbotProps) {
           <header className="chatbot-header">
             <div className="chatbot-title">
               <div className="chatbot-avatar">
-                <img src={cvmindLogo} alt="CV Mind Logo" className="chatbot-logo-img" />
+                <img src={cvmindLogo} alt="" className="chatbot-logo-img" />
               </div>
               <div>
                 <span>CV Mind</span>

@@ -44,6 +44,30 @@ export default function Navbar({
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Close the drawer when the page changes from elsewhere (back button, footer link)
+  const [drawerPage, setDrawerPage] = useState(currentPage);
+  if (drawerPage !== currentPage) {
+    setDrawerPage(currentPage);
+    setMobileOpen(false);
+  }
+
+  // While the drawer is open: Escape closes it, the page behind doesn't scroll, and widening past the mobile breakpoint closes it
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileOpen(false); };
+    const desktop = window.matchMedia('(min-width: 901px)');
+    const onWide = () => { if (desktop.matches) setMobileOpen(false); };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKey);
+    desktop.addEventListener('change', onWide);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKey);
+      desktop.removeEventListener('change', onWide);
+    };
+  }, [mobileOpen]);
+
   const go = (page: string) => {
     setCurrentPage(page);
     setMobileOpen(false);
@@ -55,10 +79,10 @@ export default function Navbar({
       <div className="navbar-container">
 
         {/* Brand / Logo */}
-        <div className="navbar-brand" onClick={() => go('home')}>
-          <img src={cvmindIcon} alt="CVMind" className="navbar-logo-img" />
+        <button type="button" className="navbar-brand" onClick={() => go('home')} aria-label="CVMind home">
+          <img src={cvmindIcon} alt="" className="navbar-logo-img" />
           <span className="navbar-brand-name">CVMind</span>
-        </div>
+        </button>
 
         {/* Center Navigation — Enhancv style: 4 clean items */}
         <div className="navbar-nav" style={{ display: 'flex', alignItems: 'center' }}>
@@ -121,7 +145,9 @@ export default function Navbar({
           <button
             className="mobile-menu-toggle nav-link"
             onClick={() => setMobileOpen(v => !v)}
-            aria-label="Toggle menu"
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={mobileOpen}
+            aria-controls="navbar-mobile-drawer"
           >
             {mobileOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
@@ -130,7 +156,7 @@ export default function Navbar({
       </div>
 
       {/* Premium Sliding Frosted Glass Mobile Menu Drawer */}
-      <div className={`navbar-mobile-drawer ${mobileOpen ? 'open' : ''}`}>
+      <nav id="navbar-mobile-drawer" className={`navbar-mobile-drawer ${mobileOpen ? 'open' : ''}`} aria-label="Mobile">
         {/* Static nav links */}
         {[
           { label: 'Home', page: 'home' },
@@ -151,6 +177,7 @@ export default function Navbar({
           <button
             className={`mobile-accordion-trigger${mobileProductsOpen ? ' open' : ''}`}
             onClick={() => setMobileProductsOpen(v => !v)}
+            aria-expanded={mobileProductsOpen}
           >
             <span>Products</span>
             <ChevronDown size={14} className={`mobile-accordion-arrow${mobileProductsOpen ? ' rotated' : ''}`} />
@@ -205,7 +232,8 @@ export default function Navbar({
               {/* SmartPrep AI sub-accordion */}
               <div className="mobile-sub-accordion">
                 <button
-                  className={`mobile-sub-accordion-trigger${['prep','voice-prep','proofreading'].includes(currentPage) ? ' open' : ''}`}
+                  className={`mobile-sub-accordion-trigger${mobileLinkedInOpen ? ' open' : ''}`}
+                  aria-expanded={mobileLinkedInOpen}
                   onClick={() => setMobileLinkedInOpen(v => !v)}
                 >
                   <span>SmartPrep AI</span>
@@ -229,7 +257,8 @@ export default function Navbar({
               {/* LinkedIn Optimizer sub-accordion */}
               <div className="mobile-sub-accordion">
                 <button
-                  className={`mobile-sub-accordion-trigger${['linkedin','linkedin-bio','linkedin-outreach','linkedin-post'].includes(currentPage) ? ' open' : ''}`}
+                  className={`mobile-sub-accordion-trigger${mobileCareerOpen ? ' open' : ''}`}
+                  aria-expanded={mobileCareerOpen}
                   onClick={() => setMobileCareerOpen(v => !v)}
                 >
                   <span>LinkedIn Optimizer</span>
@@ -257,6 +286,7 @@ export default function Navbar({
               <div className="mobile-sub-accordion">
                 <button
                   className={`mobile-sub-accordion-trigger${mobileCareerAiOpen ? ' open' : ''}`}
+                  aria-expanded={mobileCareerAiOpen}
                   onClick={() => setMobileCareerAiOpen(v => !v)}
                 >
                   <span>Career Path AI</span>
@@ -300,7 +330,7 @@ export default function Navbar({
         ))}
 
         {/* Dynamic Mobile CTA */}
-        <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '0.5rem 0' }}></div>
+        <div style={{ height: '1px', background: '#e5e7eb', margin: '0.5rem 0' }}></div>
         {isLoggedIn ? (
           <button
             className="navbar-cta"
@@ -331,7 +361,7 @@ export default function Navbar({
             Get Started for free
           </button>
         )}
-      </div>
+      </nav>
     </header>
     </>
   );

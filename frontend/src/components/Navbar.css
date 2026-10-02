@@ -42,6 +42,10 @@
   cursor: pointer;
   width: fit-content;
   text-decoration: none;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
 }
 
 .navbar-logo-img {
@@ -251,9 +255,8 @@
   max-height: calc(100vh - 64px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  /* Solid: a backdrop-filter nested inside the header's own blur doesn't apply, so the page showed through */
+  background: #ffffff;
   border-bottom: 1px solid rgba(229, 231, 235, 0.5);
   display: flex;
   flex-direction: column;

@@ -168,7 +168,7 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
       }
     } catch (err) {
       console.error('Upload Error:', err);
-      setErrorMsg(getErrorMessage(err) || 'Connection failed. Ensure the backend server is running.');
+      setErrorMsg(getErrorMessage(err) || 'Something went wrong on our side. Please try again in a moment.');
     } finally {
       clearInterval(stepInterval);
       setLoading(false);

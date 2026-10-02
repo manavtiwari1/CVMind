@@ -30,7 +30,11 @@ const PRO_PERKS = [
 ];
 
 export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }: AccountProps) {
-  const [tab, setTab] = useState<Tab>('profile');
+  // Links can open a tab directly, e.g. /account?tab=billing from the Help Center
+  const [tab, setTab] = useState<Tab>(() => {
+    const t = new URLSearchParams(window.location.search).get('tab');
+    return t === 'billing' ? 'billing' : 'profile';
+  });
   const [user, setUser] = useState<StoredUser | null>(readUser);
   const isPro = isProUser(user);
   const userId = user?.id || user?._id;
@@ -62,6 +66,7 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
   const [works, setWorks] = useState<ListedWork[]>([]);
   const [worksLoading, setWorksLoading] = useState(false);
   const [worksError, setWorksError] = useState('');
+  const [docsMsg, setDocsMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   // Delete account
   const [showDelete, setShowDelete] = useState(false);
@@ -232,8 +237,9 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
       if (!res.ok) throw new Error(data.error || 'Failed to delete document.');
       setWorks(prev => prev.filter(w => (w.id || w._id) !== workId));
       setLoadedWork({ deleted: true, workId });
+      setDocsMsg({ ok: true, text: 'Document deleted.' });
     } catch (err) {
-      alert(getErrorMessage(err) || 'Failed to delete document.');
+      setDocsMsg({ ok: false, text: getErrorMessage(err) || 'Failed to delete document.' });
     }
   };
 
@@ -244,7 +250,9 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
 
   const shareWork = (workId: string) => {
     const url = `${siteOrigin()}/portfolio/${workId}`;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(url)
+      .then(() => setDocsMsg({ ok: true, text: 'Portfolio link copied to your clipboard.' }))
+      .catch(() => setDocsMsg({ ok: true, text: 'Portfolio opened in a new tab. Copy the link from there.' }));
     window.open(url, '_blank');
   };
 
@@ -448,6 +456,7 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
           {tab === 'documents' && (
             <>
               <h1 className="acct-title">My Documents</h1>
+              {docsMsg && <p className={`acct-msg ${docsMsg.ok ? 'ok' : 'error'}`} role={docsMsg.ok ? 'status' : 'alert'}>{docsMsg.text}</p>}
               {worksLoading ? (
                 <div className="acct-empty"><Loader2 size={22} className="acct-spin" /> Loading your documents…</div>
               ) : worksError ? (

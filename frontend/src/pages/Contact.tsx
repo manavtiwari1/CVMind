@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
-import { Send, CheckCircle2, Mail, MessageSquare, Globe } from 'lucide-react';
-import { SUPPORT_EMAIL, WHATSAPP_DISPLAY, whatsappLink } from '../data/support';
+import { Send, CheckCircle2, Mail, MessageSquare, Phone } from 'lucide-react';
+import { SUPPORT_EMAIL, WHATSAPP_DISPLAY, whatsappLink, mailLink, telLink } from '../data/support';
+import { getErrorMessage } from '../utils/errors';
 import './Contact.css';
 
 export default function Contact() {
@@ -37,10 +38,11 @@ export default function Contact() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-      const data = await response.json();
+      // A gateway error page isn't JSON; fall back to the generic message instead of a parse error
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.error || 'Unable to send message right now.');
+        throw new Error(data.error || 'Unable to send message right now. Please try again, or email us directly.');
       }
 
       setLoading(false);
@@ -48,7 +50,7 @@ export default function Contact() {
       setFormData({ name: '', email: '', subject: '', message: '' });
     } catch (err) {
       setLoading(false);
-      setErrorMsg(err instanceof Error ? err.message : 'Unable to send message right now.');
+      setErrorMsg(getErrorMessage(err) || 'Unable to send message right now. Please try again, or email us directly.');
     }
   };
 
@@ -74,7 +76,7 @@ export default function Contact() {
           </p>
 
           <div className="info-details-list">
-            <a className="info-detail-item" href={`mailto:${SUPPORT_EMAIL}`}>
+            <a className="info-detail-item" href={mailLink()}>
               <div className="info-icon-circle">
                 <Mail size={16} />
               </div>
@@ -101,15 +103,15 @@ export default function Contact() {
               </div>
             </a>
 
-            <div className="info-detail-item">
+            <a className="info-detail-item" href={telLink}>
               <div className="info-icon-circle">
-                <Globe size={16} />
+                <Phone size={16} />
               </div>
               <div className="info-text-group">
-                <span className="info-label">Website Status</span>
-                <span className="info-value text-success">All Systems Operational</span>
+                <span className="info-label">Call Us</span>
+                <span className="info-value">{WHATSAPP_DISPLAY}</span>
               </div>
-            </div>
+            </a>
           </div>
         </div>
 
@@ -117,13 +119,13 @@ export default function Contact() {
         <div className="contact-form-column glass-card animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
           {isSent ? (
             /* Success confirmation card */
-            <div className="form-success-state">
+            <div className="form-success-state" role="status">
               <div className="success-icon-wrapper animate-pulse">
                 <CheckCircle2 className="success-check-icon" />
               </div>
               <h3 className="success-title">Message Sent Successfully!</h3>
               <p className="success-desc">
-                Thank you for reaching out. We have logged your request and our automated support routers will allocate it to our team.
+                Thanks for reaching out. We've received your message and will reply by email within 24 hours.
               </p>
               <button className="btn-secondary" onClick={() => setIsSent(false)}>
                 Send another message
@@ -192,7 +194,7 @@ export default function Contact() {
                 />
               </div>
 
-              {errorMsg && <div className="contact-error-msg">{errorMsg}</div>}
+              {errorMsg && <div className="contact-error-msg" role="alert">{errorMsg}</div>}
 
               <button type="submit" className="btn-primary form-submit-btn" disabled={loading}>
                 {loading ? (

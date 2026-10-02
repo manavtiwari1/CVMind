@@ -50,6 +50,7 @@
   display: flex;
   align-items: center;
   gap: 1.25rem;
+  min-width: 0;
 }
 
 .cp-company-logo {
@@ -71,6 +72,7 @@
   font-weight: 700;
   margin: 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem;
 }
@@ -93,7 +95,8 @@
   color: var(--cp-text-muted);
   margin-top: 0.25rem;
   display: flex;
-  gap: 1.2rem;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
 }
 
 /* Nav Tabs */

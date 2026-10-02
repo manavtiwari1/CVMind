@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { authFetch } from '../lib/authFetch';
 import {
-  Award, FileText, CheckCircle2, AlertTriangle,
+  Award, FileText, CheckCircle2, AlertTriangle, FileSearch,
   RotateCcw, Printer, ArrowRight, Target, Check, AlertCircle, Copy,
   Sparkles, Download, Zap
 } from 'lucide-react';
@@ -59,11 +59,11 @@ export default function Dashboard({ setCurrentPage, analysisResult, resumeText, 
   if (!analysisResult) {
     return (
       <div className="dashboard-empty-state glass-card animate-fade-in-up">
-        <AlertTriangle size={48} className="empty-icon text-warning" />
-        <h3>No Analysis Data Available</h3>
-        <p>Please upload a resume first from the home dashboard to generate feedback report.</p>
+        <FileSearch size={48} className="empty-icon" />
+        <h3>No resume checked yet</h3>
+        <p>Upload your resume on the home page to get your ATS score and a full feedback report.</p>
         <button className="btn-primary" onClick={() => setCurrentPage('home')}>
-          Go to Uploader
+          Check my resume
         </button>
       </div>
     );
