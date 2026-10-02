@@ -245,7 +245,7 @@ export default function Navbar({
                       Interview Prep AI
                     </button>
                     <button className={`mobile-drawer-link mobile-sub-sub-link${currentPage === 'voice-prep' ? ' active' : ''}`} onClick={() => go('voice-prep')}>
-                      Voice Practice AI
+                      Voice Prep AI
                     </button>
                     <button className={`mobile-drawer-link mobile-sub-sub-link${currentPage === 'proofreading' ? ' active' : ''}`} onClick={() => go('proofreading')}>
                       AI Proofreading

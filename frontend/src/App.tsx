@@ -406,13 +406,14 @@ export default function App() {
         return <Tailor customApiKey={customApiKey} setCurrentPage={setCurrentPage} loadedWork={loadedWork} setLoadedWork={setLoadedWork} onFocusChange={setBuilderFocus} />;
       case 'prep':
         return (
-          <Prep 
+          <Prep
             customApiKey={customApiKey}
             resumeText={resumeText}
             setResumeText={setResumeText}
             setCurrentPage={setCurrentPage}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'linkedin':
@@ -482,6 +483,11 @@ export default function App() {
           <VoicePrep
             customApiKey={customApiKey}
             resumeText={resumeText}
+            setResumeText={setResumeText}
+            setCurrentPage={setCurrentPage}
+            loadedWork={loadedWork}
+            setLoadedWork={setLoadedWork}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'portfolio-gen':
@@ -550,15 +556,17 @@ export default function App() {
 
   const isAdminPage = currentPage === 'admin';
   const isCodePage = currentPage === 'code-arena' || currentPage === 'cvmind-code-arena';
-  // Full-screen guided flows: the resume builder and Leo in the Resume Tailorer
-  const isFocusFlow = (currentPage === 'resume-editor' || currentPage === 'tailor') && builderFocus !== false;
+  // Pages where Leo guides the user; they keep the site header and footer except during his full-screen flow
+  const isLeoPage = currentPage === 'tailor' || currentPage === 'prep' || currentPage === 'voice-prep';
+  // Full-screen guided flows: the resume builder and Leo's flows
+  const isFocusFlow = (currentPage === 'resume-editor' || isLeoPage) && builderFocus !== false;
   // My Documents is a standalone app view with its own top bar
   const isAppPage = currentPage === 'my-documents';
   // The 404 page stands alone, without the site header and footer
   const isNotFound = currentPage === 'not-found';
   // App products (the app.cvmind.in pages) show no site header or footer, just a way back
-  // The Resume Tailorer keeps the site header and footer (Leo's guided flow still hides them)
-  const isProductPage = APP_PAGES.includes(currentPage) && currentPage !== 'tailor';
+  // Leo's pages (Resume Tailorer, Interview Prep AI, Voice Prep AI) keep the site header and footer
+  const isProductPage = APP_PAGES.includes(currentPage) && !isLeoPage;
   // Account and My Documents have their own Back button / top bar; the editor's full-screen flows have Exit
   const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && !isFocusFlow;
   const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || isCodePage || isFocusFlow || isAppPage;

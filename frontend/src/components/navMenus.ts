@@ -69,9 +69,9 @@ export const NAV_MENUS: NavMenu[] = [
       {
         heading: 'Interview',
         tiles: [
-          { page: 'prep', title: 'Interview Prep AI', desc: 'Behavioral & STAR coaching', icon: MessageSquare },
+          { page: 'prep', title: 'Interview Prep AI', desc: 'Mock interview from your CV and the job', icon: MessageSquare },
           { page: 'code', title: 'CVMind Code', desc: 'DSA practice, AI code judge & assessments', icon: Code2, badge: 'new' },
-          { page: 'voice-prep', title: 'Voice Practice AI', desc: 'Real-time speaking feedback', icon: Mic },
+          { page: 'voice-prep', title: 'Voice Prep AI', desc: 'Answer out loud, get speaking feedback', icon: Mic },
           { page: 'proofreading', title: 'AI Proofreading', desc: 'Grammar, tone & power verbs', icon: SpellCheck },
         ],
       },

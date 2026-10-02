@@ -11,6 +11,7 @@ import { RESUME_TEMPLATES, TEMPLATES, type Template } from '../data/resumeTempla
 import { authFetch } from '../lib/authFetch';
 import { API_BASE } from '../lib/apiBase';
 import { readUser } from '../lib/currentUser';
+import { cvFileError, isLink, readJobLink } from '../lib/jobInput';
 import { GOOGLE_FONTS_HREF } from '../lib/resumeDesign';
 import { splitFooter, withFooter } from '../lib/resumeFooter';
 import { sanitizeResumeHtml } from '../lib/sanitizeHtml';
@@ -267,17 +268,9 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
   }, [loadedWork, setLoadedWork]);
 
   const validateFile = (file: File) => {
-    setErrorMsg(null);
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    if (!ext || !['pdf', 'docx', 'txt'].includes(ext)) {
-      setErrorMsg('Please upload a PDF, DOCX or TXT file.');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMsg('That file is over 5 MB. Please upload a smaller one.');
-      return;
-    }
-    setSelectedFile(file);
+    const problem = cvFileError(file);
+    setErrorMsg(problem);
+    if (!problem) setSelectedFile(file);
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -353,23 +346,16 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
     setFlow(step);
   };
 
-  const cvReady = uploadMode === 'file' ? Boolean(selectedFile) : /^https?:\/\/\S+$/i.test(resumeUrl.trim());
+  const cvReady = uploadMode === 'file' ? Boolean(selectedFile) : isLink(resumeUrl);
 
   /** A job link is read into a description first; pasted text goes straight on. */
   const submitJob = async () => {
     const text = jobDescription.trim();
     setErrorMsg(null);
-    if (/^https?:\/\/\S+$/i.test(text)) {
+    if (isLink(text)) {
       setJobBusy(true);
       try {
-        const res = await authFetch(`${API_BASE}/api/auto-apply/scrape-job`, { method: 'POST', headers: apiHeaders(true), body: JSON.stringify({ url: text }) });
-        const body = await res.json().catch(() => ({}));
-        const d = body?.data;
-        // The scraper falls back to placeholder text when it cannot read a page; only trust a real description.
-        if (!res.ok || !d || d.source !== 'ai_scraper' || !d.description || d.description.length < 150) {
-          throw new Error("I couldn't read that job link. Please paste the job description text instead.");
-        }
-        setJobDescription([`${d.title || ''}${d.company ? ` at ${d.company}` : ''}`, d.description, d.skills?.length ? `Skills: ${d.skills.join(', ')}` : ''].filter(Boolean).join('\n\n'));
+        setJobDescription((await readJobLink(text, apiHeaders())).text);
         setFlow('template');
       } catch (err) {
         setErrorMsg(getErrorMessage(err) || "I couldn't read that job link.");

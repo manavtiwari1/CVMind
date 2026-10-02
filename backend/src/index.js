@@ -12,7 +12,7 @@ import multer from 'multer';
 import bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
 import { parsePdf, parseDocx, parseTxt, fetchResumeFromUrl } from './services/parser.js';
-import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, findJobsWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek } from './services/gemini.js';
+import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, findJobsWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek, generateInterviewPlan, evaluateInterviewAnswer, generateInterviewReport } from './services/gemini.js';
 import { getPublicStats, getAdminStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveJobFinderLog, saveProofreadLog, savePaymentLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, getWhitelistedEmails, addWhitelistedEmail, deleteWhitelistedEmail, getAutoApplyAccessList, grantAutoApplyAccess, revokeAutoApplyAccess, hasAutoApplyAccess, getCareerCopilotAccessList, grantCareerCopilotAccess, revokeCareerCopilotAccess, hasCareerCopilotAccess, getAllUsersForAdmin, setUserStatus } from './db.js';
 import { Resend } from 'resend';
 import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser } from './services/authToken.js';
@@ -153,6 +153,7 @@ const AI_ROUTE_PATHS = [
   '/api/optimize',
   '/api/tailor',
   '/api/prep',
+  '/api/interview',
   '/api/cover-letter/refine',
   '/api/resume/generate',
   '/api/resume/parse-data',
@@ -2105,6 +2106,165 @@ Return ONLY valid JSON.`;
   } catch (error) {
     console.error('LinkedIn Post API Error:', error);
     return res.status(500).json({ error: error.message || 'AI generation failed.' });
+  }
+});
+
+// ── Interview Prep AI / Voice Prep AI: Leo's mock interview ──
+// The older /api/prep and /api/voice-prep routes stay for the mobile app and extension.
+const INTERVIEW_LEVELS = ['Fresher', 'Mid-level', 'Senior', 'Lead / Manager'];
+const INTERVIEW_ROUNDS = ['Mixed', 'HR', 'Behavioural', 'Technical'];
+const pickFrom = (list, value, fallback) => (list.includes(value) ? value : fallback);
+const cleanText = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
+const strList = (value, maxItems, maxLen) => (Array.isArray(value) ? value.filter(v => typeof v === 'string').slice(0, maxItems).map(v => v.slice(0, maxLen)) : []);
+const cleanMetrics = (m) => (m && typeof m === 'object' ? {
+  seconds: Math.max(0, Math.round(Number(m.seconds) || 0)),
+  words: Math.max(0, Math.round(Number(m.words) || 0)),
+  wpm: Math.max(0, Math.round(Number(m.wpm) || 0)),
+  fillerCount: Math.max(0, Math.round(Number(m.fillerCount) || 0)),
+  fillers: strList(m.fillers, 10, 30),
+} : null);
+
+// Prepares the questions. The CV is optional: a file, a link, or text read earlier.
+apiRouter.post('/api/interview/plan', optionalUser, upload.single('resume'), async (req, res) => {
+  try {
+    const { file } = req;
+    const body = req.body || {};
+    const customApiKey = req.headers['x-gemini-key'] || null;
+    const role = cleanText(body.role, 120);
+    const jobDescription = cleanText(body.jobDescription, 12000);
+    const mode = body.mode === 'voice' ? 'voice' : 'text';
+    const count = Math.min(10, Math.max(3, parseInt(body.count, 10) || 5));
+    if (!role) return res.status(400).json({ error: 'Please tell Leo which role you are interviewing for.' });
+
+    let resumeText = cleanText(body.resumeText, 20000);
+    let fileName = resumeText ? 'Saved resume' : '';
+    if (file || body.resumeUrl) {
+      try {
+        resumeText = (await extractResumeText(file, body.resumeUrl)).slice(0, 20000);
+        fileName = file ? file.originalname : 'Linked CV';
+      } catch (parseErr) {
+        return res.status(parseErr.status || 400).json({ error: parseErr.message });
+      }
+      if (resumeText.trim().length < 50) {
+        return res.status(400).json({ error: 'I could not read any text in that CV. Please try a different file, or skip the CV.' });
+      }
+    }
+
+    const data = await generateInterviewPlan({
+      resumeText,
+      role,
+      jobDescription,
+      level: pickFrom(INTERVIEW_LEVELS, body.level, 'Mid-level'),
+      round: pickFrom(INTERVIEW_ROUNDS, body.round, 'Mixed'),
+      count,
+      mode,
+      customApiKey,
+    });
+    data.questions = data.questions.map((q, i) => ({ ...q, id: `q${i + 1}` }));
+
+    if (mode === 'text') {
+      await savePrepLog({ fileName: fileName || 'No CV', fileSize: file?.size || resumeText.length, questionsCount: data.questions.length, userId: req.auth?.sub || '' });
+    }
+    return res.json({ success: true, data, resumeText, fileName });
+  } catch (error) {
+    console.error('Interview Plan API Error:', error);
+    return res.status(500).json({ error: error.message || 'Could not prepare your interview. Please try again.' });
+  }
+});
+
+// Scores one answer
+apiRouter.post('/api/interview/evaluate', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const customApiKey = req.headers['x-gemini-key'] || null;
+    const question = cleanText(body.question, 600);
+    const answer = cleanText(body.answer, 6000);
+    if (!question || !answer) return res.status(400).json({ error: 'Please answer the question first.' });
+    const mode = body.mode === 'voice' ? 'voice' : 'text';
+
+    const data = await evaluateInterviewAnswer({
+      question,
+      answer,
+      keyPoints: strList(body.keyPoints, 5, 200),
+      role: cleanText(body.role, 120),
+      jobDescription: cleanText(body.jobDescription, 6000),
+      resumeText: cleanText(body.resumeText, 8000),
+      mode,
+      metrics: mode === 'voice' ? cleanMetrics(body.metrics) : null,
+      customApiKey,
+    });
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('Interview Evaluate API Error:', error);
+    return res.status(500).json({ error: error.message || 'Could not score your answer. Please try again.' });
+  }
+});
+
+// Writes the debrief and saves the whole interview to My Documents
+apiRouter.post('/api/interview/report', optionalUser, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const userId = req.auth?.sub;
+    const customApiKey = req.headers['x-gemini-key'] || null;
+    const mode = body.mode === 'voice' ? 'voice' : 'text';
+    const settings = body.settings && typeof body.settings === 'object' ? body.settings : {};
+    const role = cleanText(settings.role, 120);
+    const questions = Array.isArray(body.questions) ? body.questions.slice(0, 10) : [];
+    const turns = Array.isArray(body.turns) ? body.turns.slice(0, 10) : [];
+
+    // One line per question, paired with its answer and score
+    const rows = questions.map(q => {
+      const turn = turns.find(t => t && t.questionId === q?.id) || {};
+      const fb = turn.feedback && typeof turn.feedback === 'object' ? turn.feedback : null;
+      return {
+        question: cleanText(q?.question, 600),
+        answer: cleanText(turn.answer, 3000),
+        score: fb && Number.isFinite(Number(fb.score)) ? Math.max(0, Math.min(10, Number(fb.score))) : null,
+        missing: fb ? strList(fb.missing, 3, 200) : [],
+        metrics: mode === 'voice' ? cleanMetrics(turn.metrics) : null,
+      };
+    }).filter(r => r.question);
+
+    const scored = rows.filter(r => r.score !== null);
+    if (!scored.length) return res.status(400).json({ error: 'Answer at least one question to get your report.' });
+
+    const ai = await generateInterviewReport({ role, level: cleanText(settings.level, 40), mode, turns: rows, customApiKey });
+    const overallScore = Math.round((scored.reduce((sum, r) => sum + r.score, 0) / scored.length) * 10);
+    const report = {
+      overallScore,
+      answered: scored.length,
+      summary: cleanText(ai.summary, 1200),
+      strengths: strList(ai.strengths, 5, 300),
+      weakAreas: strList(ai.weakAreas, 5, 300),
+      practiceNext: strList(ai.practiceNext, 5, 300),
+    };
+
+    const work = await saveFeatureWork(userId, {
+      title: `${mode === 'voice' ? 'Voice Prep' : 'Interview Prep'} - ${role || 'Mock interview'}`,
+      type: mode === 'voice' ? 'voice-prep' : 'prep',
+      templateId: mode === 'voice' ? 'voice-practice' : 'interview-prep',
+      payload: {
+        version: 2,
+        mode,
+        settings,
+        fileName: cleanText(body.fileName, 200),
+        jobDescription: cleanText(body.jobDescription, 12000),
+        resumeText: cleanText(body.resumeText, 20000),
+        questions,
+        turns,
+        report,
+      },
+    });
+
+    if (mode === 'voice' && userId) {
+      const user = await findUserById(userId);
+      if (user) await saveVoicePrepLog({ email: user.email, userId, jobTitle: role || 'General', score: overallScore / 10 });
+    }
+
+    return res.json({ success: true, data: report, work });
+  } catch (error) {
+    console.error('Interview Report API Error:', error);
+    return res.status(500).json({ error: error.message || 'Could not write your report. Please try again.' });
   }
 });
 

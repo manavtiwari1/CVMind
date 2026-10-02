@@ -24,7 +24,7 @@ const TOOLS_LEFT: FooterLink[] = [
 
 const TOOLS_RIGHT: FooterLink[] = [
   { label: 'Interview Prep AI', page: 'prep' },
-  { label: 'Voice Practice AI', page: 'voice-prep' },
+  { label: 'Voice Prep AI', page: 'voice-prep' },
   { label: 'AI Job Finder', page: 'job-finder' },
   { label: 'Auto Apply Agent', page: 'auto-apply' },
   { label: 'AI Career Copilot', page: 'career-copilot' },

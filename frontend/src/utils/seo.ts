@@ -99,14 +99,14 @@ const PAGE_SEO: Record<string, PageSEO> = {
     keywords: 'Resume Tailor, Tailor Resume to Job Description, AI Resume Tailoring, ATS Keyword Match, Job Description Resume Match',
   },
   prep: {
-    title: 'AI Interview Preparation & Mock Interviews | CV Mind',
-    description: 'Prepare for interviews with personalized AI coaching. Get simulated behavioral questions, instant answers assessment, and industry-specific prep tips based on your resume.',
-    keywords: 'AI Interview Prep, Mock Interview, Interview Coaching, Behavioral Questions',
+    title: 'Interview Prep AI - Mock Interview from Your CV & the Job | CV Mind',
+    description: 'Practise a mock interview built from your CV and the job description. Answer each question and get a score, what was missing, a stronger answer, and a full interview report.',
+    keywords: 'AI Interview Prep, Mock Interview, Interview Questions, Job Description Interview, STAR Method',
   },
   'voice-prep': {
-    title: 'Voice Interview Practice | AI Coaching - CV Mind',
-    description: 'Practice interviews by speaking your answers aloud. AI transcribes, analyzes confidence, detects filler words, and gives real-time coaching feedback.',
-    keywords: 'Voice Interview Practice, AI Interview Coach, Mock Interview, Speech Analysis',
+    title: 'Voice Prep AI - Practise Interviews Out Loud | CV Mind',
+    description: 'Leo asks interview questions out loud, built from your CV and the job. Answer by speaking and get feedback on your content, pace, filler words and confidence.',
+    keywords: 'Voice Interview Practice, AI Interview Coach, Mock Interview, Speaking Feedback, Filler Words',
   },
   'job-finder': {
     title: 'AI Job Finder | Match Jobs to Your CV - CV Mind',

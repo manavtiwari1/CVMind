@@ -993,6 +993,188 @@ export async function evaluatePrepAnswerWithGemini({ question, userAnswer, resum
   }
 }
 
+// ─── INTERVIEW PREP AI / VOICE PREP AI (Leo's mock interview) ────────────────
+
+const interviewPlanSchema = {
+  type: 'object',
+  properties: {
+    questions: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          question: { type: 'string', description: 'The interview question, worded the way an interviewer would ask it.' },
+          category: { type: 'string', description: 'One of: HR, Behavioural, Technical, Situational, Role fit.' },
+          difficulty: { type: 'string', enum: ['Easy', 'Medium', 'Hard'] },
+          whatInterviewerWants: { type: 'string', description: 'One or two sentences on what a strong answer shows.' },
+          keyPoints: { type: 'array', items: { type: 'string' }, description: '2-4 short points a strong answer would cover.' }
+        },
+        required: ['question', 'category', 'difficulty', 'whatInterviewerWants', 'keyPoints']
+      }
+    }
+  },
+  required: ['questions']
+};
+
+const interviewAnswerSchema = {
+  type: 'object',
+  properties: {
+    score: { type: 'number', description: 'Overall score for this answer from 0 to 10 (one decimal allowed).' },
+    scores: {
+      type: 'object',
+      properties: {
+        content: { type: 'number' },
+        structure: { type: 'number' },
+        relevance: { type: 'number' },
+        clarity: { type: 'number' },
+        confidence: { type: 'number', description: 'Voice answers only: how confident the delivery sounds.' }
+      },
+      description: 'Sub-scores from 0 to 10.'
+    },
+    verdict: { type: 'string', enum: ['Excellent', 'Good', 'Average', 'Needs work'] },
+    strengths: { type: 'array', items: { type: 'string' }, description: '1-3 specific things the answer did well.' },
+    missing: { type: 'array', items: { type: 'string' }, description: '1-3 specific things missing or weak.' },
+    improvedAnswer: { type: 'string', description: 'A stronger version of the candidate\'s own answer, 60-110 words, first person, using only facts from their answer or CV.' },
+    deliveryTip: { type: 'string', description: 'Voice answers only: one short tip on pace, filler words or confidence. Empty string for text answers.' }
+  },
+  required: ['score', 'scores', 'verdict', 'strengths', 'missing', 'improvedAnswer']
+};
+
+const interviewReportSchema = {
+  type: 'object',
+  properties: {
+    summary: { type: 'string', description: '2-3 sentences, addressed to the candidate as "you", on how the interview went overall.' },
+    strengths: { type: 'array', items: { type: 'string' }, description: '2-4 strengths shown across the interview.' },
+    weakAreas: { type: 'array', items: { type: 'string' }, description: '2-4 areas to work on, each specific and actionable.' },
+    practiceNext: { type: 'array', items: { type: 'string' }, description: '3 new interview questions to practise next, aimed at the weak areas.' }
+  },
+  required: ['summary', 'strengths', 'weakAreas', 'practiceNext']
+};
+
+const clip = (text, max) => String(text || '').slice(0, max);
+
+/** Builds a mock interview grounded in the candidate's CV and the job description. */
+export async function generateInterviewPlan({ resumeText = '', role, jobDescription = '', level = 'Mid-level', round = 'Mixed', count = 5, mode = 'text', customApiKey = null }) {
+  const voice = mode === 'voice';
+  const systemPrompt = `You are an experienced interviewer preparing a realistic ${round} interview for a ${level} ${role} candidate.
+  RULES:
+  1. Write exactly ${count} questions, in the order a real interviewer would ask them (start with a warm-up).
+  2. Ground the questions in the job description: probe its key requirements, and dig into the candidate's CV where it relates (projects, roles, claims to verify).
+  3. Where the CV looks weak against the job, ask about it directly, politely.
+  4. Round "${round}": ${round === 'Mixed' ? 'mix HR, behavioural, technical and situational questions' : `keep questions mostly ${round}`}.
+  5. ${voice ? 'These will be read aloud: keep every question under 30 words, one question at a time, no lists or code.' : 'Keep each question under 45 words.'}
+  6. Match the difficulty to the level. No duplicate questions.
+  7. Respond only with JSON matching the schema.`;
+
+  const userPrompt = `Target role: ${role}
+  Level: ${level}
+
+  Job description:
+  """
+  ${clip(jobDescription, 6000) || 'Not provided. Use what is typical for this role.'}
+  """
+
+  Candidate's CV:
+  """
+  ${clip(resumeText, 8000) || 'Not provided. Ask general questions for this role.'}
+  """
+
+  Prepare the interview questions now.`;
+
+  try {
+    const result = await callDeepSeek({
+      systemInstruction: systemPrompt,
+      prompt: userPrompt,
+      responseSchema: interviewPlanSchema,
+      customApiKey,
+      temperature: 0.5,
+      maxTokens: 2500
+    });
+    const questions = (Array.isArray(result?.questions) ? result.questions : [])
+      .filter(q => q && typeof q.question === 'string' && q.question.trim())
+      .slice(0, count);
+    if (!questions.length) throw new Error('No questions were returned.');
+    return { questions };
+  } catch (error) {
+    console.error('DeepSeek Interview Plan Error:', error);
+    throw new Error('Could not prepare your interview. ' + error.message);
+  }
+}
+
+/** Scores one answer. Voice answers also get delivery feedback from the client-side metrics. */
+export async function evaluateInterviewAnswer({ question, answer, keyPoints = [], role = '', jobDescription = '', resumeText = '', mode = 'text', metrics = null, customApiKey = null }) {
+  const voice = mode === 'voice';
+  const systemPrompt = `You are a fair, specific interview coach scoring one answer from a mock interview for a ${role || 'professional'} role.
+  RULES:
+  1. Score honestly from 0 to 10. A vague or off-topic answer scores below 5; do not inflate.
+  2. Strengths and missing points must refer to what the candidate actually said.
+  3. The improved answer keeps the candidate's own facts. Do not invent employers, numbers or projects not in their answer or CV.
+  4. Use the STAR shape (situation, task, action, result) for behavioural questions.
+  ${voice ? '5. This answer was spoken and transcribed by the browser, so ignore small transcription errors and missing punctuation. Fill in "confidence" and "deliveryTip" using the delivery metrics.' : '5. This answer was typed. Leave "confidence" out and set "deliveryTip" to an empty string.'}
+  6. Respond only with JSON matching the schema.`;
+
+  const delivery = voice && metrics
+    ? `Delivery metrics: ${metrics.words || 0} words in ${metrics.seconds || 0}s (${metrics.wpm || 0} words per minute; 120-160 is a comfortable pace). Filler words: ${metrics.fillerCount || 0}${metrics.fillers?.length ? ` (${metrics.fillers.join(', ')})` : ''}.`
+    : '';
+
+  const userPrompt = `Question: "${clip(question, 600)}"
+  ${keyPoints.length ? `A strong answer would cover: ${keyPoints.map(p => clip(p, 160)).join('; ')}` : ''}
+
+  Candidate's answer:
+  """
+  ${clip(answer, 6000)}
+  """
+  ${delivery}
+
+  ${jobDescription ? `Job description (for context):\n"""\n${clip(jobDescription, 3000)}\n"""` : ''}
+  ${resumeText ? `Candidate's CV (for context):\n"""\n${clip(resumeText, 4000)}\n"""` : ''}
+
+  Score this answer now.`;
+
+  try {
+    return await callDeepSeek({
+      systemInstruction: systemPrompt,
+      prompt: userPrompt,
+      responseSchema: interviewAnswerSchema,
+      customApiKey,
+      temperature: 0.3,
+      maxTokens: 1200
+    });
+  } catch (error) {
+    console.error('DeepSeek Interview Evaluate Error:', error);
+    throw new Error('Could not score your answer. ' + error.message);
+  }
+}
+
+/** Sums up a finished mock interview. The overall score is worked out by the caller from the answer scores. */
+export async function generateInterviewReport({ role = '', level = '', mode = 'text', turns = [], customApiKey = null }) {
+  const systemPrompt = `You are an interview coach writing the end-of-interview debrief for a ${level} ${role || 'professional'} candidate${mode === 'voice' ? ' who answered out loud' : ''}.
+  Be specific and kind, refer to their actual answers, and keep every point short. Respond only with JSON matching the schema.`;
+
+  const transcript = turns.map((t, i) => `Q${i + 1}: ${clip(t.question, 400)}
+  Answer: ${clip(t.answer, 1500) || '(skipped)'}
+  Score: ${t.score ?? 'n/a'}/10${t.missing?.length ? ` · Missing: ${t.missing.map(m => clip(m, 160)).join('; ')}` : ''}${t.metrics ? ` · ${t.metrics.wpm} wpm, ${t.metrics.fillerCount} filler words` : ''}`).join('\n\n');
+
+  const userPrompt = `The interview:
+  ${transcript}
+
+  Write the debrief now.`;
+
+  try {
+    return await callDeepSeek({
+      systemInstruction: systemPrompt,
+      prompt: userPrompt,
+      responseSchema: interviewReportSchema,
+      customApiKey,
+      temperature: 0.4,
+      maxTokens: 1200
+    });
+  } catch (error) {
+    console.error('DeepSeek Interview Report Error:', error);
+    throw new Error('Could not write your interview report. ' + error.message);
+  }
+}
+
 export async function generateLinkedinBioWithGemini({ skills, jobTitle, resumeText, customApiKey = null }) {
   const systemPrompt = `You are a premier LinkedIn Personal Branding Coach. Your task is to craft high-conversion LinkedIn profile assets:
   1. Headlines: Catchy, keyword-optimized, highlighting their specialty and value.
