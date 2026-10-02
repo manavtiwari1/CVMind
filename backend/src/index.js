@@ -18,6 +18,7 @@ import { Resend } from 'resend';
 import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser } from './services/authToken.js';
 import mongoose from 'mongoose';
 import { importUploadedResume, RESUME_MIME_TYPES } from './agent/resume/intake.js';
+import { searchJobs, getJobDetail, warmJobSearch, JOB_SEARCH_COMPANIES } from './services/jobSearch.js';
 
 const app = express();
 // Render/Vercel sit behind one proxy; trust it so rate limiting sees the real client IP
@@ -1445,6 +1446,33 @@ apiRouter.post('/api/resume/parse-data', upload.single('resume'), async (req, re
   }
 });
 
+// ── Live job search (resume builder step 1) ───────────────────────────────────
+apiRouter.get('/api/jobs/search', async (req, res) => {
+  const q = String(req.query.q || '').slice(0, 120);
+  try {
+    const result = await searchJobs(q);
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    return res.json({ success: true, ...result, companies: JOB_SEARCH_COMPANIES });
+  } catch (err) {
+    console.error('Job search error:', err);
+    return res.status(502).json({ error: 'Job search is unavailable right now. Please try again shortly.' });
+  }
+});
+
+apiRouter.get('/api/jobs/detail', async (req, res) => {
+  const id = String(req.query.id || '');
+  if (!/^(gh|lv):[\w-]+:[\w-]+$/.test(id)) return res.status(400).json({ error: 'Invalid job id.' });
+  try {
+    const data = await getJobDetail(id);
+    if (!data) return res.status(404).json({ error: 'This job is no longer available.' });
+    res.setHeader('Cache-Control', 'public, max-age=1800');
+    return res.json({ success: true, ...data });
+  } catch (err) {
+    console.error('Job detail error:', err);
+    return res.status(502).json({ error: 'Could not load this job description.' });
+  }
+});
+
 // Import resume data from a public LinkedIn profile URL.
 // LinkedIn often serves an auth wall to server-side requests; in that case we say so
 // and the client falls back to a "Save to PDF" upload via /api/resume/parse-data.
@@ -2605,6 +2633,8 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
+  // Fill the live job-search cache so the first search in the resume builder is quick.
+  if (!process.env.VERCEL) warmJobSearch();
   // Local dev convenience: run agent queue workers in the API process (production uses src/worker.js)
   if (process.env.INLINE_WORKERS === 'true' && !process.env.VERCEL) {
     startWorkers().catch((err) => console.error('[agent] failed to start inline workers:', err.message));
