@@ -16,6 +16,7 @@ import {
 } from './ui/sign-up';
 import { useRef } from 'react';
 import { getErrorMessage } from '../utils/errors';
+import { setSession } from '../lib/session';
 
 /* ─── Types ─────────────────────────────────────────────────────── */
 
@@ -245,8 +246,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Sign up failed.');
-        localStorage.setItem('cvmind_logged_in', 'true');
-        localStorage.setItem('cvmind_user', JSON.stringify(data.user));
+        setSession(data.user);
         fireSuccess();
       } catch (err) { setErrorMsg(getErrorMessage(err) || 'Connection failed.'); }
       finally { setLoading(false); }
@@ -262,8 +262,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Authentication failed.');
-      localStorage.setItem('cvmind_logged_in', 'true');
-      localStorage.setItem('cvmind_user', JSON.stringify(data.user));
+      setSession(data.user);
       fireSuccess();
     } catch (err) {
       setErrorMsg(getErrorMessage(err) || 'Connection failed.');

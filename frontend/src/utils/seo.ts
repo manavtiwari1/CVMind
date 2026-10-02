@@ -1,4 +1,5 @@
 import { ARTICLES } from '../data/articles';
+import { isAppHost } from '../lib/hosts';
 
 interface PageSEO {
   title: string;
@@ -223,4 +224,7 @@ export function applySEO(page: string) {
     document.head.appendChild(canonical);
   }
   canonical.setAttribute('href', url);
+
+  // app.cvmind.in duplicates the site build; keep it out of search results
+  if (isAppHost()) setMeta('robots', 'noindex, nofollow');
 }

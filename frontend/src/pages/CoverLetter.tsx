@@ -28,6 +28,7 @@ import { RESUME_TEMPLATES, TEMPLATES, type Template } from '../data/resumeTempla
 import { authFetch } from '../lib/authFetch';
 import { getErrorMessage } from '../utils/errors';
 import type { ExtractedResume, LoadedWork, WizardFormData } from '../types/api';
+import { siteOrigin } from '../lib/hosts';
 
 // ─────────────────────────────────────────────────────────────────
 // Toolbar constants
@@ -542,7 +543,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
     }
 
     if (activeWorkId) {
-      const shareUrl = `${window.location.origin}/portfolio/${activeWorkId}`;
+      const shareUrl = `${siteOrigin()}/portfolio/${activeWorkId}`;
       navigator.clipboard.writeText(shareUrl);
       window.open(shareUrl, '_blank');
       return;
@@ -589,7 +590,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
       if (data.data) {
         const newId = data.data.id || data.data._id;
         setActiveWorkId(newId);
-        const shareUrl = `${window.location.origin}/portfolio/${newId}`;
+        const shareUrl = `${siteOrigin()}/portfolio/${newId}`;
         navigator.clipboard.writeText(shareUrl);
         window.open(shareUrl, '_blank');
       }

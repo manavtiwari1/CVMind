@@ -10,6 +10,7 @@ import { getErrorMessage } from '../utils/errors';
 import { workLabel, workPage } from '../lib/works';
 import type { LoadedWork, SavedWork, StoredUser } from '../types/api';
 import './Account.css';
+import { siteOrigin } from '../lib/hosts';
 
 type Tab = 'profile' | 'billing' | 'documents';
 type ListedWork = SavedWork & { _id: string; createdAt: string };
@@ -242,7 +243,7 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
   };
 
   const shareWork = (workId: string) => {
-    const url = `${window.location.origin}/portfolio/${workId}`;
+    const url = `${siteOrigin()}/portfolio/${workId}`;
     navigator.clipboard.writeText(url);
     window.open(url, '_blank');
   };
