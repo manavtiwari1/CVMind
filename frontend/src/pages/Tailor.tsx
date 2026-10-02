@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { authFetch } from '../lib/authFetch';
 import { Upload, FileText, ChevronRight, Check, Copy, Sparkles, BrainCircuit, RefreshCw, Cpu, CheckCircle2, ShieldCheck, FileCheck, Download, ChevronDown, Link } from 'lucide-react';
 import { getErrorMessage } from '../utils/errors';
 import './Tailor.css';
@@ -138,7 +139,7 @@ export default function Tailor({ customApiKey }: TailorProps) {
         headers['x-gemini-key'] = customApiKey;
       }
 
-      const response = await fetch(`${baseUrl}/api/tailor`, {
+      const response = await authFetch(`${baseUrl}/api/tailor`, {
         method: 'POST',
         headers,
         body: formData
