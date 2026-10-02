@@ -40,7 +40,8 @@
 .tlr-fine.tlr-center { justify-content: center; margin-top: 10px; }
 
 /* Hero */
-.tlr-hero { background: radial-gradient(1200px 500px at 70% 30%, #16233a 0%, #0b101d 60%); color: #fff; padding: 64px 0 80px; }
+/* The site navbar is fixed (64px) and this page runs full-bleed, so sections clear it themselves */
+.tlr-hero { background: radial-gradient(1200px 500px at 70% 30%, #16233a 0%, #0b101d 60%); color: #fff; padding: calc(64px + 56px) 0 80px; }
 .tlr-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 480px); gap: 56px; align-items: center; }
 .tlr-crumb { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; font-size: .85rem; font-weight: 600; color: #cfd7e6; }
 .tlr-crumb button { display: grid; place-items: center; background: none; border: 0; color: #9d8cf0; cursor: pointer; padding: 0; }
@@ -181,7 +182,7 @@
 .tlr-final p { color: #aab5cc; margin: 14px 0 28px; }
 
 /* Result view */
-.tlr-result { background: var(--bg); padding: 32px 0 72px; min-height: 70vh; }
+.tlr-result { background: var(--bg); padding: calc(64px + 28px) 0 72px; min-height: 70vh; }
 .tlr-result-top { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
 .tlr-result-top h1 { font-size: clamp(1.5rem, 2.6vw, 2rem); font-weight: 800; }
 .tlr-result-top p { color: var(--muted); font-size: .9rem; margin-top: 4px; }
@@ -236,7 +237,7 @@
 
 @media (max-width: 960px) {
   .tlr-hero-grid, .tlr-compare, .tlr-result-grid { grid-template-columns: 1fr; gap: 32px; }
-  .tlr-hero { padding: 44px 0 56px; }
+  .tlr-hero { padding: calc(64px + 32px) 0 56px; }
   .tlr-steps, .tlr-tools { grid-template-columns: 1fr 1fr; }
   .tlr-side { position: static; }
 }

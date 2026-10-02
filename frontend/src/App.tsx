@@ -557,7 +557,8 @@ export default function App() {
   // The 404 page stands alone, without the site header and footer
   const isNotFound = currentPage === 'not-found';
   // App products (the app.cvmind.in pages) show no site header or footer, just a way back
-  const isProductPage = APP_PAGES.includes(currentPage);
+  // The Resume Tailorer keeps the site header and footer (Leo's guided flow still hides them)
+  const isProductPage = APP_PAGES.includes(currentPage) && currentPage !== 'tailor';
   // Account and My Documents have their own Back button / top bar; the editor's full-screen flows have Exit
   const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && !isFocusFlow;
   const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || isCodePage || isFocusFlow || isAppPage;
