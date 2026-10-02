@@ -403,7 +403,7 @@ export default function App() {
       case 'admin':
         return <Admin setCurrentPage={setCurrentPage} />;
       case 'tailor':
-        return <Tailor customApiKey={customApiKey} setCurrentPage={setCurrentPage} loadedWork={loadedWork} setLoadedWork={setLoadedWork} />;
+        return <Tailor customApiKey={customApiKey} setCurrentPage={setCurrentPage} loadedWork={loadedWork} setLoadedWork={setLoadedWork} onFocusChange={setBuilderFocus} />;
       case 'prep':
         return (
           <Prep 
@@ -550,7 +550,8 @@ export default function App() {
 
   const isAdminPage = currentPage === 'admin';
   const isCodePage = currentPage === 'code-arena' || currentPage === 'cvmind-code-arena';
-  const isFocusFlow = currentPage === 'resume-editor' && builderFocus !== false;
+  // Full-screen guided flows: the resume builder and Leo in the Resume Tailorer
+  const isFocusFlow = (currentPage === 'resume-editor' || currentPage === 'tailor') && builderFocus !== false;
   // My Documents is a standalone app view with its own top bar
   const isAppPage = currentPage === 'my-documents';
   // The 404 page stands alone, without the site header and footer
@@ -587,7 +588,7 @@ export default function App() {
         />
       )}
 
-      {isFocusFlow && builderFocus === 'flow' && (
+      {isFocusFlow && builderFocus === 'flow' && currentPage === 'resume-editor' && (
         <button type="button" className="focus-exit" onClick={() => setCurrentPage('resume-builder')} aria-label="Exit resume builder">
           Exit ✕
         </button>

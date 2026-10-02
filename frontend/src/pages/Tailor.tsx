@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import TemplatePreview from '../components/TemplatePreview';
 import ResumeDownload from '../components/ResumeDownload';
+import { Leo, Stepper } from '../components/ResumeOnboarding';
+import '../components/ResumeOnboarding.css';
 import { RESUME_TEMPLATES, TEMPLATES, type Template } from '../data/resumeTemplates';
 import { authFetch } from '../lib/authFetch';
 import { API_BASE } from '../lib/apiBase';
@@ -22,7 +24,13 @@ interface TailorProps {
   setCurrentPage: (page: string) => void;
   loadedWork: LoadedWork | null;
   setLoadedWork: (work: LoadedWork | null) => void;
+  /** Hides the site chrome while Leo's guided flow is open. */
+  onFocusChange?: (mode: false | 'flow') => void;
 }
+
+// Leo's guided steps; null shows the intro page (or the result)
+type Flow = null | 'cv' | 'jd' | 'template' | 'pick' | 'working';
+const FLOW_DOT: Record<Exclude<Flow, null>, number> = { cv: 1, jd: 2, template: 3, pick: 3, working: 4 };
 
 interface TailorResult {
   matchScore: number;
@@ -185,7 +193,9 @@ function ResumeSheet({ html }: { html: string }) {
   );
 }
 
-export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLoadedWork }: TailorProps) {
+export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLoadedWork, onFocusChange }: TailorProps) {
+  const [flow, setFlow] = useState<Flow>(null);
+  const [jobBusy, setJobBusy] = useState(false);
   const [uploadMode, setUploadMode] = useState<'file' | 'link'>('file');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [resumeUrl, setResumeUrl] = useState('');
@@ -204,8 +214,13 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
   const [handingOff, setHandingOff] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const toolRef = useRef<HTMLDivElement>(null);
-  const templatesRef = useRef<HTMLElement>(null);
+  // Set when the user picked a template on the intro page; Leo then offers it first
+  const [pickedOnIntro, setPickedOnIntro] = useState(false);
+
+  useEffect(() => {
+    onFocusChange?.(flow ? 'flow' : false);
+  }, [flow, onFocusChange]);
+  useEffect(() => () => onFocusChange?.(false), [onFocusChange]);
 
   // Full-bleed sections, like the resume builder landing page
   useEffect(() => {
@@ -243,6 +258,7 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
         setResumeText(saved.resumeText || '');
         setSourceName(saved.fileName || '');
         setErrorMsg(null);
+        setFlow(null);
       }
     }
   }
@@ -288,12 +304,12 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
   };
 
   /** Runs the tailor. With `fromText`, re-uses the CV text read on an earlier run instead of the file. */
-  const runTailor = async (jd: string, fromText = '') => {
-    if (!fromText && uploadMode === 'file' && !selectedFile) { setErrorMsg('Please upload your CV first.'); return; }
-    if (!fromText && uploadMode === 'link' && !resumeUrl.trim()) { setErrorMsg('Please paste a link to your CV.'); return; }
-    if (jd.trim().length < 15) { setErrorMsg('Please paste the job description (at least a few lines).'); return; }
+  const runTailor = async (jd: string, fromText = '', tid = templateId): Promise<boolean> => {
+    if (!fromText && uploadMode === 'file' && !selectedFile) { setErrorMsg('Please upload your CV first.'); return false; }
+    if (!fromText && uploadMode === 'link' && !resumeUrl.trim()) { setErrorMsg('Please paste a link to your CV.'); return false; }
+    if (jd.trim().length < 15) { setErrorMsg('Please paste the job description (at least a few lines).'); return false; }
 
-    const template = templateFor(templateId);
+    const template = templateFor(tid);
     const form = new FormData();
     if (fromText) form.append('resumeText', fromText);
     else if (uploadMode === 'file' && selectedFile) form.append('resume', selectedFile);
@@ -316,11 +332,60 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
       setResumeText(data.resumeText || fromText);
       if (!fromText) setSourceName(selectedFile?.name || 'Linked CV');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      return true;
     } catch (err) {
       setErrorMsg(getErrorMessage(err) || 'Something went wrong on our side. Please try again in a moment.');
+      return false;
     } finally {
       setLoading(false);
     }
+  };
+
+  // ── Leo's guided flow ──
+  const openFlow = (step: Exclude<Flow, null> = 'cv') => {
+    setErrorMsg(null);
+    setFlow(step);
+    window.scrollTo({ top: 0 });
+  };
+
+  const goToStep = (step: Exclude<Flow, null>) => {
+    setErrorMsg(null);
+    setFlow(step);
+  };
+
+  const cvReady = uploadMode === 'file' ? Boolean(selectedFile) : /^https?:\/\/\S+$/i.test(resumeUrl.trim());
+
+  /** A job link is read into a description first; pasted text goes straight on. */
+  const submitJob = async () => {
+    const text = jobDescription.trim();
+    setErrorMsg(null);
+    if (/^https?:\/\/\S+$/i.test(text)) {
+      setJobBusy(true);
+      try {
+        const res = await authFetch(`${API_BASE}/api/auto-apply/scrape-job`, { method: 'POST', headers: apiHeaders(true), body: JSON.stringify({ url: text }) });
+        const body = await res.json().catch(() => ({}));
+        const d = body?.data;
+        // The scraper falls back to placeholder text when it cannot read a page; only trust a real description.
+        if (!res.ok || !d || d.source !== 'ai_scraper' || !d.description || d.description.length < 150) {
+          throw new Error("I couldn't read that job link. Please paste the job description text instead.");
+        }
+        setJobDescription([`${d.title || ''}${d.company ? ` at ${d.company}` : ''}`, d.description, d.skills?.length ? `Skills: ${d.skills.join(', ')}` : ''].filter(Boolean).join('\n\n'));
+        setFlow('template');
+      } catch (err) {
+        setErrorMsg(getErrorMessage(err) || "I couldn't read that job link.");
+      } finally {
+        setJobBusy(false);
+      }
+      return;
+    }
+    if (text.length < 60) { setErrorMsg('Please paste a bit more of the job description, so I can match it properly.'); return; }
+    setFlow('template');
+  };
+
+  const startTailoring = async (tid: string) => {
+    setTemplateId(tid);
+    setFlow('working');
+    if (await runTailor(jobDescription, '', tid)) setFlow(null);
   };
 
   const changeTemplate = async (id: string) => {
@@ -399,9 +464,151 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const goToTool = () => toolRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   const chosen = templateFor(templateId);
-  const canSubmit = !loading && (uploadMode === 'file' ? Boolean(selectedFile) : Boolean(resumeUrl.trim())) && jobDescription.trim().length >= 15;
+  const recommended = pickedOnIntro ? chosen : templateFor(DEFAULT_TEMPLATE);
+
+  // ── LEO'S GUIDED FLOW ────────────────────────────────────────
+  if (flow) {
+    return (
+      <div className="ro-page tlr tlr-flow">
+        <button type="button" className="tlr-flow-exit" onClick={() => { setFlow(null); setErrorMsg(null); }} disabled={loading} aria-label="Exit Resume Tailorer">
+          Exit <X size={15} />
+        </button>
+        <Stepper active={FLOW_DOT[flow]} total={4} />
+
+        {flow === 'cv' && (
+          <div className="ro-center ro-stage">
+            <Leo />
+            <h1 className="ro-title">Hi, I'm Leo. Let's tailor your resume. First, upload your current CV or paste a link to it.</h1>
+            <div className="tlr-toggle tlr-flow-toggle" role="tablist" aria-label="How to add your CV">
+              <button type="button" role="tab" aria-selected={uploadMode === 'file'} className={uploadMode === 'file' ? 'is-on' : ''} onClick={() => { setUploadMode('file'); setErrorMsg(null); }}>
+                <Upload size={14} /> Upload file
+              </button>
+              <button type="button" role="tab" aria-selected={uploadMode === 'link'} className={uploadMode === 'link' ? 'is-on' : ''} onClick={() => { setUploadMode('link'); setErrorMsg(null); }}>
+                <Link2 size={14} /> Paste link
+              </button>
+            </div>
+            <div className="tlr-flow-box">
+              {uploadMode === 'file' ? (
+                selectedFile ? (
+                  <div className="tlr-file">
+                    <FileText size={22} />
+                    <div><strong>{selectedFile.name}</strong><small>{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</small></div>
+                    <button type="button" onClick={removeFile} aria-label="Remove file"><X size={16} /></button>
+                  </div>
+                ) : (
+                  <label className={`tlr-drop${dragActive ? ' is-drag' : ''}`} onDragEnter={handleDrag} onDragOver={handleDrag} onDragLeave={handleDrag} onDrop={handleDrop}>
+                    <input ref={fileInputRef} type="file" accept=".pdf,.docx,.txt" onChange={e => e.target.files?.[0] && validateFile(e.target.files[0])} />
+                    <Upload size={22} />
+                    <span><b>Choose a file</b> or drag it here</span>
+                    <small>PDF, DOCX or TXT · up to 5 MB</small>
+                  </label>
+                )
+              ) : (
+                <input
+                  type="url"
+                  className="tlr-input"
+                  placeholder="https://drive.google.com/… or a direct PDF/DOCX link"
+                  value={resumeUrl}
+                  onChange={e => setResumeUrl(e.target.value)}
+                  aria-label="Link to your CV"
+                  autoFocus
+                />
+              )}
+            </div>
+            {errorMsg && <p className="ro-error"><AlertTriangle size={14} /> {errorMsg}</p>}
+            <button type="button" className="ro-btn ro-btn--green" disabled={!cvReady} onClick={() => goToStep('jd')}>Next <ArrowRight size={16} /></button>
+          </div>
+        )}
+
+        {flow === 'jd' && (
+          <div className="ro-center ro-stage">
+            <Leo />
+            <h1 className="ro-title">Got it. Now paste the job description, or a link to the job posting.</h1>
+            <p className="ro-sub">The whole posting works best: responsibilities, requirements and skills.</p>
+            <textarea
+              className="tlr-textarea tlr-flow-box tlr-flow-jd"
+              placeholder="Paste the job description or a job link (https://…)"
+              value={jobDescription}
+              onChange={e => { setJobDescription(e.target.value); setErrorMsg(null); }}
+              aria-label="Job description or job link"
+              autoFocus
+            />
+            {errorMsg && <p className="ro-error"><AlertTriangle size={14} /> {errorMsg}</p>}
+            <button type="button" className="ro-btn ro-btn--green" disabled={!jobDescription.trim() || jobBusy} onClick={submitJob}>
+              {jobBusy ? <><Loader2 size={16} className="ro-spin" /> Reading the job…</> : <>Next <ArrowRight size={16} /></>}
+            </button>
+            <button type="button" className="ro-link" onClick={() => goToStep('cv')}>← Go back</button>
+          </div>
+        )}
+
+        {flow === 'template' && (
+          <div className="ro-center ro-stage">
+            <Leo />
+            <h1 className="ro-title">Which template should I put your tailored resume in?</h1>
+            <div className="tlr-flow-rec">
+              <div className="tlr-flow-rec-art"><TemplatePreview html={recommended.html} name={recommended.name} eager aspect="1 / 1.15" /></div>
+              <div className="tlr-flow-rec-copy">
+                <span className="tlr-tag">{pickedOnIntro ? 'Your pick' : 'Recommended'}</span>
+                <strong>{recommended.name}</strong>
+                <small>{recommended.tag}</small>
+              </div>
+            </div>
+            <div className="ro-actions">
+              <button type="button" className="ro-btn ro-btn--green" onClick={() => startTailoring(recommended.id)}>Use {recommended.name}</button>
+              <button type="button" className="ro-btn ro-btn--purple" onClick={() => goToStep('pick')}>Choose a template</button>
+            </div>
+            <button type="button" className="ro-link" onClick={() => goToStep('jd')}>← Go back</button>
+          </div>
+        )}
+
+        {flow === 'pick' && (
+          <div className="ro-center ro-stage tlr-flow-pick">
+            <h1 className="ro-title">Pick a template</h1>
+            <p className="ro-sub">You can switch to another one after it's done, too.</p>
+            <div className="tlr-templates">
+              {RESUME_TEMPLATES.map(t => (
+                <button key={t.id} type="button" className="tlr-tpl" style={{ '--t': t.accent } as React.CSSProperties} onClick={() => startTailoring(t.id)}>
+                  <TemplatePreview html={t.html} name={t.name} />
+                  <span className="tlr-tpl-name">{t.name}</span>
+                </button>
+              ))}
+            </div>
+            <button type="button" className="ro-link" onClick={() => goToStep('template')}>← Go back</button>
+          </div>
+        )}
+
+        {flow === 'working' && (
+          <div className="ro-center ro-stage">
+            <Leo />
+            {errorMsg ? (
+              <>
+                <h1 className="ro-title">Something went wrong while tailoring.</h1>
+                <p className="ro-error"><AlertTriangle size={14} /> {errorMsg}</p>
+                <div className="ro-actions">
+                  <button type="button" className="ro-btn ro-btn--green" onClick={() => startTailoring(templateId)}><RefreshCw size={15} /> Try again</button>
+                  <button type="button" className="ro-btn ro-btn--purple" onClick={() => goToStep('jd')}>Change the job description</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h1 className="ro-title">I'm tailoring your resume for this job…</h1>
+                <ul className="tlr-phases" aria-live="polite">
+                  {PHASES.map((p, i) => (
+                    <li key={p} className={i < phase ? 'is-done' : i === phase ? 'is-on' : ''}>
+                      {i < phase ? <CheckCircle2 size={17} /> : i === phase ? <Loader2 size={17} className="ro-spin" /> : <span className="tlr-phase-dot" />}
+                      {p}
+                    </li>
+                  ))}
+                </ul>
+                <p className="ro-sub">This usually takes 20 to 40 seconds. Please keep this page open.</p>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // ── RESULT ───────────────────────────────────────────────────
   if (result) {
@@ -414,11 +621,25 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
         <div className="tlr-wrap">
           <div className="tlr-result-top">
             <button type="button" className="tlr-back" onClick={reset}><ArrowLeft size={16} /> Tailor another resume</button>
-            <div>
-              <h1>Your tailored resume</h1>
-              <p>{sourceName ? `${sourceName} · ` : ''}{templateFor(result.templateId).name} template</p>
-            </div>
           </div>
+
+          <section className="tlr-done">
+            <div className="tlr-done-leo"><Leo /></div>
+            <div className="tlr-done-copy">
+              <h1>{html ? 'Done! Your resume is tailored for this job.' : 'Your tailored resume'}</h1>
+              {html && <p>Download it now, or open it in the CVMind resume editor to keep working on it.</p>}
+              <small className="tlr-done-meta">{sourceName ? `${sourceName} · ` : ''}{templateFor(result.templateId).name} template</small>
+              {html && (
+                <div className="tlr-done-actions">
+                  <button type="button" className="tlr-btn" onClick={() => setShowDownload(true)}><Download size={17} /> Download</button>
+                  <button type="button" className="tlr-btn tlr-btn--purple" disabled={handingOff} onClick={openInEditor}>
+                    {handingOff ? <Loader2 size={17} className="tlr-spin" /> : <PencilLine size={17} />} Edit in CVMind Resume Editor
+                  </button>
+                </div>
+              )}
+              <p className="tlr-fine"><Lock size={12} /> The cvmind.in · Powered by CVMind footer stays on every page.{readUser() ? '' : ' Sign in to save it to My Documents.'}</p>
+            </div>
+          </section>
 
           {errorMsg && <div className="tlr-error" role="alert"><AlertTriangle size={16} /> {errorMsg}</div>}
 
@@ -442,16 +663,6 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
             </div>
 
             <aside className="tlr-side">
-              <section className="tlr-card tlr-actions">
-                <button type="button" className="tlr-btn tlr-btn--block" disabled={!html || handingOff} onClick={openInEditor}>
-                  {handingOff ? <Loader2 size={17} className="tlr-spin" /> : <PencilLine size={17} />} Edit in CVMind Resume Editor
-                </button>
-                <button type="button" className="tlr-btn tlr-btn--outline tlr-btn--block" disabled={!html} onClick={() => setShowDownload(true)}>
-                  <Download size={17} /> Download PDF, Word or TXT
-                </button>
-                <p className="tlr-fine"><Lock size={12} /> The cvmind.in · Powered by CVMind footer stays on every page.</p>
-                {!readUser() && <p className="tlr-fine">Sign in to save it to My Documents.</p>}
-              </section>
 
               <section className={`tlr-card tlr-score tlr-score--${band.tone}`}>
                 <div className="tlr-ring" style={{ '--p': score } as React.CSSProperties}>
@@ -552,83 +763,29 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
             <p className="tlr-note">Free to try. No card needed.</p>
           </div>
 
-          <div className="tlr-tool" ref={toolRef}>
-            <div className="tlr-tool-step">
-              <span className="tlr-num">1</span>
-              <h2>Your current CV</h2>
-            </div>
-            <div className="tlr-toggle" role="tablist" aria-label="How to add your CV">
-              <button type="button" role="tab" aria-selected={uploadMode === 'file'} className={uploadMode === 'file' ? 'is-on' : ''} onClick={() => { setUploadMode('file'); setErrorMsg(null); }} disabled={loading}>
-                <Upload size={14} /> Upload file
-              </button>
-              <button type="button" role="tab" aria-selected={uploadMode === 'link'} className={uploadMode === 'link' ? 'is-on' : ''} onClick={() => { setUploadMode('link'); setErrorMsg(null); }} disabled={loading}>
-                <Link2 size={14} /> Paste link
-              </button>
-            </div>
-
-            {uploadMode === 'file' ? (
-              selectedFile ? (
-                <div className="tlr-file">
-                  <FileText size={22} />
-                  <div><strong>{selectedFile.name}</strong><small>{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</small></div>
-                  <button type="button" onClick={removeFile} disabled={loading} aria-label="Remove file"><X size={16} /></button>
-                </div>
-              ) : (
-                <label
-                  className={`tlr-drop${dragActive ? ' is-drag' : ''}`}
-                  onDragEnter={handleDrag}
-                  onDragOver={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDrop={handleDrop}
-                >
-                  <input ref={fileInputRef} type="file" accept=".pdf,.docx,.txt" onChange={e => e.target.files?.[0] && validateFile(e.target.files[0])} disabled={loading} />
-                  <Upload size={22} />
-                  <span><b>Choose a file</b> or drag it here</span>
-                  <small>PDF, DOCX or TXT · up to 5 MB</small>
-                </label>
-              )
-            ) : (
-              <input
-                type="url"
-                className="tlr-input"
-                placeholder="https://drive.google.com/… or a direct PDF/DOCX link"
-                value={resumeUrl}
-                onChange={e => setResumeUrl(e.target.value)}
-                disabled={loading}
-                aria-label="Link to your CV"
-              />
-            )}
-
-            <div className="tlr-tool-step">
-              <span className="tlr-num">2</span>
-              <h2>The job description</h2>
-            </div>
-            <textarea
-              className="tlr-textarea"
-              placeholder="Paste the full job posting: responsibilities, requirements and skills."
-              value={jobDescription}
-              onChange={e => setJobDescription(e.target.value)}
-              disabled={loading}
-              aria-label="Job description"
-            />
-
-            <div className="tlr-tool-step">
-              <span className="tlr-num">3</span>
-              <h2>Template</h2>
-              <button type="button" className="tlr-link" onClick={() => templatesRef.current?.scrollIntoView({ behavior: 'smooth' })}>Change</button>
-            </div>
-            <div className="tlr-chosen">
-              <span className="tlr-chosen-dot" style={{ background: chosen.accent }} />
-              <strong>{chosen.name}</strong>
-              <small>{chosen.tag}</small>
-            </div>
-
-            {errorMsg && <div className="tlr-error" role="alert"><AlertTriangle size={16} /> {errorMsg}</div>}
-
-            <button type="button" className="tlr-btn tlr-btn--block tlr-btn--big" onClick={() => runTailor(jobDescription)} disabled={!canSubmit}>
-              {loading ? <><Loader2 size={18} className="tlr-spin" /> {PHASES[phase]}…</> : <><Sparkles size={18} /> Tailor my resume</>}
+          <div className="tlr-start">
+            <div className="tlr-start-leo"><Leo /></div>
+            <h2>Leo will walk you through it</h2>
+            <ol className="tlr-start-steps">
+              <li><span>1</span>Upload your CV or paste a link</li>
+              <li><span>2</span>Paste the job description or job link</li>
+              <li><span>3</span>Pick a template, then download or edit</li>
+            </ol>
+            <label
+              className={`tlr-drop${dragActive ? ' is-drag' : ''}`}
+              onDragEnter={handleDrag}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={e => { handleDrop(e); if (e.dataTransfer.files?.[0]) { setUploadMode('file'); setFlow('cv'); } }}
+            >
+              <input type="file" accept=".pdf,.docx,.txt" onChange={e => { if (e.target.files?.[0]) { validateFile(e.target.files[0]); setUploadMode('file'); setFlow('cv'); } }} />
+              <Upload size={22} />
+              <span><b>Drop your CV here</b> to start</span>
+              <small>PDF, DOCX or TXT · up to 5 MB</small>
+            </label>
+            <button type="button" className="tlr-btn tlr-btn--block tlr-btn--big" onClick={() => openFlow('cv')}>
+              <Sparkles size={18} /> Tailor my resume with Leo
             </button>
-            {loading && <p className="tlr-fine tlr-center">This usually takes 20 to 40 seconds.</p>}
           </div>
         </div>
       </section>
@@ -665,7 +822,7 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
         </div>
       </section>
 
-      <section className="tlr-light" ref={templatesRef}>
+      <section className="tlr-light">
         <div className="tlr-wrap">
           <h2 className="tlr-center">Choose the template for your tailored resume</h2>
           <p className="tlr-center tlr-sub">Real layouts, rendered here as they will download. You can switch later, too.</p>
@@ -676,7 +833,7 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
                 type="button"
                 className={`tlr-tpl${t.id === templateId ? ' is-on' : ''}`}
                 style={{ '--t': t.accent } as React.CSSProperties}
-                onClick={() => { setTemplateId(t.id); goToTool(); }}
+                onClick={() => { setTemplateId(t.id); setPickedOnIntro(true); openFlow('cv'); }}
                 aria-pressed={t.id === templateId}
               >
                 <TemplatePreview html={t.html} name={t.name} />
@@ -721,7 +878,7 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
         <div className="tlr-wrap tlr-center">
           <h2>Ready for your next application?</h2>
           <p>Upload your CV, paste the job, and get a tailored resume in under a minute.</p>
-          <button type="button" className="tlr-btn tlr-btn--big" onClick={goToTool}>Tailor my resume <ArrowRight size={18} /></button>
+          <button type="button" className="tlr-btn tlr-btn--big" onClick={() => openFlow('cv')}>Tailor my resume <ArrowRight size={18} /></button>
         </div>
       </section>
     </div>
