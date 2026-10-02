@@ -1,0 +1,40 @@
+/* Hover buttons over the profile photo */
+.rp-hover { position: fixed; z-index: 58; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 50%; background: rgba(15, 20, 35, .35); pointer-events: auto; }
+.rp-hover-btn { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 6px; color: #fff; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, .25); transition: transform .12s; }
+.rp-hover-btn:hover { transform: scale(1.06); }
+.rp-hover-btn--up { background: #2bbf8e; }
+.rp-hover-btn--hide { background: #e5265b; }
+.rp-hover-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* Dialog */
+.rp-backdrop { --p: #6f4fd6; --pd: #5d3fc0; position: fixed; inset: 0; z-index: 96; display: grid; place-items: center; padding: 16px; background: rgba(15, 20, 35, .55); }
+.rp-dialog { position: relative; width: min(380px, 100%); padding: 34px 28px 28px; background: #fff; border-radius: 12px; box-shadow: 0 30px 80px rgba(0, 0, 0, .35); color: #1c2330; text-align: center; outline: 0; animation: rp-in .2s ease both; }
+.rp-dialog--processing, .rp-dialog--loading { width: min(440px, 100%); padding-bottom: 40px; }
+.rp-loading p { margin: 6px 0 14px; font-size: .95rem; }
+.rp-bar { height: 12px; background: #e4e7ee; border-radius: 999px; overflow: hidden; }
+.rp-bar span { display: block; height: 100%; background: linear-gradient(90deg, #8b6cf0, var(--p)); border-radius: 999px; transition: width .12s linear; }
+@keyframes rp-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+.rp-dialog :focus-visible { outline: 2px solid var(--p); outline-offset: 2px; }
+.rp-x { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 34px; height: 34px; border: 0; background: none; border-radius: 6px; cursor: pointer; color: #1c2330; }
+.rp-x:hover { background: #f0f3f8; }
+.rp-dialog h2 { margin: 0 0 22px; font-size: 1.75rem; font-weight: 500; }
+.rp-current { width: 112px; height: 112px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto; background: #e8e8e8; }
+.rp-hint { margin: 18px 0 16px; font-size: .85rem; }
+.rp-error { margin: -6px 0 14px; color: #b42318; font-size: .82rem; }
+.rp-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.rp-stack { display: grid; gap: 22px; margin-top: 14px; }
+.rp-btn { padding: 12px 18px; border-radius: 6px; font: inherit; font-size: .95rem; font-weight: 700; cursor: pointer; transition: background .15s, color .15s; }
+.rp-btn--outline { background: #fff; color: var(--p); border: 1.5px solid var(--p); }
+.rp-btn--outline:hover { background: #f4f0ff; }
+.rp-btn--solid { background: var(--p); color: #fff; border: 1.5px solid var(--p); }
+.rp-btn--solid:hover { background: var(--pd); border-color: var(--pd); }
+
+/* Crop */
+.rp-crop { position: relative; margin: 0 auto; overflow: hidden; background: #6b6b6b; cursor: grab; touch-action: none; user-select: none; }
+.rp-crop:active { cursor: grabbing; }
+.rp-crop img { position: absolute; left: 0; top: 0; max-width: none; pointer-events: none; }
+.rp-ring { position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 999px rgba(40, 40, 40, .45); border: 2px dashed rgba(255, 255, 255, .85); pointer-events: none; }
+.rp-zoom { width: 120px; margin: 14px auto 4px; display: block; accent-color: #2563eb; }
+.rp-processing { margin: 18px 0 0; font-size: .95rem; }
+
+@media (prefers-reduced-motion: reduce) { .rp-dialog { animation: none; } .rp-hover-btn { transition: none; } }

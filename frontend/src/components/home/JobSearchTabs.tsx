@@ -60,7 +60,7 @@ const TABS: Tab[] = [
     ],
     cta: 'Open the builder',
     page: 'resume-builder',
-    visual: <TemplateVisual id="modern-blue" />,
+    visual: <TemplateVisual id="cv-modern" />,
   },
   {
     label: 'Resume Checker',

@@ -18,6 +18,7 @@ import { Resend } from 'resend';
 import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser } from './services/authToken.js';
 import mongoose from 'mongoose';
 import { importUploadedResume, RESUME_MIME_TYPES } from './agent/resume/intake.js';
+import { renderResumePdf } from './agent/resume/pdf.js';
 import { searchJobs, getJobDetail, warmJobSearch, JOB_SEARCH_COMPANIES } from './services/jobSearch.js';
 
 const app = express();
@@ -117,6 +118,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-gemini-key', 'x-admin-secret']
 }));
 
+// Resume HTML (with embedded images) is larger than the default 100kb JSON limit.
+const RESUME_EXPORT_PATHS = ['/api/resume/pdf', '/api/resume/email-pdf'];
+app.use([...RESUME_EXPORT_PATHS, ...RESUME_EXPORT_PATHS.map((p) => `/_/backend${p}`)], express.json({ limit: '6mb' }));
 app.use(express.json());
 
 // Public routes that call an AI model: limit each IP so scripted requests can't burn AI credits.
@@ -131,6 +135,8 @@ const AI_ROUTE_PATHS = [
   '/api/resume/generate',
   '/api/resume/parse-data',
   '/api/resume/import-linkedin',
+  '/api/resume/pdf',
+  '/api/resume/email-pdf',
   '/api/linkedin',
   '/api/career',
   '/api/voice-prep',
@@ -1470,6 +1476,71 @@ apiRouter.get('/api/jobs/detail', async (req, res) => {
   } catch (err) {
     console.error('Job detail error:', err);
     return res.status(502).json({ error: 'Could not load this job description.' });
+  }
+});
+
+// ── Resume export: PDF download and "send PDF to my email" ─────────────────────
+const EXPORT_FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Rubik:wght@300;400;500;600;700&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;500;600&family=Open+Sans:wght@400;600;700;800&family=Raleway:wght@300;400;600&family=EB+Garamond:wght@400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&display=swap';
+
+const cleanFileName = (name) => (String(name || '').replace(/[^A-Za-z0-9 _-]/g, '').trim().slice(0, 80) || 'Resume');
+
+function readExportBody(req, res) {
+  const { html, fileName, paper } = req.body || {};
+  if (!html || typeof html !== 'string' || html.trim().length < 20) {
+    res.status(400).json({ error: 'There is no resume content to export.' });
+    return null;
+  }
+  return { html, fileName: cleanFileName(fileName), format: paper === 'letter' ? 'Letter' : 'A4' };
+}
+
+async function buildResumePdf(body) {
+  try {
+    return await renderResumePdf(body.html, { format: body.format, fontsHref: EXPORT_FONTS_HREF });
+  } catch (err) {
+    if (err?.code === 'BROWSER_UNAVAILABLE') {
+      const e = new Error('PDF export is not available on this server right now.');
+      e.status = 503;
+      throw e;
+    }
+    throw err;
+  }
+}
+
+apiRouter.post('/api/resume/pdf', requireUser, async (req, res) => {
+  const body = readExportBody(req, res);
+  if (!body) return;
+  try {
+    const pdf = await buildResumePdf(body);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${body.fileName}.pdf"`);
+    return res.send(Buffer.from(pdf));
+  } catch (err) {
+    console.error('Resume PDF export error:', err);
+    return res.status(err.status || 500).json({ error: err.status ? err.message : 'Could not create the PDF. Please try again.' });
+  }
+});
+
+// Sends the PDF to the signed-in user's own address only (never an address from the request).
+apiRouter.post('/api/resume/email-pdf', requireUser, async (req, res) => {
+  const body = readExportBody(req, res);
+  if (!body) return;
+  if (!process.env.RESEND_API_KEY) return res.status(503).json({ error: 'Email is not configured on this server.' });
+  try {
+    const user = await findUserById(req.auth.sub);
+    if (!user?.email) return res.status(404).json({ error: 'We could not find the email address for your account.' });
+    const pdf = await buildResumePdf(body);
+    const { error } = await resend.emails.send({
+      from: 'CV Mind <no-reply@manavtiwari.in>',
+      to: [user.email],
+      subject: `Your resume: ${body.fileName}`,
+      html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#1e293b;line-height:1.6"><p>Hi${user.name ? ` ${user.name}` : ''},</p><p>Your resume <strong>${body.fileName}.pdf</strong> is attached.</p><p>Good luck with your applications!<br>CV Mind</p></div>`,
+      attachments: [{ filename: `${body.fileName}.pdf`, content: Buffer.from(pdf).toString('base64') }],
+    });
+    if (error) throw new Error(error.message || 'Email provider error');
+    return res.json({ success: true, email: user.email });
+  } catch (err) {
+    console.error('Resume email export error:', err);
+    return res.status(err.status || 500).json({ error: err.status ? err.message : 'Could not send the email. Please try again.' });
   }
 });
 

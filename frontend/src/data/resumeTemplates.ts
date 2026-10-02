@@ -1,4 +1,7 @@
 // Resume & cover letter template catalogue (ATS-tested layouts).
+import { CVMIND_MARK } from './brand';
+import { CV_TEMPLATES } from './cvTemplates';
+
 export interface Template {
   id: string;
   name: string;
@@ -10,9 +13,11 @@ export interface Template {
   highlights: string[];
   html: string;
   type?: 'resume' | 'cover-letter';
+  /** Older design kept only so saved resumes still find their template; hidden from pickers. */
+  legacy?: boolean;
 }
 
-export const TEMPLATES: Template[] = [
+const BASE_TEMPLATES: Template[] = [
   {
     id: 'cvmind-executive',
     name: 'Executive Double-Column',
@@ -295,13 +300,13 @@ export const TEMPLATES: Template[] = [
     </tr>
   </table>
 
-  <!-- FOOTER BRANDING (Powered by CVMind) -->
-  <div style="margin-top:36px;padding-top:14px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#94a3b8;">
-    <a href="https://www.cvmind.ai" target="_blank" style="color:#94a3b8;text-decoration:none;font-size:11px;">www.cvmind.ai</a>
+  <!-- FOOTER BRANDING (Powered by CVMind) - locked so it cannot be edited or removed by accident -->
+  <div contenteditable="false" spellcheck="false" style="margin-top:36px;padding-top:14px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#94a3b8;user-select:none;-webkit-user-select:none;">
+    <a href="https://cvmind.in" target="_blank" rel="noopener" style="color:#94a3b8;text-decoration:none;font-size:11px;">cvmind.in</a>
     <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#64748b;">
       <span>Powered by</span>
-      <span style="display:inline-flex;align-items:center;gap:4px;font-weight:800;color:#0f172a;letter-spacing:0.3px;">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 12 2.1 10.55"/><path d="M12 12l5.5 8.5"/></svg>
+      <span style="display:inline-flex;align-items:center;gap:5px;font-weight:800;color:#0f172a;letter-spacing:0.3px;">
+        <img src="${CVMIND_MARK}" alt="" width="16" height="16" draggable="false" style="display:block;border-radius:3px;pointer-events:none;" />
         CVMind
       </span>
     </div>
@@ -1343,3 +1348,12 @@ Yours faithfully,<br><br><br>
 </div>`
   }
 ];
+
+// The 2026 designs lead; earlier resume layouts stay available for saved work only.
+export const TEMPLATES: Template[] = [
+  ...CV_TEMPLATES,
+  ...BASE_TEMPLATES.map(t => ((t.type || 'resume') === 'resume' ? { ...t, legacy: true } : t)),
+];
+
+/** Resume templates offered to users. */
+export const RESUME_TEMPLATES = TEMPLATES.filter(t => (t.type || 'resume') === 'resume' && !t.legacy);

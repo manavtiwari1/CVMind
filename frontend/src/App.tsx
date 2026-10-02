@@ -109,7 +109,7 @@ export default function App() {
     return Boolean(searchParams.get('authError'));
   });
   const [loadedWork, setLoadedWork] = useState<LoadedWork | null>(null);
-  const [builderFocus, setBuilderFocus] = useState(false);
+  const [builderFocus, setBuilderFocus] = useState<false | 'flow' | 'studio'>(false);
 
   useEffect(() => {
     localStorage.setItem('cvmind_aa_access', 'true');
@@ -447,7 +447,7 @@ export default function App() {
       case 'resume-builder':
         return <ResumeBuilderLanding setCurrentPage={setCurrentPage} />;
       case 'resume-editor':
-        return <CoverLetter customApiKey={customApiKey} loadedWork={loadedWork} setLoadedWork={setLoadedWork} onFocusChange={setBuilderFocus} />;
+        return <CoverLetter customApiKey={customApiKey} loadedWork={loadedWork} setLoadedWork={setLoadedWork} onFocusChange={setBuilderFocus} onExit={() => setCurrentPage('resume-builder')} />;
       case 'pricing':
         return <Pricing setCurrentPage={setCurrentPage} isLoggedIn={isLoggedIn} setShowAuthModal={setShowAuthModal} />;
       case 'terms':
@@ -491,8 +491,13 @@ export default function App() {
 
   const isAdminPage = currentPage === 'admin';
   const isCodePage = currentPage === 'code-arena' || currentPage === 'cvmind-code-arena';
-  const isFocusFlow = currentPage === 'resume-editor' && builderFocus;
+  const isFocusFlow = currentPage === 'resume-editor' && builderFocus !== false;
   const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || isCodePage || isFocusFlow;
+
+  // Mark the focused builder flow on <body> (used to keep floating widgets out of the way).
+  useEffect(() => {
+    document.body.classList.toggle('cv-focus', isFocusFlow);
+  }, [isFocusFlow]);
 
   return (
     <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''} ${isFocusFlow ? 'focus-shell' : ''}`}>
@@ -513,7 +518,7 @@ export default function App() {
         />
       )}
 
-      {isFocusFlow && (
+      {isFocusFlow && builderFocus === 'flow' && (
         <button type="button" className="focus-exit" onClick={() => setCurrentPage('resume-builder')} aria-label="Exit resume builder">
           Exit ✕
         </button>

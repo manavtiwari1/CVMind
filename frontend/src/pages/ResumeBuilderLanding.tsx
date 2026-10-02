@@ -5,14 +5,14 @@ import {
 } from 'lucide-react';
 import { useLiveStats, formatStat } from '../utils/stats';
 import TemplatePreview from '../components/TemplatePreview';
-import { TEMPLATES as ALL_TEMPLATES, type Template } from '../data/resumeTemplates';
+import { TEMPLATES as ALL_TEMPLATES, RESUME_TEMPLATES, type Template } from '../data/resumeTemplates';
+import { pickTemplate } from '../lib/templatePick';
 import './ResumeBuilderLanding.css';
 
 interface ResumeBuilderLandingProps {
   setCurrentPage: (page: string) => void;
 }
 
-const RESUME_TEMPLATES = ALL_TEMPLATES.filter(t => (t.type || 'resume') === 'resume');
 const COVER_LETTER_COUNT = ALL_TEMPLATES.filter(t => t.type === 'cover-letter').length;
 const byId = (id: string): Template => ALL_TEMPLATES.find(t => t.id === id) ?? RESUME_TEMPLATES[0];
 
@@ -88,17 +88,17 @@ const FEATURE_SECTIONS: FeatureSection[] = [
 
 const LEVELS = [
   {
-    key: 'senior', label: 'Senior & Executive', templateId: 'executive-sidebar',
+    key: 'senior', label: 'Senior & Executive', templateId: 'cv-polished',
     body: 'Fit a long career onto a page or two. The AI helps you tighten the experience section so recent, relevant impact comes first.',
     points: ['Shorten older roles and keep the highlights', 'Draft a summary aimed at leadership roles', 'Choose an executive layout that stays ATS-readable'],
   },
   {
-    key: 'mid', label: 'Entry & Mid-Level', templateId: 'fresh-graduate',
+    key: 'mid', label: 'Entry & Mid-Level', templateId: 'cv-double-column',
     body: 'Not sure how to structure your resume yet? Start from a layout built for early careers and let the AI help with wording.',
     points: ['Turn projects and internships into strong bullets', 'Pull a skills section from your experience', 'Tailor the resume to each job you apply for'],
   },
   {
-    key: 'change', label: 'Career Changers', templateId: 'modern-blue',
+    key: 'change', label: 'Career Changers', templateId: 'cv-modern',
     body: 'Moving to a new field means showing the skills that carry over. Tailor your resume to the new role and lead with those.',
     points: ['Match transferable skills to the new job ad', 'Lead with skills instead of job titles', 'Keep the format simple for ATS parsing'],
   },
@@ -191,7 +191,7 @@ export default function ResumeBuilderLanding({ setCurrentPage }: ResumeBuilderLa
                   <CircleCheck size={15} /><ShieldCheck size={15} /><Link2 size={15} /><Clock size={15} />
                 </div>
                 <div className="rbl-app-paper">
-                  <TemplatePreview html={byId('executive-sidebar').html} name="Sample resume" eager aspect="1 / 0.95" />
+                  <TemplatePreview html={byId('cv-polished').html} name="Sample resume" eager aspect="1 / 0.95" />
                 </div>
               </div>
 
@@ -327,7 +327,7 @@ export default function ResumeBuilderLanding({ setCurrentPage }: ResumeBuilderLa
               <button type="button" className="rbl-btn" onClick={() => setCurrentPage(activeStage.page)}>Open {activeStage.label}</button>
             </div>
             <div className="rbl-stage-art" aria-hidden="true">
-              {[byId('modern-blue'), byId('classic-pro'), byId('executive-sidebar')].map((t, i) => (
+              {[byId('modern-blue'), byId('classic-pro'), byId('cv-polished')].map((t, i) => (
                 <div key={t.id} className={`rbl-stack rbl-stack--${i}`}><TemplatePreview html={t.html} name={t.name} /></div>
               ))}
             </div>
@@ -348,7 +348,7 @@ export default function ResumeBuilderLanding({ setCurrentPage }: ResumeBuilderLa
               <div key={t.id} className="rbl-slide" style={{ '--t': t.accent } as React.CSSProperties}>
                 <TemplatePreview html={t.html} name={t.name} />
                 <span className="rbl-slide-name">{t.name}</span>
-                <button type="button" className="rbl-btn rbl-slide-cta" onClick={build}>Start with this template</button>
+                <button type="button" className="rbl-btn rbl-slide-cta" onClick={() => { pickTemplate(t.id); build(); }}>Start with this template</button>
               </div>
             ))}
           </div>

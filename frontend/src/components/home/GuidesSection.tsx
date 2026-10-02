@@ -34,7 +34,7 @@ const FEATURED_COUNT = 6;
 
 export default function GuidesSection({ setCurrentPage }: GuidesSectionProps) {
   const template = useMemo(() => {
-    const t = TEMPLATES.find((x) => x.id === 'modern-blue');
+    const t = TEMPLATES.find((x) => x.id === 'cv-modern');
     return t ? { ...t, html: withSampleData(t) } : undefined;
   }, []);
 

@@ -122,6 +122,10 @@
   .ro-leo, .ro-stage { animation: none; }
 }
 
+/* Quick start (template picked on the home page) */
+.ro-quick { padding-top: 12vh; }
+.ro-quick-tag { margin: 0 0 6px; padding: 6px 14px; border-radius: 999px; background: #eef7f3; color: #1b6e52; font-size: .82rem; }
+
 /* LinkedIn import step */
 .ro-linkedin { width: min(520px, 100%); }
 .ro-li-field { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: #fff; border: 1px solid var(--ro-green); border-radius: 6px; color: #1c1f26; }

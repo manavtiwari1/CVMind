@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { pickTemplate } from '../lib/templatePick';
 import { Upload, FileText, CheckCircle2, ShieldAlert, ArrowRight, ShieldCheck, Lock, Sparkles, Link } from 'lucide-react';
 import { authFetch } from '../lib/authFetch';
 import HomeHero from '../components/home/HomeHero';
@@ -24,6 +25,16 @@ interface HomeProps {
 
 // ─── Home Page ────────────────────────────────────────────────────────────────
 export default function Home({ setCurrentPage, setAnalysisResult, setResumeText, customApiKey }: HomeProps) {
+  // A clicked template opens straight in the editor; the links without a template open the gallery.
+  const openTemplate = (templateId?: string) => {
+    if (templateId) {
+      pickTemplate(templateId);
+      setCurrentPage('resume-editor');
+    } else {
+      setCurrentPage('resume-builder');
+    }
+  };
+
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadMode, setUploadMode] = useState<'file' | 'link'>('file');
@@ -185,7 +196,7 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
       <HomeHero setCurrentPage={setCurrentPage} onAnalyzeClick={scrollToScore} />
 
       {/* ── 2. TEMPLATE MARQUEE ──────────────────────────────── */}
-      <TemplateMarquee onUse={() => setCurrentPage('resume-builder')} />
+      <TemplateMarquee onUse={openTemplate} />
 
       {/* ── 3. ATS BAND ──────────────────────────────────────── */}
       <AtsBand onBuild={() => setCurrentPage('resume-builder')} />
@@ -197,7 +208,7 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
       <FeatureRows setCurrentPage={setCurrentPage} onCheck={scrollToScore} />
 
       {/* ── 6. TEMPLATES BY FIELD ────────────────────────────── */}
-      <FieldTemplates onUse={() => setCurrentPage('resume-builder')} />
+      <FieldTemplates onUse={openTemplate} />
 
       {/* ── 7. JOB SEARCH TABS ───────────────────────────────── */}
       <JobSearchTabs setCurrentPage={setCurrentPage} onCheck={scrollToScore} />
