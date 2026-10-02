@@ -158,11 +158,6 @@ const PAGE_SEO: Record<string, PageSEO> = {
     description: 'Map out your long-term career growth with our AI Career Roadmap generator. Get step-by-step career milestones, certification paths, and skill progression plans.',
     keywords: 'Career Roadmap Generator, Career Path Planner, Skill Progression, Career Strategy',
   },
-  'career-copilot': {
-    title: 'AI Career Copilot - 9 AI Agents Managing Your Career | CV Mind',
-    description: 'Meet your AI Career Copilot: 9 AI agents working together on your resume, job search, LinkedIn, skills, interviews, networking, salary, and career analytics — all in one dashboard.',
-    keywords: 'AI Career Copilot, AI Career Agents, Career Management AI, Job Search Automation, Career Health Score',
-  },
   'auto-apply': {
     title: 'Auto Apply Agent - AI Applies to Jobs for You | CV Mind',
     description: "CV Mind's Auto Apply Agent finds matching jobs and applies on your behalf with a tailored resume and cover letter. Coming soon.",

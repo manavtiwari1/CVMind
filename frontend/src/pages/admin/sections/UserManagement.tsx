@@ -30,22 +30,19 @@ async function requestUsers(backend: string, secret: string): Promise<AdminUser[
 interface AccessData {
   emails?: WhitelistEntry[];
   autoApplyEmails?: string[];
-  careerCopilotEmails?: string[];
 }
 
 async function requestAccessData(backend: string, secret: string): Promise<AccessData> {
   const headers = { 'x-admin-secret': secret };
-  const [wlRes, aaRes, ccRes] = await Promise.all([
+  const [wlRes, aaRes] = await Promise.all([
     fetch(`${backend}/api/admin/whitelist`, { headers }),
     fetch(`${backend}/api/admin/auto-apply-access`, { headers }),
-    fetch(`${backend}/api/admin/career-copilot-access`, { headers }),
   ]);
-  const [wlData, aaData, ccData] = await Promise.all([wlRes.json(), aaRes.json(), ccRes.json()]);
+  const [wlData, aaData] = await Promise.all([wlRes.json(), aaRes.json()]);
   const toEmails = (list: { email: string }[] = []) => list.map((x) => x.email);
   return {
     emails: wlData.emails,
     autoApplyEmails: aaData.success ? toEmails(aaData.data) : undefined,
-    careerCopilotEmails: ccData.success ? toEmails(ccData.data) : undefined,
   };
 }
 
@@ -346,13 +343,12 @@ function ModeratedUsers({ users, loading, api }: { users: AdminUser[]; loading: 
   );
 }
 
-// ── Access Manager (Whitelist + Auto Apply + Career Copilot) ─────
+// ── Access Manager (Whitelist + Auto Apply) ─────
 interface WhitelistEntry { id?: string; email: string; createdAt: string; source?: string }
 
 function AccessManager({ secret, BACKEND }: { secret: string; BACKEND: string }) {
   const [emails, setEmails] = useState<WhitelistEntry[]>([]);
   const [autoApplyEmails, setAutoApplyEmails] = useState<Set<string>>(new Set());
-  const [careerCopilotEmails, setCareerCopilotEmails] = useState<Set<string>>(new Set());
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -361,7 +357,6 @@ function AccessManager({ secret, BACKEND }: { secret: string; BACKEND: string })
   const applyAccessData = (data: AccessData) => {
     if (data.emails) setEmails(data.emails);
     if (data.autoApplyEmails) setAutoApplyEmails(new Set(data.autoApplyEmails));
-    if (data.careerCopilotEmails) setCareerCopilotEmails(new Set(data.careerCopilotEmails));
   };
 
   const fetchAll = async () => {
@@ -379,7 +374,6 @@ function AccessManager({ secret, BACKEND }: { secret: string; BACKEND: string })
         if (cancelled) return;
         if (data.emails) setEmails(data.emails);
         if (data.autoApplyEmails) setAutoApplyEmails(new Set(data.autoApplyEmails));
-        if (data.careerCopilotEmails) setCareerCopilotEmails(new Set(data.careerCopilotEmails));
       })
       .catch(() => { if (!cancelled) setError('Failed to load access data.'); })
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -432,20 +426,6 @@ function AccessManager({ secret, BACKEND }: { secret: string; BACKEND: string })
     }
   };
 
-  const toggleCareerCopilot = async (email: string, has: boolean) => {
-    try {
-      if (has) {
-        await fetch(`${BACKEND}/api/admin/career-copilot-access/${encodeURIComponent(email)}`, { method: 'DELETE', headers: { 'x-admin-secret': secret } });
-        setCareerCopilotEmails(prev => { const s = new Set(prev); s.delete(email); return s; });
-      } else {
-        await fetch(`${BACKEND}/api/admin/career-copilot-access`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-admin-secret': secret }, body: JSON.stringify({ email }) });
-        setCareerCopilotEmails(prev => new Set([...prev, email]));
-      }
-    } catch (e) {
-      console.error('Failed to update Career Copilot access:', e);
-    }
-  };
-
   return (
     <div className="section-animate">
       <div className="section-header">
@@ -462,7 +442,7 @@ function AccessManager({ secret, BACKEND }: { secret: string; BACKEND: string })
         </div>
         <div className="panel-body">
           <p style={{ fontSize: '0.85rem', color: 'var(--text-2)', marginBottom: 16, lineHeight: 1.55 }}>
-            Users with these Gmail addresses receive full <strong>Pro Module Access</strong> — including Job Finder, Auto Apply Agent, and Career Copilot — without any manual code changes.
+            Users with these Gmail addresses receive full <strong>Pro Module Access</strong> — including Job Finder and Auto Apply Agent — without any manual code changes.
           </p>
           <form onSubmit={handleAdd} className="access-form">
             <div className="access-form-input">
@@ -499,7 +479,6 @@ function AccessManager({ secret, BACKEND }: { secret: string; BACKEND: string })
                 <th>Gmail Address</th>
                 <th>Access Granted</th>
                 <th style={{ textAlign: 'center' }}>Auto Apply</th>
-                <th style={{ textAlign: 'center' }}>Career Copilot</th>
                 <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
@@ -509,7 +488,6 @@ function AccessManager({ secret, BACKEND }: { secret: string; BACKEND: string })
                 const dateStr = typeof item === 'string' ? 'N/A' : item.createdAt ? new Date(item.createdAt).toLocaleString() : 'N/A';
                 const source = typeof item === 'string' ? 'database' : item.source || 'database';
                 const hasAA = autoApplyEmails.has(emailStr);
-                const hasCC = careerCopilotEmails.has(emailStr);
                 return (
                   <tr key={item.id || emailStr || idx}>
                     <td className="bold">{emailStr}</td>
@@ -520,12 +498,6 @@ function AccessManager({ secret, BACKEND }: { secret: string; BACKEND: string })
                       <button className={`btn-access-toggle ${hasAA ? 'btn-access-on' : 'btn-access-off'}`}
                         onClick={() => toggleAutoApply(emailStr, hasAA)}>
                         {hasAA ? '✓ Granted' : 'Grant'}
-                      </button>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <button className={`btn-access-toggle ${hasCC ? 'btn-access-on' : 'btn-access-off'}`}
-                        onClick={() => toggleCareerCopilot(emailStr, hasCC)}>
-                        {hasCC ? '✓ Granted' : 'Grant'}
                       </button>
                     </td>
                     <td style={{ textAlign: 'right' }}>

@@ -39,7 +39,7 @@ export default function CopyrightPolicy() {
 
         <section className="legal-section">
           <h2>5. Trademarks</h2>
-          <p>"CV Mind", the CV Mind logo, and related product names (including AI Career Copilot) are trademarks of CV Mind. Third-party names and logos referenced on the Service — such as Google, LinkedIn, or company names appearing in job listings — are trademarks of their respective owners and are used for identification purposes only. Their appearance does not imply any affiliation with or endorsement by those owners.</p>
+          <p>"CV Mind", the CV Mind logo, and related product names are trademarks of CV Mind. Third-party names and logos referenced on the Service — such as Google, LinkedIn, or company names appearing in job listings — are trademarks of their respective owners and are used for identification purposes only. Their appearance does not imply any affiliation with or endorsement by those owners.</p>
         </section>
 
         <section className="legal-section">

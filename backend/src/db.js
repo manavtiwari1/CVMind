@@ -264,12 +264,6 @@ const autoApplyAccessSchema = new mongoose.Schema({
 });
 const AutoApplyAccess = mongoose.models.AutoApplyAccess || mongoose.model('AutoApplyAccess', autoApplyAccessSchema);
 
-const careerCopilotAccessSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true },
-  grantedAt: { type: Date, default: Date.now }
-});
-const CareerCopilotAccess = mongoose.models.CareerCopilotAccess || mongoose.model('CareerCopilotAccess', careerCopilotAccessSchema);
-
 const companySchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   name: { type: String, required: true },
@@ -1667,54 +1661,6 @@ export async function hasAutoApplyAccess(email) {
   }
   const db = readDb();
   return (db.autoApplyAccess || []).some(x => x.email === clean);
-}
-
-export async function getCareerCopilotAccessList() {
-  await ensureMongoConnection();
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    const list = await CareerCopilotAccess.find().sort({ grantedAt: -1 });
-    return list.map(x => ({ email: x.email, grantedAt: x.grantedAt }));
-  }
-  const db = readDb();
-  return (db.careerCopilotAccess || []);
-}
-
-export async function grantCareerCopilotAccess(email) {
-  await ensureMongoConnection();
-  const clean = String(email || '').trim().toLowerCase();
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    const existing = await CareerCopilotAccess.findOne({ email: clean });
-    if (existing) return existing;
-    const entry = new CareerCopilotAccess({ email: clean });
-    return await entry.save();
-  }
-  const db = readDb();
-  if (!(db.careerCopilotAccess || []).some(x => x.email === clean)) {
-    db.careerCopilotAccess = [...(db.careerCopilotAccess || []), { email: clean, grantedAt: new Date().toISOString() }];
-    writeDb(db);
-  }
-}
-
-export async function revokeCareerCopilotAccess(email) {
-  await ensureMongoConnection();
-  const clean = String(email || '').trim().toLowerCase();
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    return await CareerCopilotAccess.deleteOne({ email: clean });
-  }
-  const db = readDb();
-  db.careerCopilotAccess = (db.careerCopilotAccess || []).filter(x => x.email !== clean);
-  writeDb(db);
-}
-
-export async function hasCareerCopilotAccess(email) {
-  await ensureMongoConnection();
-  const clean = String(email || '').trim().toLowerCase();
-  if (mongoURI && mongoose.connection.readyState === 1) {
-    const found = await CareerCopilotAccess.findOne({ email: clean });
-    return !!found;
-  }
-  const db = readDb();
-  return (db.careerCopilotAccess || []).some(x => x.email === clean);
 }
 
 export async function findUserByResetToken(token) {

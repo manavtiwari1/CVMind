@@ -38,7 +38,6 @@ import Disclaimer from './pages/Disclaimer';
 import Proofreading from './pages/Proofreading';
 import AutoApply from './pages/AutoApply';
 import CompanyPortal from './pages/CompanyPortal';
-import CareerCopilot from './pages/CareerCopilot';
 import ArticleAtsResume from './pages/ArticleAtsResume';
 import CopyrightPolicy from './pages/CopyrightPolicy';
 import ArticlePage from './pages/ArticlePage';
@@ -61,7 +60,7 @@ import './styles/skeleton.css';
 // How long the loading screen shows when moving to another page
 const ROUTE_LOADER_MS = 450;
 
-const VALID_PAGES = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'career-copilot', 'copyright-policy', 'account', 'help-center', 'my-documents', ...ARTICLES.map(a => a.slug)];
+const VALID_PAGES = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'copyright-policy', 'account', 'help-center', 'my-documents', ...ARTICLES.map(a => a.slug)];
 
 // Sign-in addresses open the AuthModal over the home page
 const AUTH_PATHS = ['/sign-in', '/sign-up', '/login'];
@@ -507,8 +506,7 @@ export default function App() {
             <div style={{fontSize:'3rem'}}>🔍</div>
             <h2 style={{fontSize:'1.8rem',fontWeight:800,margin:0}}>AI Job Finder</h2>
             <div style={{display:'inline-flex',alignItems:'center',gap:'6px',background:'linear-gradient(135deg,#ff9f0a,#ff453a)',color:'#fff',padding:'4px 14px',borderRadius:'99px',fontSize:'0.78rem',fontWeight:700,letterSpacing:'0.05em'}}>TEMPORARILY UNAVAILABLE</div>
-            <p style={{color:'#6e6e73',fontSize:'1rem',maxWidth:'440px',lineHeight:1.6,margin:0}}>AI Job Finder is temporarily unavailable while we upgrade it. It will be back soon — meanwhile, try the AI Career Copilot for curated job matches.</p>
-            <button onClick={() => setCurrentPage('career-copilot')} style={{marginTop:'8px',padding:'12px 28px',borderRadius:'12px',border:'none',background:'linear-gradient(135deg,#2997ff,#bf5af2)',color:'#fff',fontWeight:600,fontSize:'0.95rem',cursor:'pointer'}}>Try AI Career Copilot →</button>
+            <p style={{color:'#6e6e73',fontSize:'1rem',maxWidth:'440px',lineHeight:1.6,margin:0}}>AI Job Finder is temporarily unavailable while we upgrade it. It will be back soon — meanwhile, explore our other AI tools.</p>
             <button onClick={() => setCurrentPage('home')} style={{padding:'10px 24px',borderRadius:'12px',border:'none',background:'#1d1d1f',color:'#fff',fontWeight:600,fontSize:'0.9rem',cursor:'pointer'}}>← Go Home</button>
           </div>
         );
@@ -541,8 +539,6 @@ export default function App() {
             onFocusChange={setBuilderFocus}
           />
         );
-      case 'career-copilot':
-        return <CareerCopilot customApiKey={customApiKey} resumeText={resumeText} setResumeText={setResumeText} />;
       case 'company-portal':
         return (
           <CompanyPortal 
