@@ -1,4 +1,4 @@
-// Shared by Leo's guided flows (Resume Tailorer, Interview Prep AI, Voice Prep AI)
+// Shared by Leo's guided flows (Resume Tailorer, Interview Prep AI, Voice Prep AI, AI Proofreading)
 import { authFetch } from './authFetch';
 import { API_BASE } from './apiBase';
 

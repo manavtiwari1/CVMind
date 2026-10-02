@@ -531,7 +531,16 @@ export default function App() {
       case 'disclaimer':
         return <Disclaimer />;
       case 'proofreading':
-        return <Proofreading customApiKey={customApiKey} />;
+        return (
+          <Proofreading
+            customApiKey={customApiKey}
+            resumeText={resumeText}
+            setCurrentPage={setCurrentPage}
+            loadedWork={loadedWork}
+            setLoadedWork={setLoadedWork}
+            onFocusChange={setBuilderFocus}
+          />
+        );
       case 'career-copilot':
         return <CareerCopilot customApiKey={customApiKey} resumeText={resumeText} setResumeText={setResumeText} />;
       case 'company-portal':
@@ -557,7 +566,7 @@ export default function App() {
   const isAdminPage = currentPage === 'admin';
   const isCodePage = currentPage === 'code-arena' || currentPage === 'cvmind-code-arena';
   // Pages where Leo guides the user; they keep the site header and footer except during his full-screen flow
-  const isLeoPage = currentPage === 'tailor' || currentPage === 'prep' || currentPage === 'voice-prep';
+  const isLeoPage = currentPage === 'tailor' || currentPage === 'prep' || currentPage === 'voice-prep' || currentPage === 'proofreading';
   // Full-screen guided flows: the resume builder and Leo's flows
   const isFocusFlow = (currentPage === 'resume-editor' || isLeoPage) && builderFocus !== false;
   // My Documents is a standalone app view with its own top bar
@@ -565,7 +574,7 @@ export default function App() {
   // The 404 page stands alone, without the site header and footer
   const isNotFound = currentPage === 'not-found';
   // App products (the app.cvmind.in pages) show no site header or footer, just a way back
-  // Leo's pages (Resume Tailorer, Interview Prep AI, Voice Prep AI) keep the site header and footer
+  // Leo's pages (Resume Tailorer, Interview Prep AI, Voice Prep AI, AI Proofreading) keep the site header and footer
   const isProductPage = APP_PAGES.includes(currentPage) && !isLeoPage;
   // Account and My Documents have their own Back button / top bar; the editor's full-screen flows have Exit
   const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && !isFocusFlow;

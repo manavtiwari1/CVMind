@@ -1463,7 +1463,8 @@ const proofreadingSchema = {
   required: ['correctedText', 'score', 'summary', 'changes', 'stats']
 };
 
-export async function generateProofreadingWithDeepSeek({ text, industry = 'General', customApiKey = null }) {
+export async function generateProofreadingWithDeepSeek({ text, industry = 'General', documentType = '', customApiKey = null }) {
+  const docLine = documentType ? `\nThe text is a ${documentType}. Keep it in the conventions of a ${documentType} (for a resume: keep bullet points terse, with no first-person pronouns).` : '';
   const systemPrompt = `You are an expert writing coach, professional proofreader, and linguist specialising in career documents and professional communications.
 
 Your task is to proofread and rewrite the provided text with the following improvements:
@@ -1474,9 +1475,10 @@ Your task is to proofread and rewrite the provided text with the following impro
 5. TONE ALIGNMENT: Align the tone for ${industry} industry professionals — use appropriate formality and vocabulary.
 6. CLARITY: Simplify overly complex or wordy sentences. Remove redundant words.
 
-Be thorough but preserve the author's original intent and factual content. Do not fabricate metrics or information not present in the original.`;
+Be thorough but preserve the author's original intent and factual content. Do not fabricate metrics or information not present in the original.
+Keep the original line breaks and section order in correctedText. In each change, "corrected" must appear word for word in correctedText.${docLine}`;
 
-  const userPrompt = `Please proofread and improve the following text. Target industry: ${industry}.
+  const userPrompt = `Please proofread and improve the following text. Target industry: ${industry}.${documentType ? ` Document type: ${documentType}.` : ''}
 
 Text to proofread:
 """
@@ -1492,7 +1494,8 @@ Analyse every sentence, identify all issues, apply all improvements, and return 
       responseSchema: proofreadingSchema,
       customApiKey,
       temperature: 0.2,
-      maxTokens: 3000
+      // A whole resume comes back in correctedText alongside the change list
+      maxTokens: 6000
     });
   } catch (error) {
     console.error('DeepSeek Proofreading Error:', error);

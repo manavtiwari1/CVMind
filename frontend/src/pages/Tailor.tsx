@@ -4,20 +4,20 @@ import {
   LayoutTemplate, Link2, Loader2, Lock, Palette, PencilLine, RefreshCw, Share2, Sparkles, Target, Upload, Wand2, X,
 } from 'lucide-react';
 import TemplatePreview from '../components/TemplatePreview';
+import ResumeSheet from '../components/ResumeSheet';
 import ResumeDownload from '../components/ResumeDownload';
 import { Leo, Stepper } from '../components/ResumeOnboarding';
 import '../components/ResumeOnboarding.css';
-import { RESUME_TEMPLATES, TEMPLATES, type Template } from '../data/resumeTemplates';
+import { RESUME_TEMPLATES } from '../data/resumeTemplates';
 import { authFetch } from '../lib/authFetch';
 import { API_BASE } from '../lib/apiBase';
 import { readUser } from '../lib/currentUser';
 import { cvFileError, isLink, readJobLink } from '../lib/jobInput';
-import { GOOGLE_FONTS_HREF } from '../lib/resumeDesign';
-import { splitFooter, withFooter } from '../lib/resumeFooter';
-import { sanitizeResumeHtml } from '../lib/sanitizeHtml';
+import { DEFAULT_TEMPLATE, downloadWord, fillTemplate, finishHtml, htmlToText, templateFor, workForEditor } from '../lib/resumeHandoff';
+import { splitFooter } from '../lib/resumeFooter';
 import { parseSavedContent } from '../utils/savedWork';
 import { getErrorMessage } from '../utils/errors';
-import type { ExtractedResume, LoadedWork, SavedWork, WizardFormData } from '../types/api';
+import type { ExtractedResume, LoadedWork } from '../types/api';
 import './Tailor.css';
 
 interface TailorProps {
@@ -52,44 +52,6 @@ interface SavedTailor {
   result?: TailorResult;
   generatedHtml?: string;
   templateId?: string;
-}
-
-const DEFAULT_TEMPLATE = 'cv-ivy-league';
-const PAGE_W = 794;
-const PAGE_H = 1123;
-
-const templateFor = (id?: string): Template =>
-  TEMPLATES.find(t => t.id === id) ?? TEMPLATES.find(t => t.id === DEFAULT_TEMPLATE) ?? RESUME_TEMPLATES[0];
-
-/** Fills the locked CVMind footer back in after the AI filled the template body. */
-const finishHtml = (generated: string, templateId?: string) =>
-  withFooter(sanitizeResumeHtml(generated), splitFooter(templateFor(templateId).html).footer);
-
-const toFormData = (d: ExtractedResume): WizardFormData => ({
-  personalInfo: {
-    fullName: d.personalInfo?.fullName || '', email: d.personalInfo?.email || '', phone: d.personalInfo?.phone || '',
-    location: d.personalInfo?.location || '', linkedin: d.personalInfo?.linkedin || '', jobTitle: d.personalInfo?.jobTitle || '',
-  },
-  jobTitle: d.personalInfo?.jobTitle || '',
-  summary: d.summary || '',
-  education: d.educations || [],
-  workExperiences: d.workExperiences || [],
-  skills: d.skills || [],
-  courses: d.courses || [],
-  languages: d.languages || [],
-  achievements: d.achievements || [],
-  timeBreakdown: [],
-});
-
-/** Plain text of the resume as laid out (used for TXT export). */
-function htmlToText(html: string): string {
-  const el = document.createElement('div');
-  el.style.cssText = `position:fixed;left:-10000px;top:0;width:${PAGE_W}px`;
-  el.innerHTML = html;
-  document.body.appendChild(el);
-  const text = el.innerText;
-  el.remove();
-  return text.replace(/\n{3,}/g, '\n\n').trim();
 }
 
 /** AI skill lists sometimes come back as sentences; turn them into short chips. */
@@ -151,48 +113,6 @@ const FAQS = [
 ];
 
 const PHASES = ['Reading your CV', 'Matching it to the job', 'Filling your template'];
-
-/** The finished resume at real size, scaled to fit. Sandboxed with no scripts. */
-function ResumeSheet({ html }: { html: string }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const frameRef = useRef<HTMLIFrameElement>(null);
-  const [scale, setScale] = useState(0);
-  const [height, setHeight] = useState(PAGE_H);
-
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const update = () => setScale(Math.min(1, el.clientWidth / PAGE_W));
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const measure = () => {
-    const d = frameRef.current?.contentDocument;
-    if (d) setHeight(Math.max(PAGE_H, d.documentElement.scrollHeight));
-  };
-
-  const doc = `<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="${GOOGLE_FONTS_HREF}">
-<style>:root{--rs-h:${PAGE_H}px}html,body{margin:0;background:#fff}body{font-family:Arial,sans-serif;font-size:13px;line-height:1.6;color:#111}*{box-sizing:border-box}</style>
-</head><body>${html}</body></html>`;
-
-  return (
-    <div ref={wrapRef} className="tlr-sheet" style={{ height: scale ? height * scale : undefined }}>
-      {scale > 0 && (
-        <iframe
-          ref={frameRef}
-          title="Tailored resume preview"
-          sandbox="allow-same-origin"
-          srcDoc={doc}
-          onLoad={() => { measure(); setTimeout(measure, 700); }}
-          style={{ width: PAGE_W, height, transform: `scale(${scale})` }}
-        />
-      )}
-    </div>
-  );
-}
 
 export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLoadedWork, onFocusChange }: TailorProps) {
   const [flow, setFlow] = useState<Flow>(null);
@@ -380,15 +300,7 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
     setRetemplating(true);
     setErrorMsg(null);
     try {
-      const res = await fetch(`${API_BASE}/api/resume/generate`, {
-        method: 'POST',
-        headers: apiHeaders(true),
-        body: JSON.stringify({ templateHtml: splitFooter(template.html).body, formData: toFormData(result.tailoredData), keepFacts: true }),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok || !body.data?.generatedHtml) throw new Error(body.error || 'Could not switch the template.');
-      const generated = String(body.data.generatedHtml).replace(/^```(?:html)?\s*/i, '').replace(/```\s*$/, '');
-      setHtml(finishHtml(generated, template.id));
+      setHtml(await fillTemplate(result.tailoredData, template.id, apiHeaders()));
       setResult({ ...result, templateId: template.id });
       setTemplateId(template.id);
     } catch (err) {
@@ -398,43 +310,13 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
     }
   };
 
-  const downloadWord = (fileName: string) => {
-    const doc = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-<head><meta charset='utf-8'><title>Resume</title>
-<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
-<style>body{font-family:Arial,sans-serif;margin:1in;}@page{margin:1in;}</style>
-</head><body>${html}</body></html>`;
-    const url = URL.createObjectURL(new Blob(['﻿', doc], { type: 'application/msword' }));
-    const a = Object.assign(document.createElement('a'), { href: url, download: `${fileName}.doc` });
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
-  };
-
   const openInEditor = async () => {
     if (!result || !html || handingOff) return;
     setHandingOff(true);
     const template = templateFor(result.templateId);
     const name = result.tailoredData?.personalInfo?.fullName?.trim();
     const title = (name ? `${name} - Tailored Resume` : `Tailored Resume - ${template.name}`).slice(0, 120);
-    let work: SavedWork = { title, type: 'resume', templateId: template.id, htmlContent: html, source: 'resume-tailor' };
-    const user = readUser();
-    const userId = user?.id || user?._id;
-    if (userId) {
-      // Saved first so it shows up in My Documents straight away
-      try {
-        const res = await authFetch(`${API_BASE}/api/user/work`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, title, type: 'resume', templateId: template.id, htmlContent: html, source: 'resume-tailor' }),
-        });
-        const body = await res.json();
-        if (res.ok && body.data) work = { ...work, ...body.data, htmlContent: html, source: 'resume-tailor' };
-      } catch (err) {
-        console.error('Could not save the tailored resume before opening the editor:', err);
-      }
-    }
+    const work = await workForEditor(html, template.id, title, 'resume-tailor');
     setLoadedWork(work);
     setCurrentPage('resume-editor');
   };
@@ -720,7 +602,7 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
             getHtml={() => html}
             getText={() => htmlToText(html)}
             customApiKey={customApiKey}
-            onWord={downloadWord}
+            onWord={name => downloadWord(html, name)}
             onScan={jd => { setShowDownload(false); setJobDescription(jd); if (resumeText) runTailor(jd, resumeText); }}
             onClose={() => setShowDownload(false)}
           />

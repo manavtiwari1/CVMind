@@ -2875,6 +2875,8 @@ apiRouter.post('/api/ai/proofread', optionalUser, upload.single('resume'), async
   try {
     const customApiKey = req.headers['x-gemini-key'] || null;
     const industry = req.body?.industry || 'General';
+    // Optional; sent by the web app's Leo flow (older clients leave it out)
+    const documentType = String(req.body?.documentType || '').trim().slice(0, 40);
 
     const usageInfo = null;
 
@@ -2901,6 +2903,7 @@ apiRouter.post('/api/ai/proofread', optionalUser, upload.single('resume'), async
     const result = await generateProofreadingWithDeepSeek({
       text: text.trim(),
       industry,
+      documentType,
       customApiKey
     });
 
@@ -2914,10 +2917,10 @@ apiRouter.post('/api/ai/proofread', optionalUser, upload.single('resume'), async
       issuesCount: issues.length
     });
     const savedWork = await saveFeatureWork(userId, {
-      title: `Proofread - ${text.trim().substring(0, 40)}`,
+      title: `Proofread - ${documentType ? `${documentType} - ` : ''}${text.trim().substring(0, 40)}`,
       type: 'proofread',
       templateId: 'ai-proofreader',
-      payload: { industry, originalText: text.trim(), result }
+      payload: { industry, documentType, fileName: req.file?.originalname || '', originalText: text.trim(), result }
     });
 
     return res.json({ success: true, data: result, extractedText: (req.file || resumeUrl) ? text.trim() : undefined, usage: usageInfo, work: savedWork });
