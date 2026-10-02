@@ -1,322 +1,317 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  ArrowRight, RefreshCw, BookOpen, GraduationCap, Check, HelpCircle
+  BookOpen, CheckCircle2, Clock, Download, ExternalLink, GraduationCap, Hammer, ListChecks, Search, ShieldCheck, Target, TrendingUp,
 } from 'lucide-react';
-import SkeletonLoader from '../../components/SkeletonLoader';
-import { getErrorMessage } from '../../utils/errors';
-import { authFetch } from '../../lib/authFetch';
+import {
+  CareerApp, CareerIntro, CareerNext, CareerWorking, CheckItem, Chips, CvPicker, Field, Panel, Progress, ScoreCard,
+} from '../../components/career/CareerKit';
+import type { IntroCopy } from '../../components/career/CareerKit';
+import { cvLabel, downloadText, postCareer, resultKey, useCareerRun, useChecklist, useCvInput } from '../../components/career/careerApi';
+import { readUser } from '../../lib/currentUser';
 import { parseSavedContent } from '../../utils/savedWork';
 import type { LoadedWork } from '../../types/api';
 import './CareerCourses.css';
 
-// AI response (schema in backend/src/services/gemini.js)
+// /api/career/courses (careerCoursesSchema in backend/src/services/gemini.js); older saves only have gaps and courses
 interface CourseSuggestion {
   title: string;
   platform: string;
   skillsCovered: string[];
   reason: string;
   duration: string;
+  level?: string;
+}
+
+interface GapDetail {
+  skill: string;
+  priority: 'High' | 'Medium' | 'Low' | string;
+  why: string;
 }
 
 interface CoursesResult {
+  readiness?: number;
+  summary?: string;
+  strengths?: string[];
   gaps: string[];
+  gapDetails?: GapDetail[];
   courses: CourseSuggestion[];
+  projects?: { title: string; description: string }[];
 }
 
 // Page state saved in a 'career-courses' work
-interface SavedCoursesContent {
+interface SavedCourses {
   targetJob?: string;
   skills?: string;
+  level?: string;
   result?: CoursesResult | null;
 }
 
 interface CareerCoursesProps {
   customApiKey: string;
   resumeText: string;
+  setCurrentPage?: (page: string) => void;
   loadedWork?: LoadedWork | null;
   setLoadedWork?: (work: LoadedWork | null) => void;
+  onFocusChange?: (mode: false | 'flow') => void;
 }
 
-export default function CareerCourses({ customApiKey, resumeText, loadedWork, setLoadedWork }: CareerCoursesProps) {
+const TOOL = { name: 'Skill Gaps & Courses', icon: GraduationCap };
+const PHASES = ['Reading your skills', 'Comparing them with the role', 'Picking courses and projects'];
+const LEVELS = ['Entry level', 'Mid-level', 'Senior'];
+
+// Search pages on each platform; the AI names the course, the link finds it
+const PLATFORM_SEARCH: { match: RegExp; url: (q: string) => string }[] = [
+  { match: /coursera/i, url: q => `https://www.coursera.org/search?query=${q}` },
+  { match: /udemy/i, url: q => `https://www.udemy.com/courses/search/?q=${q}` },
+  { match: /edx/i, url: q => `https://www.edx.org/search?q=${q}` },
+  { match: /linkedin/i, url: q => `https://www.linkedin.com/learning/search?keywords=${q}` },
+  { match: /pluralsight/i, url: q => `https://www.pluralsight.com/search?q=${q}` },
+  { match: /freecodecamp/i, url: q => `https://www.freecodecamp.org/news/search/?query=${q}` },
+  { match: /aws|amazon/i, url: q => `https://skillbuilder.aws/search?searchText=${q}` },
+  { match: /microsoft/i, url: q => `https://learn.microsoft.com/en-us/search/?terms=${q}` },
+];
+
+function courseLink(c: CourseSuggestion): string {
+  const q = encodeURIComponent(c.title);
+  const site = PLATFORM_SEARCH.find(p => p.match.test(c.platform));
+  return site ? site.url(q) : `https://www.google.com/search?q=${encodeURIComponent(`${c.title} ${c.platform} course`)}`;
+}
+
+const priorityTone = (p: string) => (/high/i.test(p) ? 'high' : /low/i.test(p) ? 'low' : 'medium');
+
+const COPY: IntroCopy = {
+  title: <>Know exactly <em>what to learn next</em></>,
+  checks: [
+    'See how ready you are for the role you want, and what you already have that it needs.',
+    'Get the missing skills ranked by how much they hold you back.',
+    'Courses from Coursera, Udemy, edX and more, plus practice projects that prove the skills.',
+  ],
+  formTitle: 'Find my skill gaps',
+  steps: [
+    { icon: Target, title: 'Name the role', text: 'The job you want next, and the level you are aiming for.' },
+    { icon: BookOpen, title: 'Add your skills or resume', text: 'Your resume gives the most accurate picture. A list of skills works too.' },
+    { icon: ListChecks, title: 'Learn and tick off', text: 'Open each course, mark it done, and watch your plan fill up.' },
+  ],
+  gets: [
+    { icon: TrendingUp, title: 'A readiness score', text: 'How close you are to the role today, so you can see the gap shrink as you learn.' },
+    { icon: Target, title: 'Gaps in priority order', text: 'Each missing skill marked high, medium or low, with why the role needs it.' },
+    { icon: GraduationCap, title: 'Courses you can open', text: 'Each one links to a search on its platform, with level and time to finish.' },
+    { icon: Hammer, title: 'Projects to prove it', text: 'Two practice projects that show employers the new skills, not just a certificate.' },
+  ],
+  faqs: [
+    { q: 'Are the courses real?', a: 'The AI is told to suggest only well-known courses it is confident exist, and the link searches the platform for the title so you land on the real page. Courses change, so check the details and price on the platform before you sign up.' },
+    { q: 'Are the courses free?', a: 'Some are, some are paid, and many paid ones let you audit for free. CVMind doesn\'t sell courses or earn from these links.' },
+    { q: 'How is readiness worked out?', a: 'The AI compares your resume or skills with what the role usually asks for and gives an estimate from 0 to 100. It is a guide to track progress, not a hiring decision.' },
+    { q: 'Is it saved?', a: 'When you are signed in, the plan is saved to My Documents so you can reopen it. Courses you mark as done are remembered in this browser.' },
+  ],
+  finalTitle: 'Stop guessing what to learn',
+  finalText: 'Name the role you want and get a learning plan in under a minute.',
+};
+
+export default function CareerCourses({ customApiKey, resumeText, setCurrentPage, loadedWork, setLoadedWork, onFocusChange }: CareerCoursesProps) {
+  const runner = useCareerRun<CoursesResult>(onFocusChange);
+  const { stage, result, show, run } = runner;
+  const cvState = useCvInput(resumeText);
   const [targetJob, setTargetJob] = useState('');
   const [skills, setSkills] = useState('');
-  const [useResumeText, setUseResumeText] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<CoursesResult | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [level, setLevel] = useState('Mid-level');
+  const [sourceName, setSourceName] = useState('');
 
-  const clearForm = () => {
-    setResult(null);
-    setTargetJob('');
-    setSkills('');
-  };
-
-  // Load saved work if opened from My Works (adjusting state during render,
-  // see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
   const [handledWork, setHandledWork] = useState<LoadedWork | null>(null);
   if (loadedWork && loadedWork !== handledWork) {
     setHandledWork(loadedWork);
-    if (loadedWork.deleted) {
-      clearForm();
-    } else if (loadedWork.type === 'career-courses') {
-      const saved = parseSavedContent<SavedCoursesContent>(loadedWork.htmlContent);
-      if (saved) {
+    if (!loadedWork.deleted && loadedWork.type === 'career-courses') {
+      const saved = parseSavedContent<SavedCourses>(loadedWork.htmlContent);
+      if (saved?.result) {
         setTargetJob(saved.targetJob || '');
         setSkills(saved.skills || '');
-        setResult(saved.result || null);
-      } else {
-        console.error('Error parsing loaded career courses work');
+        setLevel(saved.level || 'Mid-level');
+        setSourceName('');
+        show(saved.result);
       }
     }
   }
-
-  // A deletion notice has been handled; clear it in the parent
   useEffect(() => {
-    if (loadedWork?.deleted && setLoadedWork) setLoadedWork(null);
+    if (loadedWork) setLoadedWork?.(null);
   }, [loadedWork, setLoadedWork]);
 
-  const handleGenerate = async () => {
-    if (!targetJob.trim()) {
-      setErrorMsg('Target Job Title is required.');
-      return;
-    }
-
-    setLoading(true);
-    setErrorMsg(null);
-    setResult(null);
-
-    try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL 
-        || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
-
-      const userStr = localStorage.getItem('cvmind_user');
-      let email = '';
-      let userId = '';
-      if (userStr) {
-        try {
-          const parsedUser = JSON.parse(userStr);
-          email = parsedUser.email || '';
-          userId = parsedUser.id || parsedUser._id || '';
-        } catch {
-          // ignore
-        }
-      }
-
-      if (!userId) {
-        throw new Error('Please sign in to run Skill Gap analysis & save recommendations.');
-      }
-
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (customApiKey) {
-        headers['x-gemini-key'] = customApiKey;
-      }
-
-      const response = await authFetch(`${baseUrl}/api/career/courses`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          targetJob,
-          skills,
-          resumeText: useResumeText ? resumeText : '',
-          email,
-          userId
-        })
-      });
-
-      const resData = await response.json();
-      if (!response.ok) {
-        throw new Error(resData.error || 'Server returned an error');
-      }
-
-      if (resData.success && resData.data) {
-        setResult(resData.data);
-        if (resData.work && setLoadedWork) {
-          setLoadedWork(resData.work);
-        }
-      } else {
-        throw new Error('Invalid output format from server.');
-      }
-    } catch (err) {
-      console.error(err);
-      setErrorMsg(getErrorMessage(err) || 'Generation failed. Make sure the servers are online.');
-    } finally {
-      setLoading(false);
-    }
+  const hasInput = Boolean(skills.trim()) || cvState.cv.source !== 'none';
+  const generate = () => {
+    const role = targetJob.trim();
+    if (!role || !cvState.ready || !hasInput) return;
+    run(async () => {
+      const data = await postCareer<CoursesResult>('/api/career/courses', { targetJob: role, skills: skills.trim(), level }, cvState, customApiKey);
+      if (!data.courses?.length && !data.gaps?.length) throw new Error('The AI did not finish the plan this time. Please try again.');
+      setSourceName(cvLabel(cvState));
+      return data;
+    });
   };
 
-  function removeState() {
-    clearForm();
-    if (setLoadedWork) {
-      setLoadedWork(null);
-    }
+  if (stage === 'working') {
+    return <CareerWorking tool={TOOL} title="Finding your skill gaps…" phases={PHASES} phase={runner.phase} error={runner.error} onRetry={runner.retry} onEdit={runner.toIntro} />;
+  }
+
+  if (stage === 'result' && result) {
+    return (
+      <CoursesView
+        result={result}
+        targetJob={targetJob}
+        meta={[targetJob, level, sourceName].filter(Boolean).join(' · ')}
+        onAgain={runner.toIntro}
+        setCurrentPage={setCurrentPage}
+      />
+    );
   }
 
   return (
-    <div className="career-courses-container animate-fade-in-up">
-      <div className="glow-ambient" style={{ top: '15%', left: '10%' }}></div>
-      <div className="glow-ambient" style={{ bottom: '25%', right: '15%' }}></div>
+    <CareerIntro
+      tool={TOOL}
+      copy={COPY}
+      setCurrentPage={setCurrentPage}
+      resumeResult={result ? { label: 'Back to your learning plan', onClick: runner.toResult } : null}
+      submit={{
+        label: 'Find my skill gaps',
+        disabled: !targetJob.trim() || !cvState.ready || !hasInput,
+        onClick: generate,
+        hint: !targetJob.trim() ? 'Add the role you want to start.' : !hasInput ? 'Add your skills or your resume so there is something to compare.' : undefined,
+      }}
+    >
+      <Field label="Role you want">
+        <input className="tlr-input" value={targetJob} onChange={e => setTargetJob(e.target.value)} placeholder="e.g. Machine Learning Engineer" maxLength={120} />
+      </Field>
+      <Chips label="Level" options={LEVELS} value={level} onChange={setLevel} />
+      <Field label="Skills you have" optional hint="Needed if you skip the resume.">
+        <textarea className="tlr-textarea" value={skills} onChange={e => setSkills(e.target.value)} placeholder="e.g. Python, SQL, pandas, basic statistics" maxLength={600} />
+      </Field>
+      <CvPicker state={cvState} why="Your resume shows what you already know, so the gaps are accurate." />
+    </CareerIntro>
+  );
+}
 
-      {/* Header */}
-      <div className="career-courses-header">
-        <div className="career-courses-title-section">
-          <div className="career-courses-badge">
-            <GraduationCap size={13} style={{ fill: 'currentColor' }} /> Career Path AI
-          </div>
-          <h1 className="career-courses-title-text">Skill Gaps & Online Courses</h1>
-          <p className="career-courses-subtitle-text">
-            Compare your profile against target roles, identify missing skills, and get personalized course recommendations to bridge the gap.
-          </p>
+interface CoursesViewProps {
+  result: CoursesResult;
+  targetJob: string;
+  meta: string;
+  onAgain: () => void;
+  setCurrentPage?: (page: string) => void;
+}
+
+function CoursesView({ result, targetJob, meta, onAgain, setCurrentPage }: CoursesViewProps) {
+  const courses = result.courses ?? [];
+  const strengths = result.strengths ?? [];
+  const projects = result.projects ?? [];
+  const gaps: GapDetail[] = result.gapDetails?.length
+    ? result.gapDetails
+    : (result.gaps ?? []).map(g => ({ skill: g, priority: '', why: '' }));
+  const { done, toggle } = useChecklist(resultKey('career-courses', result));
+  const items = [...courses.map((_, i) => `course-${i}`), ...projects.map((_, i) => `project-${i}`)];
+  const doneCount = items.filter(id => done.has(id)).length;
+  const hasReadiness = typeof result.readiness === 'number';
+
+  const plan = () => [
+    `Learning plan for ${targetJob}`,
+    hasReadiness ? `Readiness today: ${result.readiness}/100` : '',
+    result.summary || '',
+    '',
+    strengths.length ? `YOU ALREADY HAVE: ${strengths.join(', ')}` : '',
+    '',
+    'SKILL GAPS',
+    ...gaps.map(g => `- ${g.skill}${g.priority ? ` (${g.priority})` : ''}${g.why ? `: ${g.why}` : ''}`),
+    '',
+    'COURSES',
+    ...courses.map((c, i) => `${i + 1}. ${c.title} (${c.platform}${c.level ? `, ${c.level}` : ''}, ${c.duration})\n   ${c.reason}\n   ${courseLink(c)}`),
+    '',
+    ...(projects.length ? ['PRACTICE PROJECTS', ...projects.map(p => `- ${p.title}: ${p.description}`)] : []),
+  ].filter((l, i, a) => l !== '' || a[i - 1] !== '').join('\n');
+
+  return (
+    <CareerApp
+      tool={TOOL}
+      againLabel="Change my details"
+      onAgain={onAgain}
+      onExit={onAgain}
+      heading={`Your learning plan for ${targetJob || 'your next role'}`}
+      summary={result.summary || `${gaps.length} skills to build and ${courses.length} courses to close the gap.`}
+      meta={meta}
+      actions={<button type="button" className="tlr-btn tlr-btn--outline" onClick={() => downloadText(`Learning plan - ${targetJob}`, plan())}><Download size={17} /> Download .txt</button>}
+      footnote={readUser() ? 'Saved to My Documents. Ticks are kept in this browser.' : 'Sign in to save it to My Documents.'}
+    >
+      <div className="crt-layout">
+        <div className="crt-main">
+          <Panel title="Skill gaps" icon={Target}>
+            <ul className="cc-gaps">
+              {gaps.map(g => (
+                <li key={g.skill}>
+                  <div className="cc-gap-top">
+                    <strong>{g.skill}</strong>
+                    {g.priority && <span className={`crt-tag crt-tag--${priorityTone(g.priority)}`}>{g.priority} priority</span>}
+                  </div>
+                  {g.why && <p>{g.why}</p>}
+                </li>
+              ))}
+            </ul>
+          </Panel>
+
+          <Panel title="Courses" icon={GraduationCap}>
+            <ul className="cc-courses">
+              {courses.map((c, i) => {
+                const id = `course-${i}`;
+                const isDone = done.has(id);
+                return (
+                  <li key={`${c.title}-${i}`} className={isDone ? 'is-done' : ''}>
+                    <div className="cc-course-top">
+                      <span className="crt-tag crt-tag--green">{c.platform}</span>
+                      {c.level && <span className="crt-tag">{c.level}</span>}
+                      {c.duration && <span className="cc-time"><Clock size={13} /> {c.duration}</span>}
+                    </div>
+                    <h3>{c.title}</h3>
+                    <p>{c.reason}</p>
+                    {c.skillsCovered?.length > 0 && <div className="tlr-chips">{c.skillsCovered.map(s => <span key={s} className="tlr-chip tlr-chip--ok">{s}</span>)}</div>}
+                    <div className="crt-actions-row">
+                      <a className="crt-copy" href={courseLink(c)} target="_blank" rel="noopener noreferrer"><Search size={14} /> Find on {c.platform} <ExternalLink size={12} /></a>
+                      <span className="crt-spacer" />
+                      <button type="button" className={`crt-pick${isDone ? ' is-on' : ''}`} aria-pressed={isDone} onClick={() => toggle(id)}>
+                        {isDone ? <><CheckCircle2 size={13} /> Done</> : 'Mark as done'}
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="tlr-fine">Links search the platform for the course title. Check the price and syllabus there before you enrol.</p>
+          </Panel>
+
+          {projects.length > 0 && (
+            <Panel title="Practice projects" icon={Hammer}>
+              <ul className="crt-checks">
+                {projects.map((p, i) => (
+                  <CheckItem key={p.title} checked={done.has(`project-${i}`)} onToggle={() => toggle(`project-${i}`)}>
+                    <b>{p.title}.</b> {p.description}
+                  </CheckItem>
+                ))}
+              </ul>
+              <p className="tlr-fine">Put finished projects on GitHub and add them to your resume and LinkedIn.</p>
+            </Panel>
+          )}
         </div>
-        {result && (
-          <button className="btn-secondary" onClick={removeState}>
-            <RefreshCw size={14} /> Start Over
-          </button>
-        )}
+
+        <aside className="crt-side">
+          {hasReadiness && <ScoreCard score={result.readiness ?? 0} title="Readiness" note={`How ready you are for ${targetJob || 'this role'} today, estimated by AI.`} />}
+          {items.length > 0 && (
+            <section className="tlr-card">
+              <h3>Your progress</h3>
+              <Progress done={doneCount} total={items.length} label="Courses and projects done" />
+            </section>
+          )}
+          {strengths.length > 0 && (
+            <section className="tlr-card">
+              <h3>What you already have</h3>
+              <ul className="crt-bullets">{strengths.map(s => <li key={s}><ShieldCheck size={15} />{s}</li>)}</ul>
+            </section>
+          )}
+          <CareerNext current="career-courses" setCurrentPage={setCurrentPage} pick={['career-roadmap', 'linkedin', 'elevator-pitch']} />
+        </aside>
       </div>
-
-      <div className="career-courses-content-area">
-        {!loading && !result && (
-          <div className="career-courses-input-card glass-card">
-            <div className="input-card-info">
-              <h3>Analyze Career Skill Gaps</h3>
-              <p>Enter your target career path to analyze missing technical and soft skills, and get structured learning recommendations.</p>
-            </div>
-
-            <div className="career-courses-form">
-              <div className="form-group">
-                <label>Target Job Title *</label>
-                <input
-                  type="text"
-                  placeholder="e.g. DevOps Architect, UX Researcher, Data Scientist..."
-                  value={targetJob}
-                  onChange={(e) => setTargetJob(e.target.value)}
-                  className="form-control-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Current Skills / Tech Stack (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. JavaScript, Excel, SQL, Project Coordination..."
-                  value={skills}
-                  onChange={(e) => setSkills(e.target.value)}
-                  className="form-control-input"
-                />
-              </div>
-
-              {resumeText && (
-                <div className="resume-context-checkbox" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                  <input
-                    type="checkbox"
-                    id="useResumeCheck"
-                    checked={useResumeText}
-                    onChange={(e) => setUseResumeText(e.target.checked)}
-                    style={{ cursor: 'pointer', width: '16px', height: '16px' }}
-                  />
-                  <label htmlFor="useResumeCheck" style={{ cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    Include active CV resume context (highly recommended for precision scan)
-                  </label>
-                </div>
-              )}
-
-              {errorMsg && (
-                <div className="error-message-bar" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)', padding: '0.75rem', borderRadius: '8px', fontSize: '0.85rem' }}>
-                  <span>⚠️ {errorMsg}</span>
-                </div>
-              )}
-
-              <button className="btn-primary" style={{ marginTop: '0.5rem', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }} onClick={handleGenerate}>
-                Analyze Skills & Fetch Courses <ArrowRight size={16} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {loading && (
-          <SkeletonLoader
-            type="cards"
-            title="Conducting Skill Gap Audit..."
-            subtitle="Matching your profile with target skill matrices and course curricula..."
-          />
-        )}
-
-        {result && (
-          <div className="career-courses-results-grid animate-fade-in">
-            {/* Sidebar Gaps List */}
-            <div className="results-sidebar glass-card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
-                <HelpCircle size={16} className="text-warning" />
-                <h4 style={{ margin: 0 }}>Identified Skill Gaps</h4>
-              </div>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0 0 1rem' }}>
-                These are the top skill areas you lack compared to benchmark requirements for **{targetJob}**:
-              </p>
-              <div className="gaps-list-stack" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {result.gaps && result.gaps.map((gap: string, idx: number) => (
-                  <div key={idx} className="gap-item-card" style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', background: 'rgba(239,68,68,0.03)', border: '1px solid rgba(239,68,68,0.1)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
-                    <span style={{ fontSize: '0.8rem', color: '#f87171', fontWeight: 700 }}>•</span>
-                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>{gap}</span>
-                  </div>
-                ))}
-              </div>
-
-              {localStorage.getItem('cvmind_user') ? (
-                <div className="course-autosave-status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)', padding: '0.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', border: '1px solid var(--border)', marginTop: '1.5rem' }}>
-                  <Check size={14} className="text-success" />
-                  <span>Saved automatically to My Works</span>
-                </div>
-              ) : (
-                <div className="course-autosave-status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--text-warning)', padding: '0.5rem', background: 'rgba(251,146,60,0.05)', borderRadius: '6px', border: '1px solid rgba(251,146,60,0.2)', marginTop: '1.5rem' }}>
-                  <span>Sign in to auto-save</span>
-                </div>
-              )}
-            </div>
-
-            {/* Courses Recommendations Cards */}
-            <div className="results-main-panel">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                <BookOpen size={20} className="text-blue" />
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>Recommended Online Courses & Certifications</h3>
-              </div>
-
-              <div className="courses-cards-grid" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                {result.courses && result.courses.map((course, index: number) => (
-                  <div key={index} className="course-recommendation-card glass-card" style={{ padding: '1.75rem', border: '1px solid var(--border)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
-                    
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-                      <div>
-                        <span style={{ display: 'inline-block', fontSize: '0.72rem', fontWeight: 800, background: 'var(--blue-dim)', color: 'var(--blue)', border: '1px solid rgba(41,151,255,0.2)', padding: '0.25rem 0.6rem', borderRadius: '4px', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                          {course.platform}
-                        </span>
-                        <h4 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 850, color: 'var(--text-primary)' }}>{course.title}</h4>
-                      </div>
-                      <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.4rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
-                        Duration: <strong>{course.duration}</strong>
-                      </div>
-                    </div>
-
-                    <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.6' }}>
-                      {course.reason}
-                    </p>
-
-                    <div>
-                      <h5 style={{ margin: '0 0 0.5rem', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Skills you will build:</h5>
-                      <div className="skills-badge-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                        {course.skillsCovered && course.skillsCovered.map((skill: string, sIdx: number) => (
-                          <span key={sIdx} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.78rem', background: 'rgba(255,255,255,0.03)', color: 'var(--text-secondary)', border: '1px solid var(--border)', padding: '0.2% 0.5rem', borderRadius: '6px' }}>
-                            <Check size={11} className="text-success" /> {skill}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+    </CareerApp>
   );
 }

@@ -116,7 +116,18 @@ const linkedinSchema = {
     },
     summary: { 
       type: 'string', 
-      description: 'A concise summary of profile strengths, formatting, and overall impression.' 
+      description: 'A concise summary of profile strengths, formatting, and overall impression.'
+    },
+    sectionScores: {
+      type: 'object',
+      description: 'How strong each part of the profile is, each from 0 to 100.',
+      properties: {
+        headline: { type: 'integer' },
+        about: { type: 'integer' },
+        experience: { type: 'integer' },
+        skills: { type: 'integer' }
+      },
+      required: ['headline', 'about', 'experience', 'skills']
     },
     headline: {
       type: 'object',
@@ -165,7 +176,7 @@ const linkedinSchema = {
       description: '3-4 actionable tips regarding profile/banner images, custom URLs, active engagement, or networking.'
     }
   },
-  required: ['score', 'summary', 'headline', 'about', 'experience', 'skillsAndKeywords', 'generalTips']
+  required: ['score', 'summary', 'sectionScores', 'headline', 'about', 'experience', 'skillsAndKeywords', 'generalTips']
 };
 
 const evaluationSchema = {
@@ -228,14 +239,60 @@ const outreachSchema = {
     recruiterDM: {
       type: 'string',
       description: 'A direct message to a recruiter pitching the candidate for a specific job title. Under 150 words.'
+    },
+    inMailSubject: {
+      type: 'string',
+      description: 'A short subject line (under 60 characters) for sending the recruiter message as an InMail or email.'
+    },
+    followUp: {
+      type: 'string',
+      description: 'A polite follow-up to send about a week later if there is no reply. Under 70 words.'
     }
   },
-  required: ['connectionRequest', 'referralPitch', 'recruiterDM']
+  required: ['connectionRequest', 'referralPitch', 'recruiterDM', 'inMailSubject', 'followUp']
 };
 
 const careerCoursesSchema = {
   type: 'object',
   properties: {
+    readiness: {
+      type: 'integer',
+      description: 'How ready the candidate is for the target job today, from 0 to 100. Be realistic; only use the evidence given.'
+    },
+    summary: {
+      type: 'string',
+      description: 'Two sentences on where the candidate stands for this role and what matters most to learn first.'
+    },
+    strengths: {
+      type: 'array',
+      items: { type: 'string' },
+      description: '3-5 skills the candidate already has that the target job needs. Empty if there is no evidence.'
+    },
+    gapDetails: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          skill: { type: 'string', description: 'The missing or weak skill, as it would appear in a job posting.' },
+          priority: { type: 'string', enum: ['High', 'Medium', 'Low'], description: 'How much this gap holds the candidate back for the target job.' },
+          why: { type: 'string', description: 'One sentence on why the target job needs it.' }
+        },
+        required: ['skill', 'priority', 'why']
+      },
+      description: 'The same gaps as "gaps", in the same order, with a priority and the reason.'
+    },
+    projects: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'A short name for a practice project.' },
+          description: { type: 'string', description: 'What to build, in one or two sentences, and which gaps it shows off.' }
+        },
+        required: ['title', 'description']
+      },
+      description: '2 practice projects the candidate can build to prove the new skills to employers.'
+    },
     gaps: {
       type: 'array',
       items: { type: 'string' },
@@ -250,14 +307,15 @@ const careerCoursesSchema = {
           platform: { type: 'string', description: 'Platform offering the course (e.g., Coursera, Udemy, edX, LinkedIn Learning).' },
           skillsCovered: { type: 'array', items: { type: 'string' }, description: 'Skills covered by this course.' },
           reason: { type: 'string', description: 'A short reason explaining why this course helps bridge a specific gap.' },
-          duration: { type: 'string', description: 'Estimated time commitment to complete the course.' }
+          duration: { type: 'string', description: 'Estimated time commitment to complete the course.' },
+          level: { type: 'string', enum: ['Beginner', 'Intermediate', 'Advanced'], description: 'The level the course is pitched at.' }
         },
-        required: ['title', 'platform', 'skillsCovered', 'reason', 'duration']
+        required: ['title', 'platform', 'skillsCovered', 'reason', 'duration', 'level']
       },
-      description: 'A list of 3-5 structured course recommendations.'
+      description: 'A list of 3-5 structured course recommendations, the most important first. Only name courses you are confident exist.'
     }
   },
-  required: ['gaps', 'courses']
+  required: ['readiness', 'summary', 'strengths', 'gaps', 'gapDetails', 'courses', 'projects']
 };
 
 const elevatorPitchSchema = {
@@ -274,9 +332,18 @@ const elevatorPitchSchema = {
     creative: {
       type: 'string',
       description: 'A 60-second pitch with a narrative/creative flair, focusing on vision, innovation, and key project impacts.'
+    },
+    oneLiner: {
+      type: 'string',
+      description: 'A 10-second, one or two sentence introduction: who they are and what they do best.'
+    },
+    tips: {
+      type: 'array',
+      items: { type: 'string' },
+      description: '3 short, specific delivery tips for saying these pitches out loud in the given setting.'
     }
   },
-  required: ['corporate', 'startup', 'creative']
+  required: ['corporate', 'startup', 'creative', 'oneLiner', 'tips']
 };
 
 const careerRoadmapSchema = {
@@ -297,9 +364,23 @@ const careerRoadmapSchema = {
         required: ['stepNumber', 'phaseName', 'timeframe', 'focus', 'actions', 'milestone']
       },
       description: 'Exactly 4 chronological steps outlining the transition pathway.'
+    },
+    summary: {
+      type: 'string',
+      description: 'Two sentences on how realistic the move is in the timeframe and the biggest thing to get right.'
+    },
+    skillsToBuild: {
+      type: 'array',
+      items: { type: 'string' },
+      description: '4-6 skills the candidate must build for the target role, most important first.'
+    },
+    risks: {
+      type: 'array',
+      items: { type: 'string' },
+      description: '2-3 common reasons this kind of move stalls, each with how to avoid it, in one sentence.'
     }
   },
-  required: ['steps']
+  required: ['summary', 'skillsToBuild', 'steps', 'risks']
 };
 
 const str = (description) => ({ type: 'string', description });
@@ -935,14 +1016,16 @@ You MUST respond strictly with a valid JSON object adhering to this exact format
  * @param {string} [customApiKey] - Optional user-supplied API key.
  * @returns {Promise<object>} - Parsed structured JSON feedback matching linkedinSchema.
  */
-export async function analyzeLinkedInProfileWithGemini(profileText, customApiKey = null) {
+export async function analyzeLinkedInProfileWithGemini(profileText, customApiKey = null, targetRole = '') {
   const systemInstruction = `You are an elite corporate Recruiter, LinkedIn Profile Branding Consultant, and social recruiting optimization specialist.
   Your task is to conduct an extremely thorough, candid, and high-value assessment of the candidate's LinkedIn profile text.
   Provide realistic scores out of 100.
+  Only use facts from the profile in rewrites; never invent employers, numbers or achievements.
   You MUST strictly respond with a JSON object that conforms to the specified schema.`;
 
   const prompt = `Analyze this LinkedIn profile and provide optimization feedback. Measure its searchability, look for headline gaps, evaluate the summary hook, and suggest improvements.
-  
+  ${targetRole ? `The candidate wants recruiters to find them for: "${targetRole}". Judge keywords, the headline and the About section against that role.` : 'Infer the role they are aiming for from the profile.'}
+
   LinkedIn Profile Text:
   """
   ${profileText}
@@ -1175,18 +1258,28 @@ export async function generateInterviewReport({ role = '', level = '', mode = 't
   }
 }
 
-export async function generateLinkedinBioWithGemini({ skills, jobTitle, resumeText, customApiKey = null }) {
+// The candidate's CV for a prompt, trimmed so a long resume can't crowd out the instructions
+const cvBlock = (resumeText, label = "Candidate's resume") => {
+  const text = String(resumeText || '').trim().slice(0, 12000);
+  return text ? `${label}:\n"""\n${text}\n"""` : 'No resume was given; work from the details above and keep claims general.';
+};
+
+const FACTS_RULE = 'Only use facts the candidate gave (resume or details). Never invent employers, job titles, numbers, awards or achievements; where a number would help, write a natural sentence without one.';
+
+export async function generateLinkedinBioWithGemini({ skills, jobTitle, resumeText, tone = '', customApiKey = null }) {
   const systemPrompt = `You are a premier LinkedIn Personal Branding Coach. Your task is to craft high-conversion LinkedIn profile assets:
-  1. Headlines: Catchy, keyword-optimized, highlighting their specialty and value.
-  2. About Summaries: Storytelling summaries showing passion, key accomplishments, and clear calls to action.
-  3. Banner Designs: Guidance on what copy, background styles, and graphical elements to put on their profile banner.
-  4. Hashtags: Industry-specific search tags.`;
+  1. Headlines: Catchy, keyword-optimized, highlighting their specialty and value. LinkedIn allows 220 characters; keep each under 200.
+  2. About Summaries: Storytelling summaries in the first person showing passion, key accomplishments, and clear calls to action.
+  3. Banner Designs: Short banner text (under 60 characters, it sits on a 1584x396 image), the background style, and graphics to include.
+  4. Hashtags: Industry-specific search tags, each starting with #.
+  ${FACTS_RULE}`;
 
   const userPrompt = `
   Target Job Title: "${jobTitle || 'Professional'}"
   Skills / Keywords provided: "${skills || ''}"
-  ${resumeText ? `Optional Resume Context:\n"""\n${resumeText}\n"""` : ''}
-  
+  Tone: "${tone || 'Professional'}"
+  ${cvBlock(resumeText)}
+
   Generate the LinkedIn Profile Assets and return the structured JSON now.`;
 
   try {
@@ -1196,7 +1289,7 @@ export async function generateLinkedinBioWithGemini({ skills, jobTitle, resumeTe
       responseSchema: linkedinBioSchema,
       customApiKey,
       temperature: 0.4,
-      maxTokens: 1200
+      maxTokens: 1600
     });
   } catch (error) {
     console.error('DeepSeek LinkedIn Bio Error:', error);
@@ -1204,18 +1297,25 @@ export async function generateLinkedinBioWithGemini({ skills, jobTitle, resumeTe
   }
 }
 
-export async function generateLinkedinOutreachWithGemini({ jobTitle, companyName, context, targetName, customApiKey = null }) {
+export async function generateLinkedinOutreachWithGemini({ jobTitle, companyName, context, targetName, resumeText = '', tone = '', customApiKey = null }) {
   const systemPrompt = `You are a premier Career Coach and Networking Expert. Your task is to craft high-conversion outreach templates:
-  1. connectionRequest: A warm, concise LinkedIn connection note under 300 characters.
-  2. referralPitch: A polite request for an informational interview or referral. Under 150 words.
-  3. recruiterDM: A direct pitch targeting recruiters or hiring managers. Under 150 words.`;
+  1. connectionRequest: A warm, concise LinkedIn connection note. It MUST be under 300 characters including spaces (LinkedIn's limit).
+  2. referralPitch: A polite request to someone at the company for a short chat or a referral. Under 150 words.
+  3. recruiterDM: A direct pitch to a recruiter or hiring manager. Under 150 words.
+  4. inMailSubject: A subject line for the recruiter message, under 60 characters.
+  5. followUp: A short, friendly follow-up for a week later. Under 70 words.
+  Address the recipient by first name when one is given. Mention one or two specific, real strengths from the candidate's background.
+  Sound like a person, not a template: no "I hope this message finds you well", no buzzwords.
+  ${FACTS_RULE}`;
 
   const userPrompt = `
   Target Job Title: "${jobTitle || ''}"
   Target Company: "${companyName || ''}"
-  Recipient Name: "${targetName || 'Professional'}"
-  Candidate Background / Custom Context: "${context || ''}"
-  
+  Recipient Name: "${targetName || ''}"
+  Tone: "${tone || 'Warm and professional'}"
+  How they know the recipient / anything to mention: "${context || ''}"
+  ${cvBlock(resumeText, "Candidate's background (resume)")}
+
   Generate the networking messages and return the structured JSON now.`;
 
   try {
@@ -1225,7 +1325,7 @@ export async function generateLinkedinOutreachWithGemini({ jobTitle, companyName
       responseSchema: outreachSchema,
       customApiKey,
       temperature: 0.4,
-      maxTokens: 1000
+      maxTokens: 1400
     });
   } catch (error) {
     console.error('DeepSeek Outreach Error:', error);
@@ -1233,16 +1333,20 @@ export async function generateLinkedinOutreachWithGemini({ jobTitle, companyName
   }
 }
 
-export async function generateCareerCoursesWithGemini({ targetJob, skills, resumeText, customApiKey = null }) {
+export async function generateCareerCoursesWithGemini({ targetJob, skills, resumeText, level = '', customApiKey = null }) {
   const systemPrompt = `You are a Career Path and Skills Development Coach. Your task is to:
-  1. Identify 3-5 key skill gaps between the candidate's profile/resume and their target job title.
-  2. Recommend 3-5 high-quality online courses or certifications from reputable platforms (e.g. Coursera, Udemy, Pluralsight, edX, LinkedIn Learning) to bridge those gaps.`;
+  1. Judge how ready the candidate is for their target job today (0-100), using only the evidence given.
+  2. List what they already have that the job needs.
+  3. Identify 3-5 key skill gaps between the candidate's profile/resume and their target job, most important first, with a priority and the reason.
+  4. Recommend 3-5 well-known online courses or certifications from reputable platforms (e.g. Coursera, Udemy, Pluralsight, edX, LinkedIn Learning, freeCodeCamp, Google, AWS, Microsoft) to bridge those gaps. Only name courses you are confident exist; use the exact title.
+  5. Suggest 2 practice projects that would prove the new skills to an employer.`;
 
   const userPrompt = `
   Target Job Title: "${targetJob || ''}"
+  Target level: "${level || 'Not given'}"
   Candidate's Current Skills / Key Inputs: "${skills || ''}"
-  ${resumeText ? `Candidate's Resume Context:\n"""\n${resumeText}\n"""` : ''}
-  
+  ${cvBlock(resumeText)}
+
   Identify gaps and course recommendations and return the structured JSON now.`;
 
   try {
@@ -1252,7 +1356,7 @@ export async function generateCareerCoursesWithGemini({ targetJob, skills, resum
       responseSchema: careerCoursesSchema,
       customApiKey,
       temperature: 0.3,
-      maxTokens: 1200
+      maxTokens: 2200
     });
   } catch (error) {
     console.error('DeepSeek Career Courses Error:', error);
@@ -1260,17 +1364,21 @@ export async function generateCareerCoursesWithGemini({ targetJob, skills, resum
   }
 }
 
-export async function generateElevatorPitchWithGemini({ jobTitle, details, resumeText, customApiKey = null }) {
-  const systemPrompt = `You are a professional Personal Branding specialist and Executive Coach. Your task is to write three distinct 60-second elevator pitches (around 100-150 words each):
+export async function generateElevatorPitchWithGemini({ jobTitle, details, resumeText, setting = '', customApiKey = null }) {
+  const systemPrompt = `You are a professional Personal Branding specialist and Executive Coach. Your task is to write three distinct 60-second elevator pitches (around 120-150 words each, written to be spoken, in the first person):
   1. corporate: Structured, polished, and focusing on metrics, accomplishments, and alignment with corporate goals.
   2. startup: Adaptable, mission-driven, and focusing on resourcefulness, execution speed, and customer or product impact.
-  3. creative: Narrative-driven, conversational, highlight-based, showing unique vision or design/innovation approach.`;
+  3. creative: Narrative-driven, conversational, highlight-based, showing unique vision or design/innovation approach.
+  Also write a 10-second one-liner and 3 delivery tips for the setting.
+  Use short sentences that are easy to say out loud. End each pitch with a natural next step or question.
+  ${FACTS_RULE}`;
 
   const userPrompt = `
   Target Job Title: "${jobTitle || ''}"
+  Where they will use it: "${setting || 'Networking event'}"
   Candidate Key Details / Focus: "${details || ''}"
-  ${resumeText ? `Candidate's Resume Context:\n"""\n${resumeText}\n"""` : ''}
-  
+  ${cvBlock(resumeText)}
+
   Construct the elevator pitches and return the structured JSON now.`;
 
   try {
@@ -1280,7 +1388,7 @@ export async function generateElevatorPitchWithGemini({ jobTitle, details, resum
       responseSchema: elevatorPitchSchema,
       customApiKey,
       temperature: 0.4,
-      maxTokens: 1200
+      maxTokens: 1600
     });
   } catch (error) {
     console.error('DeepSeek Elevator Pitch Error:', error);
@@ -1400,16 +1508,19 @@ Analyze the candidate's background and find 15–20 perfectly matched job openin
   }
 }
 
-export async function generateCareerRoadmapWithGemini({ currentRole, targetRole, years, resumeText, customApiKey = null }) {
-  const systemPrompt = `You are an elite Career Strategist and Transition Planner. Your job is to generate a comprehensive, highly actionable 4-step vertical career roadmap (exactly 4 phases) to transition from the candidate's current role/background to their target role. 
-  Ensure each step has realistic timeframes, specific focuses, 2-3 tangible action items, and a clear, measurable completion milestone.`;
+export async function generateCareerRoadmapWithGemini({ currentRole, targetRole, years, resumeText, hoursPerWeek = '', customApiKey = null }) {
+  const systemPrompt = `You are an elite Career Strategist and Transition Planner. Your job is to generate a comprehensive, highly actionable 4-step vertical career roadmap (exactly 4 phases) to transition from the candidate's current role/background to their target role.
+  Ensure each step has realistic timeframes that add up to the timeframe given, specific focuses, 2-3 tangible action items, and a clear, measurable completion milestone.
+  Fit the actions to the hours per week the candidate can give. Be honest in the summary if the timeframe is tight.
+  ${FACTS_RULE}`;
 
   const userPrompt = `
-  Current Role/Background: "${currentRole || 'Associate'}"
+  Current Role/Background: "${currentRole || 'Not given'}"
   Target Role: "${targetRole || 'Manager'}"
   Transition Timeframe Budget: "${years || '2 years'}"
-  ${resumeText ? `Optional Resume Context:\n"""\n${resumeText}\n"""` : ''}
-  
+  Hours per week available: "${hoursPerWeek || 'Not given'}"
+  ${cvBlock(resumeText)}
+
   Generate the 4-phase career roadmap and return the structured JSON now.`;
 
   try {
@@ -1419,7 +1530,7 @@ export async function generateCareerRoadmapWithGemini({ currentRole, targetRole,
       responseSchema: careerRoadmapSchema,
       customApiKey,
       temperature: 0.4,
-      maxTokens: 1200
+      maxTokens: 2000
     });
   } catch (error) {
     console.error('DeepSeek Career Roadmap Error:', error);

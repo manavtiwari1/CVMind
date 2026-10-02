@@ -1,20 +1,25 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
+import type React from 'react';
 import {
-  Sparkles, ShieldCheck, AlertCircle, Copy, Check, ArrowRight,
-  Linkedin, Award, Star, Compass, Terminal, FileText, CheckCircle2, ChevronRight,
-  Upload, Lock
+  AlertTriangle, Award, BadgeCheck, CheckCircle2, ClipboardCheck, Compass, Download, FileSearch, FileText, ListChecks,
+  Search, Sparkles, Star, Tags, Upload, UserCheck, X,
 } from 'lucide-react';
-import SkeletonLoader from '../../components/SkeletonLoader';
-import { getErrorMessage } from '../../utils/errors';
+import {
+  CareerApp, CareerIntro, CareerNext, CareerWorking, CharCount, CheckItem, CopyButton, Field, Panel, Progress, ScoreCard,
+} from '../../components/career/CareerKit';
+import type { IntroCopy } from '../../components/career/CareerKit';
+import { downloadText, resultKey, useCareerRun, useChecklist } from '../../components/career/careerApi';
 import { authFetch } from '../../lib/authFetch';
+import { API_BASE } from '../../lib/apiBase';
+import { readUser } from '../../lib/currentUser';
 import { parseSavedContent } from '../../utils/savedWork';
 import type { LoadedWork } from '../../types/api';
-import './LinkedIn.css';
 
-// /api/linkedin evaluation (linkedinSchema in backend/src/services/gemini.js)
+// /api/linkedin/analyze (linkedinSchema in backend/src/services/gemini.js); sectionScores is missing on older saves
 interface LinkedInEvaluation {
   score: number;
   summary: string;
+  sectionScores?: { headline: number; about: number; experience: number; skills: number };
   headline: { current: string; feedback: string; suggestions: string[] };
   about: { feedback: string; improvedText: string };
   experience: { feedback: string; tips: string[] };
@@ -22,479 +27,339 @@ interface LinkedInEvaluation {
   generalTips: string[];
 }
 
-interface LinkedInProps {
-  customApiKey: string;
-  loadedWork?: LoadedWork | null;
-  setLoadedWork?: (work: LoadedWork | null) => void;
+interface SavedAudit {
+  evaluation?: LinkedInEvaluation;
+  targetRole?: string;
+  fileName?: string;
 }
 
-export default function LinkedIn({ customApiKey, loadedWork, setLoadedWork }: LinkedInProps) {
-  const [loading, setLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState(0);
-  const [result, setResult] = useState<LinkedInEvaluation | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [copiedSection, setCopiedSection] = useState<string | null>(null);
-  const [saveIndicator, setSaveIndicator] = useState(false);
+interface LinkedInProps {
+  customApiKey: string;
+  setCurrentPage?: (page: string) => void;
+  loadedWork?: LoadedWork | null;
+  setLoadedWork?: (work: LoadedWork | null) => void;
+  onFocusChange?: (mode: false | 'flow') => void;
+}
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+const TOOL = { name: 'Profile PDF Audit', icon: UserCheck };
+const PHASES = ['Reading your profile PDF', 'Checking headline, About and experience', 'Writing your fixes'];
+// LinkedIn's limits for the headline and the About section
+const HEADLINE_MAX = 220;
+const ABOUT_MAX = 2600;
+// Roughly what shows before "...see more" on the About section
+const ABOUT_FOLD = 265;
 
-  const loaderSteps = [
-    'Parsing profile PDF structure...',
-    'Analyzing headline impact & SEO compatibility...',
-    'Evaluating about section hooks & storytelling...',
-    'Scrutinizing experience bullet points for action verbs...',
-    'Matching skills against industry target matrices...',
-    'Formulating corporate recruiter branding suggestions...'
-  ];
+const COPY: IntroCopy = {
+  title: <>Get found by <em>recruiters on LinkedIn</em></>,
+  checks: [
+    'Upload the PDF of your LinkedIn profile and get a score for the headline, About, experience and skills.',
+    'Get three new headlines and a rewritten About section, ready to copy.',
+    'See the keywords recruiters search for that your profile is missing.',
+  ],
+  formTitle: 'Audit my profile',
+  steps: [
+    { icon: Download, title: 'Save your profile as PDF', text: 'On LinkedIn, open your profile, choose Resources (or More), then Save to PDF.' },
+    { icon: Upload, title: 'Upload it here', text: 'Add the role you want recruiters to find you for, so the keywords match it.' },
+    { icon: ClipboardCheck, title: 'Fix it section by section', text: 'Copy the new headline and About, add the missing keywords and tick off each fix.' },
+  ],
+  gets: [
+    { icon: Award, title: 'A score for each section', text: 'Headline, About, experience and skills scored separately, so you know where to start.' },
+    { icon: Sparkles, title: 'Copy-ready rewrites', text: 'Three headlines under LinkedIn\'s 220-character limit and a full About section in your voice.' },
+    { icon: Tags, title: 'Missing keywords', text: 'Skills recruiters search for in your target role that your profile doesn\'t mention yet.' },
+    { icon: ListChecks, title: 'A fix list you can tick off', text: 'Every change in one checklist. Your ticks are kept in this browser while you work through it.' },
+  ],
+  faqs: [
+    { q: 'How do I get my LinkedIn profile as a PDF?', a: 'On a computer, open your LinkedIn profile, click Resources (on some accounts it is More), then Save to PDF. LinkedIn downloads a PDF of your profile. Upload that file here.' },
+    { q: 'Does it change my LinkedIn profile?', a: 'No. CVMind never connects to your LinkedIn account. You get suggestions and rewritten text, and you decide what to paste into your profile.' },
+    { q: 'What does the score mean?', a: 'It is the AI\'s estimate of how well your profile is set up to be found and read by recruiters, from 0 to 100. Use it to compare before and after, not as an official LinkedIn number.' },
+    { q: 'Is my profile saved?', a: 'The text of your PDF is sent to our AI provider to write the audit. When you are signed in, the audit is saved to My Documents so you can reopen it. We don\'t sell your data.' },
+  ],
+  finalTitle: 'Your next recruiter is searching right now',
+  finalText: 'Upload your profile PDF and get your fixes in under a minute.',
+};
 
-  // Load saved work if opened from My Works (adjusting state during render,
-  // see https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+export default function LinkedIn({ customApiKey, setCurrentPage, loadedWork, setLoadedWork, onFocusChange }: LinkedInProps) {
+  const runner = useCareerRun<LinkedInEvaluation>(onFocusChange);
+  const { stage, result, show, run } = runner;
+  const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [drag, setDrag] = useState(false);
+  const [targetRole, setTargetRole] = useState('');
+  const [sourceName, setSourceName] = useState('');
+  const [pickedHeadline, setPickedHeadline] = useState(0);
+
+  // Reopen a saved audit from My Documents; the parent's one-shot loadedWork is cleared in the effect below
   const [handledWork, setHandledWork] = useState<LoadedWork | null>(null);
   if (loadedWork && loadedWork !== handledWork) {
     setHandledWork(loadedWork);
     if (!loadedWork.deleted && loadedWork.type === 'linkedin') {
-      const saved = parseSavedContent<{ evaluation?: LinkedInEvaluation }>(loadedWork.htmlContent);
+      const saved = parseSavedContent<SavedAudit>(loadedWork.htmlContent);
       if (saved?.evaluation) {
-        setResult(saved.evaluation);
-      } else if (!saved) {
-        console.error('Error parsing loaded LinkedIn work');
+        setTargetRole(saved.targetRole || '');
+        setSourceName(saved.fileName || '');
+        setPickedHeadline(0);
+        show(saved.evaluation);
       }
     }
   }
+  useEffect(() => {
+    if (loadedWork) setLoadedWork?.(null);
+  }, [loadedWork, setLoadedWork]);
 
-  const handleCopy = (text: string, sectionId: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedSection(sectionId);
-    setTimeout(() => setCopiedSection(null), 2000);
+  const pickFile = (f: File) => {
+    const isPdf = f.name.toLowerCase().endsWith('.pdf');
+    const problem = !isPdf ? 'Please upload the PDF you saved from LinkedIn.' : f.size > 5 * 1024 * 1024 ? 'That file is over 5 MB. Please upload a smaller one.' : null;
+    setFileError(problem);
+    if (!problem) setFile(f);
   };
 
-  const validateAndSetFile = (file: File) => {
-    setErrorMsg(null);
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    
-    if (fileExtension !== 'pdf') {
-      setErrorMsg('Please upload a PDF file exported from LinkedIn.');
-      setSelectedFile(null);
-      return;
-    }
-    
-    // 5MB limit
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMsg('File is too large. Maximum size is 5MB.');
-      setSelectedFile(null);
-      return;
-    }
-
-    setSelectedFile(file);
-  };
-
-  const handleDrag = (e: React.DragEvent) => {
+  const onDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
+    setDrag(e.type === 'dragenter' || e.type === 'dragover');
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      validateAndSetFile(e.dataTransfer.files[0]);
-    }
+  const audit = () => {
+    if (!file) return;
+    const pdf = file;
+    run(async () => {
+      const form = new FormData();
+      form.append('linkedinPdf', pdf);
+      if (targetRole.trim()) form.append('targetRole', targetRole.trim());
+      const headers: Record<string, string> = customApiKey ? { 'x-gemini-key': customApiKey } : {};
+      const res = await authFetch(`${API_BASE}/api/linkedin/analyze`, { method: 'POST', headers, body: form });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'The audit failed. Please try again.');
+      if (!body.data?.headline) throw new Error('The AI could not read this profile. Check it is the PDF from LinkedIn and try again.');
+      setSourceName(pdf.name);
+      setPickedHeadline(0);
+      return body.data as LinkedInEvaluation;
+    });
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      validateAndSetFile(e.target.files[0]);
-    }
-  };
+  if (stage === 'working') {
+    return (
+      <CareerWorking tool={TOOL} title="Auditing your LinkedIn profile…" phases={PHASES} phase={runner.phase} error={runner.error} onRetry={runner.retry} onEdit={runner.toIntro} />
+    );
+  }
 
-  const onButtonClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const removeFile = () => {
-    setSelectedFile(null);
-    setErrorMsg(null);
-    setResult(null);
-    setSaveIndicator(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-    if (setLoadedWork) {
-      setLoadedWork(null);
-    }
-  };
-
-  const handleAnalyze = async () => {
-    if (!selectedFile) return;
-    setLoading(true);
-    setLoadingStep(0);
-    setErrorMsg(null);
-    setResult(null);
-    setSaveIndicator(false);
-    if (setLoadedWork) {
-      setLoadedWork(null); // clear currently loaded item to allow new saves
-    }
-
-    const stepInterval = setInterval(() => {
-      setLoadingStep((prev) => {
-        if (prev < loaderSteps.length - 1) {
-          return prev + 1;
-        }
-        return prev;
-      });
-    }, 1500);
-
-    try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL 
-        || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
-
-      const userStr = localStorage.getItem('cvmind_user');
-      let email = '';
-      let userId = '';
-      if (userStr) {
-        try {
-          const parsedUser = JSON.parse(userStr);
-          email = parsedUser.email || '';
-          userId = parsedUser.id || parsedUser._id || '';
-        } catch {
-          // ignore
-        }
-      }
-
-      const headers: Record<string, string> = {};
-      if (customApiKey) {
-        headers['x-gemini-key'] = customApiKey;
-      }
-
-      const formData = new FormData();
-      formData.append('linkedinPdf', selectedFile);
-      formData.append('email', email);
-      formData.append('userId', userId);
-
-      const response = await authFetch(`${baseUrl}/api/linkedin/analyze`, {
-        method: 'POST',
-        headers,
-        body: formData
-      });
-
-      const resData = await response.json();
-
-      if (!response.ok) {
-        throw new Error(resData.error || 'Server error during LinkedIn analysis.');
-      }
-
-      if (resData.success && resData.data) {
-        setResult(resData.data);
-        if (resData.work) {
-          setSaveIndicator(true);
-        }
-      } else {
-        throw new Error('Analysis completed, but failed to retrieve profile metrics.');
-      }
-    } catch (err) {
-      console.error('LinkedIn Optimize Error:', err);
-      setErrorMsg(getErrorMessage(err) || 'Connection failed. Ensure the backend is active.');
-    } finally {
-      clearInterval(stepInterval);
-      setLoading(false);
-    }
-  };
-
-  // Helper to determine score color class
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'score-excellent';
-    if (score >= 60) return 'score-good';
-    return 'score-poor';
-  };
+  if (stage === 'result' && result) {
+    return (
+      <AuditResult
+        result={result}
+        targetRole={targetRole}
+        sourceName={sourceName}
+        picked={pickedHeadline}
+        setPicked={setPickedHeadline}
+        onAgain={() => { setFile(null); runner.toIntro(); }}
+        onExit={runner.toIntro}
+        setCurrentPage={setCurrentPage}
+      />
+    );
+  }
 
   return (
-    <div className="li-container animate-fade-in-up">
-      {/* Background glow stage */}
-      <div className="cyber-stage" aria-hidden="true">
-        <div className="neon-orbit"></div>
-      </div>
-
-      <section className="li-hero-section">
-        <div className="li-hero-badge">
-          <Linkedin size={14} /> AI LinkedIn Optimizer
-        </div>
-        <h1 className="li-title">
-          Optimize Your Profile for <br />
-          <span className="gradient-word">Recruiter Search</span>
-        </h1>
-        <p className="li-subtitle">
-          Export your LinkedIn profile as a PDF and upload it below. Our AI scans your content for search visibility, headline strength, and hook conversion, giving you customized copy-paste improvements in seconds.
-        </p>
-
-        <div className="li-row-layout">
-          {/* Left panel: Input Area */}
-          <div className="li-input-card glass-card">
-            <div className="li-input-header">
-              <Terminal size={16} className="text-blue" />
-              <span>Upload LinkedIn PDF Profile</span>
-            </div>
-            
-            {selectedFile || (loadedWork && !loadedWork.deleted && loadedWork.type === 'linkedin') ? (
-              <div className="li-file-selected-state">
-                <div className="li-file-icon-wrapper">
-                  <FileText className="li-file-icon" />
-                </div>
-                <div className="li-file-details">
-                  <span className="li-file-name">
-                    {selectedFile ? selectedFile.name : (loadedWork && !loadedWork.deleted ? loadedWork.title : 'LinkedIn Profile PDF')}
-                  </span>
-                  {selectedFile && (
-                    <span className="li-file-size">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
-                  )}
-                </div>
-                <div className="li-file-actions">
-                  <button className="btn-secondary" onClick={removeFile}>
-                    Remove / Clear
-                  </button>
-                  {selectedFile && (
-                    <button className="btn-primary" onClick={handleAnalyze} disabled={loading}>
-                      Analyze Profile <ArrowRight size={16} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div 
-                className={`li-upload-zone ${dragActive ? 'drag-active' : ''}`}
-                onDragEnter={handleDrag}
-                onDragOver={handleDrag}
-                onDragLeave={handleDrag}
-                onDrop={handleDrop}
-                onClick={onButtonClick}
-              >
-                <input 
-                  ref={fileInputRef}
-                  type="file"
-                  className="li-file-input-hidden"
-                  accept=".pdf"
-                  onChange={handleChange}
-                  disabled={loading}
-                />
-                <Upload className="li-upload-icon" />
-                <button className="li-upload-cta" type="button">
-                  Upload LinkedIn PDF
-                </button>
-                <div className="li-privacy-note">
-                  <Lock size={14} /> Anonymized & secure data parsing
-                </div>
-                <div className="li-file-limits-info">
-                  PDF format up to 5MB
-                </div>
-              </div>
-            )}
-
-            {errorMsg && (
-              <div className="error-message-bar animate-fade-in-up" style={{ marginTop: '1rem' }}>
-                <AlertCircle className="error-icon" />
-                <span>{errorMsg}</span>
-              </div>
-            )}
+    <CareerIntro
+      tool={TOOL}
+      copy={COPY}
+      setCurrentPage={setCurrentPage}
+      resumeResult={result ? { label: `Back to your audit (score ${result.score})`, onClick: runner.toResult } : null}
+      submit={{ label: 'Audit my profile', disabled: !file, onClick: audit, hint: file ? undefined : 'Add your LinkedIn PDF to start.' }}
+    >
+      <div className="crt-field">
+        <span className="crt-label">LinkedIn profile PDF</span>
+        {file ? (
+          <div className="tlr-file">
+            <FileText size={20} />
+            <div><strong>{file.name}</strong><small>{(file.size / (1024 * 1024)).toFixed(2)} MB</small></div>
+            <button type="button" onClick={() => setFile(null)} aria-label="Remove file"><X size={16} /></button>
           </div>
-
-          {/* Right panel: Static recruitment guides or Loading state */}
-          <div className="li-guide-card glass-card">
-            {loading ? (
-              <SkeletonLoader
-                card={false}
-                type="text"
-                title="Analyzing Profile"
-                subtitle={loaderSteps[loadingStep]}
-                step={loadingStep}
-                totalSteps={loaderSteps.length}
-              />
-            ) : result ? (
-              <div className="li-score-summary">
-                <div className="li-radial-score-container">
-                  <div className={`li-score-ring ${getScoreColor(result.score)}`}>
-                    <svg viewBox="0 0 36 36">
-                      <path className="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                      <path 
-                        className="ring-fill" 
-                        strokeDasharray={`${result.score}, 100`} 
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
-                      />
-                    </svg>
-                    <div className="ring-text">{result.score}</div>
-                  </div>
-                  <div>
-                    <h3 className="li-score-evaluation">Optimization Score</h3>
-                    <p className="li-score-evaluation-desc">
-                      {result.score >= 80 ? 'Excellent! Highly optimized for searches.' : result.score >= 60 ? 'Good potential, but key gaps exist.' : 'Needs immediate improvements.'}
-                    </p>
-                  </div>
-                </div>
-                {saveIndicator && (
-                  <div className="li-save-badge animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(48,209,88,0.1)', color: 'var(--green)', border: '1px solid rgba(48,209,88,0.2)', padding: '0.25rem 0.75rem', borderRadius: '980px', fontSize: '0.78rem', fontWeight: 600, alignSelf: 'flex-start' }}>
-                    <ShieldCheck size={12} /> Saved in My Works
-                  </div>
-                )}
-                <div className="li-summary-text">
-                  <strong>Recruiter Summary:</strong>
-                  <p>{result.summary}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="li-help-guide">
-                <h3 className="li-guide-title"><Sparkles size={16} className="text-blue" /> Quick Profile Optimization Checklist</h3>
-                <div className="li-checklist-item">
-                  <CheckCircle2 size={16} className="checklist-icon" />
-                  <span><strong>SEO Keywords:</strong> Recruiting algorithms search Headlines and Skills first.</span>
-                </div>
-                <div className="li-checklist-item">
-                  <CheckCircle2 size={16} className="checklist-icon" />
-                  <span><strong>Headline:</strong> Never just use your job title. Show your tech stack and impact.</span>
-                </div>
-                <div className="li-checklist-item">
-                  <CheckCircle2 size={16} className="checklist-icon" />
-                  <span><strong>First 3 Lines:</strong> The 'About' section mobile view cuts off. Hook readers immediately.</span>
-                </div>
-                <div className="li-checklist-item">
-                  <CheckCircle2 size={16} className="checklist-icon" />
-                  <span><strong>STAR Bullets:</strong> Convert responsibility lists into achievements with metrics.</span>
-                </div>
-                <div className="li-security-badge">
-                  <ShieldCheck size={14} /> Anonymized parsing & safe data standards.
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Detailed Results Section */}
-        {result && (
-          <div className="li-results-wrapper animate-fade-in-up">
-            {/* 1. Headline Suggestions */}
-            <div className="li-result-panel glass-card">
-              <h2 className="li-panel-title"><Award size={18} className="text-blue" /> Headline Optimizer</h2>
-              <div className="li-headline-comparison">
-                <div className="li-headline-current">
-                  <strong>Current Headline:</strong>
-                  <p>{result.headline.current || 'Not found / Generic'}</p>
-                </div>
-                <div className="li-headline-feedback">
-                  <strong>Recruiter Assessment:</strong>
-                  <p>{result.headline.feedback}</p>
-                </div>
-              </div>
-              <div className="li-headline-suggestions">
-                <strong>Copy-Paste Alternatives:</strong>
-                <div className="li-suggestions-grid">
-                  {result.headline.suggestions.map((suggestion: string, idx: number) => (
-                    <div key={idx} className="li-suggestion-box">
-                      <p>{suggestion}</p>
-                      <button 
-                        className="btn-secondary li-copy-btn" 
-                        onClick={() => handleCopy(suggestion, `headline-${idx}`)}
-                      >
-                        {copiedSection === `headline-${idx}` ? <><Check size={13} className="text-success" /> Copied</> : <><Copy size={13} /> Copy</>}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* 2. About / Summary Rewrite */}
-            <div className="li-result-panel glass-card">
-              <h2 className="li-panel-title"><Star size={18} className="text-purple" /> About (Summary) Rewrite</h2>
-              <div className="li-about-feedback">
-                <strong>Feedback on current About section:</strong>
-                <p>{result.about.feedback}</p>
-              </div>
-              <div className="li-about-rewrite">
-                <div className="li-rewrite-header">
-                  <strong>Recommended About Section Content:</strong>
-                  <button 
-                    className="btn-secondary li-copy-btn" 
-                    onClick={() => handleCopy(result.about.improvedText, 'about-rewrite')}
-                  >
-                    {copiedSection === 'about-rewrite' ? <><Check size={13} className="text-success" /> Copied Text</> : <><Copy size={13} /> Copy About Section</>}
-                  </button>
-                </div>
-                <pre className="li-pre-text">{result.about.improvedText}</pre>
-              </div>
-            </div>
-
-            {/* 3. Skills Matrix & Keywords */}
-            <div className="li-skills-grid-row">
-              {/* Matched Keywords */}
-              <div className="li-skills-card glass-card">
-                <h3 className="li-skills-title"><CheckCircle2 size={16} className="text-success" /> Matched Skills & SEO Keywords</h3>
-                <div className="li-skills-list">
-                  {result.skillsAndKeywords.matched && result.skillsAndKeywords.matched.length > 0 ? (
-                    result.skillsAndKeywords.matched.map((skill: string, i: number) => (
-                      <span key={i} className="skill-badge-green">{skill}</span>
-                    ))
-                  ) : (
-                    <span className="li-none-text">No matching technical skills identified.</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Missing Keywords */}
-              <div className="li-skills-card glass-card">
-                <h3 className="li-skills-title"><AlertCircle size={16} className="text-yellow" /> Recommended Missing Keywords</h3>
-                <div className="li-skills-list">
-                  {result.skillsAndKeywords.missing && result.skillsAndKeywords.missing.length > 0 ? (
-                    result.skillsAndKeywords.missing.map((skill: string, i: number) => (
-                      <span key={i} className="skill-badge-yellow">{skill}</span>
-                    ))
-                  ) : (
-                    <span className="li-none-text">None missing! Excellent keywords keyword density.</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* 4. Experience & General Profile Audit */}
-            <div className="li-double-row-panels">
-              {/* Experience Audit */}
-              <div className="li-panel-half glass-card">
-                <h3 className="li-panel-sub-title"><FileText size={16} className="text-blue" /> Work Experience Audit</h3>
-                <p className="li-audit-desc">{result.experience.feedback}</p>
-                <div className="li-tips-list">
-                  <strong>Quantified Achievement Tips:</strong>
-                  {result.experience.tips.map((tip: string, idx: number) => (
-                    <div key={idx} className="li-tip-item">
-                      <ChevronRight size={14} className="text-blue flex-shrink-0" />
-                      <span>{tip}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* General Branding Tips */}
-              <div className="li-panel-half glass-card">
-                <h3 className="li-panel-sub-title"><Compass size={16} className="text-blue" /> Profile Branding & Networking Tips</h3>
-                <div className="li-tips-list" style={{ marginTop: '0.5rem' }}>
-                  {result.generalTips.map((tip: string, idx: number) => (
-                    <div key={idx} className="li-tip-item">
-                      <ChevronRight size={14} className="text-purple flex-shrink-0" />
-                      <span>{tip}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-          </div>
+        ) : (
+          <label className={`tlr-drop crt-drop${drag ? ' is-drag' : ''}`} onDragEnter={onDrag} onDragOver={onDrag} onDragLeave={onDrag} onDrop={e => { onDrag(e); setDrag(false); if (e.dataTransfer.files?.[0]) pickFile(e.dataTransfer.files[0]); }}>
+            <input type="file" accept=".pdf,application/pdf" onChange={e => { if (e.target.files?.[0]) pickFile(e.target.files[0]); e.target.value = ''; }} />
+            <Upload size={20} />
+            <span><b>Choose your profile PDF</b> or drag it here</span>
+            <small>PDF up to 5 MB</small>
+          </label>
         )}
-      </section>
-    </div>
+        {fileError && <p className="tlr-error"><AlertTriangle size={15} /> {fileError}</p>}
+      </div>
+      <details className="crt-help">
+        <summary>How do I get this PDF?</summary>
+        <ol>
+          <li>Open LinkedIn on a computer and go to your profile.</li>
+          <li>Click <b>Resources</b> (on some accounts it is <b>More</b>) below your name.</li>
+          <li>Choose <b>Save to PDF</b>. The file downloads straight away.</li>
+        </ol>
+      </details>
+      <Field label="Role you want to be found for" optional hint="The keywords and headlines will match this role.">
+        <input className="tlr-input" value={targetRole} onChange={e => setTargetRole(e.target.value)} placeholder="e.g. Product Designer, Data Analyst" maxLength={120} />
+      </Field>
+    </CareerIntro>
+  );
+}
+
+interface AuditResultProps {
+  result: LinkedInEvaluation;
+  targetRole: string;
+  sourceName: string;
+  picked: number;
+  setPicked: (i: number) => void;
+  onAgain: () => void;
+  onExit: () => void;
+  setCurrentPage?: (page: string) => void;
+}
+
+function AuditResult({ result, targetRole, sourceName, picked, setPicked, onAgain, onExit, setCurrentPage }: AuditResultProps) {
+  const suggestions = result.headline?.suggestions ?? [];
+  const missing = result.skillsAndKeywords?.missing ?? [];
+  const matched = result.skillsAndKeywords?.matched ?? [];
+  const tips = result.experience?.tips ?? [];
+  const general = result.generalTips ?? [];
+  const about = result.about?.improvedText ?? '';
+  const { done, toggle } = useChecklist(resultKey('linkedin', result));
+
+  // Every fix in one list, in the order a recruiter reads a profile
+  const fixes = [
+    ...(suggestions.length ? [{ id: 'headline', text: 'Replace your headline with one of the new ones' }] : []),
+    ...(about ? [{ id: 'about', text: 'Paste the new About section' }] : []),
+    ...(missing.length ? [{ id: 'keywords', text: `Add the missing keywords to your Skills and About (${missing.length})` }] : []),
+    ...tips.map((t, i) => ({ id: `exp-${i}`, text: t })),
+    ...general.map((t, i) => ({ id: `tip-${i}`, text: t })),
+  ];
+  const doneCount = fixes.filter(f => done.has(f.id)).length;
+
+  const sections = result.sectionScores ? [
+    { label: 'Headline', n: result.sectionScores.headline },
+    { label: 'About', n: result.sectionScores.about },
+    { label: 'Experience', n: result.sectionScores.experience },
+    { label: 'Skills', n: result.sectionScores.skills },
+  ].map(s => ({ ...s, n: Math.max(0, Math.min(100, Math.round(Number(s.n) || 0))) })) : [];
+  const tone = (n: number) => (n >= 80 ? 'var(--green)' : n >= 60 ? '#d97706' : 'var(--warn)');
+
+  const report = () => [
+    `LinkedIn profile audit${targetRole ? ` for ${targetRole}` : ''}`,
+    `Score: ${result.score}/100`,
+    '',
+    result.summary,
+    '',
+    'NEW HEADLINES',
+    ...suggestions.map((s, i) => `${i + 1}. ${s}`),
+    '',
+    'NEW ABOUT SECTION',
+    about,
+    '',
+    'EXPERIENCE',
+    result.experience?.feedback || '',
+    ...tips.map(t => `- ${t}`),
+    '',
+    `MISSING KEYWORDS: ${missing.join(', ') || 'None'}`,
+    '',
+    'PROFILE TIPS',
+    ...general.map(t => `- ${t}`),
+  ].join('\n');
+
+  return (
+    <CareerApp
+      tool={TOOL}
+      againLabel="Audit another profile"
+      onAgain={onAgain}
+      onExit={onExit}
+      heading={result.score >= 80 ? 'Your profile is in good shape. Here is how to finish it.' : `Your profile scored ${result.score}. Here is how to raise it.`}
+      summary={result.summary}
+      meta={[targetRole && `Target: ${targetRole}`, sourceName].filter(Boolean).join(' · ')}
+      actions={
+        <>
+          {suggestions[picked] && <CopyButton text={suggestions[picked]} label="Copy the new headline" />}
+          <button type="button" className="tlr-btn tlr-btn--outline" onClick={() => downloadText(`LinkedIn audit${targetRole ? ` - ${targetRole}` : ''}`, report())}><Download size={17} /> Download .txt</button>
+        </>
+      }
+      footnote={readUser() ? 'Saved to My Documents.' : 'Sign in to save it to My Documents.'}
+    >
+      <div className="crt-layout">
+        <div className="crt-main">
+          <Panel title="Headline" icon={Award}>
+            <div className="crt-sub">Now</div>
+            <div className="crt-quote crt-quote--muted">{result.headline?.current || 'No headline found in your PDF.'}</div>
+            {result.headline?.feedback && <p className="crt-text">{result.headline.feedback}</p>}
+            {suggestions.length > 0 && <div className="crt-sub">Pick one</div>}
+            {suggestions.map((s, i) => (
+              <div key={i} className={`crt-option${picked === i ? ' is-on' : ''}`}>
+                <div className="crt-option-top">
+                  <button type="button" className={`crt-pick${picked === i ? ' is-on' : ''}`} aria-pressed={picked === i} onClick={() => setPicked(i)}>
+                    {picked === i ? <><CheckCircle2 size={13} /> Picked</> : `Option ${i + 1}`}
+                  </button>
+                  <span className="crt-spacer" />
+                  <CharCount text={s} limit={HEADLINE_MAX} />
+                  <CopyButton text={s} small />
+                </div>
+                <p>{s}</p>
+              </div>
+            ))}
+          </Panel>
+
+          {about && (
+            <Panel title="About section" icon={Star} action={<div className="crt-actions-row"><CharCount text={about} limit={ABOUT_MAX} /><CopyButton text={about} small /></div>}>
+              {result.about?.feedback && <p className="crt-text">{result.about.feedback}</p>}
+              <div className="crt-sub">New About</div>
+              <div className="crt-quote">
+                <strong>{about.slice(0, ABOUT_FOLD)}</strong>{about.slice(ABOUT_FOLD)}
+              </div>
+              <p className="tlr-fine">The bold part is roughly what people see before "see more", so it has to make them click.</p>
+            </Panel>
+          )}
+
+          <Panel title="Keywords" icon={Search} action={missing.length > 0 ? <CopyButton text={missing.join(', ')} label="Copy missing" small /> : undefined}>
+            <div className="crt-sub">Missing for {targetRole || 'your target role'}</div>
+            <div className="tlr-chips">
+              {missing.length ? missing.map(k => <span key={k} className="tlr-chip tlr-chip--miss">{k}</span>) : <span className="crt-text">None. Your profile covers the main keywords.</span>}
+            </div>
+            <div className="crt-sub">Already on your profile</div>
+            <div className="tlr-chips">
+              {matched.length ? matched.map(k => <span key={k} className="tlr-chip tlr-chip--ok">{k}</span>) : <span className="crt-text">No strong keywords found yet.</span>}
+            </div>
+          </Panel>
+
+          <Panel title="Experience" icon={FileSearch}>
+            {result.experience?.feedback && <p className="crt-text">{result.experience.feedback}</p>}
+            <ul className="crt-bullets">{tips.map(t => <li key={t}><CheckCircle2 size={15} />{t}</li>)}</ul>
+          </Panel>
+
+          {general.length > 0 && (
+            <Panel title="Profile tips" icon={Compass}>
+              <ul className="crt-bullets">{general.map(t => <li key={t}><BadgeCheck size={15} />{t}</li>)}</ul>
+            </Panel>
+          )}
+        </div>
+
+        <aside className="crt-side">
+          <ScoreCard score={result.score} title="Profile" note="How well recruiters can find and read your profile, estimated by AI." />
+          {sections.length > 0 && (
+            <section className="tlr-card">
+              <h3>By section</h3>
+              <ul className="crt-bars">
+                {sections.map(s => (
+                  <li key={s.label} style={{ '--tone': tone(s.n) } as React.CSSProperties}>
+                    <span>{s.label}</span>
+                    <i><em style={{ width: `${s.n}%` }} /></i>
+                    <b>{s.n}</b>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {fixes.length > 0 && (
+            <section className="tlr-card">
+              <h3>Your fix list</h3>
+              <Progress done={doneCount} total={fixes.length} label="Fixes done" />
+              <ul className="crt-checks crt-mt">
+                {fixes.map(f => <CheckItem key={f.id} checked={done.has(f.id)} onToggle={() => toggle(f.id)}>{f.text}</CheckItem>)}
+              </ul>
+            </section>
+          )}
+          <CareerNext current="linkedin" setCurrentPage={setCurrentPage} pick={['linkedin-bio', 'linkedin-outreach', 'career-courses']} />
+        </aside>
+      </div>
+    </CareerApp>
   );
 }

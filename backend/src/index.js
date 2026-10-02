@@ -1646,6 +1646,30 @@ apiRouter.post('/api/resume/import-linkedin', async (req, res) => {
   }
 });
 
+// Career tools take the CV as a file ('resume'), a link (resumeUrl) or text (resumeText).
+// The web app sends multipart form data; the mobile app and extension still send JSON.
+async function careerResumeText(req) {
+  const resumeUrl = String(req.body?.resumeUrl || '').trim();
+  if (req.file || resumeUrl) {
+    try {
+      return (await extractResumeText(req.file || null, resumeUrl || null)).trim();
+    } catch (err) {
+      throw Object.assign(err, { status: err.status || 400 });
+    }
+  }
+  return String(req.body?.resumeText || '').trim();
+}
+
+// Short free-text fields from the request body, trimmed and capped
+const careerField = (req, name, max = 200) => String(req.body?.[name] || '').trim().slice(0, max);
+
+// Sends a CV read error (bad file, unreadable link) as a 4xx, anything else as a 500
+function careerError(res, error, label) {
+  if (error.status) return res.status(error.status).json({ error: error.message });
+  console.error(`${label} API Error:`, error);
+  return res.status(500).json({ error: error.message || 'AI Generation failed. Please try again later.' });
+}
+
 // LinkedIn Profile Optimizer Endpoint
 apiRouter.post('/api/linkedin/analyze', optionalUser, upload.single('linkedinPdf'), async (req, res) => {
   try {
@@ -1654,6 +1678,8 @@ apiRouter.post('/api/linkedin/analyze', optionalUser, upload.single('linkedinPdf
     // Save to My Works only for the signed-in user (never a userId from the request body)
     const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
+    // Optional; sent by the web app
+    const targetRole = careerField(req, 'targetRole', 120);
 
     if (!file) {
       return res.status(400).json({ error: 'No LinkedIn PDF file uploaded. Please upload a PDF file.' });
@@ -1670,27 +1696,19 @@ apiRouter.post('/api/linkedin/analyze', optionalUser, upload.single('linkedinPdf
       return res.status(400).json({ error: 'Unable to extract text from the uploaded PDF. Please make sure the PDF has readable text.' });
     }
 
-    const evaluation = await analyzeLinkedInProfileWithGemini(extractedText, customApiKey);
+    const evaluation = await analyzeLinkedInProfileWithGemini(extractedText, customApiKey, targetRole);
 
     // Save logs to MongoDB / Local JSON DB
     if (evaluation && evaluation.score !== undefined) {
       await saveLinkedinLog({ email: req.auth?.email || email || '', userId: userId || '', score: evaluation.score });
     }
 
-    let savedWork = null;
-    if (userId) {
-      const payload = {
-        profileText: extractedText,
-        evaluation
-      };
-      savedWork = await safeSaveWork({
-        userId,
-        title: `LinkedIn Optimizer - ${new Date().toLocaleDateString()}`,
-        type: 'linkedin',
-        templateId: 'linkedin-opt',
-        htmlContent: JSON.stringify(payload)
-      });
-    }
+    const savedWork = await saveFeatureWork(userId, {
+      title: `LinkedIn Audit - ${targetRole || new Date().toLocaleDateString()}`,
+      type: 'linkedin',
+      templateId: 'linkedin-opt',
+      payload: { profileText: extractedText, targetRole, fileName: file.originalname || '', evaluation }
+    });
 
     return res.json({
       success: true,
@@ -1706,9 +1724,11 @@ apiRouter.post('/api/linkedin/analyze', optionalUser, upload.single('linkedinPdf
 });
 
 // LinkedIn Profile Bio & Banner Generator Endpoint
-apiRouter.post('/api/linkedin/bio', optionalUser, async (req, res) => {
+apiRouter.post('/api/linkedin/bio', optionalUser, upload.single('resume'), async (req, res) => {
   try {
-    const { skills, jobTitle, resumeText, email } = req.body || {};
+    const jobTitle = careerField(req, 'jobTitle', 120);
+    const skills = careerField(req, 'skills', 600);
+    const tone = careerField(req, 'tone', 40);
     // Save to My Works only for the signed-in user (never a userId from the request body)
     const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
@@ -1717,52 +1737,32 @@ apiRouter.post('/api/linkedin/bio', optionalUser, async (req, res) => {
       return res.status(400).json({ error: 'Job Title is required.' });
     }
 
-    const result = await generateLinkedinBioWithGemini({
-      skills,
-      jobTitle,
-      resumeText,
-      customApiKey
+    const resumeText = await careerResumeText(req);
+    const result = await generateLinkedinBioWithGemini({ skills, jobTitle, resumeText, tone, customApiKey });
+
+    await saveLinkedinBioLog({ email: req.auth?.email || req.body?.email || '', userId: userId || '', jobTitle });
+
+    const savedWork = await saveFeatureWork(userId, {
+      title: `LinkedIn Bio - ${jobTitle}`,
+      type: 'linkedin-bio',
+      templateId: 'linkedin-bio-gen',
+      payload: { skills, jobTitle, tone, resumeText, result }
     });
 
-    // Save log
-    await saveLinkedinBioLog({
-      email: req.auth?.email || email || '', userId: userId || '',
-      jobTitle: jobTitle
-    });
-
-    let savedWork = null;
-    if (userId) {
-      savedWork = await safeSaveWork({
-        userId,
-        title: `LinkedIn Assets - ${jobTitle}`,
-        type: 'linkedin-bio',
-        templateId: 'linkedin-bio-gen',
-        htmlContent: JSON.stringify({
-          skills,
-          jobTitle,
-          resumeText,
-          result
-        })
-      });
-    }
-
-    return res.json({
-      success: true,
-      data: result,
-      work: savedWork
-    });
+    return res.json({ success: true, data: result, work: savedWork });
   } catch (error) {
-    console.error('LinkedIn Bio Generator API Error:', error);
-    return res.status(500).json({
-      error: error.message || 'try again after sometime or mail to contact@manavtiwari.in for this error'
-    });
+    return careerError(res, error, 'LinkedIn Bio Generator');
   }
 });
 
 // LinkedIn Outreach & DM Writer Endpoint
-apiRouter.post('/api/linkedin/outreach', optionalUser, async (req, res) => {
+apiRouter.post('/api/linkedin/outreach', optionalUser, upload.single('resume'), async (req, res) => {
   try {
-    const { jobTitle, companyName, context, targetName, email } = req.body || {};
+    const jobTitle = careerField(req, 'jobTitle', 120);
+    const companyName = careerField(req, 'companyName', 120);
+    const targetName = careerField(req, 'targetName', 80);
+    const context = careerField(req, 'context', 1000);
+    const tone = careerField(req, 'tone', 40);
     // Save to My Works only for the signed-in user (never a userId from the request body)
     const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
@@ -1771,53 +1771,30 @@ apiRouter.post('/api/linkedin/outreach', optionalUser, async (req, res) => {
       return res.status(400).json({ error: 'Job Title is required.' });
     }
 
-    const result = await generateLinkedinOutreachWithGemini({
-      jobTitle,
-      companyName,
-      context,
-      targetName,
-      customApiKey
+    const resumeText = await careerResumeText(req);
+    const result = await generateLinkedinOutreachWithGemini({ jobTitle, companyName, context, targetName, resumeText, tone, customApiKey });
+
+    await saveLinkedinOutreachLog({ email: req.auth?.email || req.body?.email || '', userId: userId || '', jobTitle });
+
+    const savedWork = await saveFeatureWork(userId, {
+      title: `LinkedIn Outreach - ${jobTitle} (${companyName || 'General'})`,
+      type: 'linkedin-outreach',
+      templateId: 'linkedin-outreach-gen',
+      payload: { jobTitle, companyName, context, targetName, tone, result }
     });
 
-    await saveLinkedinOutreachLog({
-      email: req.auth?.email || email || '', userId: userId || '',
-      jobTitle: jobTitle
-    });
-
-    let savedWork = null;
-    if (userId) {
-      savedWork = await safeSaveWork({
-        userId,
-        title: `LinkedIn Outreach - ${jobTitle} (${companyName || 'General'})`,
-        type: 'linkedin-outreach',
-        templateId: 'linkedin-outreach-gen',
-        htmlContent: JSON.stringify({
-          jobTitle,
-          companyName,
-          context,
-          targetName,
-          result
-        })
-      });
-    }
-
-    return res.json({
-      success: true,
-      data: result,
-      work: savedWork
-    });
+    return res.json({ success: true, data: result, work: savedWork });
   } catch (error) {
-    console.error('LinkedIn Outreach API Error:', error);
-    return res.status(500).json({
-      error: error.message || 'AI Generation failed. Please try again later.'
-    });
+    return careerError(res, error, 'LinkedIn Outreach');
   }
 });
 
 // Skill Gap & Course Recommendation Endpoint
-apiRouter.post('/api/career/courses', optionalUser, async (req, res) => {
+apiRouter.post('/api/career/courses', optionalUser, upload.single('resume'), async (req, res) => {
   try {
-    const { targetJob, skills, resumeText, email } = req.body || {};
+    const targetJob = careerField(req, 'targetJob', 120);
+    const skills = careerField(req, 'skills', 600);
+    const level = careerField(req, 'level', 40);
     // Save to My Works only for the signed-in user (never a userId from the request body)
     const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
@@ -1826,51 +1803,30 @@ apiRouter.post('/api/career/courses', optionalUser, async (req, res) => {
       return res.status(400).json({ error: 'Target Job is required.' });
     }
 
-    const result = await generateCareerCoursesWithGemini({
-      targetJob,
-      skills,
-      resumeText,
-      customApiKey
+    const resumeText = await careerResumeText(req);
+    const result = await generateCareerCoursesWithGemini({ targetJob, skills, resumeText, level, customApiKey });
+
+    await saveCareerCoursesLog({ email: req.auth?.email || req.body?.email || '', userId: userId || '', jobTitle: targetJob });
+
+    const savedWork = await saveFeatureWork(userId, {
+      title: `Skill Gaps - ${targetJob}`,
+      type: 'career-courses',
+      templateId: 'career-courses-gen',
+      payload: { targetJob, skills, level, resumeText, result }
     });
 
-    await saveCareerCoursesLog({
-      email: req.auth?.email || email || '', userId: userId || '',
-      jobTitle: targetJob
-    });
-
-    let savedWork = null;
-    if (userId) {
-      savedWork = await safeSaveWork({
-        userId,
-        title: `Career Courses - ${targetJob}`,
-        type: 'career-courses',
-        templateId: 'career-courses-gen',
-        htmlContent: JSON.stringify({
-          targetJob,
-          skills,
-          resumeText,
-          result
-        })
-      });
-    }
-
-    return res.json({
-      success: true,
-      data: result,
-      work: savedWork
-    });
+    return res.json({ success: true, data: result, work: savedWork });
   } catch (error) {
-    console.error('Career Courses API Error:', error);
-    return res.status(500).json({
-      error: error.message || 'AI Generation failed. Please try again later.'
-    });
+    return careerError(res, error, 'Career Courses');
   }
 });
 
 // Elevator Pitch Builder Endpoint
-apiRouter.post('/api/career/pitch', optionalUser, async (req, res) => {
+apiRouter.post('/api/career/pitch', optionalUser, upload.single('resume'), async (req, res) => {
   try {
-    const { jobTitle, details, resumeText, email } = req.body || {};
+    const jobTitle = careerField(req, 'jobTitle', 120);
+    const details = careerField(req, 'details', 1500);
+    const setting = careerField(req, 'setting', 60);
     // Save to My Works only for the signed-in user (never a userId from the request body)
     const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
@@ -1879,51 +1835,31 @@ apiRouter.post('/api/career/pitch', optionalUser, async (req, res) => {
       return res.status(400).json({ error: 'Job Title is required.' });
     }
 
-    const result = await generateElevatorPitchWithGemini({
-      jobTitle,
-      details,
-      resumeText,
-      customApiKey
+    const resumeText = await careerResumeText(req);
+    const result = await generateElevatorPitchWithGemini({ jobTitle, details, resumeText, setting, customApiKey });
+
+    await saveElevatorPitchLog({ email: req.auth?.email || req.body?.email || '', userId: userId || '', jobTitle });
+
+    const savedWork = await saveFeatureWork(userId, {
+      title: `Elevator Pitch - ${jobTitle}`,
+      type: 'elevator-pitch',
+      templateId: 'elevator-pitch-gen',
+      payload: { jobTitle, details, setting, resumeText, result }
     });
 
-    await saveElevatorPitchLog({
-      email: req.auth?.email || email || '', userId: userId || '',
-      jobTitle: jobTitle
-    });
-
-    let savedWork = null;
-    if (userId) {
-      savedWork = await safeSaveWork({
-        userId,
-        title: `Elevator Pitch - ${jobTitle}`,
-        type: 'elevator-pitch',
-        templateId: 'elevator-pitch-gen',
-        htmlContent: JSON.stringify({
-          jobTitle,
-          details,
-          resumeText,
-          result
-        })
-      });
-    }
-
-    return res.json({
-      success: true,
-      data: result,
-      work: savedWork
-    });
+    return res.json({ success: true, data: result, work: savedWork });
   } catch (error) {
-    console.error('Elevator Pitch API Error:', error);
-    return res.status(500).json({
-      error: error.message || 'AI Generation failed. Please try again later.'
-    });
+    return careerError(res, error, 'Elevator Pitch');
   }
 });
 
 // Career Roadmap Endpoint
-apiRouter.post('/api/career/roadmap', optionalUser, async (req, res) => {
+apiRouter.post('/api/career/roadmap', optionalUser, upload.single('resume'), async (req, res) => {
   try {
-    const { currentRole, targetRole, years, resumeText, email } = req.body || {};
+    const currentRole = careerField(req, 'currentRole', 120);
+    const targetRole = careerField(req, 'targetRole', 120);
+    const years = careerField(req, 'years', 40);
+    const hoursPerWeek = careerField(req, 'hoursPerWeek', 40);
     // Save to My Works only for the signed-in user (never a userId from the request body)
     const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
@@ -1932,45 +1868,21 @@ apiRouter.post('/api/career/roadmap', optionalUser, async (req, res) => {
       return res.status(400).json({ error: 'Target Role is required.' });
     }
 
-    const result = await generateCareerRoadmapWithGemini({
-      currentRole,
-      targetRole,
-      years,
-      resumeText,
-      customApiKey
+    const resumeText = await careerResumeText(req);
+    const result = await generateCareerRoadmapWithGemini({ currentRole, targetRole, years, resumeText, hoursPerWeek, customApiKey });
+
+    await saveCareerRoadmapLog({ email: req.auth?.email || req.body?.email || '', userId: userId || '' });
+
+    const savedWork = await saveFeatureWork(userId, {
+      title: `Career Roadmap - ${targetRole}`,
+      type: 'career-roadmap',
+      templateId: 'career-roadmap-gen',
+      payload: { currentRole, targetRole, years, hoursPerWeek, resumeText, result }
     });
 
-    await saveCareerRoadmapLog({
-      email: req.auth?.email || email || '', userId: userId || ''
-    });
-
-    let savedWork = null;
-    if (userId) {
-      savedWork = await safeSaveWork({
-        userId,
-        title: `Career Roadmap - ${targetRole}`,
-        type: 'career-roadmap',
-        templateId: 'career-roadmap-gen',
-        htmlContent: JSON.stringify({
-          currentRole,
-          targetRole,
-          years,
-          resumeText,
-          result
-        })
-      });
-    }
-
-    return res.json({
-      success: true,
-      data: result,
-      work: savedWork
-    });
+    return res.json({ success: true, data: result, work: savedWork });
   } catch (error) {
-    console.error('Career Roadmap API Error:', error);
-    return res.status(500).json({
-      error: error.message || 'AI Generation failed. Please try again later.'
-    });
+    return careerError(res, error, 'Career Roadmap');
   }
 });
 

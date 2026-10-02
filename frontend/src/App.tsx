@@ -62,6 +62,9 @@ const ROUTE_LOADER_MS = 450;
 
 const VALID_PAGES = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'copyright-policy', 'account', 'help-center', 'my-documents', ...ARTICLES.map(a => a.slug)];
 
+// Leo's pages (Resume Tailorer, Interview Prep AI, Voice Prep AI, AI Proofreading) and the Career tools
+const GUIDED_PAGES = ['tailor', 'prep', 'voice-prep', 'proofreading', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'career-courses', 'elevator-pitch', 'career-roadmap'];
+
 // Sign-in addresses open the AuthModal over the home page
 const AUTH_PATHS = ['/sign-in', '/sign-up', '/login'];
 
@@ -417,55 +420,67 @@ export default function App() {
         );
       case 'linkedin':
         return (
-          <LinkedIn 
+          <LinkedIn
             customApiKey={customApiKey}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'linkedin-bio':
         return (
-          <LinkedInBio 
+          <LinkedInBio
             customApiKey={customApiKey}
             resumeText={resumeText}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'linkedin-outreach':
         return (
-          <LinkedInOutreach 
+          <LinkedInOutreach
             customApiKey={customApiKey}
             resumeText={resumeText}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'career-courses':
         return (
-          <CareerCourses 
+          <CareerCourses
             customApiKey={customApiKey}
             resumeText={resumeText}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'elevator-pitch':
         return (
-          <ElevatorPitch 
+          <ElevatorPitch
             customApiKey={customApiKey}
             resumeText={resumeText}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'career-roadmap':
         return (
-          <CareerRoadmap 
+          <CareerRoadmap
             customApiKey={customApiKey}
             resumeText={resumeText}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'linkedin-post':
@@ -561,17 +576,18 @@ export default function App() {
 
   const isAdminPage = currentPage === 'admin';
   const isCodePage = currentPage === 'code-arena' || currentPage === 'cvmind-code-arena';
-  // Pages where Leo guides the user; they keep the site header and footer except during his full-screen flow
-  const isLeoPage = currentPage === 'tailor' || currentPage === 'prep' || currentPage === 'voice-prep' || currentPage === 'proofreading';
-  // Full-screen guided flows: the resume builder and Leo's flows
-  const isFocusFlow = (currentPage === 'resume-editor' || isLeoPage) && builderFocus !== false;
+  // Guided tools: Leo's pages and the Career tools. They keep the site header and footer on their
+  // intro page; the work and the result run full-screen in the app without them.
+  const isGuidedPage = GUIDED_PAGES.includes(currentPage);
+  // Full-screen guided flows: the resume builder and the guided tools
+  const isFocusFlow = (currentPage === 'resume-editor' || isGuidedPage) && builderFocus !== false;
   // My Documents is a standalone app view with its own top bar
   const isAppPage = currentPage === 'my-documents';
   // The 404 page stands alone, without the site header and footer
   const isNotFound = currentPage === 'not-found';
   // App products (the app.cvmind.in pages) show no site header or footer, just a way back
-  // Leo's pages (Resume Tailorer, Interview Prep AI, Voice Prep AI, AI Proofreading) keep the site header and footer
-  const isProductPage = APP_PAGES.includes(currentPage) && !isLeoPage;
+  // The guided tools keep the site header and footer (see isGuidedPage)
+  const isProductPage = APP_PAGES.includes(currentPage) && !isGuidedPage;
   // Account and My Documents have their own Back button / top bar; the editor's full-screen flows have Exit
   const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && !isFocusFlow;
   const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || isCodePage || isFocusFlow || isAppPage;
