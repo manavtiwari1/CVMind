@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, ChevronDown, ExternalLink } from 'lucide-react';
 import { CODING_PROBLEMS, TOPICS } from '../../data/codingProblems';
+import { urlForPage } from '../../lib/hosts';
 import './CVmindCodeLanding.css';
 
 const PROBLEMS = CODING_PROBLEMS;
@@ -113,7 +114,7 @@ function openArena(tab?: string, problemId?: string) {
   if (tab) params.set('tab', tab);
   if (problemId) params.set('problem', problemId);
   const qs = params.toString();
-  window.open(`/code-arena${qs ? `?${qs}` : ''}`, '_blank', 'noopener,noreferrer');
+  window.open(urlForPage('code-arena', qs ? `?${qs}` : ''), '_blank', 'noopener,noreferrer');
 }
 
 export default function CVmindCodeLanding() {
