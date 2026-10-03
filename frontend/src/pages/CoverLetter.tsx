@@ -12,12 +12,13 @@ import './CoverLetter.css';
 import '../components/ResumeWizard.css';
 import ResumeDownload from '../components/ResumeDownload';
 import ResumeQuickStart from '../components/ResumeQuickStart';
+import ResumeBuildLoader from '../components/ResumeBuildLoader';
 import { clearPickedTemplate, peekPickedTemplate } from '../lib/templatePick';
 import { PhotoDialog, PhotoHover } from '../components/ResumePhoto';
 import { DesignPanel, TemplatesPanel, RearrangeModal } from '../components/ResumeStudioPanels';
 import {
   DEFAULT_DESIGN, GOOGLE_FONTS_HREF, PAPER, applyColumns, applyFontFamily, applyFontScale, applyLineHeight, applyMargin,
-  applySpacing, collectColumns, hasColor, isProfilePhoto, recolorHtml, type Column, type DesignState, type PaperSize,
+  applySpacing, collectColumns, hasColor, isProfilePhoto, guardIconDelete, recolorHtml, type Column, type DesignState, type PaperSize,
 } from '../lib/resumeDesign';
 import { StudioBar, StudioRail, SelectionToolbar, StudioPanelView, StudioPreview, EntryToolbar, type StudioPanel, type StudioDrawer } from '../components/ResumeStudio';
 import TemplateGallery from '../components/TemplateGallery';
@@ -27,6 +28,7 @@ import ResumeOnboarding, { type OnboardingResult, type ResumeGoal } from '../com
 import { RESUME_TEMPLATES, TEMPLATES, type Template } from '../data/resumeTemplates';
 import { authFetch } from '../lib/authFetch';
 import { splitFooter, withFooter } from '../lib/resumeFooter';
+import { htmlForPdf } from '../lib/printLayout';
 import { getErrorMessage } from '../utils/errors';
 import type { ExtractedResume, LoadedWork, WizardFormData } from '../types/api';
 import { siteOrigin } from '../lib/hosts';
@@ -112,6 +114,9 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
   const [paperSize, setPaperSize] = useState<PaperSize>('a4');
   const [arrange, setArrange] = useState<{ initial: Column[]; pageHeight: number } | null>(null);
   const [swapping, setSwapping] = useState(false);
+  const [loadingMode, setLoadingMode] = useState<'build' | 'switch'>('build');
+  // True when the content came from a resume the user uploaded at "Do you have an existing resume?".
+  const uploadedResumeRef = useRef(false);
   const [showDownload, setShowDownload] = useState(false);
   const [photoTarget, setPhotoTarget] = useState<HTMLImageElement | null>(null);
   const [tailorSeed, setTailorSeed] = useState({ jd: '', n: 0 });
@@ -496,7 +501,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
     }
     if (hasResumeData(data)) {
       setUsedSampleLayout(false);
-      handleGenerateFromWizard(toFormData(data));
+      handleGenerateFromWizard(toFormData(data), selectedTemplate, { keepFacts: uploadedResumeRef.current });
     } else {
       setUsedSampleLayout(true);
       editedRef.current = false;
@@ -510,7 +515,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
     if (hasResumeData(data)) {
       setExtractedData(data);
       setUsedSampleLayout(false);
-      handleGenerateFromWizard(toFormData(data));
+      handleGenerateFromWizard(toFormData(data), selectedTemplate, { keepFacts: true });
     } else {
       setUsedSampleLayout(true);
       editedRef.current = false;
@@ -526,6 +531,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
     if (data && jobTitle && !data.personalInfo?.jobTitle) {
       data.personalInfo = { ...data.personalInfo, jobTitle };
     }
+    uploadedResumeRef.current = Boolean(extracted);
     setExtractedData(data);
     setResumeGoal(goal);
     setOnboardingDone(true);
@@ -814,8 +820,27 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
     }
   };
 
-  const handleGenerateFromWizard = async (formData: WizardFormData, template: Template | null = selectedTemplate) => {
+  /** Puts back the resume the user had before a template switch that failed. */
+  const restoreEditor = (html: string, template: Template | null) => {
+    if (template) setSelectedTemplate(template);
+    setStep('editor');
+    setTimeout(() => {
+      if (editorRef.current) {
+        editorRef.current.innerHTML = html;
+        countWords();
+      }
+    }, 100);
+  };
+
+  // keepFacts: fill the template with the content exactly as given (uploaded resume, template switch).
+  // previous: set for template switches, so the old resume is restored if the switch fails.
+  const handleGenerateFromWizard = async (
+    formData: WizardFormData,
+    template: Template | null = selectedTemplate,
+    { keepFacts = false, previous }: { keepFacts?: boolean; previous?: { html: string; template: Template | null } } = {},
+  ) => {
     if (!template) return;
+    if (!previous) setLoadingMode('build');
     setStep('loading');
     setRefineError('');
     try {
@@ -829,7 +854,8 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
         headers,
         body: JSON.stringify({
           templateHtml: splitFooter(template.html).body,
-          formData
+          formData,
+          keepFacts,
         })
       });
 
@@ -881,6 +907,10 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
       }, 100);
     } catch (err) {
       setRefineError(getErrorMessage(err) || 'Something went wrong.');
+      if (previous) {
+        restoreEditor(previous.html, previous.template);
+        return;
+      }
       setUsedSampleLayout(true);
       setStep('editor');
     }
@@ -905,20 +935,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
 
   // ── LOADING SCREEN ──────────────────────────────────────────
   if (step === 'loading') {
-    return (
-      <div className="cl-page animate-fade-in-up" style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', maxWidth: '480px', padding: '2.5rem 2rem', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-lg)' }}>
-          <Loader2 size={40} className="cl-spin" style={{ color: 'var(--blue)', marginBottom: '1.5rem' }} />
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.8rem' }}>AI is Crafting Your Resume</h2>
-          <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '1.8rem' }}>
-            CV Mind is optimizing your qualifications, experience points, and skillsets into an ATS-friendly layout. This will take up to 60 seconds...
-          </p>
-          <div style={{ width: '100%', height: '6px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '999px', overflow: 'hidden', position: 'relative' }}>
-            <div className="rw-progress-bar-fill" />
-          </div>
-        </div>
-      </div>
-    );
+    return <ResumeBuildLoader mode={loadingMode} templateName={selectedTemplate?.name} />;
   }
 
   // ── GALLERY ─────────────────────────────────────────────────
@@ -1011,21 +1028,28 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
       countWords();
       return;
     }
+    // Read the page before the loading screen replaces the editor.
+    const previous = { html: ed.innerHTML, template: selectedTemplate };
+    const resumeText = ed.innerText;
     setSwapping(true);
+    setDrawer(null);
+    setSelectedTemplate(template);
+    setLoadingMode('switch');
+    setStep('loading');
     try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL
         || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
-      const res = await fetch(`${baseUrl}/api/resume/parse-data`, { method: 'POST', headers, body: JSON.stringify({ resumeText: ed.innerText }) });
+      // exact: copy the wording as it is on the page instead of summarising it.
+      const res = await fetch(`${baseUrl}/api/resume/parse-data`, { method: 'POST', headers, body: JSON.stringify({ resumeText, exact: true }) });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || 'Could not read your resume.');
-      setSelectedTemplate(template);
       setActiveWorkTitle(`Resume - ${template.name}`);
-      setDrawer(null);
-      await handleGenerateFromWizard(toFormData(body.data), template);
+      await handleGenerateFromWizard(toFormData(body.data), template, { keepFacts: true, previous });
     } catch (err) {
       setRefineError(getErrorMessage(err) || 'Could not switch template.');
+      restoreEditor(previous.html, previous.template);
     } finally {
       setSwapping(false);
     }
@@ -1335,6 +1359,10 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
               spellCheck
               onInput={() => { editedRef.current = true; countWords(); }}
               onKeyDown={e => {
+                if (isResume && editorRef.current && guardIconDelete(editorRef.current, e.key)) {
+                  e.preventDefault();
+                  return;
+                }
                 const last = structHistory.current[structHistory.current.length - 1];
                 if (isResume && (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && last && editorRef.current?.innerHTML === last.after) {
                   e.preventDefault();
@@ -1586,7 +1614,7 @@ ${jd}`)}
         <ResumeDownload
           defaultName={activeWorkTitle}
           paper={paperSize}
-          getHtml={() => editorRef.current?.innerHTML || ''}
+          getHtml={() => (editorRef.current ? htmlForPdf(editorRef.current, PAPER[paperSize].height) : '')}
           getText={() => editorRef.current?.innerText || ''}
           customApiKey={customApiKey}
           onWord={handleDownloadDOCX}

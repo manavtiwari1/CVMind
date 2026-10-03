@@ -135,6 +135,8 @@ export default function ResumeOnboarding({ customApiKey, onComplete }: ResumeOnb
     try {
       const fd = new FormData();
       fd.append('resume', file);
+      // An uploaded resume is copied as written, never rewritten.
+      fd.append('exact', 'true');
       const headers: Record<string, string> = {};
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
       const res = await fetch(`${API_BASE}/api/resume/parse-data`, { method: 'POST', headers, body: fd });

@@ -1,0 +1,97 @@
+.rbl {
+  --rbl-bar: #dde2ea;
+  --rbl-shine: #f1f3f7;
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2.5rem 16px 3rem;
+}
+
+[data-theme='dark'] .rbl {
+  --rbl-bar: rgba(255, 255, 255, 0.08);
+  --rbl-shine: rgba(255, 255, 255, 0.16);
+}
+
+.rbl-head { text-align: center; max-width: 520px; }
+
+.rbl-title {
+  margin: 0 0 0.45rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.rbl-sub {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+/* A4-shaped sheet that mirrors a resume: header, summary, experience, then two short columns. */
+.rbl-page {
+  width: 100%;
+  max-width: 520px;
+  aspect-ratio: 1 / 1.4142;
+  box-sizing: border-box;
+  padding: 36px 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px -18px rgba(15, 23, 42, 0.35);
+  overflow: hidden;
+}
+
+.rbl-bar {
+  display: block;
+  flex: none;
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--rbl-bar) 0%, var(--rbl-shine) 40%, var(--rbl-bar) 80%) 0 0 / 300% 100%;
+  animation: rbl-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes rbl-shimmer {
+  from { background-position: 100% 0; }
+  to   { background-position: 0 0; }
+}
+
+.rbl-top { display: flex; align-items: center; gap: 20px; }
+.rbl-top-text { flex: 1; display: flex; flex-direction: column; gap: 9px; }
+
+.rbl-photo {
+  width: 74px;
+  height: 74px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--rbl-bar);
+  animation: rbl-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes rbl-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
+.rbl-section { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.rbl-heading { padding-bottom: 6px; margin-bottom: 2px; border-bottom: 1px solid var(--border); }
+.rbl-entry { display: flex; flex-direction: column; gap: 7px; margin-bottom: 6px; }
+.rbl-bullets { display: flex; flex-direction: column; gap: 6px; padding-left: 12px; }
+.rbl-row { display: flex; align-items: center; gap: 10px; }
+.rbl-split { justify-content: space-between; }
+.rbl-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.rbl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+@media (max-width: 480px) {
+  .rbl-page { padding: 24px 20px; gap: 18px; }
+  .rbl-photo { width: 56px; height: 56px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rbl-bar, .rbl-photo { animation: none; }
+}

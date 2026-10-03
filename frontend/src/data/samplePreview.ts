@@ -51,6 +51,13 @@ const PROFILES: Record<string, Partial<Profile>> = {
   'cv-crest': { name: 'Dr. Lakshmi Narayan', title: 'Assistant Professor', prevTitle: 'Postdoctoral Researcher', company: 'Indian Institute of Science', prevCompany: 'TIFR Mumbai', field: 'Computational Linguistics', university: 'IISc Bangalore', skills: ['NLP', 'Machine Learning', 'Teaching'] },
   'cv-timeline': { name: 'Nikhil Sharma', title: 'Marketing Manager', prevTitle: 'Marketing Executive', company: 'Quill Labs', prevCompany: 'Tanda', field: 'Marketing', university: 'MICA Ahmedabad', skills: ['Brand Strategy', 'SEO', 'Campaigns'] },
   'cv-wave': { name: 'Sophia Dsouza', title: 'Guest Relations Manager', prevTitle: 'Front Desk Supervisor', company: 'Azure Hotel Group', prevCompany: 'Palm Court Resort', field: 'Hospitality Management', university: 'IHM Mumbai', skills: ['Guest Relations', 'Opera PMS', 'Team Training'] },
+  'cv-portrait': { name: 'Riya Chaudhary', title: 'Graphic Designer', prevTitle: 'Junior Designer', company: 'Inkwell Studio', prevCompany: 'Paper Kite', field: 'Visual Communication', university: 'Pearl Academy', skills: ['Visual Identity', 'Illustrator', 'Typography'] },
+  'cv-classic': { name: 'Isha Mehta', title: 'Admin & Multimedia Executive', prevTitle: 'Multimedia Intern', company: 'Brightpath Media', prevCompany: 'Lumen Events', field: 'Mass Communication', university: 'Xavier’s, Mumbai', skills: ['Data Entry', 'Video Editing', 'Coordination'] },
+  'cv-headline': { name: 'Tanvi Joshi', title: 'Graphic Designer', prevTitle: 'Junior Designer', company: 'Studio Saffron', prevCompany: 'Freelance', field: 'Visual Communication', university: 'NID Ahmedabad', skills: ['Illustrator', 'Figma', 'Branding'] },
+  'cv-terracotta': { name: 'Riya Chaudhary', title: 'Brand Designer', prevTitle: 'Graphic Designer', company: 'Clay & Co.', prevCompany: 'Paper Kite', field: 'Communication Design', university: 'Pearl Academy', skills: ['Branding', 'Illustration', 'Packaging'] },
+  'cv-spotlight': { name: 'Kabir Anand', title: 'Marketing Manager', prevTitle: 'Marketing Specialist', company: 'Quill Labs', prevCompany: 'Tanda', field: 'Business Management', university: 'NMIMS Mumbai', skills: ['Campaign Strategy', 'Team Leadership', 'Analytics'] },
+  'cv-studio': { name: 'Leela Rao', title: 'Interior Designer', prevTitle: 'Junior Interior Designer', company: 'Studio Teak', prevCompany: 'Haven Interiors', field: 'Interior Design', university: 'CEPT Ahmedabad', skills: ['Space Planning', '3D Visualisation', 'Material Selection'] },
+  'cv-ledger': { name: 'Aarav Singh', title: 'Web Designer', prevTitle: 'UI Designer', company: 'Northwind Digital', prevCompany: 'Pixel & Pine', field: 'Information Technology', university: 'Manipal University', skills: ['UI/UX Design', 'Front-End', 'Accessibility'] },
   'cv-minimal': { name: 'Ananya Iyer', title: 'Data Scientist', prevTitle: 'Data Analyst', company: 'Orbit Analytics', prevCompany: 'Helix Data', field: 'Statistics', university: 'IISc Bangalore', skills: ['Python', 'SQL', 'PyTorch'] },
   'modern-cl': { name: 'Priya Nair', title: 'Senior Frontend Engineer', company: 'Northwind Payments', prevCompany: 'Kite Commerce', field: 'front-end performance', skills: ['React', 'TypeScript', 'web performance'] },
   'classic-cl': { name: 'Priya Nair', title: 'Operations Manager', company: 'Northwind Payments', prevCompany: 'Kite Commerce' },
@@ -141,6 +148,15 @@ export function withSampleData(t: Template): string {
   let tx = 0;
   const CELLS = ['Payments dashboard', 'Rebuilt reporting used by 2M customers', 'Search revamp', 'Cut query time from 4s to 400ms'];
   html = html.replace(/>Text</g, () => `>${CELLS[tx++ % CELLS.length]}<`);
+
+  let li = 0;
+  const LANGS = ['English (Fluent)', 'Hindi (Native)', 'French (Basic)'];
+  html = html.replace(/>Language</g, () => `>${LANGS[li++ % LANGS.length]}<`);
+  let rn = 0;
+  let rp = 0;
+  const REFS = [['Neha Kulkarni', 'Head of Design, Northwind'], ['Arjun Mehta', 'Director, Kite Commerce']];
+  html = html.replace(/>Reference Name</g, () => `>${REFS[rn++ % REFS.length][0]}<`);
+  html = html.replace(/>Position, Company</g, () => `>${REFS[rp++ % REFS.length][1]}<`);
 
   // plain-text placeholders used by the newer layouts
   html = html
