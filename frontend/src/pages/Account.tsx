@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
   ArrowLeft, User, CreditCard, FileText, Crown, Wand2, ListPlus, Files, BadgeCheck,
-  Camera, Loader2, Edit3, Globe, Trash2, AlertCircle, X,
+  Camera, Loader2, Edit3, Globe, Trash2, AlertCircle, X, MonitorSmartphone,
 } from 'lucide-react';
+import AccountSessions from '../components/AccountSessions';
 import { API_BASE } from '../lib/apiBase';
 import { authFetch } from '../lib/authFetch';
 import { readUser, saveUser, isProUser, USER_CHANGE_EVENT } from '../lib/currentUser';
@@ -13,7 +14,7 @@ import './Account.css';
 import { siteOrigin } from '../lib/hosts';
 import { PRICING_LOCKED } from '../lib/pricing';
 
-type Tab = 'profile' | 'billing' | 'documents';
+type Tab = 'profile' | 'billing' | 'documents' | 'devices';
 type ListedWork = SavedWork & { _id: string; createdAt: string };
 
 interface AccountProps {
@@ -34,7 +35,7 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
   // Links can open a tab directly, e.g. /account?tab=billing from the Help Center
   const [tab, setTab] = useState<Tab>(() => {
     const t = new URLSearchParams(window.location.search).get('tab');
-    return t === 'billing' ? 'billing' : 'profile';
+    return t === 'billing' || t === 'devices' ? t : 'profile';
   });
   const [user, setUser] = useState<StoredUser | null>(readUser);
   const isPro = isProUser(user);
@@ -304,6 +305,9 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
             <button className={`acct-nav-item${tab === 'documents' ? ' active' : ''}`} onClick={() => selectTab('documents')}>
               <FileText size={17} /> My Documents
             </button>
+            <button className={`acct-nav-item${tab === 'devices' ? ' active' : ''}`} onClick={() => selectTab('devices')}>
+              <MonitorSmartphone size={17} /> Devices
+            </button>
           </div>
         </nav>
 
@@ -453,6 +457,8 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
               </p>
             </>
           )}
+
+          {tab === 'devices' && <AccountSessions />}
 
           {tab === 'documents' && (
             <>

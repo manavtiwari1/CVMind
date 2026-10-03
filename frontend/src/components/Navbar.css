@@ -4,7 +4,8 @@
 
 .navbar-header {
   position: fixed;
-  top: 0;
+  /* Moves down while the admin's announcement bar (SiteBanner) is on screen */
+  top: var(--site-banner-offset, 0px);
   left: 0;
   right: 0;
   height: 64px;

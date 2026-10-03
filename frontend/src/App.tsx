@@ -9,6 +9,8 @@ import HelpCenter from './pages/HelpCenter';
 import MyDocuments from './pages/MyDocuments';
 import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
+import SiteBanner from './components/SiteBanner';
+import AppUpdateGate from './components/AppUpdateGate';
 import Tailor from './pages/Tailor';
 import Prep from './pages/Prep';
 import CoverLetter from './pages/CoverLetter';
@@ -51,6 +53,7 @@ import { getErrorMessage } from './utils/errors';
 import { APP_PAGES, PUBLIC_APP_PAGES, isAppHost, isCrossHost, isSplitHost, siteOrigin, urlForPage } from './lib/hosts';
 import { clearSession, setSession } from './lib/session';
 import { peekPickedTemplate } from './lib/templatePick';
+import { authFetch } from './lib/authFetch';
 import type { LoadedWork, ResumeAnalysis } from './types/api';
 import './styles/theme.css';
 import './styles/3d-effects.css';
@@ -170,7 +173,8 @@ export default function App() {
         signOut('Please sign in again to continue.');
         return;
       }
-      fetch(`${base}/api/auth/account-status?email=${encodeURIComponent(user.email)}`)
+      // With the token, so a session signed out elsewhere also ends here
+      authFetch(`${base}/api/auth/account-status?email=${encodeURIComponent(user.email)}`)
         .then(r => r.json())
         .then(d => {
           if (d && d.active === false) {
@@ -602,6 +606,9 @@ export default function App() {
 
   return (
     <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''} ${isFocusFlow ? 'focus-shell' : ''} ${isHelpPage ? 'help-shell' : ''} ${isAppPage ? 'app-shell' : ''} ${isNotFound ? 'notfound-shell' : ''} ${isProductPage ? 'product-shell' : ''} ${isPortfolioStudio ? 'pgx-shell' : ''}`}>
+
+      {!isAdminPage && <SiteBanner setCurrentPage={setCurrentPage} />}
+      <AppUpdateGate />
 
       {!isMinimalPage && !isNotFound && !isHelpPage && !isProductPage && (
         <Navbar 

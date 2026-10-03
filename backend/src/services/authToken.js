@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const DEV_FALLBACK_SECRET = 'cvmind-dev-only-secret-change-me';
 
 function getSecret() {
@@ -23,6 +23,7 @@ export function signToken({ sub, kind, email, ttlMs, jti }) {
     sub: String(sub),
     kind,
     email: String(email || '').trim().toLowerCase(),
+    iat: Date.now(),
     exp: Date.now() + (ttlMs || TOKEN_TTL_MS),
     ...(jti ? { jti } : {})
   };
@@ -54,11 +55,34 @@ function readBearer(req) {
   return header.startsWith('Bearer ') ? header.slice(7).trim() : null;
 }
 
+// Set by the admin module: checks a user token against revoked sessions and blocked accounts.
+// Returns { ok, error }. Without it (tests, scripts) every valid signature is accepted.
+let userSessionValidator = null;
+
+export function setUserSessionValidator(fn) {
+  userSessionValidator = fn;
+}
+
+async function checkUserSession(payload) {
+  if (!userSessionValidator) return { ok: true };
+  try {
+    return await userSessionValidator(payload);
+  } catch (err) {
+    // A database hiccup must not sign everyone out
+    console.error('[auth] session check failed:', err.message);
+    return { ok: true };
+  }
+}
+
 function requireKind(kind) {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     const payload = verifyToken(readBearer(req));
     if (!payload || payload.kind !== kind) {
       return res.status(401).json({ success: false, error: 'Please sign in to continue.' });
+    }
+    if (kind === 'user') {
+      const check = await checkUserSession(payload);
+      if (!check.ok) return res.status(401).json({ success: false, code: 'SESSION_REVOKED', error: check.error });
     }
     req.auth = payload;
     next();
@@ -66,13 +90,20 @@ function requireKind(kind) {
 }
 
 export const requireUser = requireKind('user');
+
+// For status checks: null without a user token, otherwise { ok, error } for the token's session
+export async function userSessionStatus(req) {
+  const payload = verifyToken(readBearer(req));
+  if (!payload || payload.kind !== 'user') return null;
+  return checkUserSession(payload);
+}
 export const requireCompany = requireKind('company');
 
 // For public routes that also do something extra for signed-in users (e.g. save to My Works):
 // sets req.auth when a valid user token is present, never rejects the request
-export function optionalUser(req, res, next) {
+export async function optionalUser(req, res, next) {
   const payload = verifyToken(readBearer(req));
-  if (payload && payload.kind === 'user') req.auth = payload;
+  if (payload && payload.kind === 'user' && (await checkUserSession(payload)).ok) req.auth = payload;
   next();
 }
 
