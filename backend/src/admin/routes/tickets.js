@@ -3,6 +3,7 @@ import { requireAdmin, requireDb } from '../auth.js';
 import { audit } from '../audit.js';
 import { AdminUser, Ticket, TICKET_STATUSES, TICKET_PRIORITIES } from '../models.js';
 import { importLegacyContacts } from '../tickets.js';
+import { inboxConfig, inboxState, syncInbox } from '../inbox.js';
 import { renderEmail, sendEmail, emailConfigured, SUPPORT_EMAIL } from '../mailer.js';
 import { model, clean, handle, httpError, isId, paging, escapeRegex, dateRange } from '../util.js';
 
@@ -34,16 +35,51 @@ const summary = (t) => ({
   subject: t.subject,
   status: t.status,
   priority: t.priority,
+  source: t.source || 'form',
   assigneeId: t.assigneeId,
   assigneeName: t.assigneeName,
   messageCount: (t.messages || []).length,
-  preview: String((t.messages || []).find((m) => m.kind === 'customer')?.body || '').slice(0, 160),
+  preview: String([...(t.messages || [])].reverse().find((m) => m.kind === 'customer')?.body || '').slice(0, 160),
   lastActivityAt: t.updatedAt,
   createdAt: t.createdAt
 });
 
+// Opening Support pulls new inbox mail first (at most once a minute), so serverless hosts stay current too
+const INBOX_FRESH_MS = 60 * 1000;
+async function refreshInbox() {
+  if (!inboxConfig().configured) return;
+  const state = await inboxState();
+  if (state.lastSyncAt && Date.now() - new Date(state.lastSyncAt).getTime() < INBOX_FRESH_MS) return;
+  // Don't hold the list for a slow mailbox; the sync finishes in the background
+  await Promise.race([syncInbox({ reason: 'support-page' }), new Promise((resolve) => setTimeout(resolve, 8000))]);
+}
+
+async function inboxStatus() {
+  const config = inboxConfig();
+  const state = config.configured ? await inboxState() : {};
+  return {
+    configured: config.configured,
+    address: config.user,
+    lastSyncAt: state.lastSyncAt || null,
+    lastError: state.lastError || '',
+    lastErrorAt: state.lastErrorAt || null,
+    lastCounts: state.lastCounts || null
+  };
+}
+
+router.get('/inbox', requireAdmin('tickets.view'), handle(async (req, res) => {
+  res.json({ success: true, data: await inboxStatus() });
+}));
+
+router.post('/inbox/sync', requireAdmin('tickets.manage'), handle(async (req, res) => {
+  const result = await syncInbox({ reason: 'manual' });
+  if (result.ok) await audit(req, 'inbox.synced', { targetType: 'inbox', targetId: inboxConfig().user, targetLabel: inboxConfig().user, details: { created: result.created, added: result.added } });
+  res.status(result.ok || !result.configured ? 200 : 502).json({ success: result.ok, data: { ...result, status: await inboxStatus() }, error: result.error });
+}));
+
 router.get('/', requireAdmin('tickets.view'), handle(async (req, res) => {
   await importLegacyContacts();
+  await refreshInbox().catch((err) => console.error('[inbox] refresh failed:', err.message));
   const { page, limit, skip } = paging(req.query);
   const filter = ticketFilter(req.query, req.admin);
   const [rows, total, counts] = await Promise.all([
@@ -70,7 +106,7 @@ const detail = async (t) => {
   const user = await model('User').findOne({ email: t.email }).select('name status createdAt').lean();
   return {
     ...summary(t),
-    messages: t.messages.map((m) => ({ id: String(m._id), kind: m.kind, authorName: m.authorName, body: m.body, emailed: m.emailed, createdAt: m.createdAt })),
+    messages: t.messages.map((m) => ({ id: String(m._id), kind: m.kind, authorName: m.authorName, body: m.body, emailed: m.emailed, attachments: m.attachments || 0, viaEmail: !!m.messageId, createdAt: m.createdAt })),
     resolvedAt: t.resolvedAt,
     user: user ? { id: String(user._id), name: user.name, status: user.status || 'active', createdAt: user.createdAt } : null,
     emailConfigured: emailConfigured(),

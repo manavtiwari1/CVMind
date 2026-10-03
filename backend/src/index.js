@@ -21,6 +21,7 @@ import { featureGate, signupsEnabled } from './admin/settings.js';
 import { metricsMiddleware } from './admin/metrics.js';
 import { installSessionValidator, newSessionId, recordSession } from './admin/sessions.js';
 import { ticketFromContact } from './admin/tickets.js';
+import { startInboxPolling } from './admin/inbox.js';
 import { evaluateCoupon, redeemCoupon } from './admin/coupons.js';
 import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser, userSessionStatus } from './services/authToken.js';
 import mongoose from 'mongoose';
@@ -2779,6 +2780,8 @@ app.listen(PORT, () => {
   // Fill the live job-search cache so the first search in the resume builder is quick.
   if (!process.env.VERCEL) warmJobSearch();
   // Local dev convenience: run agent queue workers in the API process (production uses src/worker.js)
+  // Pull the support inbox into tickets every 2 minutes (serverless hosts sync when Support is opened)
+  if (!process.env.VERCEL) startInboxPolling();
   if (process.env.INLINE_WORKERS === 'true' && !process.env.VERCEL) {
     startWorkers().catch((err) => console.error('[agent] failed to start inline workers:', err.message));
   }

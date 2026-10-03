@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { AppSetting, Ticket } from './models.js';
 
-async function nextTicketNumber() {
+export async function nextTicketNumber() {
   const row = await AppSetting.findOneAndUpdate(
     { key: 'counter.ticket' },
     { $inc: { value: 1 } },

@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { LifeBuoy, Send, StickyNote } from 'lucide-react';
+import { Inbox, LifeBuoy, Mail, Paperclip, RefreshCw, Send, StickyNote } from 'lucide-react';
 import { api, downloadExport } from '../api';
 import type { Paged } from '../api';
 import { useAction, useAdmin, useApi, useDebounced } from '../hooks';
 import { ago, dateTime } from '../format';
+import type { ReactNode } from 'react';
 import { Badge, DataTable, Drawer, Empty, ErrorState, Card, Notice, PageHeader, Pagination, SearchInput, Segment, Select, Spinner, StatusBadge, Tabs } from '../ui';
 
 interface TicketRow {
@@ -14,6 +15,7 @@ interface TicketRow {
   subject: string;
   status: string;
   priority: string;
+  source: 'form' | 'email';
   assigneeId: string;
   assigneeName: string;
   messageCount: number;
@@ -23,7 +25,7 @@ interface TicketRow {
 }
 
 interface TicketDetail extends TicketRow {
-  messages: Array<{ id: string; kind: 'customer' | 'reply' | 'note'; authorName: string; body: string; emailed: boolean; createdAt: string }>;
+  messages: Array<{ id: string; kind: 'customer' | 'reply' | 'note'; authorName: string; body: string; emailed: boolean; attachments: number; viaEmail: boolean; createdAt: string }>;
   resolvedAt: string | null;
   user: { id: string; name: string; status: string; createdAt: string } | null;
   emailConfigured: boolean;
@@ -49,15 +51,26 @@ export default function Tickets() {
   };
   const { data, error, loading, reload } = useApi<Paged<TicketRow> & { counts: Record<string, number> }>('/tickets', query);
   const counts = data?.counts || {};
+  const inbox = useApi<{ data: InboxStatus }>('/tickets/inbox');
+  const { busy, run } = useAction();
+  const syncNow = async () => {
+    const ok = await run('sync', () => api<{ data: { created: number; added: number } }>('/tickets/inbox/sync', { method: 'POST' }));
+    inbox.reload();
+    if (ok) {
+      reload();
+      refreshBadges();
+    }
+  };
   const unresolved = (counts.new || 0) + (counts.open || 0) + (counts.pending || 0);
 
   return (
     <>
       <PageHeader
         title="Support"
-        description="Messages from the contact form land here as tickets. Reply by email, leave internal notes, and assign them to your team."
+        description="Contact form messages and emails to the support inbox land here as tickets. Reply by email, leave internal notes, and assign them to your team."
         actions={can('reports.export') && <button type="button" className="ad-btn" onClick={() => downloadExport('tickets', query)}>Export CSV</button>}
       />
+      <InboxBar status={inbox.data?.data} syncing={busy === 'sync'} canSync={can('tickets.manage')} onSync={syncNow} />
       <Tabs<View>
         active={view}
         onChange={(v) => { setView(v); setPage(1); }}
@@ -87,7 +100,10 @@ export default function Tickets() {
           columns={[
             { key: 'ticket', header: 'Ticket', render: (t) => (
               <div style={{ maxWidth: 440 }}>
-                <div className="ad-cell-title">#{t.number} · {t.subject}</div>
+                <div className="ad-cell-title">
+                  {t.source === 'email' && <Mail size={13} color="#6b7280" aria-label="From email" style={{ marginRight: 6 }} />}
+                  #{t.number} · {t.subject}
+                </div>
                 <div className="ad-cell-sub" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.preview}</div>
               </div>
             ) },
@@ -178,6 +194,8 @@ function TicketDrawer({ id, onClose, onChanged }: { id: string; onClose: () => v
                 <div className="ad-msg-head">
                   <strong>{m.kind === 'customer' ? (m.authorName || t.email) : m.authorName}</strong>
                   <span>
+                    {m.kind === 'customer' && m.viaEmail && 'By email · '}
+                    {m.attachments > 0 && <><Paperclip size={11} /> {m.attachments} {m.attachments === 1 ? 'attachment' : 'attachments'} in Gmail · </>}
                     {m.kind === 'note' && 'Internal note · '}
                     {m.kind === 'reply' && (m.emailed ? 'Emailed · ' : 'Not emailed · ')}
                     {dateTime(m.createdAt)}
@@ -216,5 +234,46 @@ function TicketDrawer({ id, onClose, onChanged }: { id: string; onClose: () => v
         </>
       )}
     </Drawer>
+  );
+}
+
+interface InboxStatus {
+  configured: boolean;
+  address: string;
+  lastSyncAt: string | null;
+  lastError: string;
+  lastErrorAt: string | null;
+  lastCounts: { created: number; added: number } | null;
+}
+
+// Connection state of the support inbox (Gmail), with a manual "Check now"
+function InboxBar({ status, syncing, canSync, onSync }: { status?: InboxStatus; syncing: boolean; canSync: boolean; onSync: () => void }) {
+  if (!status) return null;
+  if (!status.configured) {
+    return (
+      <div style={{ marginBottom: 16 }}>
+        <Notice tone="amber">
+          <strong>Connect the support inbox to see email replies here.</strong> Customers' replies go to {status.address}. To pull them in:
+          turn on 2-Step Verification for that Google account, create an App Password at myaccount.google.com/apppasswords,
+          then set <span className="ad-mono">SUPPORT_INBOX_APP_PASSWORD</span> on the server and restart it.
+        </Notice>
+      </div>
+    );
+  }
+  // The latest attempt failed if its error is newer than the last good sync
+  const failing = !!status.lastError && (!status.lastSyncAt || (!!status.lastErrorAt && status.lastErrorAt > status.lastSyncAt));
+  const line: ReactNode = failing
+    ? <>Couldn't read <strong>{status.address}</strong>: {status.lastError}</>
+    : <>Connected to <strong>{status.address}</strong> · {status.lastSyncAt ? `checked ${ago(status.lastSyncAt)}` : 'not checked yet'}</>;
+  return (
+    <div className="ad-card" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', marginBottom: 16 }}>
+      <span className={`ad-stat-icon${failing ? ' red' : ''}`} style={{ width: 30, height: 30 }}><Inbox size={15} /></span>
+      <span className="ad-small" style={{ flex: 1, minWidth: 0 }}>{line}</span>
+      {canSync && (
+        <button type="button" className="ad-btn sm" onClick={onSync} disabled={syncing}>
+          {syncing ? <Spinner size={13} /> : <RefreshCw size={13} />} Check now
+        </button>
+      )}
+    </div>
   );
 }

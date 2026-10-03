@@ -273,3 +273,36 @@ test('dashboard overview counts real records', async () => {
   assert.equal(series.length, 7);
   assert.equal(series.reduce((sum, d) => sum + d.signups, 0), kpis.signups.range);
 });
+
+test('support inbox emails thread into tickets and are never added twice', async () => {
+  const { ingestEmail, stripQuotedReply } = await import('../../src/admin/inbox.js');
+  const { ticketFromContact } = await import('../../src/admin/tickets.js');
+  const ticket = await ticketFromContact({ _id: 'c-inbox', name: 'Ravi', email: 'ravi@example.com', subject: 'Refund', message: 'Please refund me' });
+
+  const reply = {
+    messageId: '<abc@mail.gmail.com>',
+    fromEmail: 'Ravi@Example.com',
+    fromName: 'Ravi',
+    subject: `Re: Refund [#${ticket.number}]`,
+    text: 'Thanks, it worked!\n\nOn Mon, 5 Oct 2026 at 10:00, CV Mind <no-reply@manavtiwari.in> wrote:\n> Hi Ravi,\n> Done.'
+  };
+  assert.equal(await ingestEmail(reply), 'added');
+  assert.equal(await ingestEmail(reply), 'skipped', 'the same Message-ID is ignored');
+
+  const updated = await mongoose.model('Ticket').findById(ticket._id).lean();
+  assert.equal(updated.messages.length, 2);
+  assert.equal(updated.messages[1].body, 'Thanks, it worked!');
+  assert.equal(updated.status, 'open');
+
+  // Someone else can't post into Ravi's ticket by reusing the number
+  assert.equal(await ingestEmail({ ...reply, messageId: '<other@x>', fromEmail: 'mallory@example.com' }), 'created');
+  // A fresh email to the inbox starts a ticket from the "email" source
+  assert.equal(await ingestEmail({ messageId: '<new@x>', fromEmail: 'neha@example.com', fromName: 'Neha', subject: 'Login problem', text: 'I cannot log in' }), 'created');
+  const neha = await mongoose.model('Ticket').findOne({ email: 'neha@example.com' }).lean();
+  assert.equal(neha.source, 'email');
+  assert.equal(neha.subject, 'Login problem');
+  // Our own outgoing mail is not a customer message
+  assert.equal(await ingestEmail({ messageId: '<own@x>', fromEmail: 'no-reply@manavtiwari.in', subject: 'Re: x', text: 'x' }), 'skipped');
+
+  assert.equal(stripQuotedReply('Hello\n> quoted\nBye'), 'Hello\nBye');
+});

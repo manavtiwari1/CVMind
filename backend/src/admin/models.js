@@ -48,6 +48,9 @@ const ticketMessageSchema = new Schema({
   authorName: { type: String, default: '' },
   body: { type: String, required: true },
   emailed: { type: Boolean, default: false },
+  // Message-ID of an email pulled from the support inbox, so it's never added twice
+  messageId: { type: String, default: '' },
+  attachments: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
 }, { _id: true });
 
@@ -65,10 +68,14 @@ const ticketSchema = new Schema({
   assigneeName: { type: String, default: '' },
   // The Contact document this ticket was created from, so the migration runs once
   contactId: { type: String, default: '' },
+  // 'form' (contact form) or 'email' (support inbox)
+  source: { type: String, default: 'form' },
   messages: [ticketMessageSchema],
   resolvedAt: { type: Date, default: null }
 }, { timestamps: true });
 ticketSchema.index({ contactId: 1 }, { unique: true, partialFilterExpression: { contactId: { $gt: '' } } });
+ticketSchema.index({ 'messages.messageId': 1 });
+ticketSchema.index({ email: 1, updatedAt: -1 });
 export const Ticket = mongoose.models.Ticket || mongoose.model('Ticket', ticketSchema);
 
 // An in-app notification. userId '' means broadcast; recipients list who it went to.
