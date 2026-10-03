@@ -13,8 +13,15 @@ import bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
 import { parsePdf, parseDocx, parseTxt, fetchResumeFromUrl } from './services/parser.js';
 import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, findJobsWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek, generateInterviewPlan, evaluateInterviewAnswer, generateInterviewReport } from './services/gemini.js';
-import { getPublicStats, getAdminStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveJobFinderLog, saveProofreadLog, savePaymentLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, getWhitelistedEmails, addWhitelistedEmail, deleteWhitelistedEmail, getAutoApplyAccessList, grantAutoApplyAccess, revokeAutoApplyAccess, hasAutoApplyAccess, getAllUsersForAdmin, setUserStatus } from './db.js';
+import { getPublicStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveJobFinderLog, saveProofreadLog, savePaymentLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, hasAutoApplyAccess } from './db.js';
 import { Resend } from 'resend';
+import adminRouter from './admin/router.js';
+import adminPublicRoutes from './admin/publicRoutes.js';
+import { featureGate, signupsEnabled } from './admin/settings.js';
+import { metricsMiddleware } from './admin/metrics.js';
+import { installSessionValidator, newSessionId, recordSession } from './admin/sessions.js';
+import { ticketFromContact } from './admin/tickets.js';
+import { evaluateCoupon, redeemCoupon } from './admin/coupons.js';
 import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser } from './services/authToken.js';
 import mongoose from 'mongoose';
 import { importUploadedResume, RESUME_MIME_TYPES } from './agent/resume/intake.js';
@@ -29,11 +36,20 @@ const PORT = process.env.PORT || 5000;
 // Refuse to boot in production without a token signing secret
 assertAuthConfigured();
 
-// Attach a signed session token to a user payload returned by a real sign-in
-const withSessionToken = (payload) => ({
-  ...payload,
-  token: signToken({ sub: payload.id, kind: 'user', email: payload.email })
-});
+// Revoked sessions and blocked accounts are rejected on every signed-in request
+installSessionValidator();
+
+// Attach a signed session token to a user payload returned by a real sign-in.
+// Each token gets its own session id, so it shows up (and can be signed out) in the admin panel and Account page.
+// Pass currentJti when re-issuing a token for a session that already exists (e.g. after a profile edit).
+const withSessionToken = (payload, req, provider = '', currentJti = '') => {
+  const jti = currentJti || newSessionId();
+  if (!currentJti) recordSession({ jti, userId: payload.id, email: payload.email, provider, req });
+  return {
+    ...payload,
+    token: signToken({ sub: payload.id, kind: 'user', email: payload.email, jti })
+  };
+};
 
 // Save a generated result to the signed-in user's My Works. A failed save must never throw away
 // an AI result the user already waited for, so errors are logged and the response goes out anyway.
@@ -138,12 +154,17 @@ const sendWelcomeEmail = async (email, name, origin) => {
 app.use(cors({
   origin: '*', 
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'OPTIONS', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-gemini-key', 'x-admin-secret']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-gemini-key']
 }));
 
 // Saved resumes / portfolios carry full HTML (often with an embedded photo); the 100kb default
 // body limit made those saves fail with a 413 and the work never reached MongoDB.
 app.use(express.json({ limit: '10mb' }));
+
+// Request timing for the admin System Health page
+app.use(metricsMiddleware);
+// Feature switches and maintenance mode set in the admin panel
+app.use(featureGate);
 
 // Public routes that call an AI model: limit each IP so scripted requests can't burn AI credits.
 // Signed-in-only AI routes (auto-apply, agent, company parse-job) are not included.
@@ -210,27 +231,6 @@ apiRouter.get('/', (req, res) => {
   });
 });
 
-// Admin Authentication Login Route
-apiRouter.post('/api/admin/login', (req, res) => {
-  const { username, password } = req.body || {};
-  const targetUsername = process.env.ADMIN_USERNAME;
-  const targetPassword = process.env.ADMIN_PASSWORD;
-  const configuredSecret = process.env.ADMIN_SECRET;
-
-  if (targetUsername && targetPassword && username === targetUsername && password === targetPassword) {
-    return res.json({
-      success: true,
-      message: 'Login successful.',
-      secret: configuredSecret || ''
-    });
-  }
-
-  return res.status(401).json({
-    success: false,
-    error: 'Invalid username or password.'
-  });
-});
-
 // User Sign Up Route
 apiRouter.post('/api/auth/signup', async (req, res) => {
   const { name, email, password } = req.body || {};
@@ -277,7 +277,7 @@ apiRouter.post('/api/auth/signup', async (req, res) => {
     return res.json({
       success: true,
       message: 'Account created successfully!',
-      user: withSessionToken(userPayload)
+      user: withSessionToken(userPayload, req, 'password')
     });
   } catch (err) {
     console.error('Sign Up Error:', err);
@@ -448,7 +448,7 @@ apiRouter.post('/api/auth/login', async (req, res) => {
     return res.json({
       success: true,
       message: 'Sign in successful!',
-      user: withSessionToken(userPayload)
+      user: withSessionToken(userPayload, req, 'password')
     });
   } catch (err) {
     console.error('Sign In Error:', err);
@@ -588,6 +588,9 @@ apiRouter.post('/api/auth/google', async (req, res) => {
     const { email, name, picture } = payload;
 
     let user = await findUserByEmail(email);
+    if (!user && !(await signupsEnabled())) {
+      return res.status(503).json({ error: 'New sign-ups are paused right now. Please try again later.' });
+    }
     if (!user) {
       // Auto-create Google user with dynamic unique mock password hash
       const salt = await bcrypt.genSalt(10);
@@ -627,7 +630,7 @@ apiRouter.post('/api/auth/google', async (req, res) => {
     return res.json({
       success: true,
       message: 'Sign in with Google successful!',
-      user: withSessionToken(userPayload)
+      user: withSessionToken(userPayload, req, 'google')
     });
   } catch (err) {
     console.error('Google Sign In Error:', err);
@@ -724,6 +727,9 @@ async function completeOAuthLogin(req, res, origin, { email, name, avatar, provi
   }
 
   let user = await findUserByEmail(email);
+  if (!user && !(await signupsEnabled())) {
+    return redirectWithAuthError(res, origin, 'New sign-ups are paused right now. Please try again later.');
+  }
   if (!user) {
     const salt = await bcrypt.genSalt(10);
     const mockPasswordHash = await bcrypt.hash(`oauth-${provider}-` + Math.random().toString(36), salt);
@@ -758,7 +764,7 @@ async function completeOAuthLogin(req, res, origin, { email, name, avatar, provi
     userPayload.isPaid = true;
   }
 
-  const encoded = Buffer.from(JSON.stringify(withSessionToken(userPayload))).toString('base64url');
+  const encoded = Buffer.from(JSON.stringify(withSessionToken(userPayload, req, provider))).toString('base64url');
   return res.redirect(`${origin}/?oauthUser=${encoded}`);
 }
 
@@ -878,141 +884,10 @@ apiRouter.get('/api/auth/linkedin/callback', async (req, res) => {
   }
 });
 
-// Admin Analytics Stats Secure Route
-apiRouter.post('/api/admin/stats', async (req, res) => {
-  const adminSecret = req.headers['x-admin-secret'] || req.body.secret || null;
-  const configuredSecret = process.env.ADMIN_SECRET;
-
-  if (!configuredSecret || !adminSecret || adminSecret !== configuredSecret) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid admin secret key.' });
-  }
-
-  try {
-    const statsData = await getAdminStats();
-    return res.json({
-      success: true,
-      data: statsData
-    });
-  } catch (error) {
-    return res.status(500).json({ error: error.message || 'Stats query failed.' });
-  }
-});
-
-// Get whitelisted emails
-apiRouter.get('/api/admin/whitelist', async (req, res) => {
-  const adminSecret = req.headers['x-admin-secret'] || null;
-  const configuredSecret = process.env.ADMIN_SECRET;
-
-  if (!configuredSecret || !adminSecret || adminSecret !== configuredSecret) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid admin secret key.' });
-  }
-
-  try {
-    const list = await getWhitelistedEmails();
-    return res.json({ success: true, emails: list });
-  } catch (error) {
-    return res.status(500).json({ error: error.message || 'Whitelist query failed.' });
-  }
-});
-
-// Add whitelisted email
-apiRouter.post('/api/admin/whitelist', async (req, res) => {
-  const adminSecret = req.headers['x-admin-secret'] || req.body.secret || null;
-  const configuredSecret = process.env.ADMIN_SECRET;
-
-  if (!configuredSecret || !adminSecret || adminSecret !== configuredSecret) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid admin secret key.' });
-  }
-
-  const { email } = req.body || {};
-  if (!email) {
-    return res.status(400).json({ error: 'Email address is required.' });
-  }
-
-  try {
-    const entry = await addWhitelistedEmail(email);
-    return res.json({ success: true, data: entry });
-  } catch (error) {
-    return res.status(500).json({ error: error.message || 'Failed to add whitelisted email.' });
-  }
-});
-
-// Delete whitelisted email
-apiRouter.delete('/api/admin/whitelist/:email', async (req, res) => {
-  const adminSecret = req.headers['x-admin-secret'] || null;
-  const configuredSecret = process.env.ADMIN_SECRET;
-
-  if (!configuredSecret || !adminSecret || adminSecret !== configuredSecret) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid admin secret key.' });
-  }
-
-  const email = req.params.email;
-  if (!email) {
-    return res.status(400).json({ error: 'Email address parameter is required.' });
-  }
-
-  try {
-    await deleteWhitelistedEmail(email);
-    return res.json({ success: true, message: 'Email removed from whitelist.' });
-  } catch (error) {
-    return res.status(500).json({ error: error.message || 'Failed to delete whitelisted email.' });
-  }
-});
-
-// ── Auto Apply Access (Admin) ──────────────────────────────────────────────────
-apiRouter.get('/api/admin/auto-apply-access', async (req, res) => {
-  const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-  try { res.json({ success: true, data: await getAutoApplyAccessList() }); } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-apiRouter.post('/api/admin/auto-apply-access', async (req, res) => {
-  const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-  const { email } = req.body || {};
-  if (!email) return res.status(400).json({ error: 'Email is required' });
-  try { await grantAutoApplyAccess(email); res.json({ success: true }); } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-apiRouter.delete('/api/admin/auto-apply-access/:email', async (req, res) => {
-  const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-  try { await revokeAutoApplyAccess(req.params.email); res.json({ success: true }); } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
 apiRouter.get('/api/auto-apply/check-access', async (req, res) => {
   const email = req.query.email || '';
   if (!email) return res.json({ hasAccess: false });
   try { res.json({ hasAccess: await hasAutoApplyAccess(email) }); } catch { res.json({ hasAccess: false }); }
-});
-
-// ── User Moderation (Admin) ───────────────────────────────────────────────────
-// List all registered accounts with status + login activity
-apiRouter.get('/api/admin/users', async (req, res) => {
-  const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-  try { res.json({ success: true, data: await getAllUsersForAdmin() }); } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// Change account status: active | suspended | banned
-apiRouter.post('/api/admin/users/:id/status', async (req, res) => {
-  const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-  const { status, reason } = req.body || {};
-  if (!status) return res.status(400).json({ error: 'Status is required.' });
-  try {
-    const result = await setUserStatus(req.params.id, status, reason);
-    res.json({ success: true, data: result });
-  } catch (e) {
-    res.status(e.message === 'User not found' ? 404 : 400).json({ error: e.message });
-  }
-});
-
-// Permanently delete an account and its data
-apiRouter.delete('/api/admin/users/:id', async (req, res) => {
-  const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-  try { await deleteAccount(req.params.id); res.json({ success: true, message: 'User account deleted.' }); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 apiRouter.post('/api/contact', async (req, res) => {
@@ -1034,6 +909,17 @@ apiRouter.post('/api/contact', async (req, res) => {
       subject: String(subject || '').trim(),
       message: String(message).trim()
     });
+    // Every contact message is also a support ticket in the admin panel (MongoDB only)
+    if (contact?.id && mongoose.connection.readyState === 1) {
+      await ticketFromContact({
+        _id: contact.id,
+        name: String(name).trim(),
+        email: String(email).trim(),
+        subject: String(subject || '').trim() || 'General inquiry',
+        message: String(message).trim(),
+        createdAt: contact.createdAt
+      }).catch((err) => console.error('[tickets] could not create ticket:', err.message));
+    }
 
     return res.json({
       success: true,
@@ -1892,7 +1778,8 @@ apiRouter.get('/api/portfolio/:workId', async (req, res) => {
   const { workId } = req.params;
   try {
     const work = await getWorkById(workId);
-    if (!work) {
+    // Hidden by a moderator: the public link stops working
+    if (!work || work.hidden) {
       return res.status(404).json({ error: 'Portfolio resume not found.' });
     }
     return res.json({
@@ -2595,7 +2482,7 @@ apiRouter.post('/api/user/profile', requireUser, async (req, res) => {
       success: true,
       message: 'Profile updated successfully!',
       // Fresh token so its email matches the (possibly changed) account email
-      user: withSessionToken(userPayload)
+      user: withSessionToken(userPayload, req, '', req.auth.jti)
     });
   } catch (error) {
     console.error('Update profile error:', error);
@@ -2709,9 +2596,9 @@ apiRouter.post('/api/job-finder', optionalUser, upload.single('resume'), async (
   }
 });
 
-// Checkout simulated payment route
+// Checkout simulated payment route. An optional coupon from the admin panel lowers the price.
 apiRouter.post('/api/payments/checkout', async (req, res) => {
-  const { email, amount, paymentMethod } = req.body || {};
+  const { email, amount, paymentMethod, couponCode, plan } = req.body || {};
 
   if (!email) {
     return res.status(400).json({ error: 'Email address is required to process payment.' });
@@ -2720,21 +2607,43 @@ apiRouter.post('/api/payments/checkout', async (req, res) => {
   // Generate a mock transaction ID
   const prefix = paymentMethod === 'upi' ? 'UPI' : paymentMethod === 'paypal' ? 'PAY' : 'TXN';
   const transactionId = `${prefix}-${Math.floor(100000 + Math.random() * 900000)}-${Date.now().toString().slice(-4)}`;
+  const listPrice = Number(amount || 200);
 
   try {
+    let coupon = null;
+    let discount = 0;
+    if (couponCode) {
+      if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({ error: 'Coupons are unavailable right now. Please try without one.' });
+      }
+      const check = await evaluateCoupon(couponCode, { email, amount: listPrice });
+      if (!check.ok) return res.status(400).json({ error: check.error });
+      coupon = check.coupon;
+      discount = check.discount;
+      if (!(await redeemCoupon(coupon, { email, amount: listPrice, discount, transactionId }))) {
+        return res.status(400).json({ error: 'That coupon has just been fully used.' });
+      }
+    }
+    const charged = Math.round((listPrice - discount) * 100) / 100;
+
     // Save successful log
     await savePaymentLog({
       email,
-      amount: Number(amount || 200),
+      amount: charged,
       paymentMethod: paymentMethod || 'card',
       transactionId,
-      status: 'success'
+      status: 'success',
+      plan: String(plan || '').slice(0, 40),
+      couponCode: coupon?.code || '',
+      discount
     });
 
     return res.json({
       success: true,
-      message: 'Payment of ₹200 processed successfully!',
-      transactionId
+      message: `Payment of ₹${charged} processed successfully!`,
+      transactionId,
+      amount: charged,
+      discount
     });
   } catch (error) {
     console.error('Payment Checkout API Error:', error);
@@ -2832,6 +2741,10 @@ apiRouter.get('/api/user/usage/:userId', requireSelf(), async (req, res) => {
   }
 });
 
+app.use('/api/admin', adminRouter);
+app.use('/_/backend/api/admin', adminRouter);
+app.use('/_/backend', adminPublicRoutes);
+app.use('/', adminPublicRoutes);
 app.use('/_/backend', apiRouter);
 app.use('/', apiRouter);
 app.use('/api/auto-apply', autoApplyRouter);

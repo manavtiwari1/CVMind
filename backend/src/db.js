@@ -247,7 +247,12 @@ const paymentLogSchema = new mongoose.Schema({
   currency: { type: String, default: 'INR' },
   paymentMethod: { type: String, required: true }, // 'card' | 'upi' | 'paypal'
   transactionId: { type: String, required: true },
-  status: { type: String, default: 'success' },
+  status: { type: String, default: 'success' }, // 'success' | 'failed' | 'refunded'
+  plan: { type: String, default: '' },
+  couponCode: { type: String, default: '' },
+  discount: { type: Number, default: 0 },
+  refundedAt: { type: Date, default: null },
+  refundReason: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
 const PaymentLog = mongoose.models.PaymentLog || mongoose.model('PaymentLog', paymentLogSchema);
@@ -275,6 +280,9 @@ const companySchema = new mongoose.Schema({
   description: { type: String, default: '' },
   logo: { type: String, default: '' },
   verified: { type: Boolean, default: false },
+  // 'active' | 'suspended'; a suspended company can't post jobs
+  status: { type: String, default: 'active' },
+  statusReason: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
 const Company = mongoose.models.Company || mongoose.model('Company', companySchema);
@@ -375,6 +383,11 @@ const userSchema = new mongoose.Schema({
   status: { type: String, default: 'active' }, // 'active' | 'suspended' | 'banned'
   statusReason: { type: String, default: '' },
   statusUpdatedAt: { type: Date, default: null },
+  // Set by an admin from the user drawer
+  emailVerified: { type: Boolean, default: false },
+  emailVerifiedAt: { type: Date, default: null },
+  // Tokens issued before this moment are rejected ("sign out everywhere")
+  sessionsRevokedAt: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
   usageMap: { type: Map, of: Number, default: new Map() }
 });
@@ -389,6 +402,9 @@ const workSchema = new mongoose.Schema({
   htmlContent: { type: String, required: true },
   // Where the work came from, e.g. 'resume-tailor' (a resume made by the Resume Tailorer)
   source: { type: String, default: '' },
+  // Hidden by a moderator: the public portfolio link stops working, the owner still sees it
+  hidden: { type: Boolean, default: false },
+  hiddenReason: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
@@ -476,6 +492,8 @@ const customCodingProblemSchema = new mongoose.Schema({
   }],
   isAiGenerated: { type: Boolean, default: true },
   createdBy: { type: String, default: 'anonymous' },
+  // Removed from the problem list by a moderator
+  hidden: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
 const CustomCodingProblem = mongoose.models.CustomCodingProblem || mongoose.model('CustomCodingProblem', customCodingProblemSchema);
@@ -738,17 +756,20 @@ export const saveProofreadLog = ({ email, industry, charCount, issuesCount, user
     issuesCount: Number(issuesCount || 0)
   }, 'saveProofreadLog');
 
-export async function savePaymentLog({ email, amount, paymentMethod, transactionId, status }) {
+export async function savePaymentLog({ email, amount, paymentMethod, transactionId, status, plan = '', couponCode = '', discount = 0 }) {
   await ensureMongoConnection();
   const cleanEmail = String(email || '').trim().toLowerCase();
 
   if (mongoURI && mongoose.connection.readyState === 1) {
     await PaymentLog.create({
       email: cleanEmail,
-      amount: Number(amount || 200),
+      amount: Number(amount ?? 200),
       paymentMethod,
       transactionId,
-      status
+      status,
+      plan,
+      couponCode,
+      discount: Number(discount || 0)
     });
     return;
   }
@@ -968,8 +989,8 @@ export async function getAdminStats() {
       const totalResumes = await Work.countDocuments({ type: 'resume' });
       const totalCoverLetters = await Work.countDocuments({ type: 'cover-letter' });
       
-      const totalScoreSum = scans.reduce((sum, scan) => sum + Number(scan.score || 0), 0);
-      const averageScore = totalScans > 0 ? Number((totalScoreSum / Math.min(totalScans, 100)).toFixed(1)) : 0;
+      const [scoreAvg] = await Scan.aggregate([{ $group: { _id: null, avg: { $avg: '$score' } } }]);
+      const averageScore = scoreAvg ? Number(scoreAvg.avg.toFixed(1)) : 0;
       
       const scoreDistAggregate = await Scan.aggregate([
         {
@@ -2180,7 +2201,7 @@ export async function getCustomCodingProblems() {
   await ensureMongoConnection();
   if (mongoURI && mongoose.connection.readyState === 1) {
     try {
-      return await CustomCodingProblem.find({}).sort({ createdAt: -1 }).limit(50);
+      return await CustomCodingProblem.find({ hidden: { $ne: true } }).sort({ createdAt: -1 }).limit(50);
     } catch (err) {
       console.error('[MONGODB] getCustomCodingProblems error:', err);
     }
