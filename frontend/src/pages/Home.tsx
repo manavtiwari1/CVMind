@@ -3,6 +3,7 @@ import { pickTemplate } from '../lib/templatePick';
 import { Upload, FileText, CheckCircle2, ShieldAlert, ArrowRight, ShieldCheck, Lock, Sparkles, Link } from 'lucide-react';
 import { authFetch } from '../lib/authFetch';
 import HomeHero from '../components/home/HomeHero';
+import { SlotBanner } from '../components/SiteBanner';
 import AtsBand from '../components/home/AtsBand';
 import AiAssistant from '../components/home/AiAssistant';
 import FeatureRows from '../components/home/FeatureRows';
@@ -192,6 +193,7 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
 
       {/* ── 1. HERO ──────────────────────────────────────────── */}
       <HomeHero setCurrentPage={setCurrentPage} onAnalyzeClick={scrollToScore} />
+      <SlotBanner slot="home-banner" setCurrentPage={setCurrentPage} />
 
       {/* ── 2. TEMPLATE MARQUEE ──────────────────────────────── */}
       <TemplateMarquee onUse={openTemplate} />

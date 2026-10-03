@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Search, Plus } from 'lucide-react';
 import { PRICING_LOCKED } from '../lib/pricing';
+import { useSiteContent } from '../lib/siteContent';
 import './resources/Resources.css';
 import './FAQ.css';
 
@@ -156,15 +157,21 @@ const GROUPS: Group[] = [
 
 export default function FAQ({ setCurrentPage }: FAQProps) {
   const [query, setQuery] = useState('');
+  // Questions added from the admin panel (Site content → FAQ entries) come first
+  const extra = useSiteContent('faq');
+  const allGroups = useMemo<Group[]>(
+    () => (extra.length ? [{ id: 'latest', title: 'Latest', items: extra.map(b => ({ q: b.title, a: b.body })) }, ...GROUPS] : GROUPS),
+    [extra]
+  );
   const [active, setActive] = useState(GROUPS[0].id);
 
   const q = query.trim().toLowerCase();
   const groups = useMemo(
     () =>
       q
-        ? GROUPS.map(g => ({ ...g, items: g.items.filter(i => i.q.toLowerCase().includes(q) || i.a.toLowerCase().includes(q)) })).filter(g => g.items.length)
-        : GROUPS,
-    [q]
+        ? allGroups.map(g => ({ ...g, items: g.items.filter(i => i.q.toLowerCase().includes(q) || i.a.toLowerCase().includes(q)) })).filter(g => g.items.length)
+        : allGroups,
+    [q, allGroups]
   );
 
   const jump = (id: string) => {
@@ -190,7 +197,7 @@ export default function FAQ({ setCurrentPage }: FAQProps) {
 
       <div className="faq-grid">
         <nav className="rsc-legal-nav" aria-label="FAQ topics">
-          {GROUPS.map(g => (
+          {allGroups.map(g => (
             <button key={g.id} type="button" aria-current={active === g.id && !q ? 'page' : undefined} onClick={() => { setQuery(''); jump(g.id); }}>
               {g.title}
             </button>

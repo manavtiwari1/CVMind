@@ -1,5 +1,6 @@
 import { Lock, FileText, ScanSearch } from 'lucide-react';
 import './resources/Resources.css';
+import { SlotBanner } from '../components/SiteBanner';
 
 interface PricingSoonProps {
   setCurrentPage: (page: string) => void;
@@ -9,6 +10,7 @@ interface PricingSoonProps {
 export default function PricingSoon({ setCurrentPage }: PricingSoonProps) {
   return (
     <section className="rsc" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6rem 0 7rem', textAlign: 'center' }}>
+      <div style={{ width: '100%', marginTop: '-3rem', marginBottom: '2rem' }}><SlotBanner slot="promo" setCurrentPage={setCurrentPage} /></div>
       <span
         aria-hidden="true"
         style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 64, height: 64, marginBottom: '1.5rem', color: '#22a577', background: '#e3f7ef', borderRadius: '50%' }}

@@ -3,6 +3,7 @@ import {
   AlertCircle, Download, Printer, Globe, ArrowLeft, ArrowUpRight
 } from 'lucide-react';
 import SkeletonLoader from '../components/SkeletonLoader';
+import ReportContent from '../components/ReportContent';
 import { getErrorMessage } from '../utils/errors';
 import type { SavedWork } from '../types/api';
 import './Portfolio.css';
@@ -165,6 +166,7 @@ export default function Portfolio({ workId }: PortfolioProps) {
         <span>Powered by </span>
         <a href="/" className="pf-watermark-link">CV Mind</a>
         <span> · High-impact ATS Resume Intelligence.</span>
+        {workId && <ReportContent targetType="work" targetId={workId} />}
       </div>
     </div>
   );
