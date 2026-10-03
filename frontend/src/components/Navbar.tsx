@@ -93,25 +93,15 @@ export default function Navbar({
                 <NavMegaMenu key={menu.label} menu={menu} currentPage={currentPage} onNavigate={go} />
               ))}
 
-              {/* 5. CVmind Code */}
-              <NavigationMenuItem>
-                <button
-                  onClick={() => go('code')}
-                  className={`nav-link${['code', 'cvmind-code', 'code-arena'].includes(currentPage) ? ' active' : ''}`}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: 'transparent', border: 'none' }}
-                >
-                  <span style={{ fontWeight: 600 }}>CVMind Code</span>
-                </button>
-              </NavigationMenuItem>
-
-              {/* 6. Pricing */}
+              {/* Pricing: paid plans aren't live yet. CVMind Code is under AI Tools */}
               <NavigationMenuItem>
                 <button
                   onClick={() => go('pricing')}
                   className={`nav-link${currentPage === 'pricing' ? ' active' : ''}`}
-                  style={{ cursor: 'pointer' }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
                 >
                   Pricing
+                  <span className="nm-badge nm-badge--soon">COMING SOON</span>
                 </button>
               </NavigationMenuItem>
 
@@ -307,12 +297,11 @@ export default function Navbar({
         {/* Remaining links */}
         {[
           ...(isLoggedIn ? [{ label: 'My Documents', page: 'my-documents' }, { label: 'Account', page: 'account' }] : []),
-          { label: 'Help Center', page: 'help-center' },
-          { label: 'About CV Mind', page: 'about' },
-          { label: 'Contact Support', page: 'contact' },
-          { label: "FAQ's", page: 'faq' },
+          { label: 'Help Desk', page: 'help-center' },
+          { label: 'About Us', page: 'about' },
+          { label: 'FAQs', page: 'faq' },
           { label: 'Blog', page: 'blog' },
-          { label: 'Privacy', page: 'privacy' },
+          { label: 'Privacy Policy', page: 'privacy' },
         ].map(({ label, page }) => (
           <button
             key={label}

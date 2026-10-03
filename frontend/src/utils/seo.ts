@@ -19,17 +19,17 @@ const PAGE_SEO: Record<string, PageSEO> = {
     keywords: 'Resume Builder, Free Resume Builder, CV Maker, CV Making Online, Online CV Builder, AI Resume Builder, ATS Resume Checker, Resume Maker Free, CV Builder India, Professional CV Format',
   },
   about: {
-    title: 'About Us | CV Mind Resume Intelligence',
-    description: 'Learn about CV Mind, our mission to democratize recruitment technology, and how our AI resume scanner helps candidates beat applicant tracking systems.',
+    title: 'About Us | CV Mind',
+    description: 'CV Mind is a set of tools for job seekers: a resume builder, an ATS resume checker, interview practice and LinkedIn help. Learn what we build and why.',
     keywords: 'About CV Mind, AI resume scanner, ATS technology, resume optimization mission, career tech',
   },
   contact: {
-    title: 'Contact Us | Support & Feedback - CV Mind',
-    description: 'Get in touch with the CV Mind team. We welcome your feedback, partnership inquiries, and questions about our AI resume checker and ATS optimization tools.',
+    title: 'Contact Us | CV Mind Help Desk',
+    description: 'Send the CV Mind team a message about your account, billing or our resume tools, or reach us by email or WhatsApp. We usually reply within 24 hours.',
     keywords: 'Contact CV Mind, resume checker support, career tool help, feedback, partnership',
   },
   'help-center': {
-    title: 'Help Center | CV Mind',
+    title: 'Help Desk | CV Mind',
     description: 'Answers to common questions about building resumes, your CV Mind account, plans and billing, and how to reach our support team.',
     keywords: 'CV Mind help, resume builder help, account help, CV Mind support',
   },
@@ -44,8 +44,8 @@ const PAGE_SEO: Record<string, PageSEO> = {
     keywords: 'FAQ, CV Mind questions, ATS help, resume builder help, how to write resume',
   },
   blog: {
-    title: 'Career Advice & Resume Optimization Blog | CV Mind',
-    description: 'Explore expert tips, resume writing guides, career strategies, and ATS secrets from recruiters to help you land your dream job.',
+    title: 'Resume & Career Advice Blog | CV Mind',
+    description: 'Step-by-step guides for writing an ATS-friendly resume, choosing the right keywords and format, and preparing for interviews and LinkedIn.',
     keywords: 'Resume Blog, Career Advice, Resume Writing Guides, Job Search Tips, Recruiter Secrets, ATS Optimization',
   },
   dashboard: {
@@ -54,8 +54,8 @@ const PAGE_SEO: Record<string, PageSEO> = {
     keywords: 'Resume Dashboard, Resume Scorecard, ATS Score, Keyword Match, Resume Analysis',
   },
   privacy: {
-    title: 'Privacy Policy | Secure & Anonymous Resume Parsing - CV Mind',
-    description: 'Your privacy is our priority. CV Mind parses your resume entirely in memory. Read our Privacy Policy to understand how we protect your document and data.',
+    title: 'Privacy Policy | CV Mind',
+    description: 'What information CV Mind collects, how uploaded resumes are handled, who we share data with, how ads and cookies work, and how to delete your data.',
     keywords: 'Privacy Policy, secure resume parsing, data privacy, resume builder terms',
   },
   terms: {

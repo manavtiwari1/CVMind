@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { AlertTriangle, Check, Loader2, Lock } from 'lucide-react';
 import { API_BASE } from '../lib/apiBase';
 import { getErrorMessage } from '../utils/errors';
@@ -64,6 +64,35 @@ export function Leo() {
       </svg>
       <span className="ro-leo-name">Leo</span>
     </div>
+  );
+}
+
+/** Leo's face in a circle, for chat messages and other small spots. Same drawing as <Leo />. */
+export function LeoAvatar({ size = 32, className }: { size?: number; className?: string }) {
+  // Each avatar needs its own clip-path id when several are on the page
+  const clipId = `ro-leo-face-${useId().replace(/:/g, '')}`;
+  return (
+    <svg className={className} viewBox="70 44 84 84" width={size} height={size} role="img" aria-label="Leo">
+      <clipPath id={clipId}><circle cx="112" cy="86" r="42" /></clipPath>
+      <circle cx="112" cy="86" r="42" fill="#e3f4ec" />
+      <g clipPath={`url(#${clipId})`}>
+        <path d="M40 176c4-30 30-44 72-44s68 14 72 44z" fill="#2bbf8e" />
+        <rect x="98" y="112" width="28" height="26" rx="10" fill="#e7b48f" />
+        <ellipse cx="112" cy="92" rx="30" ry="34" fill="#f2c4a0" />
+        <ellipse cx="82" cy="96" rx="5" ry="8" fill="#eab08a" />
+        <ellipse cx="142" cy="96" rx="5" ry="8" fill="#eab08a" />
+        <path d="M80 86c-4-30 16-46 34-46 22 0 38 14 32 46-6-14-14-20-26-22-14 4-30 8-40 22z" fill="#2a2420" />
+        <path d="M84 70c6-14 22-22 38-18-14 2-22 8-26 20z" fill="#3b312b" />
+        <ellipse cx="101" cy="94" rx="3.2" ry="4" fill="#2a2420" />
+        <ellipse cx="123" cy="94" rx="3.2" ry="4" fill="#2a2420" />
+        <circle cx="102" cy="92.6" r="1.1" fill="#fff" />
+        <circle cx="124" cy="92.6" r="1.1" fill="#fff" />
+        <path d="M94 85q7-4 13 0M117 85q7-4 13 0" stroke="#2a2420" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+        <path d="M102 108q10 9 20 0" stroke="#a5513f" strokeWidth="2.6" strokeLinecap="round" fill="none" />
+        <circle cx="94" cy="104" r="4.5" fill="#f19a8a" opacity=".45" />
+        <circle cx="130" cy="104" r="4.5" fill="#f19a8a" opacity=".45" />
+      </g>
+    </svg>
   );
 }
 

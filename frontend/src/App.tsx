@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import Chatbot from './components/Chatbot';
 import Home from './pages/Home';
 import About from './pages/About';
-import Contact from './pages/Contact';
 import Account from './pages/Account';
 import HelpCenter from './pages/HelpCenter';
 import MyDocuments from './pages/MyDocuments';
@@ -31,6 +29,8 @@ import Products from './pages/Products';
 // import JobFinder from './pages/JobFinder'; // temporarily disabled — restore with the job-finder case below
 import ResumeBuilderLanding from './pages/ResumeBuilderLanding';
 import Pricing from './pages/Pricing';
+import PricingSoon from './pages/PricingSoon';
+import { PRICING_LOCKED } from './lib/pricing';
 import AuthModal from './components/AuthModal';
 import Terms from './pages/Terms';
 import RefundPolicy from './pages/RefundPolicy';
@@ -46,7 +46,6 @@ import CVmindCodeLanding from './pages/code/CVmindCodeLanding';
 import NotFound from './pages/NotFound';
 import PageLoader from './components/PageLoader';
 import { ARTICLES } from './data/articles';
-import DigitalSerenityBackground from './components/DigitalSerenityBackground';
 import { applySEO } from './utils/seo';
 import { getErrorMessage } from './utils/errors';
 import { APP_PAGES, PUBLIC_APP_PAGES, isAppHost, isCrossHost, isSplitHost, siteOrigin, urlForPage } from './lib/hosts';
@@ -88,8 +87,6 @@ export default function App() {
     }
     return 'home';
   });
-
-  const theme = 'light';
 
   // Loading screen between pages; started by navigation handlers, cleared by the timer below
   const [routeLoading, setRouteLoading] = useState(false);
@@ -375,17 +372,17 @@ export default function App() {
           />
         );
       case 'about':
-        return <About />;
-      case 'contact':
-        return <Contact />;
+        return <About setCurrentPage={setCurrentPage} />;
       case 'account':
         return <Account setCurrentPage={setCurrentPage} handleSignOut={handleSignOut} setLoadedWork={setLoadedWork} />;
       case 'my-documents':
         return <MyDocuments setCurrentPage={setCurrentPage} handleSignOut={handleSignOut} setLoadedWork={setLoadedWork} />;
+      // The Contact page is the Help Center's contact form
       case 'help-center':
-        return <HelpCenter setCurrentPage={setCurrentPage} />;
+      case 'contact':
+        return <HelpCenter setCurrentPage={setCurrentPage} page={currentPage} />;
       case 'privacy':
-        return <Privacy />;
+        return <Privacy setCurrentPage={setCurrentPage} />;
       case 'faq':
         return <FAQ setCurrentPage={setCurrentPage} />;
       case 'blog':
@@ -510,6 +507,7 @@ export default function App() {
             customApiKey={customApiKey}
             resumeText={resumeText}
             setCurrentPage={setCurrentPage}
+            onExit={goBack}
           />
         );
       case 'products':
@@ -534,15 +532,16 @@ export default function App() {
       case 'resume-editor':
         return <CoverLetter customApiKey={customApiKey} loadedWork={loadedWork} setLoadedWork={setLoadedWork} onFocusChange={setBuilderFocus} onExit={() => setCurrentPage(isSplitHost() ? 'my-documents' : 'resume-builder')} />;
       case 'pricing':
+        if (PRICING_LOCKED) return <PricingSoon setCurrentPage={setCurrentPage} />;
         return <Pricing setCurrentPage={setCurrentPage} isLoggedIn={isLoggedIn} setShowAuthModal={setShowAuthModal} />;
       case 'terms':
-        return <Terms />;
+        return <Terms setCurrentPage={setCurrentPage} />;
       case 'refund-policy':
-        return <RefundPolicy />;
+        return <RefundPolicy setCurrentPage={setCurrentPage} />;
       case 'copyright-policy':
-        return <CopyrightPolicy />;
+        return <CopyrightPolicy setCurrentPage={setCurrentPage} />;
       case 'disclaimer':
-        return <Disclaimer />;
+        return <Disclaimer setCurrentPage={setCurrentPage} />;
       case 'proofreading':
         return (
           <Proofreading
@@ -589,10 +588,12 @@ export default function App() {
   // The guided tools keep the site header and footer (see isGuidedPage)
   const isProductPage = APP_PAGES.includes(currentPage) && !isGuidedPage;
   // Account and My Documents have their own Back button / top bar; the editor's full-screen flows have Exit
-  const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && !isFocusFlow;
-  const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || isCodePage || isFocusFlow || isAppPage;
-  // The Help Center is full-width and ends with its own contact block instead of the site footer
-  const isHelpPage = currentPage === 'help-center';
+  // The Portfolio Generator is a full-screen chat with its own top bar and Back button
+  const isPortfolioStudio = currentPage === 'portfolio-gen';
+  const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && !isFocusFlow && !isPortfolioStudio;
+  const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || isCodePage || isFocusFlow || isAppPage || isPortfolioStudio;
+  // The Help Center (and its Contact form) is full-width with its own top bar and footer instead of the site ones
+  const isHelpPage = currentPage === 'help-center' || currentPage === 'contact';
 
   // Mark the focused builder flow on <body> (used to keep floating widgets out of the way).
   useEffect(() => {
@@ -600,10 +601,7 @@ export default function App() {
   }, [isFocusFlow]);
 
   return (
-    <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''} ${isFocusFlow ? 'focus-shell' : ''} ${isHelpPage ? 'help-shell' : ''} ${isAppPage ? 'app-shell' : ''} ${isNotFound ? 'notfound-shell' : ''} ${isProductPage ? 'product-shell' : ''}`}>
-
-      {/* ── Global Digital Serenity Background (for both dark & light modes) ── */}
-      {!isMinimalPage && <DigitalSerenityBackground theme={theme} />}
+    <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''} ${isFocusFlow ? 'focus-shell' : ''} ${isHelpPage ? 'help-shell' : ''} ${isAppPage ? 'app-shell' : ''} ${isNotFound ? 'notfound-shell' : ''} ${isProductPage ? 'product-shell' : ''} ${isPortfolioStudio ? 'pgx-shell' : ''}`}>
 
       {!isMinimalPage && !isNotFound && !isHelpPage && !isProductPage && (
         <Navbar 
@@ -638,7 +636,6 @@ export default function App() {
       {routeLoading && <PageLoader />}
 
       {!isMinimalPage && !isHelpPage && !isNotFound && !isProductPage && <Footer setCurrentPage={setCurrentPage} />}
-      {!isMinimalPage && <Chatbot customApiKey={customApiKey} />}
 
       <AuthModal
         isOpen={showAuthModal}

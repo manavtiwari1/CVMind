@@ -11,6 +11,7 @@ import { workLabel, workPage } from '../lib/works';
 import type { LoadedWork, SavedWork, StoredUser } from '../types/api';
 import './Account.css';
 import { siteOrigin } from '../lib/hosts';
+import { PRICING_LOCKED } from '../lib/pricing';
 
 type Tab = 'profile' | 'billing' | 'documents';
 type ListedWork = SavedWork & { _id: string; createdAt: string };
@@ -504,7 +505,7 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
                 <span className="acct-pro-title">Get more with Pro</span>
                 <button className="acct-upgrade" onClick={() => setCurrentPage('pricing')}>Upgrade</button>
               </div>
-              <p className="acct-pro-price">Starting from ₹108.33 a month</p>
+              <p className="acct-pro-price">{PRICING_LOCKED ? 'Coming soon' : 'Starting from ₹108.33 a month'}</p>
               <ul className="acct-pro-perks">
                 {PRO_PERKS.map(({ icon: Icon, text }) => (
                   <li key={text}><Icon size={16} /> {text}</li>

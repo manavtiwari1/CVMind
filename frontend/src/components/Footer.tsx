@@ -44,23 +44,25 @@ const GUIDES: FooterLink[] = [
   { label: 'Resume mistakes to avoid', page: 'resume-mistakes-to-avoid' },
 ];
 
+// The Help Desk is the Help Center, which also holds the contact form
 const RESOURCES: FooterLink[] = [
+  { label: 'Help Desk', page: 'help-center' },
   { label: 'Blog', page: 'blog' },
-  { label: "FAQ's", page: 'faq' },
+  { label: 'FAQs', page: 'faq' },
   { label: 'About Us', page: 'about' },
-  { label: 'Contact Us', page: 'contact' },
 ];
 
 const COMPANY: FooterLink[] = [
-  { label: 'About', page: 'about' },
-  { label: 'Contact', page: 'contact' },
+  { label: 'About Us', page: 'about' },
+  { label: 'Help Desk', page: 'help-center' },
   { label: 'Blog', page: 'blog' },
+  { label: 'FAQs', page: 'faq' },
 ];
 
 const LEGAL: FooterLink[] = [
   { label: 'Privacy Policy', page: 'privacy' },
-  { label: 'Terms of Service', page: 'terms' },
-  { label: 'Refund Policy', page: 'refund-policy' },
+  { label: 'Terms and Conditions', page: 'terms' },
+  { label: 'Refunds', page: 'refund-policy' },
   { label: 'Disclaimer', page: 'disclaimer' },
   { label: 'Copyright Policy', page: 'copyright-policy' },
 ];

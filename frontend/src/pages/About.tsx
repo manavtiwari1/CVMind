@@ -1,134 +1,201 @@
-import { Cpu, Eye, FileSearch, Briefcase, Sparkles, FileText, Users } from 'lucide-react';
+import { FileText, MessageSquare, Linkedin, Briefcase, ArrowRight, ExternalLink, type LucideIcon } from 'lucide-react';
+import SampleResume, { SAMPLE_RESUME_WIDTH } from '../components/home/SampleResume';
+import ScaleToFit from '../components/home/ScaleToFit';
+import './resources/Resources.css';
 import './About.css';
 
-export default function About() {
-  const steps = [
-    {
-      icon: <FileSearch className="step-icon" />,
-      title: "1. Raw Document Parse",
-      desc: "Our node parser processes your uploaded PDF, DOCX, or TXT file entirely in memory, extracting unicode blocks, raw paragraph layouts, and styling sections. No file logs are ever written to disk."
-    },
-    {
-      icon: <Cpu className="step-icon" />,
-      title: "2. ATS Keyword Match",
-      desc: "The system runs text vector matching against standard corporate role models to detect missing technologies, key tools, and structural keywords critical to passing automated screening audits."
-    },
-    {
-      icon: <Eye className="step-icon" />,
-      title: "3. Multi-Layer Scorecard",
-      desc: "All extracted metrics are compiled into a comprehensive results dashboard detailing key strengths, weaknesses, line-by-line before/after recommendations, and downloadable PDF reports."
-    }
-  ];
+interface AboutProps {
+  setCurrentPage: (page: string) => void;
+}
 
+interface ProductGroup {
+  title: string;
+  desc: string;
+  icon: LucideIcon;
+  tone: string;
+  links: { label: string; page: string }[];
+}
+
+const PRODUCTS: ProductGroup[] = [
+  {
+    title: 'Resume',
+    desc: 'Write a resume from scratch or improve the one you have, then check how screening software reads it.',
+    icon: FileText,
+    tone: 'green',
+    links: [
+      { label: 'Resume Builder', page: 'resume-builder' },
+      { label: 'Resume Checker', page: 'home' },
+      { label: 'Resume Tailorer', page: 'tailor' },
+      { label: 'Portfolio Generator', page: 'portfolio-gen' },
+    ],
+  },
+  {
+    title: 'Interviews',
+    desc: 'Practise with questions drawn from your resume and the job, out loud or in writing, with feedback on every answer.',
+    icon: MessageSquare,
+    tone: 'purple',
+    links: [
+      { label: 'Interview Prep AI', page: 'prep' },
+      { label: 'Voice Prep AI', page: 'voice-prep' },
+      { label: 'CVMind Code', page: 'code' },
+    ],
+  },
+  {
+    title: 'LinkedIn & career',
+    desc: 'Tighten your LinkedIn profile, write outreach messages and plan the skills you need for your next role.',
+    icon: Linkedin,
+    tone: 'blue',
+    links: [
+      { label: 'LinkedIn Profile Audit', page: 'linkedin' },
+      { label: 'Bio & Banner Generator', page: 'linkedin-bio' },
+      { label: 'Career Roadmap', page: 'career-roadmap' },
+    ],
+  },
+  {
+    title: 'Job search',
+    desc: 'Find roles that fit your profile and polish every document before you send it.',
+    icon: Briefcase,
+    tone: 'amber',
+    links: [
+      { label: 'AI Job Finder', page: 'job-finder' },
+      { label: 'AI Proofreading', page: 'proofreading' },
+    ],
+  },
+];
+
+// Taken from the project's history; keep to things that shipped
+const MILESTONES = [
+  { when: 'May 2026', title: 'A free resume checker', text: 'The first version did one job: upload a resume and see how screening software reads it, with a resume tailorer for matching it to a job.' },
+  { when: 'June 2026', title: 'Beyond the resume', text: 'LinkedIn tools, interview practice and a portfolio generator arrived, and CV Mind opened to everyone.' },
+  { when: 'June 2026', title: 'A real resume builder', text: 'A full library of resume templates with matching cover letters, editable right on the page.' },
+  { when: 'September 2026', title: 'CVMind Code', text: 'Coding practice with an AI judge, for the technical rounds that follow the resume.' },
+  { when: 'October 2026', title: 'Guided by Leo', text: 'The Resume Tailorer, Interview Prep and Proofreading became step-by-step flows with Leo as your guide.' },
+];
+
+const VALUES = [
+  {
+    title: 'Specific advice, not scores alone',
+    text: 'A number tells you something is wrong. We point to the line, explain why it matters and suggest a rewrite you can accept or change.',
+  },
+  {
+    title: 'Your documents stay yours',
+    text: 'Uploaded files are read and discarded, saved documents are visible only to you, and nothing you write is used to train AI models.',
+  },
+  {
+    title: 'The basics are free',
+    text: 'The resume builder with every template, the resume checker and interview practice are on the Free plan. Pro is for people who want more.',
+  },
+];
+
+export default function About({ setCurrentPage }: AboutProps) {
   return (
-    <div className="about-container animate-fade-in-up">
-      {/* Background glow node */}
-      <div className="glow-ambient" style={{ top: '20%', right: '10%' }}></div>
-      <div className="glow-ambient" style={{ bottom: '20%', left: '10%' }}></div>
-
-      <section className="about-hero">
-        <h1 className="about-title">Cognitive Resume Intelligence</h1>
-        <p className="about-subtitle">
-          Engineered to give job seekers an unfair advantage in the modern hiring landscape.
-        </p>
-      </section>
-
-      {/* Tech Stack details */}
-      <section className="about-info-block glass-card">
-        <h3 className="info-title">Why CV Mind?</h3>
-        <p className="info-text">
-          Modern recruitment is broken. Over 75% of resumes are discarded by Applicant Tracking Systems (ATS) before a human recruiter even looks at them. Of the remaining 25%, the average recruiter spends less than 6 seconds reviewing each document.
-        </p>
-        <p className="info-text">
-          CV Mind was built to solve this asymmetry. By deploying advanced Large Language Models, we give you immediate access to corporate-level resume diagnostics. You receive instant, comprehensive, and hyper-actionable feedback that aligns your profile with what recruiters and algorithms search for.
-        </p>
-      </section>
-
-      {/* Core Capabilities Suite */}
-      <section className="about-capabilities-section">
-        <h2 className="capabilities-title">Our Premium Product Suite</h2>
-        <p className="capabilities-subtitle">Advanced AI products engineered to transform your career search:</p>
-        
-        <div className="capabilities-grid">
-          <div className="capability-card glass-card">
-            <div className="capability-icon-wrapper score-icon">
-              <Eye size={24} />
+    <div className="about">
+      <header className="about-hero">
+        <div className="about-hero-inner">
+          <div className="about-hero-text">
+            <span className="rsc-eyebrow">About us</span>
+            <h1>We help good candidates get their resume read</h1>
+            <p>CV Mind is a set of tools for job seekers: a resume builder, an ATS checker, interview practice and LinkedIn help. They are built around one idea. Nobody should be filtered out because of how their resume is written.</p>
+            <div className="about-hero-actions">
+              <button type="button" className="rsc-btn" onClick={() => setCurrentPage('resume-builder')}>Build a resume</button>
+              <button type="button" className="rsc-link" onClick={() => setCurrentPage('home')}>
+                Check my resume <ArrowRight size={16} />
+              </button>
             </div>
-            <h4>Resume Analyzer & Audit</h4>
-            <p>
-              Scans your resume for keyword matches, readability, structural format, and sentence impact scores to bypass strict ATS filters.
-            </p>
-          </div>
-          
-          <div className="capability-card glass-card">
-            <div className="capability-icon-wrapper tailor-icon">
-              <Briefcase size={24} />
-            </div>
-            <h4>AI Resume Tailoring</h4>
-            <p>
-              Compare your resume against any target job description. The AI automatically identifies skill gaps and rewrites your resume sections to perfectly match recruiter expectations.
-            </p>
-          </div>
-          
-          <div className="capability-card glass-card">
-            <div className="capability-icon-wrapper prep-icon">
-              <Sparkles size={24} />
-            </div>
-            <h4>SmartPrep AI Interview Coach</h4>
-            <p>
-              Generates customized interview prep scorecards based on your CV history, featuring Big Tech and Big 4 style Q&As, STAR method answers, insider recruiter tips, and vector PDF exports.
-            </p>
           </div>
 
-          <div className="capability-card glass-card">
-            <div className="capability-icon-wrapper builder-icon">
-              <FileText size={24} />
+          <figure className="about-hero-visual">
+            <figcaption>Sample resume made with CV Mind</figcaption>
+            <div className="about-hero-paper">
+              <ScaleToFit width={SAMPLE_RESUME_WIDTH} cropHeight={720}>
+                <SampleResume />
+              </ScaleToFit>
             </div>
-            <h4>Interactive Document Builders</h4>
-            <p>
-              Draft resumes and cover letters in real time with our premium inline-editable builder. Select from elegant, ATS-friendly templates, set custom titles, and let AI refine drafts instantly.
-            </p>
-          </div>
-
-          <div className="capability-card glass-card">
-            <div className="capability-icon-wrapper profile-icon">
-              <Users size={24} />
-            </div>
-            <h4>Profile & Work Cloud Persistence</h4>
-            <p>
-              Sign up natively or via Google OAuth to access your central account. Upload profile avatars, edit biography fields, and sync all your resume and cover letter drafts securely across multiple devices.
-            </p>
-          </div>
+          </figure>
         </div>
-      </section>
+      </header>
 
-      {/* Workflow Process Timeline */}
-      <section className="about-timeline-section">
-        <h2 className="timeline-section-title">The Engineering Workflow</h2>
-        <p className="timeline-section-subtitle">How our platform evaluates your career history:</p>
- 
-        <div className="timeline-wrapper">
-          {steps.map((step, idx) => (
-            <div key={idx} className="timeline-item glass-card animate-fade-in-up" style={{ animationDelay: `${idx * 0.15}s` }}>
-              <div className="timeline-icon-box">
-                {step.icon}
+      <div className="rsc about-body">
+        <section className="about-mission">
+          <span className="rsc-eyebrow">Our mission</span>
+          <p>Hiring software reads your resume before a person does. We make sure it reads the version of you that deserves the interview.</p>
+        </section>
+
+        <section className="about-story">
+          <div className="about-story-head">
+            <h2>Our story</h2>
+            <p>CV Mind started as a free resume checker. People kept asking for the next step, so we kept building it, from the first draft to the final round.</p>
+          </div>
+          <ol className="about-timeline">
+            {MILESTONES.map(m => (
+              <li key={m.title}>
+                <span className="about-timeline-when">{m.when}</span>
+                <h3>{m.title}</h3>
+                <p>{m.text}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="about-products">
+          <h2>What we build</h2>
+          <div className="about-products-grid">
+            {PRODUCTS.map(g => (
+              <div key={g.title} className={`about-product about-product--${g.tone}`}>
+                <span className="about-product-icon"><g.icon size={22} /></span>
+                <h3>{g.title}</h3>
+                <p>{g.desc}</p>
+                <ul>
+                  {g.links.map(l => (
+                    <li key={l.page}>
+                      <button type="button" onClick={() => setCurrentPage(l.page)}>
+                        {l.label} <ArrowRight size={14} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div className="timeline-content-box">
-                <h4 className="step-title">{step.title}</h4>
-                <p className="step-desc">{step.desc}</p>
-              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="about-values">
+          <h2>What we believe</h2>
+          <ol className="about-values-list">
+            {VALUES.map((v, i) => (
+              <li key={v.title}>
+                <span className="about-value-num">{String(i + 1).padStart(2, '0')}</span>
+                <h3>{v.title}</h3>
+                <p>{v.text}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="about-maker">
+          <span className="about-maker-avatar" aria-hidden="true">MT</span>
+          <div className="about-maker-text">
+            <span className="rsc-eyebrow">Who builds CV Mind</span>
+            <h2>Manav Tiwari</h2>
+            <p>Designer and engineer behind CV Mind. Feedback from people using it decides what gets built next, so if something is missing or doesn't work the way you expect, say so.</p>
+            <div className="about-maker-links">
+              <a className="rsc-link" href="https://www.manavtiwari.in" target="_blank" rel="noopener noreferrer">
+                manavtiwari.in <ExternalLink size={14} />
+              </a>
+              <button type="button" className="rsc-link" onClick={() => setCurrentPage('contact')}>Send feedback</button>
             </div>
-          ))}
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* Data Ethics Section */}
-      <section className="privacy-card glass-card">
-        <h3 className="privacy-title">Data Ethics & Security</h3>
-        <p className="privacy-text">
-          We believe in absolute data privacy. Your resume content is never stored on a database, never shared with third parties, and never used to train machine learning models. The file is parsed in-memory, analyzed by our secure AI engine in a secure single session, and immediately cleared from the server.
-        </p>
-      </section>
+        <section className="about-cta">
+          <h2>Your next application starts here</h2>
+          <p>Check the resume you have for free, or build a new one in minutes.</p>
+          <div className="rsc-cta-actions">
+            <button type="button" className="rsc-btn about-cta-primary" onClick={() => setCurrentPage('resume-builder')}>Build a resume</button>
+            <button type="button" className="rsc-btn about-cta-ghost" onClick={() => setCurrentPage('home')}>Check my resume</button>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

@@ -1,10 +1,15 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { Search, ChevronRight, Rocket, FileText, UserCog, CreditCard, ShieldCheck } from 'lucide-react';
+import { Search, ChevronRight, Rocket, FileText, UserCog, CreditCard, ShieldCheck, MessageSquare } from 'lucide-react';
 import cvmindIcon from '../assets/cvmind_icon.png';
+import HelpContact from './HelpContact';
+import { PRICING_LOCKED } from '../lib/pricing';
+import { LEGAL_PAGES } from '../data/legalPages';
 import './HelpCenter.css';
 
 interface HelpCenterProps {
   setCurrentPage: (page: string) => void;
+  /** 'contact' opens the contact form (the /contact address). */
+  page?: 'help-center' | 'contact';
 }
 
 interface Article {
@@ -108,13 +113,18 @@ const TOPICS: Topic[] = [
       {
         q: 'What is included in the Free plan?',
         a: 'The Free plan includes the Resume Builder with all templates, the Resume Checker, Interview Prep AI, the LinkedIn tools and 15,000 AI tokens that reset every 48 hours. Free resumes carry CV Mind branding and allow up to 12 items per section.',
-        link: { label: 'Compare plans', page: 'pricing' },
+        ...(PRICING_LOCKED ? {} : { link: { label: 'Compare plans', page: 'pricing' } }),
       },
-      {
-        q: 'How much does Pro cost?',
-        a: 'Pro is ₹250 a month, ₹800 every 3 months, or ₹1,300 a year (about ₹108 a month). Pro removes branding, unlocks Pro sections and unlimited items, and adds tools like Resume Tailor, Portfolio Generator and Voice Practice AI.',
-        link: { label: 'See pricing', page: 'pricing' },
-      },
+      PRICING_LOCKED
+        ? {
+            q: 'How much does Pro cost?',
+            a: "Pro isn't available yet. We're finishing our paid plans and will share prices when they launch. Everything on the Free plan works today.",
+          }
+        : {
+            q: 'How much does Pro cost?',
+            a: 'Pro is ₹250 a month, ₹800 every 3 months, or ₹1,300 a year (about ₹108 a month). Pro removes branding, unlocks Pro sections and unlimited items, and adds tools like Resume Tailor, Portfolio Generator and Voice Practice AI.',
+            link: { label: 'See pricing', page: 'pricing' },
+          },
       {
         q: 'Can I get a refund?',
         a: 'First-time Pro purchases have a 7-day money-back guarantee. Contact us within 7 days of buying with your registered email and purchase date. Renewals are not refundable.',
@@ -157,14 +167,30 @@ interface ArticleRef {
 
 const findTopic = (id: string) => TOPICS.find(t => t.id === id);
 
-export default function HelpCenter({ setCurrentPage }: HelpCenterProps) {
+// Links in the Help Desk's own footer, which stands in for the site footer here
+const FOOTER_LINKS = [
+  { label: 'FAQs', page: 'faq' },
+  { label: 'Blog', page: 'blog' },
+  { label: 'About Us', page: 'about' },
+  ...LEGAL_PAGES,
+];
+
+export default function HelpCenter({ setCurrentPage, page = 'help-center' }: HelpCenterProps) {
   const [query, setQuery] = useState('');
   const [view, setView] = useState<View>({ kind: 'home' });
+  const isContact = page === 'contact';
 
   const go = (next: View) => {
+    // Leaving the contact form goes back to the /help-center address
+    if (isContact) setCurrentPage('help-center');
     setView(next);
     setQuery('');
     window.scrollTo({ top: 0 });
+  };
+
+  const openContact = () => {
+    setQuery('');
+    setCurrentPage('contact');
   };
 
   const popular = useMemo(
@@ -293,6 +319,18 @@ export default function HelpCenter({ setCurrentPage }: HelpCenterProps) {
 
   const renderView = () => {
     if (query.trim()) return renderResults();
+    if (isContact) {
+      return (
+        <>
+          <nav className="help-crumbs" aria-label="Breadcrumb">
+            <button type="button" onClick={() => go({ kind: 'home' })}>All collections</button>
+            <ChevronRight size={14} />
+            <span>Contact us</span>
+          </nav>
+          <HelpContact />
+        </>
+      );
+    }
     if (view.kind === 'home') return renderHome();
     const topic = findTopic(view.topicId);
     if (!topic) return renderHome();
@@ -312,12 +350,14 @@ export default function HelpCenter({ setCurrentPage }: HelpCenterProps) {
             <button type="button" onClick={() => setCurrentPage('my-documents')}>My Documents</button>
             <button type="button" onClick={() => setCurrentPage('account')}>Account</button>
             <button type="button" onClick={() => setCurrentPage('account?tab=billing')}>Billing &amp; Subscription Management</button>
+            <button type="button" onClick={openContact}>Contact us</button>
           </nav>
         </div>
       </header>
 
       <section className="help-hero">
         <div className="help-inner">
+          <span className="help-hero-eyebrow">Help Desk</span>
           <h1 className="help-hero-title">Answers to frequently asked questions about your CV Mind account</h1>
           <label className="help-search">
             <Search size={20} />
@@ -332,8 +372,33 @@ export default function HelpCenter({ setCurrentPage }: HelpCenterProps) {
         </div>
       </section>
 
-      <div className="help-inner help-body">{renderView()}</div>
+      <div className="help-inner help-body">
+        {renderView()}
 
+        {!isContact && (
+          <section className="help-reach">
+            <span className="help-collection-icon"><MessageSquare size={20} /></span>
+            <div>
+              <h2>Still need help?</h2>
+              <p>Send us a message and we will reply by email, usually within 24 hours.</p>
+            </div>
+            <button type="button" className="help-article-link" onClick={openContact}>
+              Contact us <ChevronRight size={16} />
+            </button>
+          </section>
+        )}
+      </div>
+
+      <footer className="help-foot">
+        <div className="help-inner help-foot-inner">
+          <nav aria-label="More from CV Mind">
+            {FOOTER_LINKS.map(l => (
+              <button key={l.page} type="button" onClick={() => setCurrentPage(l.page)}>{l.label}</button>
+            ))}
+          </nav>
+          <span>&copy; {new Date().getFullYear()} CVMind</span>
+        </div>
+      </footer>
     </div>
   );
 }

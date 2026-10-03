@@ -1,5 +1,9 @@
-import { useState } from 'react';
-import { Globe, ArrowRight, RefreshCw, Download, Copy, Check, Palette, Zap, Monitor } from 'lucide-react';
+import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import {
+  ArrowLeft, ArrowUp, Paperclip, ChevronDown, Check, Copy, Download, X, Monitor, Smartphone,
+  Globe, Code2, Eye, FileText, SquarePen, RotateCcw,
+} from 'lucide-react';
+import { Leo, LeoAvatar } from '../components/ResumeOnboarding';
 import { getErrorMessage } from '../utils/errors';
 import { authFetch } from '../lib/authFetch';
 import type { ExperienceEntry } from '../types/api';
@@ -18,293 +22,509 @@ interface PortfolioGenProps {
   customApiKey: string;
   resumeText: string;
   setCurrentPage?: (page: string) => void;
+  /** Leave the generator (back to the previous page). */
+  onExit?: () => void;
 }
 
+// The colour themes the backend knows (themeColors in /api/portfolio/generate-site)
 const THEMES = [
-  { id: 'dark-pro', label: 'Dark Pro', color: '#6366f1', bg: '#0a0a0f', desc: 'Modern & Minimal' },
-  { id: 'ocean', label: 'Ocean', color: '#0ea5e9', bg: '#0c1a2e', desc: 'Deep Blue' },
-  { id: 'emerald', label: 'Emerald', color: '#10b981', bg: '#0a1a0f', desc: 'Fresh Green' },
-  { id: 'purple', label: 'Purple', color: '#a855f7', bg: '#0f0a1e', desc: 'Vibrant Purple' },
-  { id: 'minimal', label: 'Minimal', color: '#2997ff', bg: '#ffffff', desc: 'Clean White' },
+  { id: 'dark-pro', label: 'Dark Pro', desc: 'Indigo on near-black', color: '#6366f1', bg: '#0a0a0f' },
+  { id: 'ocean', label: 'Ocean', desc: 'Sky blue on deep navy', color: '#0ea5e9', bg: '#0c1a2e' },
+  { id: 'emerald', label: 'Emerald', desc: 'Fresh green on dark', color: '#10b981', bg: '#0a1a0f' },
+  { id: 'purple', label: 'Purple', desc: 'Violet on midnight', color: '#a855f7', bg: '#0f0a1e' },
+  { id: 'minimal', label: 'Minimal', desc: 'Blue on clean white', color: '#2997ff', bg: '#ffffff' },
 ];
 
-export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage }: PortfolioGenProps) {
-  const [localResume, setLocalResume] = useState(resumeText || '');
-  const [colorTheme, setColorTheme] = useState('dark-pro');
-  const [step, setStep] = useState<'setup' | 'generating' | 'preview'>('setup');
-  const [portfolioHTML, setPortfolioHTML] = useState('');
-  const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
+// What Leo says he's doing while the site is generated
+const BUILD_STEPS = ['Reading your resume', 'Picking out your experience and skills', 'Laying out the sections', 'Writing the HTML and CSS'];
 
-  // Follow the shared resume text when it changes (adjusting state during render)
-  const [prevResumeText, setPrevResumeText] = useState(resumeText);
-  if (resumeText !== prevResumeText) {
-    setPrevResumeText(resumeText);
-    setLocalResume(resumeText || '');
+const MIN_RESUME_CHARS = 50;
+
+interface Source {
+  text: string;
+  /** Set when the resume came from an attached file. */
+  fileName?: string;
+}
+
+interface Turn {
+  id: number;
+  source: Source;
+  theme: string;
+  status: 'building' | 'done' | 'error';
+  html?: string;
+  data?: PortfolioData | null;
+  error?: string;
+}
+
+const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL
+  || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
+
+const themeOf = (id: string) => THEMES.find(t => t.id === id) || THEMES[0];
+const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
+const slug = (name?: string) => name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'portfolio';
+
+// "Good evening, Priya", using the signed-in user's first name when there is one
+function greeting() {
+  const h = new Date().getHours();
+  const hello = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  try {
+    const first = (JSON.parse(localStorage.getItem('cvmind_user') || '{}').name || '').trim().split(/\s+/)[0];
+    return first ? `${hello}, ${first}` : hello;
+  } catch {
+    return hello;
   }
+}
 
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL
-    || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
+export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage, onExit }: PortfolioGenProps) {
+  const [draft, setDraft] = useState('');
+  const [attachment, setAttachment] = useState<Source | null>(null);
+  const [attaching, setAttaching] = useState(false);
+  const [theme, setTheme] = useState('dark-pro');
+  const [themeOpen, setThemeOpen] = useState(false);
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [composerError, setComposerError] = useState<string | null>(null);
 
-  const handleGenerate = async () => {
-    if (!localResume.trim() || localResume.trim().length < 50) {
-      setErrorMsg('Please paste your resume text (at least 50 characters).'); return;
-    }
-    setStep('generating'); setErrorMsg(null);
+  // The artifact panel: which turn it shows, and how
+  const [openTurn, setOpenTurn] = useState<number | null>(null);
+  const [panelTab, setPanelTab] = useState<'preview' | 'code'>('preview');
+  const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const [copied, setCopied] = useState<number | null>(null);
+
+  const fileRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const threadEnd = useRef<HTMLDivElement>(null);
+  const nextId = useRef(1);
+
+  const building = turns.some(t => t.status === 'building');
+  const lastSource = turns.length ? turns[turns.length - 1].source : null;
+  const shown = turns.find(t => t.id === openTurn && t.status === 'done');
+
+  // Grow the textarea with its content, up to a cap
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 260)}px`;
+  }, [draft]);
+
+  useEffect(() => {
+    threadEnd.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [turns]);
+
+  const generate = async (source: Source, themeId: string) => {
+    const id = nextId.current++;
+    setTurns(prev => [...prev, { id, source, theme: themeId, status: 'building' }]);
     try {
-      const userStr = localStorage.getItem('cvmind_user');
-      let userId = '';
-      if (userStr) { try { const u = JSON.parse(userStr); userId = u.id || u._id || ''; } catch { /* not signed in */ } }
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
       const res = await authFetch(`${baseUrl}/api/portfolio/generate-site`, {
-        method: 'POST', headers,
-        body: JSON.stringify({ resumeText: localResume, colorTheme, style: colorTheme, userId })
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ resumeText: source.text, colorTheme: themeId, style: themeId }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Generation failed');
-      setPortfolioHTML(data.data.portfolioHTML);
-      setPortfolioData(data.data.portfolioData);
-      setStep('preview');
+      setTurns(prev => prev.map(t => t.id === id ? { ...t, status: 'done', html: data.data.portfolioHTML, data: data.data.portfolioData } : t));
+      setOpenTurn(id);
+      setPanelTab('preview');
     } catch (err) {
-      setErrorMsg(getErrorMessage(err) || 'Generation failed. Please try again.');
-      setStep('setup');
+      setTurns(prev => prev.map(t => t.id === id ? { ...t, status: 'error', error: getErrorMessage(err) || 'Generation failed. Please try again.' } : t));
     }
   };
 
-  const handleDownload = () => {
-    const blob = new Blob([portfolioHTML], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
+  // Send: a new resume (typed or attached), or the previous resume again with the chosen theme
+  const send = () => {
+    if (building || attaching) return;
+    setComposerError(null);
+    const typed = draft.trim();
+    let source: Source | null = null;
+    if (attachment) source = attachment;
+    else if (typed.length >= MIN_RESUME_CHARS) source = { text: typed };
+    else if (!typed && lastSource) source = lastSource;
+
+    if (!source) {
+      setComposerError(typed
+        ? `That looks too short for a resume. Paste the full text (at least ${MIN_RESUME_CHARS} characters) or attach a file.`
+        : 'Paste your resume or attach a PDF, DOCX or TXT file to start.');
+      return;
+    }
+    setDraft('');
+    setAttachment(null);
+    void generate(source, theme);
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  };
+
+  const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setComposerError(null);
+    setAttaching(true);
+    try {
+      const fd = new FormData();
+      fd.append('resume', file);
+      const headers: Record<string, string> = {};
+      if (customApiKey) headers['x-gemini-key'] = customApiKey;
+      const res = await fetch(`${baseUrl}/api/resume/parse-data`, { method: 'POST', headers, body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.rawText) throw new Error(data.error || 'Could not read that file.');
+      setAttachment({ text: data.rawText, fileName: file.name });
+    } catch (err) {
+      setComposerError(getErrorMessage(err) || 'Could not read that file. Try a PDF, DOCX or TXT under 5 MB.');
+    } finally {
+      setAttaching(false);
+    }
+  };
+
+  const retheme = (themeId: string) => {
+    if (!lastSource || building) return;
+    setTheme(themeId);
+    void generate(lastSource, themeId);
+  };
+
+  const reset = () => {
+    setTurns([]);
+    setOpenTurn(null);
+    setDraft('');
+    setAttachment(null);
+    setComposerError(null);
+  };
+
+  const copyHtml = (t: Turn) => {
+    if (!t.html) return;
+    void navigator.clipboard.writeText(t.html);
+    setCopied(t.id);
+    setTimeout(() => setCopied(c => (c === t.id ? null : c)), 2000);
+  };
+
+  const download = (t: Turn) => {
+    if (!t.html) return;
+    const url = URL.createObjectURL(new Blob([t.html], { type: 'text/html' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${portfolioData?.name?.replace(/\s+/g, '-') || 'portfolio'}-cvmind.html`;
+    a.download = `${slug(t.data?.name)}-cvmind.html`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const handleCopyHTML = () => {
-    navigator.clipboard.writeText(portfolioHTML);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  };
+  const exit = () => (onExit ? onExit() : setCurrentPage?.('home'));
+  const current = themeOf(theme);
+  const canSend = !building && !attaching && (Boolean(attachment) || draft.trim().length > 0 || Boolean(lastSource));
 
-  const selectedTheme = THEMES.find(t => t.id === colorTheme) || THEMES[0];
-
-  return (
-    <div className="pg-container animate-fade-in-up">
-      <div className="glow-ambient" style={{ top: '5%', right: '10%', background: `radial-gradient(circle, ${selectedTheme.color}20 0%, transparent 70%)` }} />
-      <div className="glow-ambient" style={{ bottom: '15%', left: '5%', background: 'radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%)' }} />
-
-      {/* Header */}
-      <div className="pg-header">
-        <div className="pg-title-section">
-          <div className="pg-badge"><Globe size={12} /> Portfolio Generator</div>
-          <h1 className="pg-title-text">AI Portfolio Website Generator</h1>
-          <p className="pg-subtitle-text">
-            Paste your resume → AI extracts your data and generates a stunning, responsive portfolio website. Download the HTML file and host it anywhere instantly.
-          </p>
-        </div>
-        {step === 'preview' && (
-          <button className="btn-secondary" onClick={() => setStep('setup')}>
-            <RefreshCw size={14} /> Regenerate
-          </button>
+  const composer = (
+    <div className="pgx-composer-wrap">
+      <div className={`pgx-composer${composerError ? ' has-error' : ''}`}>
+        {(attachment || attaching) && (
+          <div className="pgx-attachments">
+            <span className="pgx-file">
+              <span className="pgx-file-icon"><FileText size={18} /></span>
+              <span className="pgx-file-text">
+                <strong>{attaching ? 'Reading file…' : attachment?.fileName}</strong>
+                <span>{attaching ? 'Pulling out the text' : `${wordCount(attachment?.text || '')} words`}</span>
+              </span>
+              {attachment && (
+                <button type="button" className="pgx-file-remove" onClick={() => setAttachment(null)} aria-label="Remove file">
+                  <X size={13} />
+                </button>
+              )}
+            </span>
+          </div>
         )}
-      </div>
 
-      {/* Progress steps */}
-      <div className="pg-steps">
-        {['Configure', 'Generate', 'Preview & Download'].map((s, i) => {
-          const stepIdx = step === 'setup' ? 0 : step === 'generating' ? 1 : 2;
-          return (
-            <div key={s} className={`pg-step${stepIdx === i ? ' active' : stepIdx > i ? ' done' : ''}`}>
-              <div className="pg-step-dot" style={stepIdx >= i ? { borderColor: selectedTheme.color, background: stepIdx > i ? selectedTheme.color : 'transparent' } : {}}>
-                {stepIdx > i ? <Check size={10} /> : i + 1}
-              </div>
-              <span>{s}</span>
-            </div>
-          );
-        })}
-      </div>
+        <textarea
+          ref={inputRef}
+          rows={turns.length ? 1 : 3}
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder={turns.length
+            ? 'Paste an updated resume, or pick another theme and press Enter'
+            : 'Paste your resume here, or attach a file'}
+          aria-label="Resume text"
+          disabled={building}
+        />
 
-      {/* Setup */}
-      {step === 'setup' && (
-        <div className="pg-setup-grid">
-          {/* Left: Resume Input */}
-          <div className="pg-setup-card glass-card">
-            <div className="pg-card-header">
-              <h3>Your Resume</h3>
-              <p>Paste your resume text. AI will extract your info automatically.</p>
-            </div>
-            <textarea
-              className="pg-resume-input"
-              rows={12}
-              placeholder="Paste your resume content here...&#10;&#10;Include your:&#10;• Name & contact info&#10;• Work experience&#10;• Skills&#10;• Education&#10;• Projects"
-              value={localResume}
-              onChange={e => setLocalResume(e.target.value)}
-            />
-            {!resumeText && (
-              <p className="pg-resume-hint">
-                💡 <strong>Tip:</strong> Go to Home page, upload your resume, then come back — your text will auto-fill.
-                {setCurrentPage && (
-                  <button className="pg-link-btn" onClick={() => setCurrentPage('home')}>Go to Home →</button>
-                )}
-              </p>
-            )}
+        <div className="pgx-composer-bar">
+          <div className="pgx-composer-left">
+            <button
+              type="button"
+              className="pgx-icon-btn"
+              onClick={() => fileRef.current?.click()}
+              disabled={building || attaching}
+              aria-label="Attach a resume file"
+              title="Attach a PDF, DOCX or TXT resume"
+            >
+              <Paperclip size={17} />
+            </button>
+            <input ref={fileRef} type="file" accept=".pdf,.docx,.txt" hidden onChange={onFile} />
           </div>
 
-          {/* Right: Theme + Generate */}
-          <div className="pg-setup-right">
-            <div className="pg-theme-card glass-card">
-              <div className="pg-card-header">
-                <h3><Palette size={15} /> Choose Theme</h3>
-                <p>Pick a color palette for your portfolio</p>
-              </div>
-              <div className="pg-theme-grid">
-                {THEMES.map(t => (
-                  <button
-                    key={t.id}
-                    className={`pg-theme-btn${colorTheme === t.id ? ' active' : ''}`}
-                    onClick={() => setColorTheme(t.id)}
-                    style={colorTheme === t.id ? { borderColor: t.color, boxShadow: `0 0 20px ${t.color}30` } : {}}
-                  >
-                    <div className="pg-theme-preview" style={{ background: t.bg, border: `2px solid ${t.color}` }}>
-                      <div className="pg-theme-dot" style={{ background: t.color }} />
-                      <div className="pg-theme-lines">
-                        <div style={{ background: t.color, opacity: 0.7 }} />
-                        <div style={{ background: t.color, opacity: 0.4 }} />
-                        <div style={{ background: t.color, opacity: 0.25 }} />
-                      </div>
-                    </div>
-                    <div className="pg-theme-info">
-                      <span className="pg-theme-name" style={colorTheme === t.id ? { color: t.color } : {}}>{t.label}</span>
-                      <span className="pg-theme-desc">{t.desc}</span>
-                    </div>
-                    {colorTheme === t.id && <Check size={13} className="pg-theme-check" style={{ color: t.color }} />}
+          <div className="pgx-composer-right">
+            <div className="pgx-theme-picker">
+              <button
+                type="button"
+                className="pgx-theme-btn"
+                onClick={() => setThemeOpen(o => !o)}
+                aria-haspopup="listbox"
+                aria-expanded={themeOpen}
+              >
+                <span className="pgx-swatch" style={{ background: current.bg, borderColor: current.color }}>
+                  <span style={{ background: current.color }} />
+                </span>
+                {current.label}
+                <ChevronDown size={15} />
+              </button>
+              {themeOpen && (
+                <>
+                  <div className="pgx-menu-scrim" onClick={() => setThemeOpen(false)} />
+                  <ul className="pgx-menu" role="listbox" aria-label="Theme">
+                    {THEMES.map(t => (
+                      <li key={t.id}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={t.id === theme}
+                          onClick={() => { setTheme(t.id); setThemeOpen(false); }}
+                        >
+                          <span className="pgx-swatch" style={{ background: t.bg, borderColor: t.color }}>
+                            <span style={{ background: t.color }} />
+                          </span>
+                          <span className="pgx-menu-text">
+                            <strong>{t.label}</strong>
+                            <span>{t.desc}</span>
+                          </span>
+                          {t.id === theme && <Check size={16} className="pgx-menu-check" />}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+
+            <button type="button" className="pgx-send" onClick={send} disabled={!canSend} aria-label="Build portfolio">
+              <ArrowUp size={18} strokeWidth={2.4} />
+            </button>
+          </div>
+        </div>
+      </div>
+      {composerError && <p className="pgx-composer-error" role="alert">{composerError}</p>}
+    </div>
+  );
+
+  const userMessage = (t: Turn) => (
+    <div className="pgx-user">
+      {t.source.fileName ? (
+        <span className="pgx-file pgx-file--sent">
+          <span className="pgx-file-icon"><FileText size={18} /></span>
+          <span className="pgx-file-text">
+            <strong>{t.source.fileName}</strong>
+            <span>{wordCount(t.source.text)} words</span>
+          </span>
+        </span>
+      ) : (
+        <p className="pgx-user-text">{t.source.text}</p>
+      )}
+      <span className="pgx-user-meta">Build my portfolio · {themeOf(t.theme).label} theme</span>
+    </div>
+  );
+
+  const assistantMessage = (t: Turn, isLast: boolean) => {
+    if (t.status === 'building') {
+      return (
+        <div className="pgx-assistant">
+          <LeoAvatar size={32} className="pgx-leo pgx-leo--busy" />
+          <div className="pgx-assistant-body">
+            <p className="pgx-shimmer">Leo is building your portfolio…</p>
+            <ol className="pgx-build-steps">
+              {BUILD_STEPS.map((s, i) => (
+                <li key={s} style={{ animationDelay: `${i * 1.4}s` }}>{s}</li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      );
+    }
+    if (t.status === 'error') {
+      return (
+        <div className="pgx-assistant">
+          <LeoAvatar size={32} className="pgx-leo" />
+          <div className="pgx-assistant-body">
+            <p>Sorry, I couldn't build that one.</p>
+            <p className="pgx-error">{t.error}</p>
+            <button type="button" className="pgx-chip" onClick={() => void generate(t.source, t.theme)} disabled={building}>
+              <RotateCcw size={14} /> Try again
+            </button>
+          </div>
+        </div>
+      );
+    }
+    const d = t.data;
+    const parts = [
+      d?.experience?.length ? `${d.experience.length} ${d.experience.length === 1 ? 'role' : 'roles'} in the experience timeline` : null,
+      d?.skills?.length ? `${d.skills.length} skills` : null,
+    ].filter(Boolean);
+    const others = THEMES.filter(x => x.id !== t.theme);
+    return (
+      <div className="pgx-assistant">
+        <LeoAvatar size={32} className="pgx-leo" />
+        <div className="pgx-assistant-body">
+          <p>
+            Done! I built a portfolio site for <strong>{d?.name || 'you'}</strong>{d?.title ? `, ${d.title}` : ''}, in the {themeOf(t.theme).label} theme.
+            {parts.length > 0 && <> It has {parts.join(' and ')}.</>}
+          </p>
+
+          <button type="button" className={`pgx-artifact${openTurn === t.id ? ' is-open' : ''}`} onClick={() => { setOpenTurn(t.id); setPanelTab('preview'); }}>
+            <span className="pgx-artifact-icon"><Globe size={20} /></span>
+            <span className="pgx-artifact-text">
+              <strong>{d?.name ? `${d.name} – Portfolio` : 'Portfolio website'}</strong>
+              <span>Click to open website · HTML</span>
+            </span>
+          </button>
+
+          <p>To put it online, download the file and upload it to a static host such as GitHub Pages, Netlify Drop or Vercel. You'll get a public link to share.</p>
+
+          <div className="pgx-actions">
+            <button type="button" className="pgx-icon-btn" onClick={() => copyHtml(t)} aria-label="Copy HTML" title="Copy HTML">
+              {copied === t.id ? <Check size={16} /> : <Copy size={16} />}
+            </button>
+            <button type="button" className="pgx-icon-btn" onClick={() => download(t)} aria-label="Download HTML" title="Download .html">
+              <Download size={16} />
+            </button>
+          </div>
+
+          {isLast && (
+            <div className="pgx-followups">
+              <span>Want a different look? I can rebuild it in another theme</span>
+              <div>
+                {others.map(x => (
+                  <button key={x.id} type="button" className="pgx-chip" onClick={() => retheme(x.id)} disabled={building}>
+                    <span className="pgx-swatch pgx-swatch--sm" style={{ background: x.bg, borderColor: x.color }}>
+                      <span style={{ background: x.color }} />
+                    </span>
+                    {x.label}
                   </button>
                 ))}
               </div>
             </div>
-
-            <div className="pg-features-card glass-card">
-              <h4>✨ What gets generated</h4>
-              <ul className="pg-features-list">
-                <li><Check size={12} /> Responsive HTML + CSS</li>
-                <li><Check size={12} /> Hero section with avatar</li>
-                <li><Check size={12} /> Skills & tech stack grid</li>
-                <li><Check size={12} /> Work experience timeline</li>
-                <li><Check size={12} /> Projects showcase</li>
-                <li><Check size={12} /> Education section</li>
-                <li><Check size={12} /> Contact links</li>
-                <li><Check size={12} /> Mobile responsive</li>
-              </ul>
-            </div>
-
-            {errorMsg && <div className="pg-error">⚠️ {errorMsg}</div>}
-
-            <button className="btn-primary pg-generate-btn" onClick={handleGenerate}>
-              <Zap size={16} /> Generate My Portfolio <ArrowRight size={16} />
-            </button>
-          </div>
+          )}
         </div>
-      )}
+      </div>
+    );
+  };
 
-      {/* Generating */}
-      {step === 'generating' && (
-        <div className="pg-generating glass-card">
-          <div className="pg-gen-animation">
-            <div className="pg-gen-ring" style={{ borderTopColor: selectedTheme.color }} />
-            <div className="pg-gen-ring pg-gen-ring-2" style={{ borderTopColor: selectedTheme.color, opacity: 0.5 }} />
-            <Globe size={24} style={{ color: selectedTheme.color }} />
-          </div>
-          <h3>Building your portfolio...</h3>
-          <div className="pg-gen-steps">
-            {['Extracting resume data', 'Parsing experience & skills', 'Designing layout', 'Generating HTML & CSS'].map((s, i) => (
-              <div key={i} className="pg-gen-step" style={{ animationDelay: `${i * 0.6}s` }}>
-                <div className="pg-gen-step-dot" style={{ background: selectedTheme.color }} />
-                <span>{s}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+  return (
+    <div className={`pgx${shown ? ' has-panel' : ''}`}>
+      <header className="pgx-top">
+        <button type="button" className="pgx-icon-btn" onClick={exit} aria-label="Back">
+          <ArrowLeft size={18} />
+        </button>
+        <span className="pgx-top-title">
+          {turns.length && turns[0].status === 'done' && turns[0].data?.name ? `${turns[0].data.name}'s portfolio` : 'Portfolio Generator with Leo'}
+        </span>
+        {turns.length > 0 && (
+          <button type="button" className="pgx-top-new" onClick={reset} disabled={building}>
+            <SquarePen size={16} /> New portfolio
+          </button>
+        )}
+      </header>
 
-      {/* Preview */}
-      {step === 'preview' && portfolioHTML && (
-        <div className="pg-preview-area">
-          {/* Actions bar */}
-          <div className="pg-preview-bar glass-card">
-            <div className="pg-preview-info">
-              <Globe size={16} style={{ color: selectedTheme.color }} />
-              <div>
-                <strong>{portfolioData?.name || 'Your Portfolio'}</strong>
-                <span> · {selectedTheme.label} Theme · {portfolioData?.skills?.length || 0} skills · {portfolioData?.experience?.length || 0} experiences</span>
-              </div>
-            </div>
-            <div className="pg-preview-actions">
-              <div className="pg-view-toggle">
-                <button className={`pg-view-btn${previewMode === 'desktop' ? ' active' : ''}`} onClick={() => setPreviewMode('desktop')}>
-                  <Monitor size={14} /> Desktop
+      <div className="pgx-main">
+        <section className="pgx-chat">
+          {turns.length === 0 ? (
+            <div className="pgx-empty">
+              <div className="pgx-empty-leo"><Leo /></div>
+              <h1 className="pgx-greeting">{greeting()}</h1>
+              <p className="pgx-empty-sub">I'm Leo. Share your resume and I'll turn it into a portfolio website you can download and host anywhere.</p>
+              {composer}
+              <div className="pgx-starters">
+                {resumeText.trim().length >= MIN_RESUME_CHARS && (
+                  <button type="button" className="pgx-chip" onClick={() => void generate({ text: resumeText.trim(), fileName: 'Resume from the Resume Checker' }, theme)}>
+                    <FileText size={14} /> Use the resume I checked
+                  </button>
+                )}
+                <button type="button" className="pgx-chip" onClick={() => fileRef.current?.click()}>
+                  <Paperclip size={14} /> Attach a resume file
                 </button>
-                <button className={`pg-view-btn${previewMode === 'mobile' ? ' active' : ''}`} onClick={() => setPreviewMode('mobile')}>
-                  📱 Mobile
+                {setCurrentPage && (
+                  <button type="button" className="pgx-chip" onClick={() => setCurrentPage('resume-builder')}>
+                    <SquarePen size={14} /> I don't have a resume yet
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="pgx-thread">
+                {turns.map((t, i) => (
+                  <div key={t.id} className="pgx-turn">
+                    {userMessage(t)}
+                    {assistantMessage(t, i === turns.length - 1)}
+                  </div>
+                ))}
+                <div ref={threadEnd} />
+              </div>
+              <div className="pgx-dock">
+                {composer}
+                <p className="pgx-disclaimer">Leo can get details wrong. Check names, dates and links before you publish.</p>
+              </div>
+            </>
+          )}
+        </section>
+
+        {shown && (
+          <aside className="pgx-panel" aria-label="Portfolio preview">
+            <header className="pgx-panel-head">
+              <div className="pgx-tabs" role="tablist">
+                <button type="button" role="tab" aria-selected={panelTab === 'preview'} onClick={() => setPanelTab('preview')}>
+                  <Eye size={15} /> Preview
+                </button>
+                <button type="button" role="tab" aria-selected={panelTab === 'code'} onClick={() => setPanelTab('code')}>
+                  <Code2 size={15} /> Code
                 </button>
               </div>
-              <button className="btn-secondary pg-action-btn" onClick={handleCopyHTML}>
-                {copied ? <><Check size={13} /> Copied!</> : <><Copy size={13} /> Copy HTML</>}
-              </button>
-              <button className="btn-primary pg-action-btn" onClick={handleDownload}>
-                <Download size={13} /> Download .html
-              </button>
-            </div>
-          </div>
-
-          {/* iFrame Preview */}
-          <div className={`pg-iframe-wrapper${previewMode === 'mobile' ? ' mobile' : ''}`}>
-            <div className="pg-browser-chrome">
-              <div className="pg-browser-dots">
-                <span /><span /><span />
+              <span className="pgx-panel-title">{shown.data?.name ? `${shown.data.name} – Portfolio` : 'Portfolio website'}</span>
+              <div className="pgx-panel-tools">
+                {panelTab === 'preview' && (
+                  <>
+                    <button type="button" className={`pgx-icon-btn pgx-device${device === 'desktop' ? ' is-on' : ''}`} onClick={() => setDevice('desktop')} aria-label="Desktop view" title="Desktop">
+                      <Monitor size={16} />
+                    </button>
+                    <button type="button" className={`pgx-icon-btn pgx-device${device === 'mobile' ? ' is-on' : ''}`} onClick={() => setDevice('mobile')} aria-label="Mobile view" title="Mobile">
+                      <Smartphone size={16} />
+                    </button>
+                    <span className="pgx-tools-sep pgx-device" />
+                  </>
+                )}
+                <button type="button" className="pgx-icon-btn" onClick={() => copyHtml(shown)} aria-label="Copy HTML" title="Copy HTML">
+                  {copied === shown.id ? <Check size={16} /> : <Copy size={16} />}
+                </button>
+                <button type="button" className="pgx-panel-download" onClick={() => download(shown)}>
+                  <Download size={15} /><span className="pgx-dl-label">Download</span>
+                </button>
+                <button type="button" className="pgx-icon-btn" onClick={() => setOpenTurn(null)} aria-label="Close preview" title="Close">
+                  <X size={17} />
+                </button>
               </div>
-              <div className="pg-browser-url">
-                <Globe size={11} />
-                {portfolioData?.name?.toLowerCase().replace(/\s+/g, '-') || 'my-portfolio'}.html
-              </div>
-            </div>
-            <iframe
-              srcDoc={portfolioHTML}
-              className="pg-iframe"
-              title="Portfolio Preview"
-              sandbox="allow-same-origin"
-            />
-          </div>
-
-          {/* Info */}
-          <div className="pg-deploy-info glass-card">
-            <h4>🚀 How to publish your portfolio</h4>
-            <div className="pg-deploy-steps">
-              <div className="pg-deploy-step">
-                <span className="pg-deploy-num" style={{ background: selectedTheme.color }}>1</span>
-                <div>
-                  <strong>Download</strong> the .html file
+            </header>
+            <div className="pgx-panel-body">
+              {panelTab === 'preview' ? (
+                <div className={`pgx-frame${device === 'mobile' ? ' is-mobile' : ''}`}>
+                  <iframe srcDoc={shown.html} title="Portfolio preview" sandbox="allow-same-origin" />
                 </div>
-              </div>
-              <div className="pg-deploy-step">
-                <span className="pg-deploy-num" style={{ background: selectedTheme.color }}>2</span>
-                <div>
-                  <strong>Upload</strong> to GitHub Pages, Netlify Drop, or Vercel
-                </div>
-              </div>
-              <div className="pg-deploy-step">
-                <span className="pg-deploy-num" style={{ background: selectedTheme.color }}>3</span>
-                <div>
-                  <strong>Share</strong> your live portfolio link with recruiters!
-                </div>
-              </div>
+              ) : (
+                <pre className="pgx-code"><code>{shown.html}</code></pre>
+              )}
             </div>
-          </div>
-        </div>
-      )}
+          </aside>
+        )}
+      </div>
     </div>
   );
 }

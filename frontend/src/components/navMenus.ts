@@ -1,7 +1,7 @@
 import {
   FileText, ScanSearch, Target, Globe, MessageSquare, Mic, SpellCheck, Code2,
   Briefcase, Send, UserCheck, PenLine, MessagesSquare, GraduationCap, Presentation,
-  Map as MapIcon, Info, Mail, HelpCircle, BookOpen,
+  Map as MapIcon, Info, LifeBuoy, HelpCircle, BookOpen,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -122,25 +122,25 @@ export const NAV_MENUS: NavMenu[] = [
   },
   {
     label: 'Resources',
-    pages: ['about', 'contact', 'faq', 'blog', 'privacy', 'terms', 'refund-policy'],
+    pages: ['about', 'help-center', 'contact', 'faq', 'blog', 'privacy', 'terms', 'refund-policy', 'disclaimer', 'copyright-policy'],
     columns: [
       {
-        heading: 'Company',
+        heading: 'Help & company',
         tiles: [
+          { page: 'help-center', title: 'Help Desk', desc: 'Answers, guides and contact support', icon: LifeBuoy },
+          { page: 'faq', title: 'FAQs', desc: 'Quick answers to common questions', icon: HelpCircle },
           { page: 'about', title: 'About Us', desc: 'Who we are and what we build', icon: Info },
-          { page: 'contact', title: 'Contact Us', desc: 'Questions, feedback or support', icon: Mail },
-          { page: 'faq', title: "FAQ's", desc: 'Quick answers to common questions', icon: HelpCircle },
         ],
       },
       {
-        heading: 'Learn & Legal',
+        heading: 'Learn & legal',
         tiles: [
-          { page: 'blog', title: 'Blog & Articles', desc: 'Resume and interview guides', icon: BookOpen },
+          { page: 'blog', title: 'Blog', desc: 'Resume and interview guides', icon: BookOpen },
         ],
         links: [
           { page: 'privacy', title: 'Privacy Policy' },
-          { page: 'terms', title: 'Terms of Service' },
-          { page: 'refund-policy', title: 'Refund Policy' },
+          { page: 'terms', title: 'Terms and Conditions' },
+          { page: 'refund-policy', title: 'Refunds' },
         ],
       },
     ],
