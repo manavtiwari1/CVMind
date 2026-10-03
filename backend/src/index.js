@@ -22,7 +22,7 @@ import { metricsMiddleware } from './admin/metrics.js';
 import { installSessionValidator, newSessionId, recordSession } from './admin/sessions.js';
 import { ticketFromContact } from './admin/tickets.js';
 import { evaluateCoupon, redeemCoupon } from './admin/coupons.js';
-import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser } from './services/authToken.js';
+import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser, userSessionStatus } from './services/authToken.js';
 import mongoose from 'mongoose';
 import { importUploadedResume, RESUME_MIME_TYPES } from './agent/resume/intake.js';
 import { renderResumePdf } from './agent/resume/pdf.js';
@@ -651,6 +651,11 @@ apiRouter.get('/api/auth/account-status', async (req, res) => {
     const blockError = getAccountBlockError(user);
     if (blockError) {
       return res.json({ status: user.status, active: false, message: blockError.error });
+    }
+    // A session signed out from the admin panel or another device
+    const session = await userSessionStatus(req);
+    if (session && !session.ok) {
+      return res.json({ status: 'signed-out', active: false, message: session.error });
     }
     return res.json({ status: 'active', active: true });
   } catch (err) {

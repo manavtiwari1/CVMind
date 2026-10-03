@@ -8,8 +8,9 @@ const recentErrors = [];
 const startedAt = Date.now();
 
 // Collapses ids so /api/admin/users/64f… and /api/admin/users/65a… count as one route
+// Routers rewrite req.url while they run, so use the matched route or the original URL
 function routeKey(req) {
-  const path = (req.baseUrl || '') + (req.route?.path || req.path || '');
+  const path = req.route ? (req.baseUrl || '') + req.route.path : String(req.originalUrl || '').split('?')[0];
   return `${req.method} ${path.replace(/^\/_\/backend/, '').replace(/[a-f0-9]{24}/gi, ':id').replace(/\/\d+(?=\/|$)/g, '/:n')}`;
 }
 
@@ -30,7 +31,8 @@ export function metricsMiddleware(req, res, next) {
       }
     }
 
-    if (req.path.startsWith('/api/') || req.path.startsWith('/_/backend/api/')) {
+    const url = String(req.originalUrl || '');
+    if (url.startsWith('/api/') || url.startsWith('/_/backend/api/')) {
       const key = routeKey(req);
       const stat = routeStats.get(key) || { count: 0, errors: 0, totalMs: 0, maxMs: 0 };
       stat.count++;

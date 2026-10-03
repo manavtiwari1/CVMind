@@ -197,7 +197,8 @@ router.get('/moderation/items/:type/:id', requireAdmin('moderation.manage'), han
   } else {
     preview = { format: 'text', content: doc.description };
   }
-  res.json({ success: true, data: { id: req.params.id, type: req.params.type, title: target.label(doc), owner, preview } });
+  const hidden = req.params.type === 'job' ? doc.status === 'HIDDEN' : !!doc.hidden;
+  res.json({ success: true, data: { id: req.params.id, type: req.params.type, title: target.label(doc), owner, hidden, preview } });
 }));
 
 router.post('/moderation/items/:type/:id/hide', requireAdmin('moderation.manage'), handle(async (req, res) => {

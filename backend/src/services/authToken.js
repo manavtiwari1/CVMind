@@ -90,6 +90,13 @@ function requireKind(kind) {
 }
 
 export const requireUser = requireKind('user');
+
+// For status checks: null without a user token, otherwise { ok, error } for the token's session
+export async function userSessionStatus(req) {
+  const payload = verifyToken(readBearer(req));
+  if (!payload || payload.kind !== 'user') return null;
+  return checkUserSession(payload);
+}
 export const requireCompany = requireKind('company');
 
 // For public routes that also do something extra for signed-in users (e.g. save to My Works):
