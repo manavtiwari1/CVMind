@@ -877,7 +877,7 @@ ${coverLetterText}
 export async function generateResumeWithGemini({ templateHtml, formData, customApiKey = null, keepFacts = false }) {
   // Tailored data is already rewritten for a job; expanding it again would add claims the candidate never made.
   const contentRule = keepFacts
-    ? '3. Use the provided content as written. Do NOT add responsibilities, metrics, skills or achievements that are not in the data. If a template section has no matching data, remove that section\'s placeholder content.'
+    ? '3. Use the provided content exactly as written: keep the same words, bullets, dates and numbers, and do not rephrase, shorten or expand anything. Do NOT add responsibilities, metrics, skills, achievements or time-breakdown activities that are not in the data. If a template section has no matching data, remove that section\'s placeholder content.'
     : '3. Enhance the provided work experience descriptions. Rewrite them to be extremely professional, high-impact, and metrics-driven (use action verbs like Led, Spearheaded, Optimized, Engineered, etc.). If descriptions are sparse, expand them with professional responsibilities typical for that job title.';
   const systemPrompt = `You are an elite professional resume writer, ATS optimization expert, and corporate recruiter.
 Your task is to take a raw HTML resume template and populate it with beautifully written, professional, and ATS-optimized content based on the user's details.
@@ -902,7 +902,9 @@ ${templateHtml}
 Here is the user's data:
 ${JSON.stringify(formData, null, 2)}
 
-Populate the template now, rewriting and expanding sections to be premium and recruiter-ready. Return ONLY the complete populated HTML.`;
+${keepFacts
+    ? 'Populate the template now with this content exactly as written. Return ONLY the complete populated HTML.'
+    : 'Populate the template now, rewriting and expanding sections to be premium and recruiter-ready. Return ONLY the complete populated HTML.'}`;
 
   try {
     return await callDeepSeek({
@@ -924,10 +926,15 @@ Populate the template now, rewriting and expanding sections to be premium and re
  * @param {string} [customApiKey] - Optional API key.
  * @returns {Promise<object>} - Structured resume data matching the wizard schema.
  */
-export async function extractResumeDataWithAI(resumeText, customApiKey = null) {
+export async function extractResumeDataWithAI(resumeText, customApiKey = null, exact = false) {
+  // exact: the text is the user's own finished resume (e.g. moving it to another template), so copy it rather than summarise it.
+  const exactRule = exact
+    ? `
+Copy every value word for word. Keep the summary exactly as written (do not shorten it to 2-3 sentences), put each job's bullets in its description as separate lines starting with "- ", and keep every job, degree, skill, language and achievement. Leave timeBreakdown empty unless the text has a time breakdown ("My Time") section, and never invent its activities.`
+    : '';
   const systemInstruction = `You are an elite ATS resume parser and recruitment intelligence specialist.
 Your task is to analyze the raw resume text provided and extract ALL relevant details into a clean, precise, and structured JSON object.
-Extract actual information from the text without hallucinating. If a field cannot be found, return empty strings or empty arrays.`;
+Extract actual information from the text without hallucinating. If a field cannot be found, return empty strings or empty arrays.${exactRule}`;
 
   const prompt = `Extract structured details from the following resume text:
 """

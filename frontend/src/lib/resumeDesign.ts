@@ -220,3 +220,64 @@ export function applySpacing(ed: HTMLElement, level: number) {
 /** Profile photos in the templates are <img alt="Profile photo">. */
 export const isProfilePhoto = (el: Element | null): el is HTMLImageElement =>
   !!el && el.tagName === 'IMG' && el.getAttribute('alt') === 'Profile photo';
+
+/* ───────────────────────────── Icons ───────────────────────────── */
+
+const isInline = (el: Element) => getComputedStyle(el).display.startsWith('inline');
+const isIcon = (n: Node | null): boolean =>
+  !!n && n.nodeType === Node.ELEMENT_NODE && ((n as Element).tagName.toLowerCase() === 'svg'
+    // a wrapper that only holds an icon (e.g. a round icon badge)
+    || (!(n.textContent || '').trim() && !!(n as Element).querySelector('svg')));
+
+const ZWSP = '​';
+
+/** The node Backspace (back) or Delete would run into from `node`, skipping empty text and leaving inline wrappers. */
+function neighbour(editor: HTMLElement, node: Node, back: boolean): Node | null {
+  for (;;) {
+    let sib = back ? node.previousSibling : node.nextSibling;
+    while (sib && sib.nodeType === Node.TEXT_NODE && !(sib.textContent || '').length) sib = back ? sib.previousSibling : sib.nextSibling;
+    if (sib) return sib;
+    const parent: HTMLElement | null = node.parentElement;
+    if (!parent || parent === editor || !isInline(parent)) return null;
+    node = parent;
+  }
+}
+
+/**
+ * Keeps template icons (the @ or phone glyph before "Email", "Phone"...) from being erased by Backspace / Delete.
+ * Chrome treats an inline <svg> like a character and drops it together with the letter next to it,
+ * so that letter is deleted by hand here. Returns true when the key was handled and its default must be prevented.
+ */
+export function guardIconDelete(editor: HTMLElement, key: string): boolean {
+  if (key !== 'Backspace' && key !== 'Delete') return false;
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount || !sel.isCollapsed) return false;
+  const back = key === 'Backspace';
+  const { startContainer: c, startOffset: o } = sel.getRangeAt(0);
+  if (!editor.contains(c)) return false;
+
+  if (c.nodeType !== Node.TEXT_NODE) {
+    const direct = back ? c.childNodes[o - 1] : c.childNodes[o];
+    return direct ? isIcon(direct) : isIcon(neighbour(editor, c, back));
+  }
+  const text = c as Text;
+  const len = text.length;
+  // An emptied label keeps a zero-width space so the caret (and what is typed next) stays beside its icon.
+  if (text.data === ZWSP) return isIcon(neighbour(editor, text, back)) || isIcon(neighbour(editor, text, !back));
+  // At the edge of the label: the next thing to delete is the icon itself.
+  if (back ? o === 0 : o === len) return isIcon(neighbour(editor, text, back));
+  // One letter from the edge: delete only that letter, or Chrome takes the icon with it.
+  if (back ? o === 1 : o === len - 1) {
+    if (!isIcon(neighbour(editor, text, back))) return false;
+    if (len === 1) text.data = ZWSP;
+    else text.deleteData(back ? 0 : len - 1, 1);
+    const r = document.createRange();
+    r.setStart(text, back && len > 1 ? 0 : text.length);
+    r.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(r);
+    editor.dispatchEvent(new Event('input', { bubbles: true }));
+    return true;
+  }
+  return false;
+}

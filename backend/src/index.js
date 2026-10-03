@@ -1489,7 +1489,8 @@ apiRouter.post('/api/resume/parse-data', upload.single('resume'), async (req, re
       });
     }
 
-    const structuredData = await extractResumeDataWithAI(resumeText, customApiKey);
+    const exact = req.body?.exact === true || req.body?.exact === 'true';
+    const structuredData = await extractResumeDataWithAI(resumeText, customApiKey, exact);
 
     return res.json({
       success: true,
