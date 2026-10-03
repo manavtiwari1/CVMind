@@ -3,7 +3,7 @@ import { requireAdmin, requireDb } from '../auth.js';
 import { audit } from '../audit.js';
 import { AdminUser, Ticket, TICKET_STATUSES, TICKET_PRIORITIES } from '../models.js';
 import { importLegacyContacts } from '../tickets.js';
-import { renderEmail, sendEmail, emailConfigured } from '../mailer.js';
+import { renderEmail, sendEmail, emailConfigured, SUPPORT_EMAIL } from '../mailer.js';
 import { model, clean, handle, httpError, isId, paging, escapeRegex, dateRange } from '../util.js';
 
 const router = express.Router();
@@ -73,7 +73,8 @@ const detail = async (t) => {
     messages: t.messages.map((m) => ({ id: String(m._id), kind: m.kind, authorName: m.authorName, body: m.body, emailed: m.emailed, createdAt: m.createdAt })),
     resolvedAt: t.resolvedAt,
     user: user ? { id: String(user._id), name: user.name, status: user.status || 'active', createdAt: user.createdAt } : null,
-    emailConfigured: emailConfigured()
+    emailConfigured: emailConfigured(),
+    supportEmail: SUPPORT_EMAIL
   };
 };
 

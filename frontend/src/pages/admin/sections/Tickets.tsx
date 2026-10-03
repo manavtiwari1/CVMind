@@ -27,6 +27,7 @@ interface TicketDetail extends TicketRow {
   resolvedAt: string | null;
   user: { id: string; name: string; status: string; createdAt: string } | null;
   emailConfigured: boolean;
+  supportEmail: string;
 }
 
 type View = 'unresolved' | 'new' | 'open' | 'pending' | 'resolved' | 'mine' | 'all';
@@ -203,7 +204,7 @@ function TicketDrawer({ id, onClose, onChanged }: { id: string; onClose: () => v
                   aria-label={kind === 'reply' ? 'Reply' : 'Internal note'}
                 />
                 <div className="ad-composer-foot">
-                  <span className="ad-hint">{kind === 'reply' ? `Sent to ${t.email} from CV Mind` : 'Not sent to the customer'}</span>
+                  <span className="ad-hint">{kind === 'reply' ? `Sent to ${t.email}. Their reply goes to ${t.supportEmail}` : 'Not sent to the customer'}</span>
                   <button type="button" className="ad-btn primary sm" disabled={!body.trim() || busy === 'send' || (kind === 'reply' && !t.emailConfigured)} onClick={send}>
                     {busy === 'send' ? <Spinner size={13} /> : kind === 'reply' ? <Send size={13} /> : <StickyNote size={13} />}
                     {kind === 'reply' ? 'Send reply' : 'Add note'}

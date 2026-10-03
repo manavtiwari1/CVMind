@@ -1,6 +1,8 @@
 import { Resend } from 'resend';
 
 const FROM = 'CV Mind <no-reply@manavtiwari.in>';
+// Where customers' replies go, since FROM is a no-reply address
+export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'cvmindofficial@gmail.com';
 let client = null;
 
 export function emailConfigured() {
@@ -38,7 +40,7 @@ ${paragraphs}${cta}
 </div>`;
 }
 
-export async function sendEmail({ to, subject, html, replyTo }) {
+export async function sendEmail({ to, subject, html, replyTo = SUPPORT_EMAIL }) {
   if (!emailConfigured()) throw Object.assign(new Error('Email is not configured on this server (RESEND_API_KEY).'), { status: 503 });
   const { data, error } = await getClient().emails.send({
     from: FROM,
