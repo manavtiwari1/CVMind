@@ -34,9 +34,9 @@ function writeCookie(value: string, maxAge: number) {
 
 // Cookies cap out around 4KB, so keep only what the app needs to restore the session
 function slim(user: StoredUser): StoredUser {
-  const { id, _id, name, email, avatar, isGoogleUser, plan, isPro, token } = user;
+  const { id, _id, name, email, avatar, isGoogleUser, plan, isPro, token, emailVerified } = user;
   return {
-    id, _id, name, email, isGoogleUser, plan, isPro, token,
+    id, _id, name, email, isGoogleUser, plan, isPro, token, emailVerified,
     // Uploaded photos are data: URLs far too big for a cookie
     avatar: avatar && !avatar.startsWith('data:') && avatar.length < 1000 ? avatar : undefined,
   };

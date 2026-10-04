@@ -5,6 +5,7 @@ import { API_BASE } from '../lib/apiBase';
 import { getErrorMessage } from '../utils/errors';
 import type { ExtractedResume } from '../types/api';
 import './ResumeOnboarding.css';
+import { authFetch } from '../lib/authFetch';
 
 interface ResumeLinkedInStepProps {
   customApiKey: string;
@@ -43,14 +44,14 @@ export default function ResumeLinkedInStep({ customApiKey, onDone }: ResumeLinke
   };
 
   const importUrl = () => run(
-    () => fetch(`${API_BASE}/api/resume/import-linkedin`, { method: 'POST', headers: headers(true), body: JSON.stringify({ url: url.trim() }) }),
+    () => authFetch(`${API_BASE}/api/resume/import-linkedin`, { method: 'POST', headers: headers(true), body: JSON.stringify({ url: url.trim() }) }),
     true,
   );
 
   const importPdf = (file: File) => {
     const fd = new FormData();
     fd.append('resume', file);
-    return run(() => fetch(`${API_BASE}/api/resume/parse-data`, { method: 'POST', headers: headers(false), body: fd }), false);
+    return run(() => authFetch(`${API_BASE}/api/resume/parse-data`, { method: 'POST', headers: headers(false), body: fd }), false);
   };
 
   return (

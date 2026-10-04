@@ -3,9 +3,12 @@ import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { requireAdmin, requireDb } from '../auth.js';
 import { audit } from '../audit.js';
-import { Ticket, Notification } from '../models.js';
+import { Ticket, Notification, AuthEvent } from '../models.js';
 import { listSessions, revokeSession, revokeAllSessions, toPublicSession, invalidateSessionCache } from '../sessions.js';
 import { renderEmail, sendEmail } from '../mailer.js';
+import { issueVerification, hashToken, frontendUrl } from '../../services/emailVerification.js';
+import { logAuthEvent } from '../../services/authEvents.js';
+import { RISK_HIGH } from '../../services/emailRisk.js';
 import { FEATURE_LOGS } from './analytics.js';
 import { model, clean, handle, httpError, isId, paging, escapeRegex, isEmail, dateRange } from '../util.js';
 import {
@@ -38,6 +41,8 @@ export function userFilter(query) {
   }
   if (query.verified === 'true') filter.emailVerified = true;
   if (query.verified === 'false') filter.emailVerified = { $ne: true };
+  if (query.risk === 'high') filter.riskScore = { $gte: RISK_HIGH };
+  if (query.risk === 'flagged') filter.riskScore = { $gt: 0 };
   return filter;
 }
 
@@ -49,7 +54,7 @@ router.get('/', requireAdmin('users.view'), handle(async (req, res) => {
   const User = model('User');
   const [users, total] = await Promise.all([
     User.find(filter).sort({ [sortField]: sortDir }).skip(skip).limit(limit)
-      .select('name email provider isGoogleUser status statusReason emailVerified createdAt avatar').lean(),
+      .select('name email provider isGoogleUser status statusReason emailVerified riskScore riskFlags createdAt avatar').lean(),
     User.countDocuments(filter)
   ]);
 
@@ -75,6 +80,8 @@ router.get('/', requireAdmin('users.view'), handle(async (req, res) => {
       status: u.status || 'active',
       statusReason: u.statusReason || '',
       emailVerified: !!u.emailVerified,
+      riskScore: u.riskScore || 0,
+      riskFlags: u.riskFlags || [],
       createdAt: u.createdAt,
       lastLogin: loginMap.get(u.email)?.last || null,
       loginCount: loginMap.get(u.email)?.count || 0
@@ -94,7 +101,7 @@ router.get('/:id', requireAdmin('users.view'), handle(async (req, res) => {
   const id = String(user._id);
   const ExtensionDevice = mongoose.models.ExtensionDevice;
 
-  const [works, logins, payments, sessions, devices, tickets, autoApply, usage] = await Promise.all([
+  const [works, logins, payments, sessions, devices, tickets, autoApply, usage, authEvents] = await Promise.all([
     model('Work').find({ userId: id }).sort({ updatedAt: -1 }).limit(50).select('title type templateId hidden source createdAt updatedAt').lean(),
     model('LoginLog').find({ email: user.email }).sort({ createdAt: -1 }).limit(20).lean(),
     model('PaymentLog').find({ email: user.email }).sort({ createdAt: -1 }).limit(20).lean(),
@@ -102,7 +109,8 @@ router.get('/:id', requireAdmin('users.view'), handle(async (req, res) => {
     ExtensionDevice ? ExtensionDevice.find({ userId: id, revokedAt: null }).sort({ createdAt: -1 }).lean() : [],
     Ticket.find({ email: user.email }).sort({ createdAt: -1 }).limit(10).select('number subject status createdAt').lean(),
     hasAutoApplyAccess(user.email),
-    Promise.all(FEATURE_LOGS.map(async (f) => ({ key: f.key, label: f.label, count: await model(f.model).countDocuments({ userId: id }) })))
+    Promise.all(FEATURE_LOGS.map(async (f) => ({ key: f.key, label: f.label, count: await model(f.model).countDocuments({ userId: id }) }))),
+    AuthEvent.find({ $or: [{ userId: id }, { email: user.email }] }).sort({ createdAt: -1 }).limit(50).lean()
   ]);
 
   res.json({
@@ -119,6 +127,9 @@ router.get('/:id', requireAdmin('users.view'), handle(async (req, res) => {
       statusUpdatedAt: user.statusUpdatedAt || null,
       emailVerified: !!user.emailVerified,
       emailVerifiedAt: user.emailVerifiedAt || null,
+      lastVerificationSentAt: user.lastVerificationSentAt || null,
+      riskScore: user.riskScore || 0,
+      riskFlags: user.riskFlags || [],
       createdAt: user.createdAt,
       sessionsRevokedAt: user.sessionsRevokedAt || null,
       autoApplyAccess: autoApply,
@@ -128,7 +139,8 @@ router.get('/:id', requireAdmin('users.view'), handle(async (req, res) => {
       payments: payments.map((p) => ({ id: String(p._id), amount: p.amount, currency: p.currency, status: p.status, paymentMethod: p.paymentMethod, transactionId: p.transactionId, createdAt: p.createdAt })),
       sessions: sessions.map((s) => toPublicSession(s)),
       devices: devices.map((d) => ({ id: String(d._id), name: d.name, lastSeenAt: d.lastSeenAt, createdAt: d.createdAt })),
-      tickets: tickets.map((t) => ({ id: String(t._id), number: t.number, subject: t.subject, status: t.status, createdAt: t.createdAt }))
+      tickets: tickets.map((t) => ({ id: String(t._id), number: t.number, subject: t.subject, status: t.status, createdAt: t.createdAt })),
+      authEvents: authEvents.map((e) => ({ id: String(e._id), event: e.event, ip: e.ip, userAgent: e.userAgent, metadata: e.metadata, createdAt: e.createdAt }))
     }
   });
 }));
@@ -140,6 +152,9 @@ router.post('/:id/status', requireAdmin('users.manage'), handle(async (req, res)
   if (status !== 'active' && !reason) throw httpError(400, 'Add a reason. The user sees it when they try to sign in.');
   const result = await setUserStatus(String(user._id), status, reason);
   invalidateSessionCache(String(user._id));
+  if (status === 'suspended' || status === 'banned') {
+    logAuthEvent(req, 'ACCOUNT_SUSPENDED', { userId: user._id, email: user.email, metadata: { status, reason, admin: req.admin.username } });
+  }
   await audit(req, `user.${status === 'active' ? 'reactivated' : status}`, {
     targetType: 'user', targetId: user._id, targetLabel: user.email, details: { from: user.status || 'active', to: status, reason }
   });
@@ -149,9 +164,34 @@ router.post('/:id/status', requireAdmin('users.manage'), handle(async (req, res)
 router.post('/:id/verify', requireAdmin('users.manage'), handle(async (req, res) => {
   const user = await findUserOr404(req.params.id);
   const verified = req.body?.verified !== false;
-  await model('User').updateOne({ _id: user._id }, { emailVerified: verified, emailVerifiedAt: verified ? new Date() : null });
+  await model('User').updateOne({ _id: user._id }, {
+    emailVerified: verified,
+    emailVerifiedAt: verified ? new Date() : null,
+    ...(verified ? { emailVerificationTokenHash: '', emailVerificationExpires: null } : {})
+  });
+  invalidateSessionCache(String(user._id));
   await audit(req, verified ? 'user.verified' : 'user.unverified', { targetType: 'user', targetId: user._id, targetLabel: user.email });
+  if (verified) logAuthEvent(req, 'EMAIL_VERIFIED', { userId: user._id, email: user.email, metadata: { via: 'admin', admin: req.admin.username } });
   res.json({ success: true, data: { emailVerified: verified } });
+}));
+
+// Marks the email unverified and sends a fresh link: the user keeps their account but loses full access until they click it
+router.post('/:id/force-reverify', requireAdmin('users.manage'), handle(async (req, res) => {
+  const user = await findUserOr404(req.params.id);
+  await model('User').updateOne({ _id: user._id }, { emailVerified: false, emailVerifiedAt: null });
+  invalidateSessionCache(String(user._id));
+  const { sent } = await issueVerification({ ...user, id: String(user._id) });
+  await audit(req, 'user.reverify_forced', { targetType: 'user', targetId: user._id, targetLabel: user.email, details: { emailSent: sent } });
+  if (sent) logAuthEvent(req, 'VERIFICATION_EMAIL_SENT', { userId: user._id, email: user.email, metadata: { via: 'admin', admin: req.admin.username } });
+  res.json({ success: true, data: { emailVerified: false, emailSent: sent } });
+}));
+
+// Clears the abuse flags after review, which reopens support for the account
+router.post('/:id/risk/clear', requireAdmin('users.manage'), handle(async (req, res) => {
+  const user = await findUserOr404(req.params.id);
+  await model('User').updateOne({ _id: user._id }, { riskScore: 0, riskFlags: [] });
+  await audit(req, 'user.risk_cleared', { targetType: 'user', targetId: user._id, targetLabel: user.email, details: { score: user.riskScore || 0, flags: user.riskFlags || [] } });
+  res.json({ success: true, data: { riskScore: 0, riskFlags: [] } });
 }));
 
 // Emails the user a reset link, same as "Forgot password" on the site
@@ -159,9 +199,9 @@ router.post('/:id/password-reset', requireAdmin('users.manage'), handle(async (r
   const user = await findUserOr404(req.params.id);
   if (user.isGoogleUser) throw httpError(400, 'This account signs in with a social login and has no password.');
   const token = crypto.randomBytes(32).toString('hex');
-  await saveUserResetToken(user.email, token, Date.now() + 60 * 60 * 1000);
-  const host = (process.env.FRONTEND_URL || 'https://www.cvmind.in').replace(/\/$/, '');
-  const link = `${host}/?resetToken=${token}&email=${encodeURIComponent(user.email)}`;
+  // Only the hash is stored, same as the site's forgot-password flow
+  await saveUserResetToken(user.email, hashToken(token), Date.now() + 60 * 60 * 1000);
+  const link = `${frontendUrl()}/?resetToken=${token}&email=${encodeURIComponent(user.email)}`;
   await sendEmail({
     to: user.email,
     subject: 'Reset your CV Mind password',

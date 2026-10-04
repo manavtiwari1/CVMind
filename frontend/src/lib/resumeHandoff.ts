@@ -49,7 +49,7 @@ export function htmlToText(html: string): string {
 /** Puts structured resume data into a template. Keeps the facts as they are. */
 export async function fillTemplate(data: ExtractedResume, templateId: string, headers: Record<string, string> = {}): Promise<string> {
   const template = templateFor(templateId);
-  const res = await fetch(`${API_BASE}/api/resume/generate`, {
+  const res = await authFetch(`${API_BASE}/api/resume/generate`, {
     method: 'POST',
     headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify({ templateHtml: splitFooter(template.html).body, formData: toFormData(data), keepFacts: true }),
@@ -62,7 +62,7 @@ export async function fillTemplate(data: ExtractedResume, templateId: string, he
 
 /** Reads resume text into the structured data the templates are filled from. */
 export async function parseResumeText(resumeText: string, headers: Record<string, string> = {}): Promise<ExtractedResume> {
-  const res = await fetch(`${API_BASE}/api/resume/parse-data`, {
+  const res = await authFetch(`${API_BASE}/api/resume/parse-data`, {
     method: 'POST',
     headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify({ resumeText }),

@@ -83,7 +83,7 @@ async function validateUserSession(payload) {
   if (!User || !mongoose.isValidObjectId(payload.sub)) return { ok: true };
 
   const user = await cached(`user:${payload.sub}`, () =>
-    User.findById(payload.sub).select('status sessionsRevokedAt').lean());
+    User.findById(payload.sub).select('status sessionsRevokedAt emailVerified').lean());
   if (!user) return { ok: false, error: 'This account no longer exists.' };
   if (user.status && user.status !== 'active') return { ok: false, error: 'Your account access has been restricted.' };
 
@@ -101,7 +101,7 @@ async function validateUserSession(payload) {
       UserSession.updateOne({ jti: payload.jti }, { lastSeenAt: new Date() }).catch(() => {});
     }
   }
-  return { ok: true };
+  return { ok: true, emailVerified: !!user.emailVerified };
 }
 
 export function installSessionValidator() {

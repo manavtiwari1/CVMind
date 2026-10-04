@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Construction, Smartphone, ToggleRight } from 'lucide-react';
+import { Construction, ShieldCheck, Smartphone, ToggleRight } from 'lucide-react';
 import { api } from '../api';
 import { useAction, useAdmin, useApi } from '../hooks';
 import { Card, ConfirmDialog, ErrorState, Notice, PageHeader, Spinner, Switch, Tabs } from '../ui';
@@ -9,15 +9,17 @@ interface Settings {
   features: Record<string, boolean>;
   maintenance: { enabled: boolean; message: string };
   versions: Record<string, VersionEntry>;
+  security: { requireEmailVerification: boolean } & Record<string, number | boolean>;
 }
 interface SettingsResponse {
   data: Settings;
   features: Array<{ key: string; label: string; description: string }>;
   clients: Array<{ key: string; label: string }>;
+  securityLimits: Array<{ key: string; label: string }>;
   canSave: boolean;
 }
 
-type View = 'features' | 'maintenance' | 'versions';
+type View = 'features' | 'maintenance' | 'versions' | 'security';
 
 // What each client currently ships, so the owner knows what "minimum" means today
 const SHIPPED: Record<string, string> = { android: '1.0', extension: '1.1.0' };
@@ -31,12 +33,13 @@ export default function AppConfig() {
   return (
     <>
       <PageHeader title="App config" description="Turn features on or off, put the site in maintenance mode, and require app updates, without a new release. Changes apply within 30 seconds." />
-      <Tabs<View> active={view} onChange={setView} tabs={[{ id: 'features', label: 'Feature switches' }, { id: 'maintenance', label: 'Maintenance mode' }, { id: 'versions', label: 'App versions' }]} />
+      <Tabs<View> active={view} onChange={setView} tabs={[{ id: 'features', label: 'Feature switches' }, { id: 'maintenance', label: 'Maintenance mode' }, { id: 'versions', label: 'App versions' }, { id: 'security', label: 'Security & limits' }]} />
       {data && !data.canSave && <div style={{ marginTop: 16 }}><Notice tone="amber">Settings can't be saved without MongoDB. The site is using the defaults.</Notice></div>}
       {data && can('settings.view') && !can('settings.manage') && <div style={{ marginTop: 16 }}><Notice>Your role can view these settings but not change them.</Notice></div>}
       {error && !data ? <Card><ErrorState message={error} onRetry={reload} /></Card> : !data ? <Card><div className="ad-skeleton" style={{ height: 240 }} /></Card> : (
         view === 'features' ? <Features data={data} editable={editable} onSaved={reload} />
           : view === 'maintenance' ? <Maintenance key={JSON.stringify(data.data.maintenance)} data={data} editable={editable} onSaved={reload} />
+            : view === 'security' ? <Security key={JSON.stringify(data.data.security)} data={data} editable={editable} onSaved={reload} />
             : <Versions key={JSON.stringify(data.data.versions)} data={data} editable={editable} onSaved={reload} />
       )}
     </>
@@ -184,6 +187,78 @@ function Versions({ data, editable, onSaved }: { data: SettingsResponse; editabl
           {dirty && <button type="button" className="ad-btn" onClick={() => setForm(data.data.versions)}>Discard</button>}
           <button type="button" className="ad-btn primary" disabled={!dirty || busy === 'save'} onClick={save}>{busy === 'save' && <Spinner size={14} />} Save version rules</button>
         </div>
+      )}
+    </>
+  );
+}
+
+function Security({ data, editable, onSaved }: { data: SettingsResponse; editable: boolean; onSaved: () => void }) {
+  const current = data.data.security;
+  const [limits, setLimits] = useState<Record<string, string>>(
+    () => Object.fromEntries(data.securityLimits.map((l) => [l.key, String(current[l.key] ?? '')]))
+  );
+  const [confirmOff, setConfirmOff] = useState(false);
+  const { busy, run } = useAction();
+  const dirty = data.securityLimits.some((l) => limits[l.key] !== String(current[l.key] ?? ''));
+
+  const saveSwitch = async (value: boolean) => {
+    const ok = await run('switch', () => api('/system/settings/security', { method: 'PUT', body: { requireEmailVerification: value } }), value ? 'Email verification is required' : 'Email verification is no longer required');
+    setConfirmOff(false);
+    if (ok !== undefined) onSaved();
+  };
+  const saveLimits = async () => {
+    const body = Object.fromEntries(Object.entries(limits).map(([k, v]) => [k, Number(v)]));
+    const ok = await run('limits', () => api('/system/settings/security', { method: 'PUT', body }), 'Limits saved');
+    if (ok !== undefined) onSaved();
+  };
+
+  return (
+    <>
+      {!current.requireEmailVerification && <div style={{ marginTop: 16 }}><Notice tone="red"><strong>Email verification is off.</strong> Unverified accounts can use every feature and contact support.</Notice></div>}
+      <Card title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><ShieldCheck size={16} /> Email verification</span>} bodyClass={false}>
+        <div className="ad-setting">
+          <div className="ad-setting-text">
+            <strong>Require a verified email</strong>
+            <span>Resume tools, AI features, saving, downloads and support need a verified email address. Turn off only if verification emails can't be delivered.</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {busy === 'switch' && <Spinner size={14} />}
+            <Switch
+              label="Require a verified email"
+              checked={current.requireEmailVerification !== false}
+              disabled={!editable || busy === 'switch'}
+              onChange={(v) => (v ? saveSwitch(true) : setConfirmOff(true))}
+            />
+          </div>
+        </div>
+      </Card>
+      <Card title="Abuse limits" description="Requests over a limit get a 'try again later' message and show up as rate-limit events on the user.">
+        <div className="ad-grid cols-2">
+          {data.securityLimits.map((l) => (
+            <div className="ad-field" key={l.key}>
+              <label htmlFor={`sec-${l.key}`}>{l.label}</label>
+              <input id={`sec-${l.key}`} className="ad-input" type="number" min={1} max={10000} value={limits[l.key]} disabled={!editable}
+                onChange={(e) => setLimits((f) => ({ ...f, [l.key]: e.target.value }))} />
+            </div>
+          ))}
+        </div>
+        {editable && (
+          <div className="ad-actions-row" style={{ marginTop: 16, justifyContent: 'flex-end' }}>
+            {dirty && <button type="button" className="ad-btn" onClick={() => setLimits(Object.fromEntries(data.securityLimits.map((l) => [l.key, String(current[l.key] ?? '')])))}>Discard</button>}
+            <button type="button" className="ad-btn primary" disabled={!dirty || busy === 'limits'} onClick={saveLimits}>{busy === 'limits' && <Spinner size={14} />} Save limits</button>
+          </div>
+        )}
+      </Card>
+      {confirmOff && (
+        <ConfirmDialog
+          title="Stop requiring verified emails?"
+          description="Unverified and disposable-email accounts can then use AI tools and contact support again. Turn it back on as soon as you can."
+          confirmLabel="Turn off"
+          danger
+          busy={busy === 'switch'}
+          onClose={() => setConfirmOff(false)}
+          onConfirm={() => saveSwitch(false)}
+        />
       )}
     </>
   );

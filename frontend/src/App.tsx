@@ -46,6 +46,8 @@ import ArticlePage from './pages/ArticlePage';
 import CVmindCode from './pages/code/CVmindCode';
 import CVmindCodeLanding from './pages/code/CVmindCodeLanding';
 import NotFound from './pages/NotFound';
+import VerifyEmail from './pages/VerifyEmail';
+import VerifyEmailGate from './components/VerifyEmailGate';
 import PageLoader from './components/PageLoader';
 import { ARTICLES } from './data/articles';
 import { applySEO } from './utils/seo';
@@ -53,7 +55,8 @@ import { getErrorMessage } from './utils/errors';
 import { APP_PAGES, PUBLIC_APP_PAGES, isAppHost, isCrossHost, isSplitHost, siteOrigin, urlForPage } from './lib/hosts';
 import { clearSession, setSession } from './lib/session';
 import { peekPickedTemplate } from './lib/templatePick';
-import { authFetch } from './lib/authFetch';
+import { authFetch, AUTH_REQUIRED_EVENT, VERIFY_REQUIRED_EVENT } from './lib/authFetch';
+import { readUser, saveUser, USER_CHANGE_EVENT } from './lib/currentUser';
 import type { LoadedWork, ResumeAnalysis } from './types/api';
 import './styles/theme.css';
 import './styles/3d-effects.css';
@@ -62,10 +65,13 @@ import './styles/skeleton.css';
 // How long the loading screen shows when moving to another page
 const ROUTE_LOADER_MS = 450;
 
-const VALID_PAGES = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'copyright-policy', 'account', 'help-center', 'my-documents', ...ARTICLES.map(a => a.slug)];
+const VALID_PAGES = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'copyright-policy', 'account', 'help-center', 'my-documents', 'verify-email', ...ARTICLES.map(a => a.slug)];
 
 // Leo's pages (Resume Tailorer, Interview Prep AI, Voice Prep AI, AI Proofreading) and the Career tools
 const GUIDED_PAGES = ['tailor', 'prep', 'voice-prep', 'proofreading', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'career-courses', 'elevator-pitch', 'career-roadmap'];
+
+// Signed-in pages an unverified account can still open (the server enforces the rest)
+const UNVERIFIED_OPEN_PAGES = ['account', 'my-documents'];
 
 // Sign-in addresses open the AuthModal over the home page
 const AUTH_PATHS = ['/sign-in', '/sign-up', '/login'];
@@ -138,6 +144,32 @@ export default function App() {
     return Boolean(searchParams.get('authError'));
   });
   const [loadedWork, setLoadedWork] = useState<LoadedWork | null>(null);
+  // false only once the server has said this account's email isn't verified
+  const [emailVerified, setEmailVerified] = useState<boolean | undefined>(() => readUser()?.emailVerified);
+  const [verifyGateOpen, setVerifyGateOpen] = useState(false);
+
+  // Follow the stored session: sign-in, verification in this or another tab, sign-out
+  useEffect(() => {
+    const sync = () => setEmailVerified(readUser()?.emailVerified);
+    window.addEventListener(USER_CHANGE_EVENT, sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener(USER_CHANGE_EVENT, sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+
+  // The server refused a request: unverified email → verify screen, signed out → sign-in
+  useEffect(() => {
+    const onVerify = () => setVerifyGateOpen(true);
+    const onAuth = () => { if (localStorage.getItem('cvmind_logged_in') !== 'true') setShowAuthModal(true); };
+    window.addEventListener(VERIFY_REQUIRED_EVENT, onVerify);
+    window.addEventListener(AUTH_REQUIRED_EVENT, onAuth);
+    return () => {
+      window.removeEventListener(VERIFY_REQUIRED_EVENT, onVerify);
+      window.removeEventListener(AUTH_REQUIRED_EVENT, onAuth);
+    };
+  }, []);
   const [builderFocus, setBuilderFocus] = useState<false | 'flow' | 'studio'>(false);
 
   useEffect(() => {
@@ -179,6 +211,12 @@ export default function App() {
         .then(d => {
           if (d && d.active === false) {
             signOut(d.message || 'Your account access has been restricted.');
+            return;
+          }
+          // Sessions from before verification existed learn their state here
+          const stored = readUser();
+          if (stored && typeof d?.emailVerified === 'boolean' && stored.emailVerified !== d.emailVerified) {
+            saveUser({ ...stored, emailVerified: d.emailVerified });
           }
         })
         .catch(() => {}); // network/offline — never sign the user out on errors
@@ -572,6 +610,9 @@ export default function App() {
       case 'code-arena':
       case 'cvmind-code-arena':
         return <CVmindCode customApiKey={customApiKey} />;
+      case 'verify-email':
+        // Full-screen like the sign-in overlay, so it renders outside <main> (see below)
+        return null;
       default:
         return <NotFound setCurrentPage={setCurrentPage} />;
     }
@@ -595,9 +636,14 @@ export default function App() {
   // The Portfolio Generator is a full-screen chat with its own top bar and Back button
   const isPortfolioStudio = currentPage === 'portfolio-gen';
   const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && !isFocusFlow && !isPortfolioStudio;
-  const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || isCodePage || isFocusFlow || isAppPage || isPortfolioStudio;
+  const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || currentPage === 'verify-email' || isCodePage || isFocusFlow || isAppPage || isPortfolioStudio;
   // The Help Center (and its Contact form) is full-width with its own top bar and footer instead of the site ones
   const isHelpPage = currentPage === 'help-center' || currentPage === 'contact';
+
+  // Unverified accounts see the verify screen over locked app pages, or when the server refused a request
+  const unverified = isLoggedIn && emailVerified === false;
+  const onLockedPage = APP_PAGES.includes(currentPage) && !UNVERIFIED_OPEN_PAGES.includes(currentPage);
+  const showVerifyGate = unverified && (verifyGateOpen || onLockedPage) && !showAuthModal;
 
   // Mark the focused builder flow on <body> (used to keep floating widgets out of the way).
   useEffect(() => {
@@ -607,7 +653,12 @@ export default function App() {
   return (
     <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''} ${isFocusFlow ? 'focus-shell' : ''} ${isHelpPage ? 'help-shell' : ''} ${isAppPage ? 'app-shell' : ''} ${isNotFound ? 'notfound-shell' : ''} ${isProductPage ? 'product-shell' : ''} ${isPortfolioStudio ? 'pgx-shell' : ''}`}>
 
-      {!isAdminPage && <SiteBanner setCurrentPage={setCurrentPage} />}
+      {!isAdminPage && (
+        <SiteBanner
+          setCurrentPage={setCurrentPage}
+          onVerifyEmail={unverified && currentPage !== 'verify-email' ? () => setVerifyGateOpen(true) : undefined}
+        />
+      )}
       <AppUpdateGate />
 
       {!isMinimalPage && !isNotFound && !isHelpPage && !isProductPage && (
@@ -640,9 +691,26 @@ export default function App() {
         {renderPage()}
       </main>
 
+      {currentPage === 'verify-email' && !showAuthModal && <VerifyEmail setCurrentPage={setCurrentPage} openSignIn={() => setShowAuthModal(true)} />}
+
       {routeLoading && <PageLoader />}
 
       {!isMinimalPage && !isHelpPage && !isNotFound && !isProductPage && <Footer setCurrentPage={setCurrentPage} />}
+
+      {showVerifyGate && (
+        <VerifyEmailGate
+          email={readUser()?.email || ''}
+          onVerified={() => setVerifyGateOpen(false)}
+          onClose={() => {
+            setVerifyGateOpen(false);
+            if (onLockedPage) setCurrentPage('my-documents');
+          }}
+          onSignOut={() => {
+            setVerifyGateOpen(false);
+            handleSignOut();
+          }}
+        />
+      )}
 
       <AuthModal
         isOpen={showAuthModal}

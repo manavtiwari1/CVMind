@@ -75,7 +75,8 @@ export async function submitCode(args: { problemId: string; code: string; langua
 interface AiEnvelope<T> { success: boolean; data?: T; error?: string }
 
 async function ai<T>(path: string, body: unknown, geminiKey?: string): Promise<T> {
-  const data = await postJson<AiEnvelope<T>>(path, body, { geminiKey });
+  // AI help needs a verified account, so the session token goes along
+  const data = await postJson<AiEnvelope<T>>(path, body, { geminiKey, auth: true });
   if (!data.success || !data.data) throw new Error(data.error || 'The AI assistant did not return a result.');
   return data.data;
 }
@@ -90,7 +91,7 @@ export const requestDebug = (body: { problemTitle: string; userCode: string; lan
   ai<AiDebug>('/api/code/ai/debug', body, key);
 
 export async function generateProblem(body: { topic: string; difficulty: string; company: string; customPrompt: string }, key?: string) {
-  const data = await postJson<{ success: boolean; problem?: unknown; error?: string }>('/api/code/ai/generate-problem', body, { geminiKey: key });
+  const data = await postJson<{ success: boolean; problem?: unknown; error?: string }>('/api/code/ai/generate-problem', body, { geminiKey: key, auth: true });
   if (!data.success || !data.problem) throw new Error(data.error || 'Could not generate a problem.');
   return data.problem;
 }

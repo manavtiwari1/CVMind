@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BadgeCheck, Ban, KeyRound, LogOut, Mail, MonitorSmartphone, PauseCircle, PlayCircle, Puzzle, Trash2, Users as UsersIcon } from 'lucide-react';
+import { BadgeCheck, Ban, KeyRound, LogOut, Mail, MailWarning, MonitorSmartphone, PauseCircle, PlayCircle, Puzzle, ShieldAlert, ShieldCheck, Trash2, Users as UsersIcon } from 'lucide-react';
 import { api, downloadExport } from '../api';
 import type { Paged } from '../api';
 import { useAction, useAdmin, useApi, useDebounced } from '../hooks';
@@ -15,6 +15,8 @@ interface UserRow {
   status: 'active' | 'suspended' | 'banned';
   statusReason: string;
   emailVerified: boolean;
+  riskScore: number;
+  riskFlags: string[];
   createdAt: string;
   lastLogin: string | null;
   loginCount: number;
@@ -32,6 +34,9 @@ interface UserDetail {
   statusUpdatedAt: string | null;
   emailVerified: boolean;
   emailVerifiedAt: string | null;
+  lastVerificationSentAt: string | null;
+  riskScore: number;
+  riskFlags: string[];
   createdAt: string;
   sessionsRevokedAt: string | null;
   autoApplyAccess: boolean;
@@ -42,6 +47,49 @@ interface UserDetail {
   sessions: Array<{ id: string; device: string; browser: string; os: string; ip: string; provider: string; createdAt: string; lastSeenAt: string; revoked: boolean }>;
   devices: Array<{ id: string; name: string; lastSeenAt: string | null; createdAt: string }>;
   tickets: Array<{ id: string; number: number; subject: string; status: string; createdAt: string }>;
+  authEvents: Array<{ id: string; event: string; ip: string; userAgent: string; metadata: Record<string, unknown> | null; createdAt: string }>;
+}
+
+// Matches RISK_HIGH in backend/src/services/emailRisk.js
+const RISK_HIGH = 50;
+
+const RISK_FLAG_LABELS: Record<string, string> = {
+  disposable_email: 'Disposable email',
+  signup_velocity: 'Many sign-ups from one network'
+};
+
+function RiskBadge({ score }: { score: number }) {
+  if (score >= RISK_HIGH) return <Badge tone="red">High</Badge>;
+  if (score > 0) return <Badge tone="amber">Medium</Badge>;
+  return <Badge tone="gray">Low</Badge>;
+}
+
+// AUTH_EVENTS in backend/src/services/authEvents.js, as admins read them
+const EVENT_LABELS: Record<string, string> = {
+  USER_REGISTERED: 'Account created',
+  VERIFICATION_EMAIL_SENT: 'Verification email sent',
+  VERIFICATION_EMAIL_RESENT: 'Verification email resent',
+  EMAIL_VERIFIED: 'Email verified',
+  VERIFICATION_FAILED: 'Invalid verification link',
+  VERIFICATION_EXPIRED: 'Expired verification link',
+  LOGIN_SUCCESS: 'Signed in',
+  LOGIN_FAILED: 'Failed sign-in',
+  SUPPORT_TICKET_CREATED: 'Support message sent',
+  RATE_LIMIT_TRIGGERED: 'Hit a rate limit',
+  ACCOUNT_SUSPENDED: 'Account suspended or banned'
+};
+
+function eventDetail(meta: Record<string, unknown> | null): string {
+  if (!meta) return '';
+  const parts: string[] = [];
+  if (meta.via) parts.push(`via ${String(meta.via).replace(/_/g, ' ')}`);
+  if (meta.provider) parts.push(providerLabel(String(meta.provider)));
+  if (meta.reason) parts.push(String(meta.reason).replace(/_/g, ' '));
+  if (meta.limit) parts.push(String(meta.limit));
+  if (meta.changedFrom) parts.push(`changed from ${String(meta.changedFrom)}`);
+  if (Array.isArray(meta.riskFlags) && meta.riskFlags.length) parts.push(meta.riskFlags.map((f) => RISK_FLAG_LABELS[String(f)] || String(f)).join(', '));
+  if (meta.admin) parts.push(`by ${String(meta.admin)}`);
+  return parts.join(' · ');
 }
 
 export default function Users() {
@@ -50,9 +98,10 @@ export default function Users() {
   const [status, setStatus] = useState('');
   const [provider, setProvider] = useState('');
   const [verified, setVerified] = useState('');
+  const [risk, setRisk] = useState('');
   const [page, setPage] = useState(1);
   const search = useDebounced(q);
-  const query = { q: search, status, provider, verified, page, limit: 25 };
+  const query = { q: search, status, provider, verified, risk, page, limit: 25 };
   const { data, error, loading, reload } = useApi<Paged<UserRow>>('/users', query);
   const [exporting, setExporting] = useState(false);
 
@@ -79,6 +128,7 @@ export default function Users() {
           <Select label="Status" value={status} onChange={setFilter(setStatus)} options={[{ value: '', label: 'All statuses' }, { value: 'active', label: 'Active' }, { value: 'suspended', label: 'Suspended' }, { value: 'banned', label: 'Banned' }]} />
           <Select label="Sign-in method" value={provider} onChange={setFilter(setProvider)} options={[{ value: '', label: 'All sign-in methods' }, { value: 'password', label: 'Email & password' }, { value: 'google', label: 'Google' }, { value: 'github', label: 'GitHub' }, { value: 'linkedin', label: 'LinkedIn' }]} />
           <Select label="Verification" value={verified} onChange={setFilter(setVerified)} options={[{ value: '', label: 'Verified or not' }, { value: 'true', label: 'Verified' }, { value: 'false', label: 'Not verified' }]} />
+          <Select label="Risk" value={risk} onChange={setFilter(setRisk)} options={[{ value: '', label: 'Any risk' }, { value: 'flagged', label: 'Flagged' }, { value: 'high', label: 'High risk' }]} />
         </div>
         <DataTable
           rows={data?.data}
@@ -87,7 +137,7 @@ export default function Users() {
           onRetry={reload}
           rowKey={(u) => u.id}
           onRowClick={(u) => go('users', { id: u.id })}
-          empty={<Empty icon={<UsersIcon size={20} />} title="No users found" text={search || status || provider || verified ? 'Try a different search or filter.' : 'Nobody has signed up yet.'} />}
+          empty={<Empty icon={<UsersIcon size={20} />} title="No users found" text={search || status || provider || verified || risk ? 'Try a different search or filter.' : 'Nobody has signed up yet.'} />}
           columns={[
             { key: 'user', header: 'User', render: (u) => (
               <span className="ad-person">
@@ -99,6 +149,8 @@ export default function Users() {
               </span>
             ) },
             { key: 'provider', header: 'Sign-in', render: (u) => providerLabel(u.provider) },
+            { key: 'verified', header: 'Verified', render: (u) => (u.emailVerified ? <Badge tone="green">Yes</Badge> : <Badge tone="gray">No</Badge>) },
+            { key: 'risk', header: 'Risk', render: (u) => <span title={u.riskFlags.map((f) => RISK_FLAG_LABELS[f] || f).join(', ')}><RiskBadge score={u.riskScore} /></span> },
             { key: 'status', header: 'Status', render: (u) => <StatusBadge status={u.status} /> },
             { key: 'joined', header: 'Joined', render: (u) => <span title={dateTime(u.createdAt)}>{date(u.createdAt)}</span> },
             { key: 'last', header: 'Last sign-in', render: (u) => <span className="muted" title={dateTime(u.lastLogin)}>{u.lastLogin ? ago(u.lastLogin) : 'Never'}</span> },
@@ -116,7 +168,9 @@ type Pending =
   | { kind: 'status'; status: 'active' | 'suspended' | 'banned' }
   | { kind: 'delete' }
   | { kind: 'revoke-all' }
-  | { kind: 'reset' };
+  | { kind: 'reset' }
+  | { kind: 'verify' }
+  | { kind: 'reverify' };
 
 function UserDrawer({ id, onClose, onChanged }: { id: string; onClose: () => void; onChanged: () => void }) {
   const { can, go } = useAdmin();
@@ -147,6 +201,7 @@ function UserDrawer({ id, onClose, onChanged }: { id: string; onClose: () => voi
               <div className="ad-chips">
                 <StatusBadge status={u.status} />
                 {u.emailVerified ? <Badge tone="green">Verified</Badge> : <Badge tone="gray">Not verified</Badge>}
+                {u.riskScore > 0 && <RiskBadge score={u.riskScore} />}
                 <Badge tone="blue">{providerLabel(u.provider)}</Badge>
                 {u.autoApplyAccess && <Badge tone="purple">Auto Apply</Badge>}
               </div>
@@ -161,6 +216,19 @@ function UserDrawer({ id, onClose, onChanged }: { id: string; onClose: () => voi
             </div>
           )}
 
+          {u.riskScore > 0 && (
+            <div className={`ad-notice ${u.riskScore >= RISK_HIGH ? 'red' : 'amber'}`} style={{ marginBottom: 16 }}>
+              <ShieldAlert size={16} />
+              <div>
+                <strong>{u.riskScore >= RISK_HIGH ? 'High risk.' : 'Flagged.'}</strong> {u.riskFlags.map((f) => RISK_FLAG_LABELS[f] || f).join(', ') || 'Risk signals recorded.'}
+                {u.riskScore >= RISK_HIGH && <> Support messages are blocked until the flags are cleared.</>}
+                {can('users.manage') && (
+                  <> <button type="button" className="ad-link" disabled={busy === 'action'} onClick={() => act(() => api(`/users/${u.id}/risk/clear`, { method: 'POST' }), 'Risk flags cleared')}>Clear flags</button></>
+                )}
+              </div>
+            </div>
+          )}
+
           {can('users.manage') && (
             <div className="ad-actions-row" style={{ marginBottom: 8 }}>
               {u.status === 'active' ? (
@@ -171,9 +239,11 @@ function UserDrawer({ id, onClose, onChanged }: { id: string; onClose: () => voi
               ) : (
                 <button type="button" className="ad-btn sm primary" onClick={() => setPending({ kind: 'status', status: 'active' })}><PlayCircle size={14} /> Reactivate</button>
               )}
-              <button type="button" className="ad-btn sm" disabled={busy === 'action'} onClick={() => act(() => api(`/users/${u.id}/verify`, { method: 'POST', body: { verified: !u.emailVerified } }), u.emailVerified ? 'Marked as not verified' : 'Marked as verified')}>
-                <BadgeCheck size={14} /> {u.emailVerified ? 'Unverify' : 'Verify'}
-              </button>
+              {u.emailVerified ? (
+                <button type="button" className="ad-btn sm" onClick={() => setPending({ kind: 'reverify' })}><MailWarning size={14} /> Force re-verification</button>
+              ) : (
+                <button type="button" className="ad-btn sm" onClick={() => setPending({ kind: 'verify' })}><BadgeCheck size={14} /> Verify manually</button>
+              )}
               {u.provider === 'password' && (
                 <button type="button" className="ad-btn sm" onClick={() => setPending({ kind: 'reset' })}><KeyRound size={14} /> Send password reset</button>
               )}
@@ -188,7 +258,7 @@ function UserDrawer({ id, onClose, onChanged }: { id: string; onClose: () => voi
             <dt>Email</dt><dd>{u.email}</dd>
             <dt>Sign-in method</dt><dd>{providerLabel(u.provider)}</dd>
             {u.address && (<><dt>Address</dt><dd>{u.address}</dd></>)}
-            <dt>Verified</dt><dd>{u.emailVerified ? (u.emailVerifiedAt ? `Yes, ${date(u.emailVerifiedAt)}` : 'Yes') : 'No'}</dd>
+            <dt>Verified</dt><dd>{u.emailVerified ? (u.emailVerifiedAt ? `Yes, ${date(u.emailVerifiedAt)}` : 'Yes') : (u.lastVerificationSentAt ? `No, link sent ${ago(u.lastVerificationSentAt)}` : 'No')}</dd>
             <dt>Last signed out everywhere</dt><dd>{u.sessionsRevokedAt ? dateTime(u.sessionsRevokedAt) : 'Never'}</dd>
           </dl>
 
@@ -287,6 +357,24 @@ function UserDrawer({ id, onClose, onChanged }: { id: string; onClose: () => voi
             </>
           )}
 
+          <div className="ad-section-title">Security events</div>
+          {u.authEvents.length ? (
+            <ul className="ad-list">
+              {u.authEvents.slice(0, 15).map((e) => (
+                <li key={e.id}>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <ShieldCheck size={16} color={/FAILED|EXPIRED|RATE_LIMIT|SUSPENDED/.test(e.event) ? '#d97706' : '#6b7280'} />
+                    <div>
+                      <div className="ad-cell-title">{EVENT_LABELS[e.event] || e.event}</div>
+                      <div className="ad-cell-sub">{[eventDetail(e.metadata), e.ip && `IP ${e.ip}`].filter(Boolean).join(' · ')}</div>
+                    </div>
+                  </div>
+                  <span className="ad-muted" title={dateTime(e.createdAt)}>{ago(e.createdAt)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : <p className="ad-muted ad-small">No security events recorded yet.</p>}
+
           <div className="ad-section-title">Recent sign-ins</div>
           {u.logins.length ? (
             <ul className="ad-list">
@@ -322,6 +410,27 @@ function UserDrawer({ id, onClose, onChanged }: { id: string; onClose: () => voi
           busy={busy === 'action'}
           onClose={() => setPending(null)}
           onConfirm={() => act(() => api(`/users/${u.id}/password-reset`, { method: 'POST' }), 'Reset link sent', () => {})}
+        />
+      )}
+      {u && pending?.kind === 'verify' && (
+        <ConfirmDialog
+          title="Verify this email manually?"
+          description={<>Only do this when you know <strong>{u.email}</strong> belongs to this person, e.g. they wrote to support from it. The account gets full access and this is recorded in the audit log.</>}
+          confirmLabel="Mark as verified"
+          busy={busy === 'action'}
+          onClose={() => setPending(null)}
+          onConfirm={() => act(() => api(`/users/${u.id}/verify`, { method: 'POST', body: { verified: true } }), 'Marked as verified')}
+        />
+      )}
+      {u && pending?.kind === 'reverify' && (
+        <ConfirmDialog
+          title="Force email re-verification?"
+          description={<>The account loses access to resume tools, AI features, downloads and support until the link we email to <strong>{u.email}</strong> is clicked.</>}
+          confirmLabel="Send new link"
+          danger
+          busy={busy === 'action'}
+          onClose={() => setPending(null)}
+          onConfirm={() => act(() => api(`/users/${u.id}/force-reverify`, { method: 'POST' }), 'Re-verification required')}
         />
       )}
       {u && pending?.kind === 'revoke-all' && (

@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import { requireAdmin, requireDb, dbReady } from '../auth.js';
 import { audit } from '../audit.js';
 import { metricsSnapshot } from '../metrics.js';
-import { FEATURES, VERSION_CLIENTS, getSettings, saveSettingGroup, SETTING_KEYS } from '../settings.js';
+import { FEATURES, VERSION_CLIENTS, SECURITY_LIMITS, getSettings, saveSettingGroup, SETTING_KEYS } from '../settings.js';
 import { handle, httpError } from '../util.js';
 import { emailConfigured } from '../mailer.js';
 
@@ -78,6 +78,7 @@ router.get('/settings', requireAdmin('settings.view'), handle(async (req, res) =
     data: settings,
     features: Object.entries(FEATURES).map(([key, f]) => ({ key, label: f.label, description: f.description })),
     clients: Object.entries(VERSION_CLIENTS).map(([key, c]) => ({ key, label: c.label })),
+    securityLimits: Object.entries(SECURITY_LIMITS).map(([key, l]) => ({ key, label: l.label })),
     canSave: await dbReady(0)
   });
 }));

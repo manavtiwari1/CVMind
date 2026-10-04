@@ -26,8 +26,23 @@ export const VERSION_CLIENTS = {
   extension: { label: 'Chrome extension' }
 };
 
+// Email verification switch and abuse limits. Every limit is a count per window, e.g. sign-ups per IP per hour.
+export const SECURITY_LIMITS = {
+  signupPerIpHour: { label: 'Sign-ups per IP per hour', default: 5 },
+  resendPerAccountHour: { label: 'Verification emails per account per hour', default: 3 },
+  resendPerIpHour: { label: 'Verification emails per IP per hour', default: 10 },
+  ticketsPerAccountDay: { label: 'Support messages per account per day', default: 5 },
+  ticketsPerIpDay: { label: 'Support messages per IP per day', default: 10 },
+  anonAnalyzePerIpDay: { label: 'Signed-out ATS checks per IP per day', default: 5 },
+  passwordResetPerIpHour: { label: 'Password reset emails per IP per hour', default: 5 }
+};
+
 const DEFAULTS = {
   features: Object.fromEntries(Object.keys(FEATURES).map((key) => [key, true])),
+  security: {
+    requireEmailVerification: true,
+    ...Object.fromEntries(Object.entries(SECURITY_LIMITS).map(([key, limit]) => [key, limit.default]))
+  },
   maintenance: { enabled: false, message: 'CVMind is down for scheduled maintenance. We will be back shortly.' },
   versions: Object.fromEntries(Object.keys(VERSION_CLIENTS).map((key) => [key, { minVersion: '', latestVersion: '', message: '', updateUrl: '' }]))
 };
@@ -83,6 +98,15 @@ export async function saveSettingGroup(key, input, updatedBy) {
     value = { ...current };
     for (const feature of Object.keys(FEATURES)) {
       if (typeof input?.[feature] === 'boolean') value[feature] = input[feature];
+    }
+  } else if (key === 'security') {
+    value = { ...current };
+    if (typeof input?.requireEmailVerification === 'boolean') value.requireEmailVerification = input.requireEmailVerification;
+    for (const [field, limit] of Object.entries(SECURITY_LIMITS)) {
+      if (input?.[field] === undefined) continue;
+      const n = Number(input[field]);
+      if (!Number.isInteger(n) || n < 1 || n > 10000) throw Object.assign(new Error(`${limit.label} must be a whole number from 1 to 10000.`), { status: 400 });
+      value[field] = n;
     }
   } else if (key === 'maintenance') {
     value = {

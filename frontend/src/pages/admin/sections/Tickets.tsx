@@ -16,6 +16,8 @@ interface TicketRow {
   status: string;
   priority: string;
   source: 'form' | 'email';
+  // The email belongs to an account with a verified address
+  senderVerified: boolean;
   assigneeId: string;
   assigneeName: string;
   messageCount: number;
@@ -27,7 +29,7 @@ interface TicketRow {
 interface TicketDetail extends TicketRow {
   messages: Array<{ id: string; kind: 'customer' | 'reply' | 'note'; authorName: string; body: string; emailed: boolean; attachments: number; viaEmail: boolean; createdAt: string }>;
   resolvedAt: string | null;
-  user: { id: string; name: string; status: string; createdAt: string } | null;
+  user: { id: string; name: string; status: string; createdAt: string; emailVerified: boolean; riskScore: number; riskFlags: string[] } | null;
   emailConfigured: boolean;
   supportEmail: string;
 }
@@ -107,7 +109,7 @@ export default function Tickets() {
                 <div className="ad-cell-sub" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.preview}</div>
               </div>
             ) },
-            { key: 'from', header: 'From', render: (t) => <div><div>{t.name || '—'}</div><div className="ad-cell-sub">{t.email}</div></div> },
+            { key: 'from', header: 'From', render: (t) => <div><div>{t.name || '—'} {!t.senderVerified && <Badge tone="amber">Unverified sender</Badge>}</div><div className="ad-cell-sub">{t.email}</div></div> },
             { key: 'status', header: 'Status', render: (t) => <StatusBadge status={t.status} label={t.status === 'pending' ? 'Waiting' : undefined} /> },
             { key: 'priority', header: 'Priority', render: (t) => t.priority === 'normal' ? <span className="muted">Normal</span> : <StatusBadge status={t.priority} /> },
             { key: 'assignee', header: 'Assignee', render: (t) => t.assigneeName || <span className="muted">Unassigned</span> },
@@ -182,10 +184,12 @@ function TicketDrawer({ id, onClose, onChanged }: { id: string; onClose: () => v
             {t.user ? (
               <>
                 <Badge tone="green">CVMind user</Badge>
+                {t.user.emailVerified ? <Badge tone="green">Verified email</Badge> : <Badge tone="amber">Unverified email</Badge>}
+                {t.user.riskScore > 0 && <Badge tone={t.user.riskScore >= 50 ? 'red' : 'amber'}>Risk flagged</Badge>}
                 {t.user.status !== 'active' && <StatusBadge status={t.user.status} />}
                 {can('users.view') && <button type="button" className="ad-link ad-small" onClick={() => go('users', { id: t.user!.id })}>Open profile</button>}
               </>
-            ) : <Badge tone="gray">Not a registered user</Badge>}
+            ) : <><Badge tone="gray">Not a registered user</Badge><Badge tone="amber">Unverified sender</Badge></>}
           </div>
 
           <div className="ad-thread">

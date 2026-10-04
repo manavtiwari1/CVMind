@@ -13,17 +13,25 @@ import bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
 import { parsePdf, parseDocx, parseTxt, fetchResumeFromUrl } from './services/parser.js';
 import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, findJobsWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek, generateInterviewPlan, evaluateInterviewAnswer, generateInterviewReport } from './services/gemini.js';
-import { getPublicStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveJobFinderLog, saveProofreadLog, savePaymentLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, hasAutoApplyAccess } from './db.js';
+import { getPublicStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, updateUserFields, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveJobFinderLog, saveProofreadLog, savePaymentLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, hasAutoApplyAccess } from './db.js';
 import { Resend } from 'resend';
 import adminRouter from './admin/router.js';
 import adminPublicRoutes from './admin/publicRoutes.js';
-import { featureGate, signupsEnabled } from './admin/settings.js';
+import { featureGate, signupsEnabled, getSettings } from './admin/settings.js';
 import { metricsMiddleware } from './admin/metrics.js';
-import { installSessionValidator, newSessionId, recordSession } from './admin/sessions.js';
+import { installSessionValidator, newSessionId, recordSession, revokeAllSessions, invalidateSessionCache } from './admin/sessions.js';
 import { ticketFromContact } from './admin/tickets.js';
 import { startInboxPolling } from './admin/inbox.js';
 import { evaluateCoupon, redeemCoupon } from './admin/coupons.js';
 import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser, userSessionStatus } from './services/authToken.js';
+import { verifiedGate } from './services/verifiedGate.js';
+import { issueVerification, verifyEmailToken, resendCooldown, hashToken, frontendUrl, markEmailVerified, VERIFY_MESSAGES } from './services/emailVerification.js';
+import { assessSignupRisk, isHighRisk, RISK_HIGH } from './services/emailRisk.js';
+import { hitLimit, clientIp, HOUR_MS, DAY_MS } from './services/limiter.js';
+import { logAuthEvent } from './services/authEvents.js';
+import { CaptchaChallenge } from './admin/models.js';
+import { EMAIL_FROM } from './admin/mailer.js';
+import { dbReady } from './admin/auth.js';
 import mongoose from 'mongoose';
 import { importUploadedResume, RESUME_MIME_TYPES } from './agent/resume/intake.js';
 import { renderResumePdf } from './agent/resume/pdf.js';
@@ -76,7 +84,8 @@ function saveFeatureWork(userId, { title, type, templateId, payload }) {
 }
 
 // Initialize Resend Client
-const resend = new Resend(process.env.RESEND_API_KEY || '');
+// Resend throws on an empty key, so without one the client stays null and emails are skipped
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // Helper to send Welcome Email upon sign-up
 const sendWelcomeEmail = async (email, name, origin) => {
@@ -91,7 +100,7 @@ const sendWelcomeEmail = async (email, name, origin) => {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: 'CV Mind <no-reply@manavtiwari.in>',
+      from: EMAIL_FROM,
       to: [email],
       subject: 'Welcome to CV Mind! ✨',
       html: `
@@ -166,6 +175,8 @@ app.use(express.json({ limit: '10mb' }));
 app.use(metricsMiddleware);
 // Feature switches and maintenance mode set in the admin panel
 app.use(featureGate);
+// Email verification for the AI tools, saving, downloads and support (see services/verifiedGate.js)
+app.use(verifiedGate);
 
 // Public routes that call an AI model: limit each IP so scripted requests can't burn AI credits.
 // Signed-in-only AI routes (auto-apply, agent, company parse-job) are not included.
@@ -232,16 +243,45 @@ apiRouter.get('/', (req, res) => {
   });
 });
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// 429 for an abuse limit, logged for the admin panel
+function rateLimited(req, res, { limit, retryAfter, error, userId = '', email = '' }) {
+  logAuthEvent(req, 'RATE_LIMIT_TRIGGERED', { userId, email, metadata: { limit } });
+  return res.status(429).json({ success: false, code: 'RATE_LIMITED', retryAfter, error });
+}
+
 // User Sign Up Route
 apiRouter.post('/api/auth/signup', async (req, res) => {
-  const { name, email, password } = req.body || {};
+  const { name, email, password, captchaId, captchaAnswer } = req.body || {};
 
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Name, email, and password are required.' });
   }
+  const cleanName = String(name).trim().slice(0, 100);
+  const cleanEmail = String(email).trim().toLowerCase();
+  if (!cleanName) return res.status(400).json({ error: 'Please enter your full name.' });
+  if (cleanEmail.length > 254 || !EMAIL_RE.test(cleanEmail)) return res.status(400).json({ error: 'Please enter a valid email address.' });
+  if (String(password).length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
 
   try {
-    const existingUser = await findUserByEmail(email);
+    const { security } = await getSettings();
+    const ipLimit = await hitLimit(`signup:ip:${clientIp(req)}`, security.signupPerIpHour, HOUR_MS);
+    if (!ipLimit.ok) {
+      return rateLimited(req, res, { limit: 'signupPerIpHour', retryAfter: ipLimit.retryAfter, email: cleanEmail, error: 'Too many accounts were created from this network. Please try again later.' });
+    }
+
+    // Disposable addresses and fast repeat sign-ups aren't refused, but must pass a captcha
+    const risk = assessSignupRisk(cleanEmail, { ipSignupCount: ipLimit.count });
+    if (risk.score >= RISK_HIGH && !(await verifyCaptcha(captchaId, captchaAnswer))) {
+      return res.status(400).json({
+        code: 'CAPTCHA_REQUIRED',
+        captchaRequired: true,
+        error: captchaId ? 'Captcha verification failed. Please try the new code.' : 'Please complete the captcha to create your account.'
+      });
+    }
+
+    const existingUser = await findUserByEmail(cleanEmail);
     if (existingUser) {
       return res.status(400).json({ error: 'Email is already registered. Please sign in.' });
     }
@@ -251,23 +291,28 @@ apiRouter.post('/api/auth/signup', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = await createUser({
-      email,
-      name,
+      email: cleanEmail,
+      name: cleanName,
       password: hashedPassword,
-      isGoogleUser: false
+      isGoogleUser: false,
+      riskScore: risk.score,
+      riskFlags: risk.flags
     });
 
     await saveLoginLog({ email: newUser.email, name: newUser.name, provider: 'signup' });
+    logAuthEvent(req, 'USER_REGISTERED', { userId: newUser.id || newUser._id, email: newUser.email, metadata: risk.flags.length ? { riskFlags: risk.flags } : null });
 
-    // Send welcome email asynchronously
-    sendWelcomeEmail(newUser.email, newUser.name, req.headers.origin);
+    // The verification email doubles as the welcome email
+    const { sent } = await issueVerification(newUser);
+    if (sent) logAuthEvent(req, 'VERIFICATION_EMAIL_SENT', { userId: newUser.id || newUser._id, email: newUser.email });
 
     const isPaid = await isUserPaid(newUser);
     const userPayload = {
       id: newUser.id || newUser._id,
       name: newUser.name,
       email: newUser.email,
-      isGoogleUser: newUser.isGoogleUser || false
+      isGoogleUser: newUser.isGoogleUser || false,
+      emailVerified: false
     };
     if (isPaid) {
       userPayload.plan = 'pro';
@@ -278,6 +323,7 @@ apiRouter.post('/api/auth/signup', async (req, res) => {
     return res.json({
       success: true,
       message: 'Account created successfully!',
+      verificationEmailSent: sent,
       user: withSessionToken(userPayload, req, 'password')
     });
   } catch (err) {
@@ -302,7 +348,9 @@ apiRouter.get('/api/stats/public', async (req, res) => {
 });
 
 // ── Login Captcha ─────────────────────────────────────────────────────────────
-// Self-hosted SVG captcha: challenges live in memory, are single-use, and expire.
+// Self-hosted SVG captcha for sign-in and risky sign-ups. Challenges are single-use and expire.
+// They live in MongoDB so the server that checks the answer needn't be the one that drew it;
+// without a database they stay in this process's memory.
 const captchaStore = new Map(); // id -> { answer, expires }
 const CAPTCHA_TTL_MS = 5 * 60 * 1000;
 const CAPTCHA_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1 to avoid ambiguity
@@ -326,22 +374,39 @@ function generateCaptchaSvg(code) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${parts.join('')}</svg>`;
 }
 
-apiRouter.get('/api/auth/captcha', (req, res) => {
-  for (const [id, entry] of captchaStore) {
-    if (Date.now() > entry.expires) captchaStore.delete(id);
-  }
+apiRouter.get('/api/auth/captcha', async (req, res) => {
   let code = '';
   for (let i = 0; i < 5; i++) code += CAPTCHA_CHARS[crypto.randomInt(CAPTCHA_CHARS.length)];
   const captchaId = crypto.randomUUID();
-  captchaStore.set(captchaId, { answer: code, expires: Date.now() + CAPTCHA_TTL_MS });
+  const expires = Date.now() + CAPTCHA_TTL_MS;
+  try {
+    if (await dbReady(2000)) {
+      await CaptchaChallenge.create({ _id: captchaId, answer: code, expiresAt: new Date(expires) });
+    } else {
+      for (const [id, entry] of captchaStore) {
+        if (Date.now() > entry.expires) captchaStore.delete(id);
+      }
+      captchaStore.set(captchaId, { answer: code, expires });
+    }
+  } catch (err) {
+    console.error('[captcha] could not store challenge:', err.message);
+    return res.status(500).json({ error: 'Could not create a captcha. Please try again.' });
+  }
   res.json({ captchaId, svg: generateCaptchaSvg(code) });
 });
 
-function verifyCaptcha(captchaId, answer) {
-  const entry = captchaStore.get(captchaId);
-  if (!entry) return false;
-  captchaStore.delete(captchaId); // single-use: consumed on any attempt
-  if (Date.now() > entry.expires) return false;
+async function verifyCaptcha(captchaId, answer) {
+  if (!captchaId || typeof captchaId !== 'string') return false;
+  let entry = null;
+  if (await dbReady(0)) {
+    // single-use: consumed on any attempt
+    const row = await CaptchaChallenge.findOneAndDelete({ _id: captchaId }).lean().catch(() => null);
+    if (row) entry = { answer: row.answer, expires: new Date(row.expiresAt).getTime() };
+  } else {
+    entry = captchaStore.get(captchaId) || null;
+    captchaStore.delete(captchaId);
+  }
+  if (!entry || Date.now() > entry.expires) return false;
   return String(answer || '').trim().toUpperCase() === entry.answer;
 }
 
@@ -367,7 +432,7 @@ apiRouter.post('/api/auth/login', async (req, res) => {
     return res.status(400).json({ error: 'Email and password are required.' });
   }
 
-  if (!verifyCaptcha(captchaId, captchaAnswer)) {
+  if (!(await verifyCaptcha(captchaId, captchaAnswer))) {
     return res.status(400).json({ error: 'Captcha verification failed. Please try the new code.', captchaFailed: true });
   }
 
@@ -417,28 +482,33 @@ apiRouter.post('/api/auth/login', async (req, res) => {
   try {
     const user = await findUserByEmail(email);
     if (!user) {
+      logAuthEvent(req, 'LOGIN_FAILED', { email: cleanEmail, metadata: { reason: 'unknown_email' } });
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
     // Compare bcrypt hashes
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      logAuthEvent(req, 'LOGIN_FAILED', { userId: user.id || user._id, email: user.email, metadata: { reason: 'wrong_password' } });
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
     const blockError = getAccountBlockError(user);
     if (blockError) {
+      logAuthEvent(req, 'LOGIN_FAILED', { userId: user.id || user._id, email: user.email, metadata: { reason: `account_${user.status}` } });
       return res.status(403).json(blockError);
     }
 
     await saveLoginLog({ email: user.email, name: user.name, provider: 'password' });
+    logAuthEvent(req, 'LOGIN_SUCCESS', { userId: user.id || user._id, email: user.email, metadata: { provider: 'password' } });
 
     const isPaid = await isUserPaid(user);
     const userPayload = {
       id: user.id || user._id,
       name: user.name,
       email: user.email,
-      isGoogleUser: user.isGoogleUser || false
+      isGoogleUser: user.isGoogleUser || false,
+      emailVerified: !!user.emailVerified
     };
     if (isPaid) {
       userPayload.plan = 'pro';
@@ -466,6 +536,12 @@ apiRouter.post('/api/auth/forgot-password', async (req, res) => {
   }
 
   try {
+    const { security } = await getSettings();
+    const ipLimit = await hitLimit(`password-reset:ip:${clientIp(req)}`, security.passwordResetPerIpHour, HOUR_MS);
+    if (!ipLimit.ok) {
+      return rateLimited(req, res, { limit: 'passwordResetPerIpHour', retryAfter: ipLimit.retryAfter, error: 'Too many password reset requests. Please try again later.' });
+    }
+
     const user = await findUserByEmail(email);
     if (!user) {
       // Industry-standard secure response to prevent user enumeration attacks
@@ -475,18 +551,21 @@ apiRouter.post('/api/auth/forgot-password', async (req, res) => {
       });
     }
 
-    // 1. Generate cryptographically secure recovery token
+    // 1. Generate cryptographically secure recovery token. Only its hash is stored, and the link
+    // always points at our own site rather than the request's Origin header.
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const host = req.headers.origin || 'http://localhost:5173';
-    const resetLink = `${host}/?resetToken=${resetToken}&email=${encodeURIComponent(user.email)}`;
+    const resetLink = `${frontendUrl()}/?resetToken=${resetToken}&email=${encodeURIComponent(user.email)}`;
 
     // Save reset token in DB with 1 hour expiration
-    await saveUserResetToken(user.email, resetToken, Date.now() + 3600000);
+    await saveUserResetToken(user.email, hashToken(resetToken), Date.now() + 3600000);
 
     // 2. Dispatch email using Resend and user's verified manavtiwari.in domain
+    if (!resend) {
+      return res.status(503).json({ error: 'Failed to send secure reset email. Please contact support.' });
+    }
     const { data, error } = await resend.emails.send({
-      from: 'CV Mind <no-reply@manavtiwari.in>',
-      to: [email],
+      from: EMAIL_FROM,
+      to: [user.email],
       subject: 'Reset your CV Mind Password',
       html: `
         <div style="font-family: Arial, sans-serif; padding: 25px; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1e293b; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
@@ -539,7 +618,7 @@ apiRouter.post('/api/auth/reset-password', async (req, res) => {
   }
 
   try {
-    const user = await findUserByResetToken(token);
+    const user = await findUserByResetToken(hashToken(token));
     if (!user || user.email.toLowerCase() !== email.toLowerCase()) {
       return res.status(400).json({ error: 'Password reset link is invalid or has expired.' });
     }
@@ -556,6 +635,13 @@ apiRouter.post('/api/auth/reset-password', async (req, res) => {
     // Save password-reset audit log to backend database
     await saveLoginLog({ email: user.email, name: user.name, provider: 'password-reset' });
 
+    // The link reached this inbox, so the address is proven; and anyone signed in with the old password is signed out
+    if (!user.emailVerified) {
+      await markEmailVerified(user);
+      logAuthEvent(req, 'EMAIL_VERIFIED', { userId: user.id || user._id, email: user.email, metadata: { via: 'password_reset' } });
+    }
+    if (await dbReady(0)) await revokeAllSessions(user.id || user._id, 'password-reset').catch(() => {});
+
     return res.json({
       success: true,
       message: 'Password reset successful! You can now sign in with your new password.'
@@ -565,6 +651,16 @@ apiRouter.post('/api/auth/reset-password', async (req, res) => {
     return res.status(500).json({ error: err.message || 'An error occurred while resetting password.' });
   }
 });
+
+// A social login whose provider has confirmed the address proves ownership of it, so an account
+// that signed up with a password and never clicked the link becomes verified too. Returns the flag.
+async function verifyByProvider(req, user, providerVerified, provider) {
+  if (user.emailVerified) return true;
+  if (!providerVerified) return false;
+  await markEmailVerified(user);
+  logAuthEvent(req, 'EMAIL_VERIFIED', { userId: user.id || user._id, email: user.email, metadata: { via: provider } });
+  return true;
+}
 
 // Google Auth Verification Route
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -587,6 +683,8 @@ apiRouter.post('/api/auth/google', async (req, res) => {
     }
     
     const { email, name, picture } = payload;
+    // Google says whether it has confirmed the address; only then does it count as verified here
+    const googleVerified = payload.email_verified === true;
 
     let user = await findUserByEmail(email);
     if (!user && !(await signupsEnabled())) {
@@ -600,8 +698,10 @@ apiRouter.post('/api/auth/google', async (req, res) => {
         email,
         name: name || email.split('@')[0],
         password: mockPasswordHash,
-        isGoogleUser: true
+        isGoogleUser: true,
+        emailVerified: googleVerified
       });
+      logAuthEvent(req, 'USER_REGISTERED', { userId: user.id || user._id, email: user.email, metadata: { provider: 'google' } });
 
       // Send welcome email asynchronously for Google signup
       sendWelcomeEmail(user.email, user.name, req.headers.origin);
@@ -609,10 +709,13 @@ apiRouter.post('/api/auth/google', async (req, res) => {
 
     const blockError = getAccountBlockError(user);
     if (blockError) {
+      logAuthEvent(req, 'LOGIN_FAILED', { userId: user.id || user._id, email: user.email, metadata: { reason: `account_${user.status}`, provider: 'google' } });
       return res.status(403).json(blockError);
     }
 
+    const emailVerified = await verifyByProvider(req, user, googleVerified, 'google');
     await saveLoginLog({ email: user.email, name: user.name, provider: 'google' });
+    logAuthEvent(req, 'LOGIN_SUCCESS', { userId: user.id || user._id, email: user.email, metadata: { provider: 'google' } });
 
     const isPaid = await isUserPaid(user);
     const userPayload = {
@@ -620,7 +723,8 @@ apiRouter.post('/api/auth/google', async (req, res) => {
       name: user.name,
       email: user.email,
       avatar: picture || '',
-      isGoogleUser: user.isGoogleUser || false
+      isGoogleUser: user.isGoogleUser || false,
+      emailVerified
     };
     if (isPaid) {
       userPayload.plan = 'pro';
@@ -658,9 +762,124 @@ apiRouter.get('/api/auth/account-status', async (req, res) => {
     if (session && !session.ok) {
       return res.json({ status: 'signed-out', active: false, message: session.error });
     }
-    return res.json({ status: 'active', active: true });
+    // Only the account's own session learns its verification state
+    const payload = verifyToken((req.headers.authorization || '').replace(/^Bearer /, ''));
+    const ownSession = payload?.kind === 'user' && String(payload.sub) === String(user.id || user._id);
+    return res.json({ status: 'active', active: true, ...(ownSession ? { emailVerified: !!user.emailVerified } : {}) });
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Status check failed.' });
+  }
+});
+
+// ── Email verification ───────────────────────────────────────────────────────
+const VERIFY_ATTEMPTS_PER_IP_HOUR = 30;
+
+// The link from the verification email. Works without being signed in, e.g. on another device.
+apiRouter.post('/api/auth/verify-email', async (req, res) => {
+  try {
+    const ipLimit = await hitLimit(`verify:ip:${clientIp(req)}`, VERIFY_ATTEMPTS_PER_IP_HOUR, HOUR_MS);
+    if (!ipLimit.ok) {
+      logAuthEvent(req, 'RATE_LIMIT_TRIGGERED', { metadata: { limit: 'verifyAttemptsPerIpHour' } });
+      return res.status(429).json({ success: false, code: 'TOO_MANY', retryAfter: ipLimit.retryAfter, error: VERIFY_MESSAGES.TOO_MANY });
+    }
+
+    const result = await verifyEmailToken(req.body?.token);
+    const who = result.user ? { userId: result.user.id || result.user._id, email: result.user.email } : {};
+    if (result.ok) {
+      logAuthEvent(req, 'EMAIL_VERIFIED', { ...who, metadata: { via: 'link' } });
+      return res.json({ success: true, code: 'VERIFIED', email: result.user.email });
+    }
+    if (result.code === 'ALREADY_VERIFIED') {
+      return res.json({ success: true, code: 'ALREADY_VERIFIED', email: result.user.email, message: VERIFY_MESSAGES.ALREADY_VERIFIED });
+    }
+    logAuthEvent(req, result.code === 'EXPIRED' ? 'VERIFICATION_EXPIRED' : 'VERIFICATION_FAILED', who);
+    return res.status(400).json({ success: false, code: result.code, error: VERIFY_MESSAGES[result.code] });
+  } catch (err) {
+    console.error('Verify Email Error:', err);
+    return res.status(500).json({ error: 'Email verification failed. Please try again.' });
+  }
+});
+
+// A fresh link for the signed-in account; the previous link stops working
+apiRouter.post('/api/auth/resend-verification', requireUser, async (req, res) => {
+  try {
+    const user = await findUserById(req.auth.sub);
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+    if (user.emailVerified) {
+      return res.json({ success: true, code: 'ALREADY_VERIFIED', emailVerified: true, message: VERIFY_MESSAGES.ALREADY_VERIFIED });
+    }
+    const who = { userId: req.auth.sub, email: user.email };
+
+    const cooldown = resendCooldown(user);
+    if (cooldown > 0) {
+      return res.status(429).json({ success: false, code: 'COOLDOWN', retryAfter: cooldown, error: `Resend available in ${cooldown} seconds.` });
+    }
+    const { security } = await getSettings();
+    for (const [key, limit] of [[`resend:user:${req.auth.sub}`, 'resendPerAccountHour'], [`resend:ip:${clientIp(req)}`, 'resendPerIpHour']]) {
+      const hit = await hitLimit(key, security[limit], HOUR_MS);
+      if (!hit.ok) return rateLimited(req, res, { limit, retryAfter: hit.retryAfter, ...who, error: VERIFY_MESSAGES.RESEND_LIMIT });
+    }
+
+    const { sent } = await issueVerification(user);
+    if (!sent) return res.status(503).json({ success: false, code: 'SEND_FAILED', retryAfter: 60, error: VERIFY_MESSAGES.SEND_FAILED });
+    logAuthEvent(req, 'VERIFICATION_EMAIL_RESENT', who);
+    return res.json({ success: true, retryAfter: 60, message: `We've sent a new verification link to ${user.email}.` });
+  } catch (err) {
+    console.error('Resend Verification Error:', err);
+    return res.status(500).json({ error: VERIFY_MESSAGES.SEND_FAILED });
+  }
+});
+
+// Fixes a mistyped address before it's verified, then sends the link there
+apiRouter.post('/api/auth/change-email', requireUser, async (req, res) => {
+  const newEmail = String(req.body?.email || '').trim().toLowerCase();
+  if (newEmail.length > 254 || !EMAIL_RE.test(newEmail)) return res.status(400).json({ error: 'Please enter a valid email address.' });
+  try {
+    const user = await findUserById(req.auth.sub);
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+    if (user.emailVerified) return res.status(400).json({ error: 'Your email address is already verified. Change it from your account settings.' });
+    if (newEmail === user.email) return res.status(400).json({ error: 'That is already your email address.' });
+    const owner = await findUserByEmail(newEmail);
+    if (owner) return res.status(409).json({ error: 'That email is already used by another account.' });
+
+    const { security } = await getSettings();
+    const hit = await hitLimit(`resend:user:${req.auth.sub}`, security.resendPerAccountHour, HOUR_MS);
+    if (!hit.ok) return rateLimited(req, res, { limit: 'resendPerAccountHour', retryAfter: hit.retryAfter, userId: req.auth.sub, email: user.email, error: VERIFY_MESSAGES.RESEND_LIMIT });
+
+    // A changed address may be disposable even if the first one wasn't
+    const risk = assessSignupRisk(newEmail);
+    const riskFlags = [...new Set([...(user.riskFlags || []), ...risk.flags])];
+    const updated = await updateUserFields(req.auth.sub, {
+      email: newEmail,
+      riskFlags,
+      riskScore: Math.max(Number(user.riskScore || 0), risk.score)
+    });
+    logAuthEvent(req, 'VERIFICATION_EMAIL_RESENT', { userId: req.auth.sub, email: newEmail, metadata: { changedFrom: user.email } });
+    const { sent } = await issueVerification(updated);
+
+    const userPayload = {
+      id: updated.id || updated._id,
+      name: updated.name,
+      email: updated.email,
+      avatar: updated.avatar || '',
+      isGoogleUser: updated.isGoogleUser || false,
+      emailVerified: false
+    };
+    if (await isUserPaid(updated)) {
+      userPayload.plan = 'pro';
+      userPayload.isPro = true;
+      userPayload.isPaid = true;
+    }
+    return res.json({
+      success: true,
+      verificationEmailSent: sent,
+      retryAfter: 60,
+      // Fresh token so its email matches the new address
+      user: withSessionToken(userPayload, req, '', req.auth.jti)
+    });
+  } catch (err) {
+    console.error('Change Email Error:', err);
+    return res.status(500).json({ error: err.message || 'Could not change your email address.' });
   }
 });
 
@@ -727,7 +946,7 @@ function redirectWithAuthError(res, origin, message) {
 
 // Shared: find/create the user, enforce moderation status, log the login,
 // then hand the session payload back to the SPA via a query param.
-async function completeOAuthLogin(req, res, origin, { email, name, avatar, provider }) {
+async function completeOAuthLogin(req, res, origin, { email, name, avatar, provider, emailVerified: providerVerified = false }) {
   if (!email) {
     return redirectWithAuthError(res, origin, `Your ${provider} account has no verified email address.`);
   }
@@ -744,17 +963,22 @@ async function completeOAuthLogin(req, res, origin, { email, name, avatar, provi
       name: name || email.split('@')[0],
       password: mockPasswordHash,
       isGoogleUser: true, // OAuth account — no usable password
-      provider
+      provider,
+      emailVerified: providerVerified
     });
+    logAuthEvent(req, 'USER_REGISTERED', { userId: user.id || user._id, email: user.email, metadata: { provider } });
     sendWelcomeEmail(user.email, user.name, origin);
   }
 
   const blockError = getAccountBlockError(user);
   if (blockError) {
+    logAuthEvent(req, 'LOGIN_FAILED', { userId: user.id || user._id, email: user.email, metadata: { reason: `account_${user.status}`, provider } });
     return redirectWithAuthError(res, origin, blockError.error);
   }
 
+  const emailVerified = await verifyByProvider(req, user, providerVerified, provider);
   await saveLoginLog({ email: user.email, name: user.name, provider });
+  logAuthEvent(req, 'LOGIN_SUCCESS', { userId: user.id || user._id, email: user.email, metadata: { provider } });
 
   const isPaid = await isUserPaid(user);
   const userPayload = {
@@ -762,7 +986,8 @@ async function completeOAuthLogin(req, res, origin, { email, name, avatar, provi
     name: user.name,
     email: user.email,
     avatar: avatar || '',
-    isGoogleUser: user.isGoogleUser || false
+    isGoogleUser: user.isGoogleUser || false,
+    emailVerified
   };
   if (isPaid) {
     userPayload.plan = 'pro';
@@ -813,21 +1038,21 @@ apiRouter.get('/api/auth/github/callback', async (req, res) => {
     const profileRes = await fetch('https://api.github.com/user', { headers: ghHeaders });
     const profile = await profileRes.json();
 
-    let email = profile.email || '';
-    if (!email) {
-      const emailsRes = await fetch('https://api.github.com/user/emails', { headers: ghHeaders });
-      const emails = await emailsRes.json();
-      if (Array.isArray(emails)) {
-        const primary = emails.find(e => e.primary && e.verified) || emails.find(e => e.verified);
-        email = primary?.email || '';
-      }
+    // The public profile email may be unverified; GitHub's email list says which ones it has confirmed
+    let email = '';
+    const emailsRes = await fetch('https://api.github.com/user/emails', { headers: ghHeaders });
+    const emails = await emailsRes.json();
+    if (Array.isArray(emails)) {
+      const primary = emails.find(e => e.primary && e.verified) || emails.find(e => e.verified);
+      email = primary?.email || '';
     }
 
     return await completeOAuthLogin(req, res, origin, {
       email,
       name: profile.name || profile.login,
       avatar: profile.avatar_url || '',
-      provider: 'github'
+      provider: 'github',
+      emailVerified: !!email
     });
   } catch (err) {
     console.error('GitHub OAuth Error:', err);
@@ -882,7 +1107,8 @@ apiRouter.get('/api/auth/linkedin/callback', async (req, res) => {
       email: profile.email || '',
       name: profile.name || '',
       avatar: profile.picture || '',
-      provider: 'linkedin'
+      provider: 'linkedin',
+      emailVerified: profile.email_verified === true
     });
   } catch (err) {
     console.error('LinkedIn OAuth Error:', err);
@@ -896,24 +1122,38 @@ apiRouter.get('/api/auto-apply/check-access', async (req, res) => {
   try { res.json({ hasAccess: await hasAutoApplyAccess(email) }); } catch { res.json({ hasAccess: false }); }
 });
 
-apiRouter.post('/api/contact', async (req, res) => {
-  const { name, email, subject, message } = req.body || {};
+// Support messages come from signed-in, verified accounts only (verifiedGate checks the email).
+// The name and email are the account's, never what the form sends.
+apiRouter.post('/api/contact', requireUser, async (req, res) => {
+  const { subject } = req.body || {};
+  const message = String(req.body?.message || '').trim().slice(0, 5000);
 
-  if (!name || !email || !message) {
-    return res.status(400).json({ error: 'Name, email, and message are required.' });
-  }
-
-  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  if (!emailLooksValid) {
-    return res.status(400).json({ error: 'Please enter a valid email address.' });
+  if (!message) {
+    return res.status(400).json({ error: 'Please write a message.' });
   }
 
   try {
+    const user = await findUserById(req.auth.sub);
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+    const name = user.name;
+    const email = user.email;
+    const who = { userId: req.auth.sub, email };
+
+    if (isHighRisk(user)) {
+      logAuthEvent(req, 'RATE_LIMIT_TRIGGERED', { ...who, metadata: { limit: 'supportRiskHold', riskFlags: user.riskFlags || [] } });
+      return res.status(403).json({ code: 'SUPPORT_RESTRICTED', error: 'Support messages from this account are paused while our team reviews it.' });
+    }
+    const { security } = await getSettings();
+    for (const [key, limit] of [[`tickets:user:${req.auth.sub}`, 'ticketsPerAccountDay'], [`tickets:ip:${clientIp(req)}`, 'ticketsPerIpDay']]) {
+      const hit = await hitLimit(key, security[limit], DAY_MS);
+      if (!hit.ok) return rateLimited(req, res, { limit, retryAfter: hit.retryAfter, ...who, error: "You've sent several messages today. Our team will reply to those first. Please try again tomorrow." });
+    }
+
     const contact = await saveContactMessage({
       name: String(name).trim(),
       email: String(email).trim(),
-      subject: String(subject || '').trim(),
-      message: String(message).trim()
+      subject: String(subject || '').trim().slice(0, 200),
+      message
     });
     // Every contact message is also a support ticket in the admin panel (MongoDB only)
     if (contact?.id && mongoose.connection.readyState === 1) {
@@ -921,11 +1161,12 @@ apiRouter.post('/api/contact', async (req, res) => {
         _id: contact.id,
         name: String(name).trim(),
         email: String(email).trim(),
-        subject: String(subject || '').trim() || 'General inquiry',
-        message: String(message).trim(),
+        subject: String(subject || '').trim().slice(0, 200) || 'General inquiry',
+        message,
         createdAt: contact.createdAt
       }).catch((err) => console.error('[tickets] could not create ticket:', err.message));
     }
+    logAuthEvent(req, 'SUPPORT_TICKET_CREATED', { ...who, metadata: { contactId: String(contact?.id || contact?._id || '') } });
 
     return res.json({
       success: true,
@@ -1476,7 +1717,7 @@ apiRouter.post('/api/resume/email-pdf', requireUser, async (req, res) => {
     if (!user?.email) return res.status(404).json({ error: 'We could not find the email address for your account.' });
     const pdf = await buildResumePdf(body);
     const { error } = await resend.emails.send({
-      from: 'CV Mind <no-reply@manavtiwari.in>',
+      from: EMAIL_FROM,
       to: [user.email],
       subject: `Your resume: ${body.fileName}`,
       html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#1e293b;line-height:1.6"><p>Hi${user.name ? ` ${user.name}` : ''},</p><p>Your resume <strong>${body.fileName}.pdf</strong> is attached.</p><p>Good luck with your applications!<br>CV Mind</p></div>`,
@@ -2468,7 +2709,16 @@ apiRouter.post('/api/user/profile', requireUser, async (req, res) => {
       return res.status(409).json({ error: 'That email is already used by another account.' });
     }
 
-    const updated = await updateUserProfile({ userId, name, email, address, avatar });
+    const before = await findUserById(userId);
+    let updated = await updateUserProfile({ userId, name, email, address, avatar });
+    // A new address has to be verified again before the account gets full access back
+    const emailChanged = before && String(before.email).toLowerCase() !== String(updated.email).toLowerCase();
+    if (emailChanged) {
+      updated = await updateUserFields(userId, { emailVerified: false, emailVerifiedAt: null }) || updated;
+      invalidateSessionCache(userId);
+      const { sent } = await issueVerification(updated);
+      if (sent) logAuthEvent(req, 'VERIFICATION_EMAIL_SENT', { userId, email: updated.email, metadata: { changedFrom: before.email } });
+    }
     const isPaid = await isUserPaid(updated);
     const userPayload = {
       id: updated.id || updated._id,
@@ -2476,7 +2726,8 @@ apiRouter.post('/api/user/profile', requireUser, async (req, res) => {
       email: updated.email,
       address: updated.address || '',
       avatar: updated.avatar || '',
-      isGoogleUser: updated.isGoogleUser || false
+      isGoogleUser: updated.isGoogleUser || false,
+      emailVerified: !!updated.emailVerified
     };
     if (isPaid) {
       userPayload.plan = 'pro';
@@ -2775,7 +3026,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
+// Tests import the app and listen on their own port
+if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
   // Fill the live job-search cache so the first search in the resume builder is quick.
   if (!process.env.VERCEL) warmJobSearch();
@@ -2786,3 +3038,5 @@ app.listen(PORT, () => {
     startWorkers().catch((err) => console.error('[agent] failed to start inline workers:', err.message));
   }
 });
+
+export default app;

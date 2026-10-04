@@ -6,8 +6,8 @@
 // Pages that need sign-in; they live on the app host
 export const APP_PAGES = ['prep', 'resume-editor', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'proofreading', 'tailor', 'voice-prep', 'portfolio-gen', 'job-finder', 'career-courses', 'elevator-pitch', 'career-roadmap', 'auto-apply', 'account', 'my-documents'];
 
-// App-host pages that signed-out visitors can still use
-export const PUBLIC_APP_PAGES = ['code-arena', 'cvmind-code-arena'];
+// App-host pages that signed-out visitors can still use (the email link may open on another device)
+export const PUBLIC_APP_PAGES = ['code-arena', 'cvmind-code-arena', 'verify-email'];
 
 // Paths the app host handles itself instead of sending them to www
 const AUTH_PATHS = ['/sign-in', '/sign-up', '/login'];

@@ -207,4 +207,6 @@ export interface StoredUser {
   plan?: string;
   isPro?: boolean;
   token?: string;
+  // false until the emailed link is clicked; missing on sessions from before verification existed
+  emailVerified?: boolean;
 }

@@ -171,4 +171,27 @@ const userSessionSchema = new Schema({
 userSessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 export const UserSession = mongoose.models.UserSession || mongoose.model('UserSession', userSessionSchema);
 
-export const ADMIN_MODELS = [AdminUser, AdminAuditLog, AppSetting, Ticket, Notification, Coupon, ContentBlock, ContentReport, UserSession];
+// Sign-up, verification, sign-in and support events for security reviews. Never holds passwords or tokens.
+const AUTH_EVENT_TTL_DAYS = 180;
+const authEventSchema = new Schema({
+  userId: { type: String, default: '', index: true },
+  email: { type: String, default: '' },
+  event: { type: String, required: true, index: true },
+  ip: { type: String, default: '' },
+  userAgent: { type: String, default: '' },
+  metadata: { type: Schema.Types.Mixed, default: null },
+  createdAt: { type: Date, default: Date.now }
+});
+authEventSchema.index({ createdAt: 1 }, { expireAfterSeconds: AUTH_EVENT_TTL_DAYS * 24 * 60 * 60 });
+export const AuthEvent = mongoose.models.AuthEvent || mongoose.model('AuthEvent', authEventSchema);
+
+// Sign-up and sign-in captcha challenges. In the database so any server instance can check the answer.
+const captchaChallengeSchema = new Schema({
+  _id: { type: String },
+  answer: { type: String, required: true },
+  expiresAt: { type: Date, required: true }
+});
+captchaChallengeSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+export const CaptchaChallenge = mongoose.models.CaptchaChallenge || mongoose.model('CaptchaChallenge', captchaChallengeSchema);
+
+export const ADMIN_MODELS = [AdminUser, AdminAuditLog, AppSetting, Ticket, Notification, Coupon, ContentBlock, ContentReport, UserSession, AuthEvent, CaptchaChallenge];

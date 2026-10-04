@@ -74,6 +74,10 @@ async function checkUserSession(payload) {
   }
 }
 
+// The validator reports the account's emailVerified flag when it looked the user up (MongoDB only)
+const withVerification = (payload, check) =>
+  (typeof check?.emailVerified === 'boolean' ? { ...payload, emailVerified: check.emailVerified } : payload);
+
 function requireKind(kind) {
   return async (req, res, next) => {
     const payload = verifyToken(readBearer(req));
@@ -83,6 +87,8 @@ function requireKind(kind) {
     if (kind === 'user') {
       const check = await checkUserSession(payload);
       if (!check.ok) return res.status(401).json({ success: false, code: 'SESSION_REVOKED', error: check.error });
+      req.auth = withVerification(payload, check);
+      return next();
     }
     req.auth = payload;
     next();
@@ -103,8 +109,20 @@ export const requireCompany = requireKind('company');
 // sets req.auth when a valid user token is present, never rejects the request
 export async function optionalUser(req, res, next) {
   const payload = verifyToken(readBearer(req));
-  if (payload && payload.kind === 'user' && (await checkUserSession(payload)).ok) req.auth = payload;
+  if (payload && payload.kind === 'user') {
+    const check = await checkUserSession(payload);
+    if (check.ok) req.auth = withVerification(payload, check);
+  }
   next();
+}
+
+// For middleware that needs the signed-in user without rejecting: null without a valid user token,
+// otherwise { payload, ok, error } with payload.emailVerified set when the session check knows it
+export async function readUserSession(req) {
+  const payload = verifyToken(readBearer(req));
+  if (!payload || payload.kind !== 'user') return null;
+  const check = await checkUserSession(payload);
+  return { payload: withVerification(payload, check), ok: check.ok, error: check.error };
 }
 
 // For routes like /things/:userId — the signed-in user may only act on their own id
