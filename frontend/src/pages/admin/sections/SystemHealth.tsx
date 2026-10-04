@@ -1,206 +1,162 @@
-import { useState } from 'react';
-import { Database, Flag, CheckCircle, Info, Activity, Server, HardDrive, ClipboardList, LogIn } from 'lucide-react';
-import type { AdminStats } from '../types';
+import { useEffect } from 'react';
+import { Activity, AlertTriangle, CheckCircle2, Clock, Database, RefreshCw, Server, XCircle } from 'lucide-react';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useApi } from '../hooks';
+import { ago, count, dateTime, duration } from '../format';
+import { Badge, Card, DataTable, Empty, ErrorState, Notice, PageHeader, StatCard, StatusBadge } from '../ui';
 
-interface SystemHealthProps {
-  stats: AdminStats;
-  subSection: string;
+interface Health {
+  server: { uptimeSec: number; node: string; platform: string; memoryMb: { rss: number; heapUsed: number; heapTotal: number }; inlineWorkers: boolean };
+  database: { state: string; configured: boolean; pingMs?: number | null; name?: string; collections?: number; objects?: number; dataSizeMb?: number; storageSizeMb?: number };
+  queue: Record<string, Record<string, number>> | null;
+  metrics: {
+    since: string;
+    lastHour: { requests: number; errors: number; avgMs: number };
+    last24h: { requests: number; errors: number; avgMs: number };
+    perMinute: Array<{ minute: string; requests: number; errors: number; avgMs: number }>;
+    slowestRoutes: Array<{ route: string; count: number; errors: number; avgMs: number; maxMs: number }>;
+    recentErrors: Array<{ route: string; status: number; at: string }>;
+  };
+  integrations: Array<{ key: string; label: string; configured: boolean }>;
 }
 
-export default function SystemHealth({ stats, subSection }: SystemHealthProps) {
-  const [active, setActive] = useState(subSection || 'system-database');
-  const [featureFlags, setFeatureFlags] = useState([
-    { key: 'resume-builder', name: 'Resume Builder Module', desc: 'Allows users to build and edit resumes in the editor', enabled: true },
-    { key: 'voice-practice', name: 'Voice Prep Mock Interview', desc: 'Realtime vocal interview analysis and assessment', enabled: true },
-    { key: 'job-finder', name: 'AI Job Finder', desc: 'Auto jobs scanning matched with candidate skills', enabled: true },
-    { key: 'portfolio-gen', name: 'Portfolio Generator', desc: 'Auto generates static HTML site drafts', enabled: true },
-    { key: 'linkedin-outreach', name: 'LinkedIn Outreach DM Builder', desc: 'Generates professional templates for messages', enabled: true },
-    { key: 'maintenance-mode', name: 'Global Maintenance Mode', desc: 'Forces frontends to show offline template page', enabled: false },
-    { key: 'beta-features', name: 'Beta Features access', desc: 'Exposes in-testing tools to whitelisted testers', enabled: false }
-  ]);
+const time = (iso: string) => new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
 
-  const toggleFlag = (key: string) => {
-    setFeatureFlags(prev => prev.map(f => f.key === key ? { ...f, enabled: !f.enabled } : f));
-  };
-  const systemPages = {
-    'system-api': {
-      title: 'API Health',
-      desc: 'Backend routes, latency, errors, and third-party gateway status',
-      icon: <Activity size={32} />,
-      rows: [
-        ['Backend API', 'Operational'],
-        ['Gemini API', 'Configured'],
-        ['OpenAI API', 'Ready for key'],
-        ['Email Service', 'Operational']
-      ]
-    },
-    'system-queue': {
-      title: 'Queue Status',
-      desc: 'Background jobs, retries, cron tasks, and pending workloads',
-      icon: <Server size={32} />,
-      rows: [
-        ['Resume analysis queue', 'Idle'],
-        ['Email dispatch queue', 'Idle'],
-        ['Cron jobs', 'Scheduled']
-      ]
-    },
-    'system-storage': {
-      title: 'Storage',
-      desc: 'File storage, JSON document store size, and backup readiness',
-      icon: <HardDrive size={32} />,
-      rows: [
-        ['Database path', stats.database?.path || 'N/A'],
-        ['Resume scans', `${stats.totalScans || 0} files`],
-        ['Contact leads', `${stats.contactMessages?.length || 0} records`]
-      ]
-    },
-    'system-audit': {
-      title: 'Audit Logs',
-      desc: 'Admin actions including grants, revokes, deletes, and config changes',
-      icon: <ClipboardList size={32} />,
-      rows: [
-        ['Session started', 'Current admin session'],
-        ['Last sync', stats.database?.updatedAt ? new Date(stats.database.updatedAt).toLocaleString() : 'N/A']
-      ]
-    },
-    'system-sessions': {
-      title: 'Login Sessions',
-      desc: 'Active users, devices, browsers, and force logout controls',
-      icon: <LogIn size={32} />,
-      rows: [
-        ['Recent login records', `${stats.recentLogins?.length || 0}`],
-        ['Total login events', `${stats.totalLogins || 0}`]
-      ]
-    }
-  } as const;
+export default function SystemHealth() {
+  const { data, error, loading, reload } = useApi<{ data: Health }>('/system/health');
+  const h = data?.data;
+
+  useEffect(() => {
+    const id = setInterval(reload, 15000);
+    return () => clearInterval(id);
+  }, [reload]);
+
+  if (error && !h) return <><PageHeader title="System health" /><Card><ErrorState message={error} onRetry={reload} /></Card></>;
+
+  const errorRate = h && h.metrics.lastHour.requests ? (h.metrics.lastHour.errors / h.metrics.lastHour.requests) * 100 : 0;
+  const dbOk = h?.database.state === 'connected';
 
   return (
-    <div className="section-animate">
-      <div className="tab-bar">
-        {[
-          { id: 'system-database', label: 'Database Health', icon: <Database size={12} /> },
-          { id: 'system-api', label: 'API Health', icon: <Activity size={12} /> },
-          { id: 'system-queue', label: 'Queue Status', icon: <Server size={12} /> },
-          { id: 'system-storage', label: 'Storage', icon: <HardDrive size={12} /> },
-          { id: 'system-flags', label: 'Feature Flags', icon: <Flag size={12} /> },
-          { id: 'system-audit', label: 'Audit Logs', icon: <ClipboardList size={12} /> },
-          { id: 'system-sessions', label: 'Login Sessions', icon: <LogIn size={12} /> }
-        ].map(t => (
-          <button key={t.id} className={`tab-btn${active === t.id ? ' active' : ''}`} onClick={() => setActive(t.id)}>
-            {t.icon} {t.label}
-          </button>
-        ))}
+    <>
+      <PageHeader
+        title="System health"
+        description={h ? <>This server instance · request stats since {dateTime(h.metrics.since)} · refreshes every 15 seconds</> : 'This server instance'}
+        actions={<button type="button" className="ad-btn icon" onClick={reload} aria-label="Refresh" disabled={loading}><RefreshCw size={15} className={loading ? 'ad-spin' : ''} /></button>}
+      />
+      {h && !dbOk && <Notice tone="red"><strong>Database {h.database.configured ? h.database.state : 'not configured'}.</strong> Sign-ins, saved documents and most of the admin panel need MongoDB.</Notice>}
+
+      <div className="ad-grid cols-4" style={{ marginTop: h && !dbOk ? 16 : 0 }}>
+        <StatCard label="API" tone="green" icon={<Server size={16} />} loading={!h} value={h ? 'Online' : ''} foot={h ? `Up ${duration(h.server.uptimeSec)} · ${h.server.platform}` : undefined} />
+        <StatCard label="Database" tone={dbOk ? 'green' : 'red'} icon={<Database size={16} />} loading={!h} value={h ? (dbOk ? `${h.database.pingMs ?? '—'} ms` : h.database.state) : ''} foot={dbOk ? 'Ping time' : undefined} />
+        <StatCard label="Requests, last hour" tone="blue" icon={<Activity size={16} />} loading={!h} value={count(h?.metrics.lastHour.requests)} foot={h ? `avg ${h.metrics.lastHour.avgMs} ms` : undefined} />
+        <StatCard label="Server errors, last hour" tone={errorRate > 2 ? 'red' : 'green'} icon={<AlertTriangle size={16} />} loading={!h} value={count(h?.metrics.lastHour.errors)} foot={h ? `${errorRate.toFixed(1)}% of requests` : undefined} />
       </div>
 
-      {active === 'system-database' && (
-        <div className="section-animate">
-          <div className="section-header">
-            <div className="section-header-left">
-              <h2>Database Health & Metrics</h2>
-              <p>Platform file storage logs, data volumes, and synchronisation state</p>
-            </div>
-            <span className="badge badge-green">Operational</span>
-          </div>
-
-          <div style={{ maxWidth: 800 }}>
-            <div className="glass-panel" style={{ marginBottom: 20 }}>
-              <div className="panel-header">
-                <div className="panel-header-left">
-                  <CheckCircle size={14} style={{ color: 'var(--green)' }} />
-                  <h3>Active Storage Status</h3>
-                </div>
-              </div>
-              <div className="panel-body">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {[
-                    { label: 'Storage Engine', value: 'Persistent JSON Document Store' },
-                    { label: 'Database Location Path', value: stats.database?.path || 'N/A' },
-                    { label: 'Last Write Sync', value: stats.database?.updatedAt ? new Date(stats.database.updatedAt).toLocaleString() : 'N/A' },
-                    { label: 'Total Scans Volume', value: `${stats.totalScans || 0} files` },
-                    { label: 'Total Contact Leads', value: `${stats.contactMessages?.length || 0} messages` }
-                  ].map((row, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
-                      <span style={{ fontSize: '0.84rem', color: 'var(--text-3)' }}>{row.label}</span>
-                      <strong style={{ fontSize: '0.84rem', color: 'var(--text-1)' }} className="mono">{row.value}</strong>
+      <div className="ad-grid wide-left">
+        <Card title="Traffic" description="Requests per minute, last hour">
+          <div className="ad-chart sm">
+            {h && (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={h.metrics.perMinute} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+                  <CartesianGrid stroke="#eef0f3" vertical={false} />
+                  <XAxis dataKey="minute" tickFormatter={time} tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} minTickGap={40} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} width={40} />
+                  <Tooltip content={({ active, payload, label }) => active && payload?.length ? (
+                    <div className="ad-recharts-tooltip">
+                      <strong>{time(String(label))}</strong>
+                      {count(Number(payload[0].payload.requests))} requests · {count(Number(payload[0].payload.errors))} errors · {payload[0].payload.avgMs} ms avg
                     </div>
+                  ) : null} />
+                  <Area type="monotone" dataKey="requests" stroke="#2dc08d" strokeWidth={2} fill="#2dc08d" fillOpacity={0.12} />
+                  <Area type="monotone" dataKey="errors" stroke="#dc2626" strokeWidth={2} fill="#dc2626" fillOpacity={0.08} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </Card>
+        <Card title="Services" description="Whether each key is set. Values are never shown." bodyClass={false}>
+          <ul className="ad-feed">
+            {(h?.integrations || []).map((i) => (
+              <li key={i.key}>
+                {i.configured ? <CheckCircle2 size={16} color="#2dc08d" /> : <XCircle size={16} color="#9ca3af" />}
+                <div className="ad-feed-main">
+                  <div className="ad-cell-title" style={{ fontWeight: 500 }}>{i.label}</div>
+                  <div className="ad-cell-sub ad-mono">{i.key}</div>
+                </div>
+                {i.configured ? <Badge tone="green">Set</Badge> : <Badge tone="gray">Not set</Badge>}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      </div>
+
+      <div className="ad-grid cols-2">
+        <Card title="Database">
+          {h?.database && dbOk ? (
+            <dl className="ad-kv">
+              <dt>Name</dt><dd>{h.database.name || '—'}</dd>
+              <dt>Collections</dt><dd>{count(h.database.collections)}</dd>
+              <dt>Documents</dt><dd>{count(h.database.objects)}</dd>
+              <dt>Data size</dt><dd>{h.database.dataSizeMb ?? '—'} MB</dd>
+              <dt>Storage size</dt><dd>{h.database.storageSizeMb ?? '—'} MB</dd>
+            </dl>
+          ) : <Empty icon={<Database size={20} />} title="No database details" />}
+        </Card>
+        <Card title="Auto Apply queue" description={h?.server.inlineWorkers ? 'Workers run inside this API process' : 'Workers run as a separate process'}>
+          {h?.queue && Object.keys(h.queue).length ? (
+            <div className="ad-table-wrap">
+              <table className="ad-table">
+                <thead><tr><th>Queue</th><th className="num">Queued</th><th className="num">Running</th><th className="num">Done</th><th className="num">Failed</th></tr></thead>
+                <tbody>
+                  {Object.entries(h.queue).map(([q, s]) => (
+                    <tr key={q}>
+                      <td className="ad-cell-title">{q}</td>
+                      <td className="num">{count(s.queued)}</td>
+                      <td className="num">{count(s.running)}</td>
+                      <td className="num">{count(s.succeeded)}</td>
+                      <td className="num" style={{ color: s.dead ? '#dc2626' : undefined }}>{count(s.dead)}</td>
+                    </tr>
                   ))}
-                </div>
-              </div>
+                </tbody>
+              </table>
             </div>
+          ) : <Empty icon={<Clock size={20} />} title="Queue is empty" text="No Auto Apply jobs have run yet." />}
+        </Card>
+      </div>
 
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '12px 16px' }}>
-              <Info size={16} style={{ color: 'var(--blue)', flexShrink: 0 }} />
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-2)', lineHeight: 1.45 }}>
-                The storage database synchronises state in-memory from backend storage and dumps updates instantly. If file writes fail, a sync error displays in the topbar.
-              </p>
-            </div>
-          </div>
-        </div>
+      <div className="ad-grid cols-2">
+        <Card title="Slowest routes" description="Average response time since the server started" bodyClass={false}>
+          <DataTable
+            rows={h?.metrics.slowestRoutes}
+            rowKey={(r) => r.route}
+            empty={<Empty title="No requests yet" />}
+            columns={[
+              { key: 'route', header: 'Route', render: (r) => <span className="ad-mono">{r.route}</span> },
+              { key: 'count', header: 'Calls', className: 'num', render: (r) => count(r.count) },
+              { key: 'avg', header: 'Avg', className: 'num', render: (r) => `${count(r.avgMs)} ms` },
+              { key: 'max', header: 'Max', className: 'num', render: (r) => <span className="muted">{count(r.maxMs)} ms</span> }
+            ]}
+          />
+        </Card>
+        <Card title="Recent server errors" bodyClass={false}>
+          <DataTable
+            rows={h?.metrics.recentErrors}
+            rowKey={(r) => `${r.route}-${r.at}`}
+            empty={<Empty icon={<CheckCircle2 size={20} />} title="No server errors" text="Nothing returned a 5xx since the server started." />}
+            columns={[
+              { key: 'route', header: 'Route', render: (r) => <span className="ad-mono">{r.route}</span> },
+              { key: 'status', header: 'Status', render: (r) => <StatusBadge status="failed" label={String(r.status)} /> },
+              { key: 'at', header: 'When', render: (r) => <span className="muted">{ago(r.at)}</span> }
+            ]}
+          />
+        </Card>
+      </div>
+
+      {h && (
+        <p className="ad-hint" style={{ marginTop: 16 }}>
+          Node {h.server.node} · memory {h.server.memoryMb.rss} MB (heap {h.server.memoryMb.heapUsed}/{h.server.memoryMb.heapTotal} MB). On hosts with several instances, request numbers cover only the instance that answered.
+        </p>
       )}
-
-      {active === 'system-flags' && (
-        <div className="section-animate">
-          <div className="section-header">
-            <div className="section-header-left">
-              <h2>Feature Flags</h2>
-              <p>Instantly enable or disable front-end features without rebuilding code</p>
-            </div>
-          </div>
-
-          <div className="glass-panel">
-            <div className="feature-flag-list">
-              {featureFlags.map(f => (
-                <div className="feature-flag-row" key={f.key}>
-                  <div className="feature-flag-info">
-                    <div className="feature-flag-name">{f.name}</div>
-                    <div className="feature-flag-desc">{f.desc}</div>
-                  </div>
-                  <label className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      checked={f.enabled}
-                      onChange={() => toggleFlag(f.key)}
-                    />
-                    <span className="toggle-track"></span>
-                    <span className="toggle-thumb"></span>
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {active in systemPages && (
-        <div className="section-animate">
-          <div className="section-header">
-            <div className="section-header-left">
-              <h2>{systemPages[active as keyof typeof systemPages].title}</h2>
-              <p>{systemPages[active as keyof typeof systemPages].desc}</p>
-            </div>
-            <span className="badge badge-green">Operational</span>
-          </div>
-
-          <div className="glass-panel" style={{ maxWidth: 840 }}>
-            <div className="panel-header">
-              <div className="panel-header-left">
-                {systemPages[active as keyof typeof systemPages].icon}
-                <h3>Live Status</h3>
-              </div>
-            </div>
-            <div className="panel-body">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {systemPages[active as keyof typeof systemPages].rows.map(([label, value]) => (
-                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
-                    <span style={{ fontSize: '0.84rem', color: 'var(--text-3)' }}>{label}</span>
-                    <strong style={{ fontSize: '0.84rem', color: 'var(--text-1)' }} className="mono">{value}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   );
 }

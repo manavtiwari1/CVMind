@@ -19,6 +19,13 @@
       <div class="status-badge" id="conn-badge">Checking…</div>
     </header>
 
+    <!-- Shown when the admin panel asks this version to update (App config → App versions) -->
+    <section class="update-card" id="update-section" hidden>
+      <div class="update-title" id="update-title">Update available</div>
+      <div class="update-text" id="update-text"></div>
+      <a class="primary-btn update-link" id="update-link" target="_blank" rel="noreferrer" hidden><span>Update now</span></a>
+    </section>
+
     <!-- Not connected: pair with a code from the CVMind web app -->
     <section class="profile-card" id="pair-section" hidden>
       <div class="profile-details">

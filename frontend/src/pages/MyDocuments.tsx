@@ -11,6 +11,7 @@ import { DOCUMENT_TYPES, workLabel, workPage } from '../lib/works';
 import { getErrorMessage } from '../utils/errors';
 import { SUPPORT_EMAIL, mailLink } from '../data/support';
 import cvmindIcon from '../assets/cvmind_icon.png';
+import NotificationBell from '../components/NotificationBell';
 import PageLoader from '../components/PageLoader';
 import type { LoadedWork, SavedWork, StoredUser } from '../types/api';
 import './MyDocuments.css';
@@ -386,6 +387,7 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
           {!isPro && (
             <button type="button" className="nav-upgrade-btn" onClick={() => setCurrentPage('pricing')}>Upgrade</button>
           )}
+          <NotificationBell setCurrentPage={setCurrentPage} />
           <ProfileMenu user={user} setCurrentPage={setCurrentPage} handleSignOut={handleSignOut} />
         </div>
       </header>

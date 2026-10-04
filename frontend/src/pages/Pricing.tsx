@@ -3,6 +3,7 @@ import { Crown } from "lucide-react"
 import ScaleToFit from "../components/home/ScaleToFit"
 import SampleResume, { SAMPLE_RESUME_WIDTH } from "../components/home/SampleResume"
 import "./Pricing.css"
+import { SlotBanner } from "../components/SiteBanner"
 
 interface PricingProps {
   setCurrentPage: (page: string) => void
@@ -114,6 +115,7 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
 
   return (
     <div className="pricing-wrapper animate-fade-in-up">
+      <SlotBanner slot="promo" setCurrentPage={setCurrentPage} />
       {/* ── 1. HEADER SECTION ───────────────────────────────────── */}
       <section className="pricing-hero">
         <h1 className="pricing-main-title">Build a strikingly powerful<br />resume approved by recruiters</h1>
