@@ -31,16 +31,13 @@ const bigMountain = [
 export default [
   problem('search-a-2d-matrix', {
     statement: `
-You are given an \`m x n\` integer matrix with two properties:
+Read the grid \`matrix\` row by row, left to right, and the numbers **only ever increase**: each row is increasing, and every row starts above where the previous row ended.
 
-- each row is sorted in ascending order, and
-- the first integer of each row is greater than the last integer of the previous row.
-
-Return \`true\` if \`target\` is in the matrix and \`false\` otherwise. Your solution should run in **O(log(m * n))** time.
+Return \`true\` if \`target\` appears in the grid, otherwise \`false\`. Aim for **O(log(m * n))** time.
 `,
     params: ['matrix', 'target'],
     constraints: ['m == matrix.length, n == matrix[i].length', '1 <= m, n <= 100', '-10^4 <= matrix[i][j], target <= 10^4'],
-    explain: ['3 is in the first row.', '13 is not in the matrix.'],
+    explain: ['15 sits in the middle row.', '9 would fall between 8 and 12, but it is not there.'],
     known: [true, false],
     ref: function searchMatrix(matrix, target) {
       const rows = matrix.length;
@@ -57,31 +54,30 @@ Return \`true\` if \`target\` is in the matrix and \`false\` otherwise. Your sol
       return false;
     },
     tests: [
-      [[[1, 3, 5, 7], [10, 11, 16, 20], [23, 30, 34, 60]], 3],
-      [[[1, 3, 5, 7], [10, 11, 16, 20], [23, 30, 34, 60]], 13],
+      [[[2, 4, 8], [12, 15, 19], [25, 31, 40]], 15],
+      [[[2, 4, 8], [12, 15, 19], [25, 31, 40]], 9],
       [[[1]], 1],
       [[[1]], 2],
       [[[1, 3]], 3],
       [[[1], [3]], 3],
-      [[[1, 3, 5, 7], [10, 11, 16, 20], [23, 30, 34, 60]], 60],
-      [[[1, 3, 5, 7], [10, 11, 16, 20], [23, 30, 34, 60]], 0],
+      [[[2, 4, 8], [12, 15, 19], [25, 31, 40]], 40],
+      [[[2, 4, 8], [12, 15, 19], [25, 31, 40]], 1],
       [bigMatrix, bigMatrix[37][21]],
     ],
   }),
 
   problem('koko-eating-bananas', {
+    title: 'Slowest Reading Pace',
+    slug: 'slowest-reading-pace',
     statement: `
-Koko loves bananas. There are \`n\` piles, and pile \`i\` holds \`piles[i]\` bananas. The guards will be away for \`h\` hours.
+A student must read a stack of reports before an exam in \`h\` hours; report \`i\` has \`piles[i]\` pages. They pick a pace of \`k\` pages per hour. In each hour they read up to \`k\` pages of **one** report, and if that report ends early they rest for the rest of the hour.
 
-Koko picks an eating speed of \`k\` bananas per hour. Each hour she chooses one pile and eats up to \`k\` bananas from it. If the pile has fewer than \`k\` bananas she eats them all and does nothing else that hour.
-
-Return the **minimum integer speed \`k\`** that lets her finish all the bananas within \`h\` hours.
+Return the **smallest whole-number pace \`k\`** that gets every report read within \`h\` hours.
 `,
     params: ['piles', 'h'],
     constraints: ['1 <= piles.length <= 10^4', 'piles.length <= h <= 10^9', '1 <= piles[i] <= 10^9'],
-    explain: ['At speed 4 the piles take 1 + 2 + 2 + 3 = 8 hours.', 'Only five hours for five piles means she must finish each pile in one hour.', 'At speed 23 the piles take 2 + 1 + 1 + 1 + 1 = 6 hours.'],
-    samples: 3,
-    known: [4, 30, 23],
+    explain: ['At 5 pages an hour the reports take 1 + 2 + 1 + 3 = 7 hours; at 4 they would take 9.', 'Three hours for three reports: each must be read in one hour, so the pace must cover the longest.'],
+    known: [5, 14],
     ref: function minEatingSpeed(piles, h) {
       let lo = 1;
       let hi = Math.max(...piles);
@@ -95,9 +91,9 @@ Return the **minimum integer speed \`k\`** that lets her finish all the bananas 
       return lo;
     },
     tests: [
-      [[3, 6, 7, 11], 8],
-      [[30, 11, 23, 4, 20], 5],
-      [[30, 11, 23, 4, 20], 6],
+      [[5, 9, 2, 12], 7],
+      [[14, 6, 9], 3],
+      [[14, 6, 9], 4],
       [[1], 1],
       [[1000000000], 2],
       [[1000000000, 1000000000], 3],
@@ -109,15 +105,14 @@ Return the **minimum integer speed \`k\`** that lets her finish all the bananas 
 
   problem('find-minimum-in-rotated-sorted-array', {
     statement: `
-An array of **unique** integers that was sorted in ascending order has been **rotated** between 1 and \`n\` times. For example, \`[0,1,2,4,5,6,7]\` may become \`[4,5,6,7,0,1,2]\`.
+\`nums\` started as distinct integers in increasing order, then some number of elements were **moved from the front to the back** (possibly none, or all of them). For instance \`[2,4,6,8,9]\` could have become \`[6,8,9,2,4]\`.
 
-Return the **minimum element** of the rotated array. Your solution must run in **O(log n)** time.
+Return the **smallest value** in \`nums\` in **O(log n)** time.
 `,
     params: ['nums'],
-    constraints: ['1 <= nums.length <= 5000', '-5000 <= nums[i] <= 5000', 'All integers of nums are unique', 'nums is sorted and rotated between 1 and n times'],
-    explain: ['The original array was [1,2,3,4,5], rotated 3 times.', 'The original array was [0,1,2,4,5,6,7], rotated 4 times.', 'The array was rotated 4 times, which leaves it unchanged.'],
-    samples: 3,
-    known: [1, 0, 11],
+    constraints: ['1 <= nums.length <= 5000', '-5000 <= nums[i] <= 5000', 'Values are distinct', 'nums is an increasing array after such a rotation'],
+    explain: ['The sorted order restarts at 2.', 'Nothing was moved, so the first value is the smallest.'],
+    known: [2, 10],
     ref: function findMin(nums) {
       let lo = 0;
       let hi = nums.length - 1;
@@ -129,9 +124,9 @@ Return the **minimum element** of the rotated array. Your solution must run in *
       return nums[lo];
     },
     tests: [
-      [[3, 4, 5, 1, 2]],
-      [[4, 5, 6, 7, 0, 1, 2]],
-      [[11, 13, 15, 17]],
+      [[6, 8, 9, 2, 4]],
+      [[10, 20, 30]],
+      [[7, 9, 11, 13, 1, 3]],
       [[1]],
       [[2, 1]],
       [[5, 1, 2, 3, 4]],
@@ -142,15 +137,14 @@ Return the **minimum element** of the rotated array. Your solution must run in *
 
   problem('search-in-rotated-sorted-array', {
     statement: `
-An array of **distinct** integers that was sorted in ascending order has been rotated at an unknown pivot. For example, \`[0,1,2,4,5,6,7]\` may become \`[4,5,6,7,0,1,2]\`.
+\`nums\` is an increasing list of distinct integers that has been **cut at some point and had its two halves swapped**, so \`[3,7,9,12,15,19]\` might now read \`[12,15,19,3,7,9]\`.
 
-Given the rotated array \`nums\` and an integer \`target\`, return the index of \`target\`, or \`-1\` if it is not in the array. Your solution must run in **O(log n)** time.
+Return the position of \`target\` in \`nums\`, or \`-1\` if it is absent, in **O(log n)** time.
 `,
     params: ['nums', 'target'],
-    constraints: ['1 <= nums.length <= 5000', '-10^4 <= nums[i] <= 10^4', 'All values of nums are unique', '-10^4 <= target <= 10^4'],
-    explain: ['0 is at index 4.', '3 is not in the array.', 'The array has one element and it is not 0.'],
-    samples: 3,
-    known: [4, -1, -1],
+    constraints: ['1 <= nums.length <= 5000', '-10^4 <= nums[i], target <= 10^4', 'Values are distinct'],
+    explain: ['7 is at position 4, in the second half.', '10 is not in the list.'],
+    known: [4, -1],
     ref: function search(nums, target) {
       let lo = 0;
       let hi = nums.length - 1;
@@ -166,37 +160,39 @@ Given the rotated array \`nums\` and an integer \`target\`, return the index of 
       return -1;
     },
     tests: [
-      [[4, 5, 6, 7, 0, 1, 2], 0],
-      [[4, 5, 6, 7, 0, 1, 2], 3],
-      [[1], 0],
+      [[12, 15, 19, 3, 7, 9], 7],
+      [[12, 15, 19, 3, 7, 9], 10],
+      [[8], 2],
       [[1], 1],
       [[3, 1], 1],
       [[5, 1, 3], 5],
-      [[4, 5, 6, 7, 0, 1, 2], 7],
+      [[12, 15, 19, 3, 7, 9], 19],
       (() => { const a = rotate(sortedUnique(16, 4000, 10000), 777); return [a, a[3456]]; })(),
       (() => { const a = rotate(sortedUnique(17, 4000, 10000), 2500); return [a, 10001]; })(),
     ],
   }),
 
   problem('time-based-key-value-store', {
+    title: 'Settings History',
+    slug: 'settings-history',
     statement: `
-Design a key-value store that keeps **multiple values for the same key at different timestamps** and can return the value a key had at a given time.
+An app saves every change to its settings, so you can later ask **what a setting was at any moment in the past**.
 
-Implement the \`TimeMap\` class:
+Implement the \`SettingsHistory\` class:
 
-- \`TimeMap()\` creates the store.
-- \`set(key, value, timestamp)\` stores \`value\` for \`key\` at the given \`timestamp\`.
-- \`get(key, timestamp)\` returns the value that was set with the **largest timestamp that is less than or equal to** the requested one. If there is no such value, it returns \`""\`.
+- \`SettingsHistory()\` starts with no saved changes.
+- \`set(key, value, timestamp)\` records that setting \`key\` changed to \`value\` at time \`timestamp\`.
+- \`get(key, timestamp)\` returns the value \`key\` held at time \`timestamp\`: the value from its **latest change at or before that time**, or \`""\` if it had not been set yet.
 
 ${DESIGN_NOTE}
 `,
     meta: { kind: 'design' },
-    design: { className: 'TimeMap', ctor: [], methods: [['set', ['key', 'value', 'timestamp']], ['get', ['key', 'timestamp']]] , cpp: { ctor: [], methods: [{ name: 'set', args: ['string', 'string', 'int'], names: ['key', 'value', 'timestamp'], ret: 'void' }, { name: 'get', args: ['string', 'int'], names: ['key', 'timestamp'], ret: 'string' }] } },
-    constraints: ['1 <= key.length, value.length <= 100', 'key and value consist of lowercase letters and digits', '1 <= timestamp <= 10^7', 'All timestamps passed to set for the same key are strictly increasing', 'At most 2 * 10^5 calls are made'],
-    explain: ['The value set at time 1 is returned for times 1 and 3. After "bar2" is set at time 4, it is returned for times 4 and 5.'],
+    design: { className: 'SettingsHistory', ctor: [], methods: [['set', ['key', 'value', 'timestamp']], ['get', ['key', 'timestamp']]] , cpp: { ctor: [], methods: [{ name: 'set', args: ['string', 'string', 'int'], names: ['key', 'value', 'timestamp'], ret: 'void' }, { name: 'get', args: ['string', 'int'], names: ['key', 'timestamp'], ret: 'string' }] } },
+    constraints: ['1 <= key.length, value.length <= 100', 'Keys and values use lowercase letters and digits', '1 <= timestamp <= 10^7', 'Each key is set with strictly increasing timestamps', 'At most 2 * 10^5 calls in total'],
+    explain: ['"theme" was unset at time 1 and "dark" at time 6. After it changes to "light" at time 7, time 8 sees "light".'],
     samples: 1,
-    known: [[null, null, 'bar', 'bar', null, 'bar2', 'bar2']],
-    ref: class TimeMap {
+    known: [[null, null, '', 'dark', null, 'light']],
+    ref: class SettingsHistory {
       constructor() { this.store = new Map(); }
       set(key, value, timestamp) {
         if (!this.store.has(key)) this.store.set(key, []);
@@ -217,13 +213,13 @@ ${DESIGN_NOTE}
       }
     },
     tests: [
-      [['TimeMap', 'set', 'get', 'get', 'set', 'get', 'get'], [[], ['foo', 'bar', 1], ['foo', 1], ['foo', 3], ['foo', 'bar2', 4], ['foo', 4], ['foo', 5]]],
-      [['TimeMap', 'get', 'set', 'get'], [[], ['a', 5], ['a', 'x', 10], ['a', 9]]],
-      [['TimeMap', 'set', 'set', 'get', 'get', 'get'], [[], ['k1', 'v1', 1], ['k2', 'w1', 2], ['k1', 2], ['k2', 1], ['k2', 2]]],
-      [['TimeMap', 'set', 'set', 'set', 'get', 'get', 'get', 'get'], [[], ['love', 'high', 10], ['love', 'low', 20], ['love', 'mid', 30], ['love', 5], ['love', 10], ['love', 15], ['love', 25]]],
+      [['SettingsHistory', 'set', 'get', 'get', 'set', 'get'], [[], ['theme', 'dark', 2], ['theme', 1], ['theme', 6], ['theme', 'light', 7], ['theme', 8]]],
+      [['SettingsHistory', 'get', 'set', 'get'], [[], ['a', 5], ['a', 'x', 10], ['a', 9]]],
+      [['SettingsHistory', 'set', 'set', 'get', 'get', 'get'], [[], ['k1', 'v1', 1], ['k2', 'w1', 2], ['k1', 2], ['k2', 1], ['k2', 2]]],
+      [['SettingsHistory', 'set', 'set', 'set', 'get', 'get', 'get', 'get'], [[], ['mode', 'eco', 10], ['mode', 'sport', 20], ['mode', 'normal', 30], ['mode', 5], ['mode', 10], ['mode', 15], ['mode', 25]]],
       (() => {
         const r = rng(19);
-        const ops = ['TimeMap'];
+        const ops = ['SettingsHistory'];
         const args = [[]];
         let t = 0;
         for (let i = 0; i < 300; i++) {
@@ -237,15 +233,15 @@ ${DESIGN_NOTE}
 
   problem('median-of-two-sorted-arrays', {
     statement: `
-You are given two sorted arrays \`nums1\` and \`nums2\` of sizes \`m\` and \`n\`. Return the **median** of the two arrays combined.
+Two sorted lists of exam scores, \`nums1\` and \`nums2\`, come from two classrooms. Return the **median score across both classrooms together**: the middle score once everything is pooled and sorted, or the mean of the two middle scores if the pooled count is even.
 
-The median is the middle value of the sorted combined values, or the average of the two middle values when the total count is even. The overall run time should be **O(log(m + n))**.
+Aim for **O(log(m + n))** time, where \`m\` and \`n\` are the two lengths.
 `,
     params: ['nums1', 'nums2'],
     meta: { compare: 'float' },
     constraints: ['0 <= m, n <= 1000', '1 <= m + n <= 2000', '-10^6 <= nums1[i], nums2[i] <= 10^6'],
-    explain: ['Merged array = [1,2,3] and the median is 2.', 'Merged array = [1,2,3,4] and the median is (2 + 3) / 2 = 2.5.'],
-    known: [2, 2.5],
+    explain: ['Pooled: [2, 4, 6], so the median is 4.', 'Pooled: [1, 3, 7, 9], so the median is (3 + 7) / 2 = 5.'],
+    known: [4, 5],
     ref: function findMedianSortedArrays(nums1, nums2) {
       const merged = [];
       let i = 0;
@@ -258,9 +254,9 @@ The median is the middle value of the sorted combined values, or the average of 
       return merged.length % 2 ? merged[mid] : (merged[mid - 1] + merged[mid]) / 2;
     },
     tests: [
-      [[1, 3], [2]],
-      [[1, 2], [3, 4]],
-      [[0, 0], [0, 0]],
+      [[2, 6], [4]],
+      [[1, 7], [3, 9]],
+      [[5, 5], [5, 5]],
       [[], [1]],
       [[2], []],
       [[1, 1, 1], [1, 1]],
@@ -271,17 +267,14 @@ The median is the middle value of the sorted combined values, or the average of 
 
   problem('peak-index-in-a-mountain-array', {
     statement: `
-An array \`arr\` is a **mountain** if its length is at least 3 and there is an index \`i\` with \`0 < i < arr.length - 1\` such that
+A hiking trail's altitude readings \`arr\` **climb strictly to a single summit and then descend strictly** to the end; the summit is never the first or last reading.
 
-- \`arr[0] < arr[1] < ... < arr[i]\`, and
-- \`arr[i] > arr[i + 1] > ... > arr[arr.length - 1]\`.
-
-Given a mountain array, return the index \`i\` of its peak. Your solution must run in **O(log n)** time.
+Return the position of the summit in **O(log n)** time.
 `,
     params: ['arr'],
-    constraints: ['3 <= arr.length <= 10^5', '0 <= arr[i] <= 10^6', 'arr is guaranteed to be a mountain array'],
-    explain: ['The peak is 1 at index 1.', 'The peak is 2 at index 1.'],
-    known: [1, 1],
+    constraints: ['3 <= arr.length <= 10^5', '0 <= arr[i] <= 10^6', 'arr always rises then falls as described'],
+    explain: ['The trail tops out at 9, position 2.', 'The summit 8 is at position 1.'],
+    known: [2, 1],
     ref: function peakIndexInMountainArray(arr) {
       let lo = 0;
       let hi = arr.length - 1;
@@ -293,11 +286,11 @@ Given a mountain array, return the index \`i\` of its peak. Your solution must r
       return lo;
     },
     tests: [
-      [[0, 1, 0]],
-      [[0, 2, 1, 0]],
-      [[0, 10, 5, 2]],
-      [[3, 4, 5, 1]],
-      [[24, 69, 100, 99, 79, 78, 67, 36, 26, 19]],
+      [[1, 4, 9, 6, 2]],
+      [[3, 8, 5]],
+      [[2, 9, 7, 4]],
+      [[1, 3, 6, 10, 2]],
+      [[15, 40, 72, 88, 61, 50, 33, 20, 11, 5]],
       [[1, 2, 3, 4, 5, 4]],
       [[0, 1, 2, 3, 4, 5, 6, 5]],
       [bigMountain],

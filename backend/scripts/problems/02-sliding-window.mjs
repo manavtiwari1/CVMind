@@ -8,14 +8,14 @@ const letters = (seed, n, alphabet) => {
 export default [
   problem('longest-substring-without-repeating-characters', {
     statement: `
-Given a string \`s\`, find the length of the **longest substring** that contains no repeated characters.
+Return the length of the **longest unbroken stretch of \`s\` in which no character appears twice**.
 
-A substring is a contiguous run of characters inside the string.
+The stretch must be contiguous: you cannot skip characters.
 `,
     params: ['s'],
-    constraints: ['0 <= s.length <= 5 * 10^4', 's consists of English letters, digits, symbols and spaces'],
-    explain: ['The longest such substring is "abc", so the answer is 3.', 'Every character is the same, so the longest substring is a single "b".'],
-    known: [3, 1],
+    constraints: ['0 <= s.length <= 5 * 10^4', 's may contain letters, digits, symbols and spaces'],
+    explain: ['"zxyw" has four different characters; any longer stretch repeats one.', 'With only one distinct character, the best stretch is one long.'],
+    known: [4, 1],
     ref: function lengthOfLongestSubstring(s) {
       const last = new Map();
       let start = 0;
@@ -27,19 +27,19 @@ A substring is a contiguous run of characters inside the string.
       }
       return best;
     },
-    tests: [['abcabcbb'], ['bbbbb'], ['pwwkew'], [''], [' '], ['au'], ['dvdf'], ['abba'], ['tmmzuxt'], [letters(7, 4000, 'abcdefghijklmnopqrstuvwxyz0123456789 ')]],
+    tests: [['xyzxyw'], ['qqqq'], ['cdcf'], [''], [' '], ['au'], ['deed'], ['kllmnok'], [letters(7, 4000, 'abcdefghijklmnopqrstuvwxyz0123456789 ')]],
   }),
 
   problem('longest-repeating-character-replacement', {
     statement: `
-You are given a string \`s\` of uppercase English letters and an integer \`k\`. In one operation you can change any character of \`s\` into any other uppercase letter. You may perform **at most \`k\`** operations.
+\`s\` is a string of capital letters. You may **repaint at most \`k\` of its characters**, turning each into any capital letter you like.
 
-Return the length of the longest substring made of a single repeated letter that you can obtain.
+After repainting, what is the longest stretch of \`s\` in which every character is the same letter? Return its length.
 `,
     params: ['s', 'k'],
-    constraints: ['1 <= s.length <= 10^5', 's consists of uppercase English letters', '0 <= k <= s.length'],
-    explain: ['Replace the two "A"s with "B"s (or the other way round) to get "BBBB".', 'Replace the "B" in the middle to get "AAAA".'],
-    known: [4, 4],
+    constraints: ['1 <= s.length <= 10^5', 's uses only capital English letters', '0 <= k <= s.length'],
+    explain: ['Repaint one "X" to get "YYY" next to the other letter; four in a row would need two repaints.', 'Repaint the "N" and the whole string is "M".'],
+    known: [3, 5],
     ref: function characterReplacement(s, k) {
       const count = new Array(26).fill(0);
       let left = 0;
@@ -52,18 +52,16 @@ Return the length of the longest substring made of a single repeated letter that
       }
       return best;
     },
-    tests: [['ABAB', 2], ['AABABBA', 1], ['AAAA', 0], ['ABCDE', 0], ['ABCDE', 2], ['A', 1], ['ABBB', 2], [letters(11, 3000, 'ABC'), 50], [letters(12, 3000, 'ABCDEFGH'), 5]],
+    tests: [['XYYX', 1], ['MMNMM', 1], ['AAAA', 0], ['ABCDE', 0], ['ABCDE', 2], ['A', 1], ['ABBB', 2], [letters(11, 3000, 'ABC'), 50], [letters(12, 3000, 'ABCDEFGH'), 5]],
   }),
 
   problem('permutation-in-string', {
     statement: `
-Given two strings \`s1\` and \`s2\`, return \`true\` if \`s2\` contains a **permutation** of \`s1\` as a substring, and \`false\` otherwise.
-
-In other words, return \`true\` if some substring of \`s2\` has exactly the same letters as \`s1\`, in any order.
+Return \`true\` if \`s2\` has a stretch of exactly \`s1.length\` characters that **uses the same letters as \`s1\`, just possibly shuffled**. Otherwise return \`false\`.
 `,
     params: ['s1', 's2'],
-    constraints: ['1 <= s1.length, s2.length <= 10^4', 's1 and s2 consist of lowercase English letters'],
-    explain: ['"ba" is a permutation of "ab" and appears in s2.', 'No substring of s2 contains exactly one "a" and one "b" side by side.'],
+    constraints: ['1 <= s1.length, s2.length <= 10^4', 'Both strings use only lowercase English letters'],
+    explain: ['"yx" appears in s2 and is "xy" reordered.', '"x" and "y" never sit next to each other in s2.'],
     known: [true, false],
     ref: function checkInclusion(s1, s2) {
       if (s1.length > s2.length) return false;
@@ -82,20 +80,19 @@ In other words, return \`true\` if some substring of \`s2\` has exactly the same
       }
       return false;
     },
-    tests: [['ab', 'eidbaooo'], ['ab', 'eidboaoo'], ['a', 'a'], ['abc', 'ab'], ['adc', 'dcda'], ['hello', 'ooolleoooleh'], ['abc', 'cccccbabbbaaaa'], [letters(3, 50, 'abc'), letters(4, 6000, 'abc')]],
+    tests: [['xy', 'abyxc'], ['xy', 'axcyb'], ['a', 'a'], ['abc', 'ab'], ['tea', 'xate'], ['hello', 'ooolleoooleh'], ['abc', 'cccccbabbbaaaa'], [letters(3, 50, 'abc'), letters(4, 6000, 'abc')]],
   }),
 
   problem('minimum-window-substring', {
     statement: `
-Given two strings \`s\` and \`t\`, return the **shortest substring of \`s\`** that contains every character of \`t\`, including duplicates. If there is no such substring, return the empty string \`""\`.
+Find the **shortest stretch of \`s\` that contains every character of \`t\`**, counting repeats (if \`t\` has two \`a\`s, the stretch needs two \`a\`s). Return that stretch, or \`""\` if none exists.
 
-If several windows share the minimum length, return the one that starts first.
+When several shortest stretches exist, return the leftmost one.
 `,
     params: ['s', 't'],
-    constraints: ['1 <= s.length, t.length <= 10^5', 's and t consist of uppercase and lowercase English letters'],
-    explain: ['"BANC" is the shortest window that contains A, B and C.', 'The whole string is the window.', 'The single "a" cannot cover the two "a"s in t, so there is no window.'],
-    samples: 3,
-    known: ['BANC', 'a', ''],
+    constraints: ['1 <= s.length, t.length <= 10^5', 'Both strings use only English letters (either case)'],
+    explain: ['"BZAXC" holds an A, a B and a C, and no shorter stretch does.', 'There is only one "q" to cover the two in t.'],
+    known: ['BZAXC', ''],
     ref: function minWindow(s, t) {
       if (!t.length || t.length > s.length) return '';
       const need = new Map();
@@ -121,19 +118,19 @@ If several windows share the minimum length, return the one that starts first.
       }
       return bestLen === Infinity ? '' : s.slice(bestStart, bestStart + bestLen);
     },
-    tests: [['ADOBECODEBANC', 'ABC'], ['a', 'a'], ['a', 'aa'], ['ab', 'b'], ['aab', 'aab'], ['abc', 'cba'], ['bbaa', 'aba'], ['cabwefgewcwaefgcf', 'cae'], [letters(21, 5000, 'abcdefghij'), 'jjiihhggff']],
+    tests: [['XAYBZAXC', 'ABC'], ['q', 'qq'], ['q', 'q'], ['ab', 'b'], ['aab', 'aab'], ['abc', 'cba'], ['bbaa', 'aba'], ['wxyzw', 'ww'], [letters(21, 5000, 'abcdefghij'), 'jjiihhggff']],
   }),
 
   problem('sliding-window-maximum', {
     statement: `
-You are given an integer array \`nums\` and a window size \`k\`. The window starts at the very left of the array and moves one position to the right each step, always covering exactly \`k\` numbers.
+A window exactly \`k\` numbers wide starts at the left end of \`nums\` and slides right one step at a time until it reaches the right end.
 
-Return an array containing the **maximum value of the window** at every position.
+Return the **largest number inside the window at each of its positions**, in order.
 `,
     params: ['nums', 'k'],
     constraints: ['1 <= nums.length <= 10^5', '-10^4 <= nums[i] <= 10^4', '1 <= k <= nums.length'],
-    explain: ['Window position -> maximum: [1 3 -1] -> 3, [3 -1 -3] -> 3, [-1 -3 5] -> 5, [-3 5 3] -> 5, [5 3 6] -> 6, [3 6 7] -> 7.', 'A single window holds the only element.'],
-    known: [[3, 3, 5, 5, 6, 7], [1]],
+    explain: ['Windows [2 7 3], [7 3 1], [3 1 8] and [1 8 4] peak at 7, 7, 8 and 8.', 'With k = 1 every number is its own window.'],
+    known: [[7, 7, 8, 8], [5, -2]],
     ref: function maxSlidingWindow(nums, k) {
       const out = [];
       const dq = []; // indexes, values decreasing
@@ -146,11 +143,11 @@ Return an array containing the **maximum value of the window** at every position
       return out;
     },
     tests: [
-      [[1, 3, -1, -3, 5, 3, 6, 7], 3],
-      [[1], 1],
-      [[1, -1], 1],
-      [[9, 11], 2],
-      [[4, 3, 2, 1], 2],
+      [[2, 7, 3, 1, 8, 4], 3],
+      [[5, -2], 1],
+      [[6], 1],
+      [[3, 9], 2],
+      [[8, 6, 4, 2], 2],
       [[1, 2, 3, 4, 5], 5],
       [[7, 2, 4], 2],
       [(() => { const r = rng(5); return Array.from({ length: 8000 }, () => randInt(r, -10000, 10000)); })(), 50],
@@ -159,14 +156,12 @@ Return an array containing the **maximum value of the window** at every position
 
   problem('find-all-anagrams-in-a-string', {
     statement: `
-Given two strings \`s\` and \`p\`, return the **start index of every substring of \`s\` that is an anagram of \`p\`**, in increasing order.
-
-An anagram uses exactly the same letters as the original, in any order.
+Slide over \`s\` looking at every stretch that is as long as \`p\`. Return the **starting positions of the stretches that are rearrangements of \`p\`**, from left to right.
 `,
     params: ['s', 'p'],
-    constraints: ['1 <= s.length, p.length <= 3 * 10^4', 's and p consist of lowercase English letters'],
-    explain: ['The substring starting at 0 is "cba" and the one starting at 6 is "bac". Both are anagrams of "abc".', 'Substrings starting at 0, 1 and 2 are "ab", "ba" and "ab".'],
-    known: [[0, 6], [0, 1, 2]],
+    constraints: ['1 <= s.length, p.length <= 3 * 10^4', 'Both strings use only lowercase English letters'],
+    explain: ['"xyz" at 0, "zyx" at 3 and "yxz" at 4 all use x, y and z once.', '"pq" at 0 and "qp" at 2 match; "qq" at 1 does not.'],
+    known: [[0, 3, 4], [0, 2]],
     ref: function findAnagrams(s, p) {
       const out = [];
       if (p.length > s.length) return out;
@@ -182,19 +177,19 @@ An anagram uses exactly the same letters as the original, in any order.
       }
       return out;
     },
-    tests: [['cbaebabacd', 'abc'], ['abab', 'ab'], ['a', 'b'], ['abc', 'abcd'], ['aaaaaaaaaa', 'aaa'], ['baa', 'aa'], [letters(31, 6000, 'ab'), 'aabab']],
+    tests: [['xyzzyxz', 'xyz'], ['pqqp', 'pq'], ['a', 'b'], ['abc', 'abcd'], ['aaaaaaaaaa', 'aaa'], ['baa', 'aa'], [letters(31, 6000, 'ab'), 'aabab']],
   }),
 
   problem('minimum-size-subarray-sum', {
     statement: `
-Given an array of **positive** integers \`nums\` and a positive integer \`target\`, return the **minimal length of a contiguous subarray** whose sum is greater than or equal to \`target\`.
+Every number in \`nums\` is **positive**. Find the **shortest unbroken run of numbers whose total is at least \`target\`** and return how many numbers it has.
 
-If no such subarray exists, return \`0\`.
+Return \`0\` if even the whole array falls short.
 `,
     params: ['target', 'nums'],
     constraints: ['1 <= target <= 10^9', '1 <= nums.length <= 10^5', '1 <= nums[i] <= 10^4'],
-    explain: ['The subarray [4, 3] has sum 7 and is the shortest one that reaches the target.', 'The single element 4 is enough.'],
-    known: [2, 1],
+    explain: ['4 + 2 + 5 = 11 reaches 9; no two neighbours add up to 9.', 'The 6 alone is enough.'],
+    known: [3, 1],
     ref: function minSubArrayLen(target, nums) {
       let left = 0;
       let sum = 0;
@@ -209,9 +204,9 @@ If no such subarray exists, return \`0\`.
       return best === Infinity ? 0 : best;
     },
     tests: [
-      [7, [2, 3, 1, 2, 4, 3]],
-      [4, [1, 4, 4]],
-      [11, [1, 1, 1, 1, 1, 1, 1, 1]],
+      [9, [1, 4, 2, 5, 3]],
+      [6, [2, 6, 1]],
+      [12, [1, 1, 1, 1, 1, 1, 1, 1]],
       [15, [1, 2, 3, 4, 5]],
       [5, [5]],
       [6, [10, 2, 3]],

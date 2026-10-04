@@ -11,73 +11,77 @@ const word = (seed, n, alphabet) => {
 
 export default [
   problem('min-cost-climbing-stairs', {
+    title: 'Cheapest Way Up the Stairs',
+    slug: 'cheapest-way-up-the-stairs',
     statement: `
-You are given an array \`cost\` where \`cost[i]\` is the price of stepping **off** stair \`i\`. After paying the cost you can climb **one or two** stairs.
+Each step of a staircase has a toll: \`cost[i]\` is paid when you **leave step \`i\`**, and from there you may move up **one or two** steps.
 
-You may start from stair \`0\` or stair \`1\`. Return the **minimum total cost** to reach the top of the floor, which is one step past the last stair.
+You can begin on step \`0\` or step \`1\` for free. Return the **least total toll** to get past the last step.
 `,
     params: ['cost'],
     constraints: ['2 <= cost.length <= 1000', '0 <= cost[i] <= 999'],
-    explain: ['Start at index 1, pay 15 and climb two steps to the top.', 'Start at index 0 and step on the stairs of cost 1 only, paying 6 in total.'],
-    known: [15, 6],
+    explain: ['Start on step 0 (pay 4, jump two), then pay 3 and step off the top: 7.', 'Start on step 0 (pay 2), then hop over to steps 2 and 4 paying 1 each: 4.'],
+    known: [7, 4],
     ref: function minCostClimbingStairs(cost) {
       let a = 0;
       let b = 0;
       for (let i = 2; i <= cost.length; i++) [a, b] = [b, Math.min(b + cost[i - 1], a + cost[i - 2])];
       return b;
     },
-    tests: [[[10, 15, 20]], [[1, 100, 1, 1, 1, 100, 1, 1, 100, 1]], [[0, 0]], [[5, 5]], [[0, 2, 2, 1]], [ints(101, 1000, 0, 999)]],
+    tests: [[[4, 9, 3]], [[2, 6, 1, 8, 1]], [[0, 0]], [[5, 5]], [[0, 2, 2, 1]], [ints(101, 1000, 0, 999)]],
   }),
 
   problem('house-robber', {
+    title: 'Booking Festival Booths',
+    slug: 'booking-festival-booths',
     statement: `
-You are a robber planning to rob houses along a street. Each house \`i\` holds \`nums[i]\` dollars, but **adjacent houses have linked alarms**: robbing two neighbouring houses sets off the alarm.
+A festival rents out booths in a single row, and booth \`i\` would earn you \`nums[i]\`. Noise rules forbid you from renting **two booths that are next to each other**.
 
-Return the **maximum amount** you can rob without triggering the alarm.
+Return the **most you can earn** with the booths you choose.
 `,
     params: ['nums'],
     constraints: ['1 <= nums.length <= 100', '0 <= nums[i] <= 400'],
-    explain: ['Rob houses 0 and 2 for 1 + 3 = 4.', 'Rob houses 0, 2 and 4 for 2 + 9 + 1 = 12.'],
-    known: [4, 12],
+    explain: ['The middle booth alone (8) beats the two ends together (3 + 4).', 'Booths 0 and 3 are not neighbours: 6 + 7 = 13.'],
+    known: [8, 13],
     ref: function rob(nums) {
       let take = 0;
       let skip = 0;
       for (const n of nums) [take, skip] = [skip + n, Math.max(take, skip)];
       return Math.max(take, skip);
     },
-    tests: [[[1, 2, 3, 1]], [[2, 7, 9, 3, 1]], [[5]], [[2, 1]], [[0, 0, 0]], [[2, 1, 1, 2]], [ints(102, 100, 0, 400)]],
+    tests: [[[3, 8, 4]], [[6, 1, 2, 7]], [[5]], [[2, 1]], [[0, 0, 0]], [[2, 1, 1, 2]], [ints(102, 100, 0, 400)]],
   }),
 
   problem('house-robber-ii', {
+    title: 'Booking Festival Booths II',
+    slug: 'booking-festival-booths-ii',
     statement: `
-The houses are now arranged in a **circle**, so the first and the last house are neighbours. As before, robbing two adjacent houses sets off the alarm.
+This time the booths stand in a **ring** around a fountain, so the first and last booths are also neighbours. Booth \`i\` earns \`nums[i]\`, and you still may not rent two neighbouring booths.
 
-Given \`nums\`, where \`nums[i]\` is the money in house \`i\`, return the **maximum amount** you can rob without triggering the alarm.
+Return the **most you can earn**.
 `,
     params: ['nums'],
     constraints: ['1 <= nums.length <= 100', '0 <= nums[i] <= 1000'],
-    explain: ['Houses 0 and 2 are neighbours in the circle, so you cannot rob both. The best is the middle house: 3.', 'Rob house 0 and house 2 for 1 + 3 = 4.', 'Houses 0 and 2 are neighbours in the circle, so the best is to rob house 2 alone: 3.'],
-    samples: 3,
-    known: [3, 4, 3],
+    explain: ['In a ring of three every pair is adjacent, so only one booth: 4.', 'Booths 1 and 3 are not neighbours: 5 + 6 = 11.'],
+    known: [4, 11],
     ref: function rob(nums) {
       if (nums.length === 1) return nums[0];
       const line = (arr) => { let take = 0; let skip = 0; for (const n of arr) [take, skip] = [skip + n, Math.max(take, skip)]; return Math.max(take, skip); };
       return Math.max(line(nums.slice(1)), line(nums.slice(0, -1)));
     },
-    tests: [[[2, 3, 2]], [[1, 2, 3, 1]], [[1, 2, 3]], [[5]], [[1, 2]], [[200, 3, 140, 20, 10]], [[0, 0]], [ints(103, 100, 0, 1000)]],
+    tests: [[[4, 1, 4]], [[2, 5, 1, 6]], [[3, 1, 2]], [[5]], [[1, 2]], [[200, 3, 140, 20, 10]], [[0, 0]], [ints(103, 100, 0, 1000)]],
   }),
 
   problem('longest-palindromic-substring', {
     statement: `
-Given a string \`s\`, return its **longest palindromic substring**.
+Find the **longest unbroken stretch of \`s\` that reads the same backwards** and return it.
 
-If several palindromic substrings share the maximum length, return the one that **starts first** in \`s\`.
+If there is a tie for the longest, return the one that begins earliest.
 `,
     params: ['s'],
-    constraints: ['1 <= s.length <= 1000', 's consists of digits and English letters'],
-    explain: ['"aba" is also valid, but "bab" starts first.', 'The longest palindrome is "bb".', 'A single character is a palindrome.'],
-    samples: 3,
-    known: ['bab', 'bb', 'a'],
+    constraints: ['1 <= s.length <= 1000', 's contains only English letters and digits'],
+    explain: ['"aba" is the only palindrome longer than one character.', '"pp" and "qq" tie; "pp" comes first.'],
+    known: ['aba', 'pp'],
     ref: function longestPalindrome(s) {
       let start = 0;
       let length = 1;
@@ -89,41 +93,37 @@ If several palindromic substrings share the maximum length, return the one that 
       for (let i = 0; i < s.length; i++) { expand(i, i); expand(i, i + 1); }
       return s.slice(start, start + length);
     },
-    tests: [['babad'], ['cbbd'], ['a'], ['ac'], ['forgeeksskeegfor'], ['aaaa'], ['abcda'], [word(104, 900, 'ab')], [word(105, 1000, 'abcdefghij')]],
+    tests: [['xabay'], ['ppqq'], ['a'], ['ac'], ['xyrotorzz'], ['aaaa'], ['abcda'], [word(104, 900, 'ab')], [word(105, 1000, 'abcdefghij')]],
   }),
 
   problem('palindromic-substrings', {
     statement: `
-Given a string \`s\`, return the **number of palindromic substrings** in it.
-
-A substring is a contiguous sequence of characters. Substrings at different positions count separately, even if they contain the same characters.
+Count the **stretches of \`s\` that read the same backwards**. Every start and end position counts separately, so identical text at two different places is counted twice.
 `,
     params: ['s'],
-    constraints: ['1 <= s.length <= 1000', 's consists of lowercase English letters'],
-    explain: ['Three palindromes: "a", "b" and "c".', 'Six palindromes: "a", "a", "a", "aa", "aa" and "aaa".'],
-    known: [3, 6],
+    constraints: ['1 <= s.length <= 1000', 's uses only lowercase English letters'],
+    explain: ['Only the three single letters.', '"a", "b", "a" and "aba".'],
+    known: [3, 4],
     ref: function countSubstrings(s) {
       let count = 0;
       const expand = (l, r) => { while (l >= 0 && r < s.length && s[l] === s[r]) { count++; l--; r++; } };
       for (let i = 0; i < s.length; i++) { expand(i, i); expand(i, i + 1); }
       return count;
     },
-    tests: [['abc'], ['aaa'], ['a'], ['abba'], ['racecar'], [word(106, 1000, 'ab')], [word(107, 1000, 'abcdefghijklmnopqrstuvwxyz')]],
+    tests: [['xyz'], ['aba'], ['a'], ['abba'], ['bbb'], [word(106, 1000, 'ab')], [word(107, 1000, 'abcdefghijklmnopqrstuvwxyz')]],
   }),
 
   problem('decode-ways', {
     statement: `
-A message made of capital letters is encoded as digits using the mapping \`"A" -> "1"\`, \`"B" -> "2"\`, ..., \`"Z" -> "26"\`.
+A secret message was written with \`A = 1\`, \`B = 2\`, ..., \`Z = 26\`, and the numbers were then run together, so the spaces are lost. Given the digit string \`s\`, count **how many letter messages could have produced it**.
 
-Given a string \`s\` of digits, return the **number of ways to decode it**. A way is valid only if every group maps to a letter; for example \`"06"\` cannot be decoded because \`"0"\` and \`"06"\` do not map to any letter.
-
-The answer is guaranteed to fit in a 32-bit integer.
+Every chunk must be a number from \`1\` to \`26\` with no leading zero: \`"0"\` and \`"05"\` are not letters. The count fits in a 32-bit integer.
 `,
     params: ['s'],
-    constraints: ['1 <= s.length <= 100', 's contains only digits and may contain leading zeros'],
-    explain: ['"12" can be decoded as "AB" (1 2) or "L" (12).', '"226" can be "BZ" (2 26), "VF" (22 6) or "BBF" (2 2 6).', '"06" has no valid decoding.'],
+    constraints: ['1 <= s.length <= 100', 's contains only digits, possibly starting with 0'],
+    explain: ['"17" is either "AG" (1, 7) or "Q" (17).', 'The 0 must pair with the 2 as 20, leaving 1, 20, 1 = "ATA".', '"30" and a lone "0" are not letters.'],
     samples: 3,
-    known: [2, 3, 0],
+    known: [2, 1, 0],
     ref: function numDecodings(s) {
       let prev2 = 1; // ways for the prefix two back
       let prev1 = s[0] === '0' ? 0 : 1;
@@ -136,18 +136,16 @@ The answer is guaranteed to fit in a 32-bit integer.
       }
       return prev1;
     },
-    tests: [['12'], ['226'], ['06'], ['0'], ['10'], ['27'], ['2101'], ['11106'], ['100'], ['3'.repeat(90)], [word(108, 30, '0123456789').replace(/^0/, '1')]],
+    tests: [['17'], ['1201'], ['30'], ['0'], ['10'], ['27'], ['2101'], ['21206'], ['100'], ['3'.repeat(90)], [word(108, 30, '0123456789').replace(/^0/, '1')]],
   }),
 
   problem('coin-change', {
     statement: `
-You are given an integer array \`coins\` of coin denominations and an integer \`amount\`. You have an unlimited supply of each coin.
-
-Return the **fewest coins** needed to make up \`amount\`. If it cannot be made up by any combination of the coins, return \`-1\`.
+A vending machine must return exactly \`amount\` in change, and it has an endless supply of coins with the values in \`coins\`. Return the **smallest number of coins** that adds up to \`amount\`, or \`-1\` if no combination works.
 `,
     params: ['coins', 'amount'],
     constraints: ['1 <= coins.length <= 12', '1 <= coins[i] <= 2^31 - 1', '0 <= amount <= 10^4'],
-    explain: ['11 = 5 + 5 + 1, which uses three coins.', 'The amount 3 cannot be made with coins of 2.', 'The amount 0 needs no coins.'],
+    explain: ['7 + 3 + 3 = 13 uses three coins.', 'Coins of 4 can only make multiples of 4.', 'No change needed, no coins.'],
     samples: 3,
     known: [3, -1, 0],
     ref: function coinChange(coins, amount) {
@@ -157,19 +155,19 @@ Return the **fewest coins** needed to make up \`amount\`. If it cannot be made u
       for (let a = 1; a <= amount; a++) for (const c of coins) if (c <= a) dp[a] = Math.min(dp[a], dp[a - c] + 1);
       return dp[amount] > amount ? -1 : dp[amount];
     },
-    tests: [[[1, 2, 5], 11], [[2], 3], [[1], 0], [[1], 2], [[186, 419, 83, 408], 6249], [[2, 5, 10, 1], 27], [[5, 7], 9999], [[1, 3, 4, 5], 7]],
+    tests: [[[3, 7], 13], [[4], 6], [[2], 0], [[1], 2], [[9, 4, 7], 100], [[2, 5, 10, 1], 27], [[5, 7], 9999], [[1, 3, 4, 5], 7]],
   }),
 
   problem('maximum-product-subarray', {
     statement: `
-Given an integer array \`nums\`, find a **contiguous non-empty subarray** whose product is the largest, and return that product.
+Choose **one unbroken, non-empty run of numbers** in \`nums\` and multiply them together. Return the **largest product** any such run can give.
 
-The answer is guaranteed to fit in a 32-bit integer.
+The answer fits in a 32-bit integer.
 `,
     params: ['nums'],
-    constraints: ['1 <= nums.length <= 2 * 10^4', '-10 <= nums[i] <= 10', 'The product of any prefix or suffix of nums fits in a 32-bit integer'],
-    explain: ['The subarray [2, 3] has the largest product, 6.', 'The result cannot be 2 because [-2, -1] is not contiguous; the best is 0.'],
-    known: [6, 0],
+    constraints: ['1 <= nums.length <= 2 * 10^4', '-10 <= nums[i] <= 10', 'Every prefix and suffix product fits in a 32-bit integer'],
+    explain: ['4 x 2 = 8; including the -1 would make it negative.', 'The two negatives are separated by 0, so 0 is the best.'],
+    known: [8, 0],
     ref: function maxProduct(nums) {
       let best = nums[0];
       let hi = nums[0];
@@ -183,18 +181,16 @@ The answer is guaranteed to fit in a 32-bit integer.
       }
       return best;
     },
-    tests: [[[2, 3, -2, 4]], [[-2, 0, -1]], [[-2]], [[0, 2]], [[-2, 3, -4]], [[2, -5, -2, -4, 3]], [[1, 0, -1, 2, 3, -5, -2]], [ints(109, 20, -2, 2)]],
+    tests: [[[3, -1, 4, 2]], [[-3, 0, -2]], [[-2]], [[0, 2]], [[-2, 3, -4]], [[2, -5, -2, -4, 3]], [[1, 0, -1, 2, 3, -5, -2]], [ints(109, 20, -2, 2)]],
   }),
 
   problem('word-break', {
     statement: `
-Given a string \`s\` and a dictionary of strings \`wordDict\`, return \`true\` if \`s\` can be split into a sequence of **one or more dictionary words**.
-
-A dictionary word may be reused as many times as you like.
+Can the text \`s\` be **chopped into pieces that are all words from \`wordDict\`**, with nothing left over? Words may be used any number of times. Return \`true\` or \`false\`.
 `,
     params: ['s', 'wordDict'],
-    constraints: ['1 <= s.length <= 300', '1 <= wordDict.length <= 1000', '1 <= wordDict[i].length <= 20', 's and wordDict[i] consist of lowercase English letters', 'All strings in wordDict are unique'],
-    explain: ['"leetcode" can be split as "leet code".', '"applepenapple" can be split as "apple pen apple".', 'No split uses only dictionary words.'],
+    constraints: ['1 <= s.length <= 300', '1 <= wordDict.length <= 1000', '1 <= wordDict[i].length <= 20', 'All strings use only lowercase English letters', 'Dictionary words are distinct'],
+    explain: ['"sun" + "flower".', '"night" + "mare"; "ma" alone would leave "re".', '"pine" + "apple" leaves an "s" that is not a word.'],
     samples: 3,
     known: [true, true, false],
     ref: function wordBreak(s, wordDict) {
@@ -209,13 +205,13 @@ A dictionary word may be reused as many times as you like.
       return dp[s.length];
     },
     tests: [
-      ['leetcode', ['leet', 'code']],
-      ['applepenapple', ['apple', 'pen']],
-      ['catsandog', ['cats', 'dog', 'sand', 'and', 'cat']],
+      ['sunflower', ['sun', 'flow', 'flower', 'er']],
+      ['nightmare', ['night', 'mare', 'ma']],
+      ['pineapples', ['pine', 'apple', 'pen']],
       ['a', ['a']],
       ['a', ['b']],
       ['aaaaaaa', ['aaaa', 'aaa']],
-      ['cars', ['car', 'ca', 'rs']],
+      ['bird', ['bi', 'b', 'ird']],
       ['a'.repeat(250) + 'b', ['a', 'aa', 'aaa', 'aaaa']],
       ['ab'.repeat(120), ['ab', 'a', 'b']],
     ],
@@ -223,15 +219,13 @@ A dictionary word may be reused as many times as you like.
 
   problem('longest-increasing-subsequence', {
     statement: `
-Given an integer array \`nums\`, return the **length of the longest strictly increasing subsequence**.
-
-A subsequence keeps the original order of elements but may skip some of them.
+Cross out as few numbers of \`nums\` as you like (keeping the rest in order) so that what remains is **strictly increasing**. Return the **most numbers you can keep**.
 `,
     params: ['nums'],
     constraints: ['1 <= nums.length <= 2500', '-10^4 <= nums[i] <= 10^4'],
-    explain: ['One longest subsequence is [2, 3, 7, 101].', 'One longest subsequence is [0, 1, 2, 3].', 'Strictly increasing means equal values cannot be repeated.'],
+    explain: ['Keep 5, 6, 7, 8 (or 1, 2, 3, 8).', 'Equal values never count as increasing.', 'Keep 2, 3, 4.'],
     samples: 3,
-    known: [4, 4, 1],
+    known: [4, 1, 3],
     ref: function lengthOfLIS(nums) {
       const tails = [];
       for (const n of nums) {
@@ -242,36 +236,36 @@ A subsequence keeps the original order of elements but may skip some of them.
       }
       return tails.length;
     },
-    tests: [[[10, 9, 2, 5, 3, 7, 101, 18]], [[0, 1, 0, 3, 2, 3]], [[7, 7, 7, 7, 7, 7, 7]], [[1]], [[5, 4, 3, 2, 1]], [[1, 2, 3, 4, 5]], [[4, 10, 4, 3, 8, 9]], [ints(110, 2500, -10000, 10000)]],
+    tests: [[[5, 1, 6, 2, 7, 3, 8]], [[9, 9, 9]], [[2, 8, 3, 4, 1]], [[1]], [[5, 4, 3, 2, 1]], [[1, 2, 3, 4, 5]], [[6, 12, 6, 5, 10, 11]], [ints(110, 2500, -10000, 10000)]],
   }),
 
   problem('unique-paths', {
     statement: `
-A robot stands in the top-left corner of an \`m x n\` grid and wants to reach the bottom-right corner. At each step it can move only **down or right**.
+A city is a grid of \`m\` rows by \`n\` columns of blocks. A courier starts at the top-left block and must reach the bottom-right block, moving only **down or right** one block at a time.
 
-Return the number of **unique paths** the robot can take.
+Count the **different routes** the courier can take.
 `,
     params: ['m', 'n'],
-    constraints: ['1 <= m, n <= 100', 'The answer is guaranteed to be less than or equal to 2 * 10^9'],
-    explain: ['There are 28 paths through a 3 x 7 grid.', 'There are 3 paths through a 3 x 2 grid: right-down-down, down-down-right and down-right-down.'],
-    known: [28, 3],
+    constraints: ['1 <= m, n <= 100', 'The answer is at most 2 * 10^9'],
+    explain: ['Any route is 3 downs and 4 rights in some order: 35 routes.', 'One down and two rights: right-right-down, right-down-right or down-right-right.'],
+    known: [35, 3],
     ref: function uniquePaths(m, n) {
       const row = new Array(n).fill(1);
       for (let i = 1; i < m; i++) for (let j = 1; j < n; j++) row[j] += row[j - 1];
       return row[n - 1];
     },
-    tests: [[3, 7], [3, 2], [7, 3], [1, 1], [1, 10], [10, 1], [3, 3], [23, 12], [51, 9]],
+    tests: [[4, 5], [2, 3], [5, 4], [1, 1], [1, 10], [10, 1], [3, 3], [23, 12], [51, 9]],
   }),
 
   problem('jump-game', {
     statement: `
-You are given an integer array \`nums\`. You start at the first index and each element \`nums[i]\` is your **maximum jump length** from position \`i\`.
+You stand on the first square of a row. The number on square \`i\`, \`nums[i]\`, is **the farthest you may jump forward from it** (any shorter jump is allowed too).
 
-Return \`true\` if you can reach the **last index**, and \`false\` otherwise.
+Return \`true\` if you can land on the last square, otherwise \`false\`.
 `,
     params: ['nums'],
     constraints: ['1 <= nums.length <= 10^4', '0 <= nums[i] <= 10^5'],
-    explain: ['Jump 1 step from index 0 to 1, then 3 steps to the last index.', 'You always arrive at index 3, whose jump length is 0, so you can never reach the last index.'],
+    explain: ['Jump to square 1, and from there two squares to the end.', 'Every route gets stuck on the 0 at square 2.'],
     known: [true, false],
     ref: function canJump(nums) {
       let reach = 0;
@@ -281,19 +275,19 @@ Return \`true\` if you can reach the **last index**, and \`false\` otherwise.
       }
       return true;
     },
-    tests: [[[2, 3, 1, 1, 4]], [[3, 2, 1, 0, 4]], [[0]], [[0, 1]], [[1, 0, 1]], [[2, 0, 0]], [[1, 1, 1, 1, 0]], [ints(111, 9000, 0, 3)]],
+    tests: [[[1, 2, 0, 1]], [[2, 1, 0, 3]], [[0]], [[0, 1]], [[1, 0, 1]], [[2, 0, 0]], [[1, 1, 1, 1, 0]], [ints(111, 9000, 0, 3)]],
   }),
 
   problem('jump-game-ii', {
     statement: `
-You are given an integer array \`nums\` and start at index \`0\`. Each \`nums[i]\` is your **maximum jump length** from index \`i\`.
+As before, square \`i\` lets you jump forward **up to \`nums[i]\` squares**. The last square can always be reached.
 
-Return the **minimum number of jumps** needed to reach the last index. You can assume the last index is always reachable.
+Return the **fewest jumps** needed to get from the first square to the last.
 `,
     params: ['nums'],
-    constraints: ['1 <= nums.length <= 10^4', '0 <= nums[i] <= 1000', 'The last index is always reachable'],
-    explain: ['Jump 1 step to index 1, then 3 steps to the last index: 2 jumps.', 'Jump to index 1, then to the end: 2 jumps.'],
-    known: [2, 2],
+    constraints: ['1 <= nums.length <= 10^4', '0 <= nums[i] <= 1000', 'The last square is always reachable'],
+    explain: ['Hop to square 1, then the 4 carries you to the end.', 'One jump of three reaches the end.'],
+    known: [2, 1],
     ref: function jump(nums) {
       let jumps = 0;
       let end = 0;
@@ -304,19 +298,21 @@ Return the **minimum number of jumps** needed to reach the last index. You can a
       }
       return jumps;
     },
-    tests: [[[2, 3, 1, 1, 4]], [[2, 3, 0, 1, 4]], [[0]], [[1]], [[1, 2]], [[1, 1, 1, 1]], [[5, 9, 3, 2, 1, 0, 2, 3, 3, 1, 0, 0]], [ints(112, 9000, 1, 6)]],
+    tests: [[[1, 4, 1, 1, 1]], [[3, 1, 1, 1]], [[0]], [[1]], [[1, 2]], [[1, 1, 1, 1]], [[5, 9, 3, 2, 1, 0, 2, 3, 3, 1, 0, 0]], [ints(112, 9000, 1, 6)]],
   }),
 
   problem('gas-station', {
+    title: 'Fuel Stops on a Ring Road',
+    slug: 'fuel-stops-on-a-ring-road',
     statement: `
-There are \`n\` gas stations on a circular route. Station \`i\` has \`gas[i]\` units of fuel, and driving from station \`i\` to the next one costs \`cost[i]\` units. Your tank starts empty and has unlimited capacity.
+A ring road has \`n\` fuel stops. At stop \`i\` you can take on \`gas[i]\` litres, and the drive from stop \`i\` to stop \`i + 1\` (wrapping around after the last) burns \`cost[i]\` litres. Your tank starts empty and never overflows.
 
-Return the **index of the station where you should start** to complete the full circuit clockwise, or \`-1\` if that is impossible. If a solution exists it is guaranteed to be unique.
+Return the stop to **start from so you can drive one full lap**, or \`-1\` if no start works. When an answer exists, it is the only one.
 `,
     params: ['gas', 'cost'],
-    constraints: ['n == gas.length == cost.length', '1 <= n <= 10^5', '0 <= gas[i], cost[i] <= 10^4', 'If a solution exists, it is unique'],
-    explain: ['Start at station 3 with 4 units, and every later stop leaves you with enough fuel.', 'Whichever station you start at, you run out of fuel before finishing the circuit.'],
-    known: [3, -1],
+    constraints: ['n == gas.length == cost.length', '1 <= n <= 10^5', '0 <= gas[i], cost[i] <= 10^4', 'At most one start works'],
+    explain: ['From stop 1 the tank reads 3, 0, 3 and 2 after each leg, never below zero.', 'The road burns 7 litres but only 6 are available.'],
+    known: [1, -1],
     ref: function canCompleteCircuit(gas, cost) {
       let total = 0;
       let tank = 0;
@@ -330,11 +326,11 @@ Return the **index of the station where you should start** to complete the full 
       return total < 0 ? -1 : start;
     },
     tests: [
-      [[1, 2, 3, 4, 5], [3, 4, 5, 1, 2]],
-      [[2, 3, 4], [3, 4, 3]],
+      [[2, 5, 1, 4], [3, 2, 4, 1]],
+      [[1, 2, 3], [2, 2, 3]],
       [[5], [4]],
       [[2], [2]],
-      [[5, 1, 2, 3, 4], [4, 4, 1, 5, 1]],
+      [[4, 1, 6], [5, 2, 1]],
       [[3, 1, 1], [1, 2, 2]],
       (() => { const n = 5000; const gas = Array.from({ length: n }, (_, i) => (i === 1234 ? 9000 : 1)); const cost = Array.from({ length: n }, (_, i) => (i === 1233 ? 9 : 1)); return [gas, cost]; })(),
     ],
@@ -342,14 +338,12 @@ Return the **index of the station where you should start** to complete the full 
 
   problem('insert-interval', {
     statement: `
-You are given an array \`intervals\` of **non-overlapping** intervals \`[start, end]\`, **sorted by start**, and another interval \`newInterval\`.
-
-Insert \`newInterval\` so that the result is still sorted and has no overlapping intervals, **merging** any intervals that overlap with it. Return the resulting array.
+\`intervals\` is a list of **non-overlapping** \`[start, end]\` bookings, ordered by start. Add the booking \`newInterval\`, **joining it with any bookings it overlaps** so the list stays ordered and free of overlaps, and return the new list.
 `,
     params: ['intervals', 'newInterval'],
-    constraints: ['0 <= intervals.length <= 10^4', 'intervals[i].length == 2', '0 <= start <= end <= 10^5', 'intervals is sorted by start in ascending order', 'newInterval.length == 2'],
-    explain: ['The new interval overlaps [1, 3], so they merge into [1, 5].', 'The new interval [4, 8] overlaps [3, 5], [6, 7] and [8, 10], which merge into [3, 10].'],
-    known: [[[1, 5], [6, 9]], [[1, 2], [3, 10], [12, 16]]],
+    constraints: ['0 <= intervals.length <= 10^4', 'Each interval has two numbers', '0 <= start <= end <= 10^5', 'intervals is ordered by start', 'newInterval has two numbers'],
+    explain: ['[8, 13] overlaps both [7, 9] and [12, 14], so the three join into [7, 14].', 'No overlap, so the booking is simply added at the end.'],
+    known: [[[2, 4], [7, 14]], [[1, 3], [5, 6]]],
     ref: function insert(intervals, newInterval) {
       const out = [];
       let [s, e] = newInterval;
@@ -361,8 +355,8 @@ Insert \`newInterval\` so that the result is still sorted and has no overlapping
       return out;
     },
     tests: [
-      [[[1, 3], [6, 9]], [2, 5]],
-      [[[1, 2], [3, 5], [6, 7], [8, 10], [12, 16]], [4, 8]],
+      [[[2, 4], [7, 9], [12, 14]], [8, 13]],
+      [[[1, 3]], [5, 6]],
       [[], [5, 7]],
       [[[1, 5]], [2, 3]],
       [[[1, 5]], [6, 8]],
@@ -374,14 +368,14 @@ Insert \`newInterval\` so that the result is still sorted and has no overlapping
 
   problem('merge-intervals', {
     statement: `
-Given an array of \`intervals\` where \`intervals[i] = [start, end]\`, **merge all overlapping intervals** and return an array of the non-overlapping intervals that cover all the input intervals, sorted by start.
+\`intervals\` lists time ranges \`[start, end]\` in no particular order. **Combine every group of overlapping ranges into one range** and return the result ordered by start.
 
-Two intervals that share only an endpoint, such as \`[1, 4]\` and \`[4, 5]\`, are considered overlapping.
+Ranges that just touch, like \`[3, 7]\` and \`[7, 9]\`, count as overlapping.
 `,
     params: ['intervals'],
-    constraints: ['1 <= intervals.length <= 10^4', 'intervals[i].length == 2', '0 <= start <= end <= 10^4'],
-    explain: ['[1, 3] and [2, 6] overlap and merge into [1, 6].', 'The two intervals touch at 4, so they merge.'],
-    known: [[[1, 6], [8, 10], [15, 18]], [[1, 5]]],
+    constraints: ['1 <= intervals.length <= 10^4', 'Each interval has two numbers', '0 <= start <= end <= 10^4'],
+    explain: ['[5, 8] and [6, 10] overlap and become [5, 10].', 'The ranges meet at 7, so they join.'],
+    known: [[[1, 2], [5, 10], [12, 13]], [[3, 9]]],
     ref: function merge(intervals) {
       const sorted = intervals.map((x) => [...x]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
       const out = [sorted[0]];
@@ -393,9 +387,9 @@ Two intervals that share only an endpoint, such as \`[1, 4]\` and \`[4, 5]\`, ar
       return out;
     },
     tests: [
-      [[[1, 3], [2, 6], [8, 10], [15, 18]]],
-      [[[1, 4], [4, 5]]],
-      [[[1, 4], [0, 4]]],
+      [[[5, 8], [1, 2], [6, 10], [12, 13]]],
+      [[[3, 7], [7, 9]]],
+      [[[2, 5], [0, 5]]],
       [[[1, 4], [2, 3]]],
       [[[5, 6]]],
       [[[2, 3], [4, 5], [6, 7], [8, 9], [1, 10]]],
@@ -405,15 +399,15 @@ Two intervals that share only an endpoint, such as \`[1, 4]\` and \`[4, 5]\`, ar
 
   problem('non-overlapping-intervals', {
     statement: `
-Given an array of \`intervals\` where \`intervals[i] = [start, end]\`, return the **minimum number of intervals you must remove** so that the rest are non-overlapping.
+A meeting room has requests \`intervals\`, each \`[start, end]\`. Return the **fewest requests you must cancel** so that no two remaining meetings overlap.
 
-Intervals that only touch at an endpoint, such as \`[1, 2]\` and \`[2, 3]\`, do **not** overlap.
+A meeting may start at the exact moment another ends; that is not an overlap.
 `,
     params: ['intervals'],
-    constraints: ['1 <= intervals.length <= 10^5', 'intervals[i].length == 2', '-5 * 10^4 <= start < end <= 5 * 10^4'],
-    explain: ['Removing [1, 3] leaves three non-overlapping intervals.', 'The three intervals are identical, so two must go.', 'The intervals only touch, so nothing needs to be removed.'],
+    constraints: ['1 <= intervals.length <= 10^5', 'Each interval has two numbers', '-5 * 10^4 <= start < end <= 5 * 10^4'],
+    explain: ['Cancel [1, 4]; [2, 3] and [3, 6] fit back to back.', 'Two identical requests: one must go.', 'The meetings only touch at 6.'],
     samples: 3,
-    known: [1, 2, 0],
+    known: [1, 1, 0],
     ref: function eraseOverlapIntervals(intervals) {
       const sorted = intervals.map((x) => [...x]).sort((a, b) => a[1] - b[1]);
       let kept = 0;
@@ -424,10 +418,10 @@ Intervals that only touch at an endpoint, such as \`[1, 2]\` and \`[2, 3]\`, do 
       return intervals.length - kept;
     },
     tests: [
-      [[[1, 2], [2, 3], [3, 4], [1, 3]]],
-      [[[1, 2], [1, 2], [1, 2]]],
-      [[[1, 2], [2, 3]]],
-      [[[1, 100], [11, 22], [1, 11], [2, 12]]],
+      [[[1, 4], [2, 3], [3, 6]]],
+      [[[0, 5], [0, 5]]],
+      [[[4, 6], [6, 8]]],
+      [[[1, 50], [5, 15], [1, 5], [2, 6]]],
       [[[0, 2], [1, 3], [2, 4], [3, 5], [4, 6]]],
       [[[-50000, 50000]]],
       [(() => { const r = rng(114); return Array.from({ length: 4000 }, () => { const a = randInt(r, -49000, 48000); return [a, a + randInt(r, 1, 900)]; }); })()],

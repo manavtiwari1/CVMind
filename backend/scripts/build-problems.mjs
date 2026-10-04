@@ -97,11 +97,12 @@ function build(spec, existing) {
 
   const entry = {
     id: existing.id,
-    title: existing.title,
-    slug: existing.slug,
+    title: spec.title || existing.title,
+    slug: spec.slug || existing.slug,
     difficulty: existing.difficulty,
     category: existing.category,
-    companies: existing.companies,
+    // company tags had no source behind them, so none are shipped
+    companies: [],
     acceptanceRate: '',
     description: spec.statement.trim(),
     constraints: spec.constraints,

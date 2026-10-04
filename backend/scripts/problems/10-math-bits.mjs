@@ -5,126 +5,122 @@ const UNSIGNED = '0 <= n <= 2^32 - 1, given as a non-negative integer';
 export default [
   problem('number-of-1-bits', {
     statement: `
-Given a positive integer \`n\`, treated as a **32-bit unsigned integer**, return the number of \`1\` bits in its binary representation (its **Hamming weight**).
+Write the positive integer \`n\` in binary as a **32-bit unsigned value** and count **how many of its bits are 1**.
 `,
     params: ['n'],
     cpp: { args: ['uint32_t'], ret: 'int' },
     constraints: ['1 <= n <= 2^32 - 1'],
-    explain: ['11 is 1011 in binary, which has three 1 bits.', '128 is 10000000 in binary, which has one 1 bit.', '2147483645 is 1111111111111111111111111111101 in binary, which has thirty 1 bits.'],
+    explain: ['13 is 1101 in binary: three 1s.', '256 is a single 1 followed by eight 0s.', '4294967294 is thirty-one 1s and a final 0.'],
     samples: 3,
-    known: [3, 1, 30],
+    known: [3, 1, 31],
     ref: function hammingWeight(n) {
       let count = 0;
       n = n >>> 0;
       while (n) { count += n & 1; n >>>= 1; }
       return count;
     },
-    tests: [[11], [128], [2147483645], [1], [4294967295], [2147483648], [1023], [123456789]],
+    tests: [[13], [256], [4294967294], [1], [4294967295], [2147483648], [1023], [123456789]],
   }),
 
   problem('counting-bits', {
     statement: `
-Given an integer \`n\`, return an array \`ans\` of length \`n + 1\` where \`ans[i]\` is the **number of \`1\` bits** in the binary representation of \`i\`, for every \`0 <= i <= n\`.
+For every whole number \`i\` from \`0\` up to \`n\`, count the **1s in the binary form of \`i\`**. Return the \`n + 1\` counts as an array, with the count for \`i\` at position \`i\`.
 
-Can you do it in a single pass, without counting the bits of each number separately?
+Try to reuse earlier counts instead of examining each number from scratch.
 `,
     params: ['n'],
     constraints: ['0 <= n <= 10^5'],
-    explain: ['0, 1 and 2 have 0, 1 and 1 set bits.', '0 to 5 are 0, 1, 10, 11, 100 and 101 in binary, which have 0, 1, 1, 2, 1 and 2 set bits.'],
-    known: [[0, 1, 1], [0, 1, 1, 2, 1, 2]],
+    explain: ['0, 1, 10 and 11 in binary contain 0, 1, 1 and 2 ones.', '4, 5 and 6 are 100, 101 and 110: 1, 2 and 2 ones.'],
+    known: [[0, 1, 1, 2], [0, 1, 1, 2, 1, 2, 2]],
     ref: function countBits(n) {
       const bits = new Array(n + 1).fill(0);
       for (let i = 1; i <= n; i++) bits[i] = bits[i >> 1] + (i & 1);
       return bits;
     },
-    tests: [[2], [5], [0], [1], [16], [31], [1000], [100000]],
+    tests: [[3], [6], [0], [1], [16], [31], [1000], [100000]],
   }),
 
   problem('reverse-bits', {
     statement: `
-Reverse the bits of a **32-bit unsigned integer** \`n\` and return the result as an unsigned integer.
+Write \`n\` as exactly **32 binary digits** (with leading zeros), **read those digits backwards**, and return the unsigned integer they form.
 
-For example, the 32-bit input \`00000010100101000001111010011100\` becomes \`00111001011110000010100101000000\`.
+For instance \`00000000000000000000000000000110\` (6) turns into \`01100000000000000000000000000000\`.
 `,
     params: ['n'],
     cpp: { args: ['uint32_t'], ret: 'uint32_t' },
     constraints: ['0 <= n <= 2^32 - 1'],
-    explain: ['43261596 reversed bit by bit is 964176192.', '4294967293 reversed bit by bit is 3221225471.'],
-    known: [964176192, 3221225471],
+    explain: ['The lowest bit moves to the highest position: 2^31.', '6 becomes 2^30 + 2^29.'],
+    known: [2147483648, 1610612736],
     ref: function reverseBits(n) {
       let result = 0;
       n = n >>> 0;
       for (let i = 0; i < 32; i++) { result = (result * 2) + (n & 1); n >>>= 1; }
       return result;
     },
-    tests: [[43261596], [4294967293], [0], [1], [2147483648], [4294967295], [255], [3141592653]],
+    tests: [[1], [6], [0], [2147483648], [4294967295], [255], [3141592653], [12345678]],
   }),
 
   problem('missing-number', {
     statement: `
-Given an array \`nums\` containing \`n\` **distinct** numbers taken from the range \`[0, n]\`, return the **one number in that range that is missing** from the array.
+\`nums\` has \`n\` different numbers, all chosen from \`0, 1, ..., n\`. Exactly **one number from that range was left out**. Return it.
 `,
     params: ['nums'],
-    constraints: ['n == nums.length', '1 <= n <= 10^4', '0 <= nums[i] <= n', 'All the numbers of nums are unique'],
-    explain: ['n = 3, so the range is [0, 3]. The number 2 is missing.', 'n = 2, so the range is [0, 2]. The number 2 is missing.', 'n = 9, so the range is [0, 9]. The number 8 is missing.'],
+    constraints: ['n == nums.length', '1 <= n <= 10^4', '0 <= nums[i] <= n', 'Values in nums are distinct'],
+    explain: ['With four numbers the range is 0 to 4, and 3 is absent.', 'The range is 0 to 1, and 0 is absent.', 'The range is 0 to 3, and 3 is absent.'],
     samples: 3,
-    known: [2, 2, 8],
+    known: [3, 0, 3],
     ref: function missingNumber(nums) {
       let expected = (nums.length * (nums.length + 1)) / 2;
       for (const n of nums) expected -= n;
       return expected;
     },
-    tests: [[[3, 0, 1]], [[0, 1]], [[9, 6, 4, 2, 3, 5, 7, 0, 1]], [[0]], [[1]], [[1, 2]], [(() => { const n = 9000; const a = Array.from({ length: n + 1 }, (_, i) => i); const miss = 4321; a.splice(miss, 1); const r = rng(301); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return [a]; })()][0]],
+    tests: [[[4, 0, 1, 2]], [[1]], [[2, 0, 1]], [[0]], [[1, 2]], [(() => { const n = 9000; const a = Array.from({ length: n + 1 }, (_, i) => i); const miss = 4321; a.splice(miss, 1); const r = rng(301); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return [a]; })()][0]],
   }),
 
   problem('sum-of-two-integers', {
     statement: `
-Given two integers \`a\` and \`b\`, return their **sum** without using the operators \`+\` and \`-\`.
+Add the integers \`a\` and \`b\` and return the result, **without using the \`+\` or \`-\` operators** anywhere in your code.
 
-Hint: think about how a computer adds binary numbers with XOR and carry.
+Hint: binary addition can be split into a sum without carries (XOR) and the carries themselves (AND, shifted left).
 `,
     params: ['a', 'b'],
     constraints: ['-1000 <= a, b <= 1000'],
-    explain: ['1 + 2 = 3.', '2 + 3 = 5.'],
-    known: [3, 5],
+    explain: ['4 + 9 = 13.', '-6 + 2 = -4.'],
+    known: [13, -4],
     ref: function getSum(a, b) { return a + b; },
-    tests: [[1, 2], [2, 3], [0, 0], [-1, 1], [-5, -7], [1000, 1000], [-1000, 999], [13, -29]],
+    tests: [[4, 9], [-6, 2], [0, 0], [-1, 1], [-5, -7], [1000, 1000], [-1000, 999], [13, -29]],
   }),
 
   problem('reverse-integer', {
     statement: `
-Given a signed 32-bit integer \`x\`, return \`x\` with its **digits reversed**. If reversing makes the value go outside the signed 32-bit range \`[-2^31, 2^31 - 1]\`, return \`0\`.
+Return the 32-bit signed integer \`x\` with its **decimal digits in reverse order**, keeping its sign. If the reversed number does not fit in \`[-2^31, 2^31 - 1]\`, return \`0\` instead.
 
-Assume the environment does not let you store 64-bit integers.
+Pretend you cannot use 64-bit integers.
 `,
     params: ['x'],
     constraints: ['-2^31 <= x <= 2^31 - 1'],
-    explain: ['Reversing 123 gives 321.', 'The sign is kept: -123 becomes -321.', 'Trailing zeros disappear: 120 becomes 21.', 'The reversed value 9646324351 does not fit in 32 bits, so the answer is 0.'],
+    explain: ['456 backwards is 654.', 'The minus sign stays in front: -890 becomes -98 (the leading zero drops).', '1000 backwards is 0001, which is 1.'],
     samples: 3,
-    known: [321, -321, 21],
+    known: [654, -98, 1],
     ref: function reverse(x) {
       const sign = x < 0 ? -1 : 1;
       const reversed = Number(String(Math.abs(x)).split('').reverse().join('')) * sign;
       return reversed < -(2 ** 31) || reversed > 2 ** 31 - 1 ? 0 : reversed;
     },
-    tests: [[123], [-123], [120], [0], [1534236469], [-2147483648], [2147483647], [1463847412], [-1563847412], [900000]],
+    tests: [[456], [-890], [1000], [0], [1999999999], [-2147483648], [2147483647], [1463847412], [-1563847412], [900000]],
   }),
 
   problem('roman-to-integer', {
     statement: `
-Roman numerals use the symbols \`I\` (1), \`V\` (5), \`X\` (10), \`L\` (50), \`C\` (100), \`D\` (500) and \`M\` (1000). Symbols are normally written from largest to smallest and added together, except that a smaller symbol **before** a larger one is subtracted:
+Turn the Roman numeral \`s\` into an ordinary integer. The letters are worth \`I = 1\`, \`V = 5\`, \`X = 10\`, \`L = 50\`, \`C = 100\`, \`D = 500\` and \`M = 1000\`.
 
-- \`I\` before \`V\` or \`X\` makes 4 and 9,
-- \`X\` before \`L\` or \`C\` makes 40 and 90,
-- \`C\` before \`D\` or \`M\` makes 400 and 900.
-
-Given a Roman numeral \`s\`, convert it to an integer.
+Values are usually added from left to right. The exception: when a letter is **worth less than the letter right after it**, it is subtracted instead (\`IV = 4\`, \`XC = 90\`, \`CM = 900\`, and so on).
 `,
     params: ['s'],
-    constraints: ['1 <= s.length <= 15', 's contains only the characters I, V, X, L, C, D and M', 's is a valid Roman numeral in the range [1, 3999]'],
-    explain: ['III = 3.', 'L = 50, V = 5 and III = 3.', 'M = 1000, CM = 900, XC = 90 and IV = 4.'],
+    constraints: ['1 <= s.length <= 15', 's uses only I, V, X, L, C, D and M', 's is a valid numeral between 1 and 3999'],
+    explain: ['X + IV = 10 + 4.', 'L + XXX = 50 + 30.', 'CD + XC + VII = 400 + 90 + 7.'],
     samples: 3,
-    known: [3, 58, 1994],
+    known: [14, 80, 497],
     ref: function romanToInt(s) {
       const value = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
       let total = 0;
@@ -134,55 +130,55 @@ Given a Roman numeral \`s\`, convert it to an integer.
       }
       return total;
     },
-    tests: [['III'], ['LVIII'], ['MCMXCIV'], ['IV'], ['IX'], ['XL'], ['CDXLIV'], ['MMMCMXCIX'], ['DCCCXC']],
+    tests: [['XIV'], ['LXXX'], ['CDXCVII'], ['IV'], ['IX'], ['XL'], ['CDXLIV'], ['MMMCMXCIX'], ['DCCCXC']],
   }),
 
   problem('integer-to-roman', {
     statement: `
-Convert the integer \`num\` to a **Roman numeral**.
+Write \`num\` as a **Roman numeral** using \`I = 1\`, \`V = 5\`, \`X = 10\`, \`L = 50\`, \`C = 100\`, \`D = 500\` and \`M = 1000\`.
 
-Roman numerals use the symbols \`I\` (1), \`V\` (5), \`X\` (10), \`L\` (50), \`C\` (100), \`D\` (500) and \`M\` (1000). Write the value from the largest symbol down, using the subtractive forms \`IV\` (4), \`IX\` (9), \`XL\` (40), \`XC\` (90), \`CD\` (400) and \`CM\` (900) where they apply. A symbol is never repeated more than three times in a row.
+Build it from the largest value downwards. Where a digit is 4 or 9, use the subtractive pairs \`IV\`, \`IX\`, \`XL\`, \`XC\`, \`CD\` or \`CM\`, so no letter ever appears more than three times in a row.
 `,
     params: ['num'],
     constraints: ['1 <= num <= 3999'],
-    explain: ['3 is three ones.', '58 is L + V + III.', '1994 is M + CM + XC + IV.'],
+    explain: ['10 + 4 is X + IV.', '50 + 30 is L + XXX.', '400 + 90 + 7 is CD + XC + VII.'],
     samples: 3,
-    known: ['III', 'LVIII', 'MCMXCIV'],
+    known: ['XIV', 'LXXX', 'CDXCVII'],
     ref: function intToRoman(num) {
       const table = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
       let out = '';
       for (const [v, sym] of table) while (num >= v) { out += sym; num -= v; }
       return out;
     },
-    tests: [[3], [58], [1994], [4], [9], [40], [444], [3999], [1], [2024]],
+    tests: [[14], [80], [497], [4], [9], [40], [444], [3999], [1], [2024]],
   }),
 
   problem('powx-n', {
     statement: `
-Implement \`pow(x, n)\`, which raises the number \`x\` to the integer power \`n\` and returns \`x^n\`.
+Compute \`x\` raised to the whole-number power \`n\` (which may be negative or zero) and return it.
 
-Answers within \`10^-5\` of the exact value are accepted. Try to use **fast exponentiation** so that large exponents finish quickly.
+Answers within \`10^-5\` are accepted. With exponents up to two billion, multiplying one step at a time is too slow, so use **repeated squaring**.
 `,
     params: ['x', 'n'],
     meta: { compare: 'float' },
-    constraints: ['-100.0 < x < 100.0', '-2^31 <= n <= 2^31 - 1', 'n is an integer', 'Either x is not zero or n > 0', '-10^4 <= x^n <= 10^4'],
-    explain: ['2 to the 10th power is 1024.', '2.1 cubed is 9.261.', 'A negative exponent means a reciprocal: 2^-2 = 1 / 4 = 0.25.'],
+    constraints: ['-100.0 < x < 100.0', '-2^31 <= n <= 2^31 - 1', 'n is a whole number', 'x is not zero, or n > 0', '-10^4 <= x^n <= 10^4'],
+    explain: ['3 x 3 x 3 x 3 = 81.', '1.5 squared is 2.25.', 'A negative power flips the result: 4^-1 = 1 / 4.'],
     samples: 3,
-    known: [1024, 9.261000000000001, 0.25],
+    known: [81, 2.25, 0.25],
     ref: function myPow(x, n) { return Math.pow(x, n); },
-    tests: [[2, 10], [2.1, 3], [2, -2], [1, 2147483647], [-1, 2147483647], [0.00001, 2147483647], [2, 0], [1.00001, 1000], [-3, 5], [10, -4]],
+    tests: [[3, 4], [1.5, 2], [4, -1], [1, 2147483647], [-1, 2147483647], [0.00001, 2147483647], [2, 0], [1.00001, 1000], [-3, 5], [10, -4]],
   }),
 
   problem('sqrtx', {
     statement: `
-Given a non-negative integer \`x\`, return the **square root of \`x\` rounded down** to the nearest integer. The result must be non-negative.
+Return the **largest whole number whose square is at most \`x\`**, that is, the square root of \`x\` rounded down.
 
-You must not use any built-in exponent function or operator such as \`pow(x, 0.5)\` or \`x ** 0.5\`.
+Built-in power or square-root helpers (\`Math.sqrt\`, \`x ** 0.5\` and friends) are off limits.
 `,
     params: ['x'],
     constraints: ['0 <= x <= 2^31 - 1'],
-    explain: ['The square root of 4 is exactly 2.', 'The square root of 8 is about 2.83, which rounds down to 2.'],
-    known: [2, 2],
+    explain: ['3 x 3 = 9 exactly.', '3 x 3 = 9 fits under 15, but 4 x 4 = 16 does not.'],
+    known: [3, 3],
     ref: function mySqrt(x) {
       let lo = 0;
       let hi = Math.min(x, 46341);
@@ -193,20 +189,18 @@ You must not use any built-in exponent function or operator such as \`pow(x, 0.5
       }
       return lo;
     },
-    tests: [[4], [8], [0], [1], [2], [16], [99], [2147395599], [2147483647], [15241578750190521]].slice(0, 9),
+    tests: [[9], [15], [0], [1], [2], [16], [99], [2147395599], [2147483647], [15241578750190521]].slice(0, 9),
   }),
 
   problem('plus-one', {
     statement: `
-You are given a **large integer** as an array \`digits\`, where \`digits[i]\` is the \`i\`th digit and the digits are ordered from most significant to least significant. The number has no leading zeros.
-
-Add **one** to the integer and return the resulting array of digits.
+A very long number is stored digit by digit in \`digits\`, **most significant digit first**, with no leading zeros. Add \`1\` to it and return the new digit array.
 `,
     params: ['digits'],
-    constraints: ['1 <= digits.length <= 100', '0 <= digits[i] <= 9', 'digits does not contain leading zeros'],
-    explain: ['The array represents 123, and 123 + 1 = 124.', 'The array represents 4321, and 4321 + 1 = 4322.', 'The array represents 9, and 9 + 1 = 10.'],
+    constraints: ['1 <= digits.length <= 100', '0 <= digits[i] <= 9', 'No leading zeros'],
+    explain: ['279 + 1 = 280: the 9 rolls over and carries.', '5 + 1 = 6.', '99 + 1 = 100 needs an extra digit.'],
     samples: 3,
-    known: [[1, 2, 4], [4, 3, 2, 2], [1, 0]],
+    known: [[2, 8, 0], [6], [1, 0, 0]],
     ref: function plusOne(digits) {
       const out = [...digits];
       for (let i = out.length - 1; i >= 0; i--) {
@@ -215,17 +209,17 @@ Add **one** to the integer and return the resulting array of digits.
       }
       return [1, ...out];
     },
-    tests: [[[1, 2, 3]], [[4, 3, 2, 1]], [[9]], [[0]], [[9, 9, 9]], [[1, 9, 9]], [[8, 9, 9, 9, 9]], [Array.from({ length: 100 }, () => 9)]],
+    tests: [[[2, 7, 9]], [[5]], [[9, 9]], [[0]], [[9, 9, 9]], [[1, 9, 9]], [[8, 9, 9, 9, 9]], [Array.from({ length: 100 }, () => 9)]],
   }),
 
   problem('add-binary', {
     statement: `
-Given two binary strings \`a\` and \`b\`, return their **sum as a binary string**.
+\`a\` and \`b\` are numbers written in binary as strings of \`0\`s and \`1\`s. Return **their sum, also written in binary**.
 `,
     params: ['a', 'b'],
-    constraints: ['1 <= a.length, b.length <= 10^4', 'a and b consist only of the characters "0" and "1"', 'Each string contains no leading zeros, except for the string "0" itself'],
-    explain: ['1 + 1 carries into a new digit: 11 + 1 = 100.', '1010 + 1011 = 10101.'],
-    known: ['100', '10101'],
+    constraints: ['1 <= a.length, b.length <= 10^4', 'Both strings contain only "0" and "1"', 'No leading zeros, except the string "0" itself'],
+    explain: ['5 + 3 = 8, which is 1000 in binary.', '9 + 6 = 15, which is 1111.'],
+    known: ['1000', '1111'],
     ref: function addBinary(a, b) {
       let i = a.length - 1;
       let j = b.length - 1;
@@ -238,6 +232,6 @@ Given two binary strings \`a\` and \`b\`, return their **sum as a binary string*
       }
       return out;
     },
-    tests: [['11', '1'], ['1010', '1011'], ['0', '0'], ['1', '1'], ['1111', '1111'], ['100', '110010'], ['1'.repeat(200), '1'], ['1' + '0'.repeat(300), '1' + '0'.repeat(150)]],
+    tests: [['101', '11'], ['1001', '110'], ['0', '0'], ['1', '1'], ['1111', '1111'], ['100', '110010'], ['1'.repeat(200), '1'], ['1' + '0'.repeat(300), '1' + '0'.repeat(150)]],
   }),
 ];

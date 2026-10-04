@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { CalendarCheck, Check, ChevronLeft, ChevronRight, Circle, Dices, Flame, Search, Sparkles, Timer, X } from 'lucide-react';
-import { COMPANIES, TOPICS, type CodingProblem } from '../../data/codingProblems';
+import { TOPICS, type CodingProblem } from '../../data/codingProblems';
 import { LEVEL_RANK, LEVELS, levelOf } from '../../data/codingLevels';
 import { computeStreak, dailyProblem, dayKey, statusOf, summarize, useProgress } from './codeStore';
 import './code-problemset.css';
@@ -35,7 +35,6 @@ export default function ProblemSet({ problems, onOpen, onOpenAi, onOpenPractice 
   const [topic, setTopic] = useState('All');
   const [level, setLevel] = useState('All');
   const [status, setStatus] = useState('All');
-  const [company, setCompany] = useState('All');
   const [sort, setSort] = useState<SortKey>('level');
   const [page, setPage] = useState(1);
 
@@ -61,28 +60,27 @@ export default function ProblemSet({ problems, onOpen, onOpenAi, onOpenPractice 
     let list = numbered.filter(({ p, level: l }) => {
       if (topic !== 'All' && p.category !== topic) return false;
       if (level !== 'All' && l !== level) return false;
-      if (company !== 'All' && !p.companies.includes(company)) return false;
       if (status !== 'All') {
         const s = statusOf(progress, p.id);
         if (status === 'Solved' && s !== 'solved') return false;
         if (status === 'Attempted' && s !== 'attempted') return false;
         if (status === 'Todo' && s !== 'todo') return false;
       }
-      if (q && !`${p.title} ${p.category} ${p.companies.join(' ')}`.toLowerCase().includes(q)) return false;
+      if (q && !`${p.title} ${p.category}`.toLowerCase().includes(q)) return false;
       return true;
     });
     if (sort === 'level') list = [...list].sort((a, b) => LEVEL_RANK[a.level] - LEVEL_RANK[b.level] || a.n - b.n);
     if (sort === 'level-desc') list = [...list].sort((a, b) => LEVEL_RANK[b.level] - LEVEL_RANK[a.level] || a.n - b.n);
     if (sort === 'title') list = [...list].sort((a, b) => a.p.title.localeCompare(b.p.title));
     return list;
-  }, [numbered, query, topic, level, company, status, sort, progress]);
+  }, [numbered, query, topic, level, status, sort, progress]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = Math.min(page, pages);
   const visible = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
-  const hasFilters = query || topic !== 'All' || level !== 'All' || status !== 'All' || company !== 'All' || sort !== 'level';
+  const hasFilters = query || topic !== 'All' || level !== 'All' || status !== 'All' || sort !== 'level';
 
-  const resetFilters = () => { setQuery(''); setTopic('All'); setLevel('All'); setStatus('All'); setCompany('All'); setSort('level'); setPage(1); };
+  const resetFilters = () => { setQuery(''); setTopic('All'); setLevel('All'); setStatus('All'); setSort('level'); setPage(1); };
   const update = <T,>(setter: (v: T) => void) => (v: T) => { setter(v); setPage(1); };
 
   const pickRandom = () => {
@@ -137,10 +135,6 @@ export default function ProblemSet({ problems, onOpen, onOpenAi, onOpenPractice 
             <option value="All">Status</option>
             <option value="Todo">Todo</option><option value="Attempted">Attempted</option><option value="Solved">Solved</option>
           </select>
-          <select className="cx-select" value={company} onChange={(e) => update(setCompany)(e.target.value)} aria-label="Company">
-            <option value="All">Company</option>
-            {COMPANIES.filter((c) => c !== 'All').map((c) => <option key={c}>{c}</option>)}
-          </select>
           <select className="cx-select" value={sort} onChange={(e) => update(setSort)(e.target.value as SortKey)} aria-label="Sort">
             <option value="level">Sort: Beginner first</option>
             <option value="level-desc">Advanced first</option>
@@ -167,7 +161,6 @@ export default function ProblemSet({ problems, onOpen, onOpenAi, onOpenPractice 
                   <th className="cx-col-status">Status</th>
                   <th>Title</th>
                   <th className="cx-col-topic">Topic</th>
-                  <th className="cx-col-company">Companies</th>
                   <th className="cx-col-diff">Level</th>
                 </tr>
               </thead>
@@ -188,9 +181,6 @@ export default function ProblemSet({ problems, onOpen, onOpenAi, onOpenPractice 
                         </button>
                       </td>
                       <td className="cx-col-topic"><span className="cx-tag">{p.category}</span></td>
-                      <td className="cx-col-company">
-                        <span className="cx-company-text">{p.companies.slice(0, 2).join(', ')}{p.companies.length > 2 ? ` +${p.companies.length - 2}` : ''}</span>
-                      </td>
                       <td className="cx-col-diff"><span className={`cx-diff cx-diff--${l.toLowerCase()}`} title={p.difficulty}>{l}</span></td>
                     </tr>
                   );

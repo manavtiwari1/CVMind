@@ -3,24 +3,24 @@ import { problem, rng, randInt, DESIGN_NOTE } from './_lib.mjs';
 export default [
   problem('min-stack', {
     statement: `
-Design a stack that supports \`push\`, \`pop\`, \`top\` and retrieving the **minimum element**, all in **constant time**.
+Build a stack that can also report **the smallest value it currently holds**. Every operation must take **O(1)** time.
 
 Implement the \`MinStack\` class:
 
-- \`MinStack()\` creates an empty stack.
-- \`push(val)\` pushes \`val\` onto the stack.
-- \`pop()\` removes the element on top of the stack.
-- \`top()\` returns the element on top of the stack.
-- \`getMin()\` returns the smallest element currently in the stack.
+- \`MinStack()\` starts with an empty stack.
+- \`push(val)\` places \`val\` on top.
+- \`pop()\` discards the top value.
+- \`top()\` returns the top value without removing it.
+- \`getMin()\` returns the smallest value anywhere in the stack.
 
 ${DESIGN_NOTE}
 `,
     meta: { kind: 'design' },
     design: { className: 'MinStack', ctor: [], methods: [['push', ['val']], ['pop', []], ['top', []], ['getMin', []]] , cpp: { ctor: [], methods: [{ name: 'push', args: ['int'], names: ['val'], ret: 'void' }, { name: 'pop', args: [], ret: 'void' }, { name: 'top', args: [], ret: 'int' }, { name: 'getMin', args: [], ret: 'int' }] } },
-    constraints: ['-2^31 <= val <= 2^31 - 1', 'pop, top and getMin are always called on a non-empty stack', 'At most 3 * 10^4 calls are made'],
-    explain: ['After pushing -2, 0 and -3 the minimum is -3. After one pop the top is 0 and the minimum is -2.'],
+    constraints: ['-2^31 <= val <= 2^31 - 1', 'pop, top and getMin are only called when the stack is not empty', 'At most 3 * 10^4 calls in total'],
+    explain: ['With 4 and 7 inside the minimum is 4. Pushing 1 lowers it to 1, and popping the 1 brings it back to 4, with 7 on top.'],
     samples: 1,
-    known: [[null, null, null, null, -3, null, 0, -2]],
+    known: [[null, null, null, 4, null, 1, null, 4, 7]],
     ref: class MinStack {
       constructor() { this.values = []; this.mins = []; }
       push(val) { this.values.push(val); this.mins.push(this.mins.length ? Math.min(val, this.mins[this.mins.length - 1]) : val); }
@@ -29,7 +29,7 @@ ${DESIGN_NOTE}
       getMin() { return this.mins[this.mins.length - 1]; }
     },
     tests: [
-      [['MinStack', 'push', 'push', 'push', 'getMin', 'pop', 'top', 'getMin'], [[], [-2], [0], [-3], [], [], [], []]],
+      [['MinStack', 'push', 'push', 'getMin', 'push', 'getMin', 'pop', 'getMin', 'top'], [[], [4], [7], [], [1], [], [], [], []]],
       [['MinStack', 'push', 'getMin', 'top'], [[], [5], [], []]],
       [['MinStack', 'push', 'push', 'getMin', 'pop', 'getMin'], [[], [2], [1], [], [], []]],
       [['MinStack', 'push', 'push', 'push', 'pop', 'getMin', 'top'], [[], [3], [3], [1], [], [], []]],
@@ -53,17 +53,16 @@ ${DESIGN_NOTE}
 
   problem('evaluate-reverse-polish-notation', {
     statement: `
-You are given an array of strings \`tokens\` that holds an arithmetic expression in **Reverse Polish Notation** (postfix). Evaluate it and return the result as an integer.
+\`tokens\` is an arithmetic expression written in **postfix order**: each operator comes right after its two operands, so \`3 4 +\` means \`3 + 4\`. Compute its value.
 
-- The valid operators are \`+\`, \`-\`, \`*\` and \`/\`. Each operand is an integer or another expression.
-- Division between two integers **truncates toward zero**.
-- The expression is always valid, never divides by zero, and every intermediate value fits in a 32-bit integer.
+- Operators are \`+\`, \`-\`, \`*\` and \`/\`; everything else is an integer.
+- \`/\` is integer division that **drops the fractional part** (it rounds toward zero).
+- The expression is always well formed, never divides by zero, and stays within 32-bit integers.
 `,
     params: ['tokens'],
-    constraints: ['1 <= tokens.length <= 10^4', 'tokens[i] is an operator or an integer in the range [-200, 200]'],
-    explain: ['((2 + 1) * 3) = 9', '(4 + (13 / 5)) = 4 + 2 = 6', 'The expression reduces step by step to 22.'],
-    samples: 3,
-    known: [9, 6, 22],
+    constraints: ['1 <= tokens.length <= 10^4', 'Each token is an operator or an integer from -200 to 200'],
+    explain: ['(6 - 2) * 4 = 16', '20 / (3 + 4) = 2, since the fraction is dropped.'],
+    known: [16, 2],
     ref: function evalRPN(tokens) {
       const stack = [];
       for (const t of tokens) {
@@ -81,9 +80,9 @@ You are given an array of strings \`tokens\` that holds an arithmetic expression
       return stack.pop();
     },
     tests: [
-      [['2', '1', '+', '3', '*']],
-      [['4', '13', '5', '/', '+']],
-      [['10', '6', '9', '3', '+', '-11', '*', '/', '*', '17', '+', '5', '+']],
+      [['6', '2', '-', '4', '*']],
+      [['20', '3', '4', '+', '/']],
+      [['3', '4', '5', '*', '-', '2', '/']],
       [['3']],
       [['-7', '2', '/']],
       [['7', '-2', '/']],
@@ -95,15 +94,15 @@ You are given an array of strings \`tokens\` that holds an arithmetic expression
 
   problem('generate-parentheses', {
     statement: `
-Given \`n\` pairs of parentheses, return **every well-formed combination** of exactly \`n\` pairs.
+List **every balanced string made of \`n\` opening and \`n\` closing parentheses**. Balanced means that, reading left to right, you never close more parentheses than you have opened.
 
-A combination is well-formed when every opening parenthesis is closed in the right order. You may return the combinations in any order.
+Return the strings in any order.
 `,
     params: ['n'],
     meta: { compare: 'unordered' },
     constraints: ['1 <= n <= 8'],
-    explain: ['Only one arrangement exists for a single pair.', 'There are five well-formed arrangements of three pairs.'],
-    known: [['()'], ['((()))', '(()())', '(())()', '()(())', '()()()']],
+    explain: ['Two pairs can be nested or placed side by side.', 'One pair has a single arrangement.'],
+    known: [['(())', '()()'], ['()']],
     ref: function generateParenthesis(n) {
       const out = [];
       const build = (cur, open, close) => {
@@ -114,19 +113,21 @@ A combination is well-formed when every opening parenthesis is closed in the rig
       build('', 0, 0);
       return out;
     },
-    tests: [[1], [3], [2], [4], [5], [8]],
+    tests: [[2], [1], [3], [4], [5], [8]],
   }),
 
   problem('daily-temperatures', {
+    title: 'Wait for a Warmer Day',
+    slug: 'wait-for-a-warmer-day',
     statement: `
-Given an array \`temperatures\` of daily temperatures, return an array \`answer\` where \`answer[i]\` is the **number of days you have to wait after day \`i\`** to get a warmer temperature.
+\`temperatures\` is a forecast, one reading per day. For each day, count **how many days pass until a strictly warmer day arrives**, and return these counts as an array.
 
-If there is no future day with a warmer temperature, \`answer[i]\` is \`0\`.
+Use \`0\` for days that are never followed by a warmer one.
 `,
     params: ['temperatures'],
     constraints: ['1 <= temperatures.length <= 10^5', '30 <= temperatures[i] <= 100'],
-    explain: ['For example, day 0 (73) waits one day for 74, and day 2 (75) waits four days for 76.', 'Every day is followed by a warmer one, except the last.'],
-    known: [[1, 1, 4, 2, 1, 1, 0, 0], [1, 1, 1, 0]],
+    explain: ['Day 0 (60) waits two days for 62; day 2 (62) waits two days for 65.', 'Each day is beaten by the next, except the last.'],
+    known: [[2, 1, 2, 1, 0], [1, 1, 0]],
     ref: function dailyTemperatures(temperatures) {
       const answer = new Array(temperatures.length).fill(0);
       const stack = [];
@@ -140,9 +141,9 @@ If there is no future day with a warmer temperature, \`answer[i]\` is \`0\`.
       return answer;
     },
     tests: [
-      [[73, 74, 75, 71, 69, 72, 76, 73]],
-      [[30, 40, 50, 60]],
-      [[30, 60, 90]],
+      [[60, 58, 62, 61, 65]],
+      [[40, 45, 50]],
+      [[35, 70, 95]],
       [[90, 80, 70]],
       [[55]],
       [[50, 50, 50]],
@@ -151,17 +152,19 @@ If there is no future day with a warmer temperature, \`answer[i]\` is \`0\`.
   }),
 
   problem('car-fleet', {
+    title: 'Convoys on a Narrow Road',
+    slug: 'convoys-on-a-narrow-road',
     statement: `
-There are \`n\` cars driving towards a destination that is \`target\` miles away along a single-lane road. Car \`i\` starts at \`position[i]\` and drives at a constant \`speed[i]\` miles per hour.
+Trucks travel one way along a road with no overtaking, all heading for a depot \`target\` km away. Truck \`i\` starts \`position[i]\` km along the road and drives at \`speed[i]\` km per hour.
 
-A car cannot pass the car in front of it. If it catches up, it slows down and drives at that car's speed, forming a **fleet** with it. Cars that catch up exactly at the destination also count as one fleet.
+When a truck catches up with the one ahead, it slows down and they continue together as a **convoy**. Trucks that catch up exactly at the depot also count as one convoy.
 
-Return the number of car fleets that arrive at the destination.
+Return **how many convoys reach the depot**.
 `,
     params: ['target', 'position', 'speed'],
-    constraints: ['1 <= n <= 10^5', '0 < target <= 10^6', '0 <= position[i] < target, and all positions are different', '0 < speed[i] <= 10^6'],
-    explain: ['The cars starting at 10 and 8 become a fleet that meets at 12. The car at 0 never catches anyone. The cars at 5 and 3 become a fleet that meets at 6. That is 3 fleets.', 'A single car is a single fleet.'],
-    known: [3, 1],
+    constraints: ['1 <= n <= 10^5', '0 < target <= 10^6', '0 <= position[i] < target, all different', '0 < speed[i] <= 10^6'],
+    explain: ['The trucks at 6 and 2 both need 2 hours, so they arrive together; the truck at 0 needs 10 hours and arrives alone.', 'One truck is one convoy.'],
+    known: [2, 1],
     ref: function carFleet(target, position, speed) {
       const cars = position.map((p, i) => [p, (target - p) / speed[i]]).sort((a, b) => b[0] - a[0]);
       let fleets = 0;
@@ -172,9 +175,9 @@ Return the number of car fleets that arrive at the destination.
       return fleets;
     },
     tests: [
-      [12, [10, 8, 0, 5, 3], [2, 4, 1, 1, 3]],
-      [10, [3], [3]],
-      [100, [0, 2, 4], [4, 2, 1]],
+      [10, [6, 2, 0], [2, 4, 1]],
+      [15, [5], [2]],
+      [50, [0, 10, 20], [5, 3, 1]],
       [10, [6, 8], [3, 2]],
       [13, [10, 2, 5, 7, 4, 6, 11], [7, 5, 10, 5, 9, 4, 1]],
       [20, [0, 4, 8, 12, 16], [5, 4, 3, 2, 1]],
@@ -183,14 +186,14 @@ Return the number of car fleets that arrive at the destination.
 
   problem('largest-rectangle-in-histogram', {
     statement: `
-You are given an array \`heights\` representing the heights of the bars of a histogram. Every bar has width \`1\`.
+A bar chart has bars of width \`1\` standing side by side, with heights \`heights\`. Draw an axis-aligned rectangle that **stays inside the bars** (it may span several neighbouring bars, but no higher than the shortest of them).
 
-Return the **area of the largest rectangle** that fits entirely inside the histogram.
+Return the **largest area** such a rectangle can have.
 `,
     params: ['heights'],
     constraints: ['1 <= heights.length <= 10^5', '0 <= heights[i] <= 10^4'],
-    explain: ['The largest rectangle spans the bars of height 5 and 6 and has area 5 x 2 = 10.', 'The largest rectangle is a single bar of height 4.'],
-    known: [10, 4],
+    explain: ['The two bars of height 4 give 4 x 2 = 8.', 'Both bars at height 3 give 6, more than the 5 alone.'],
+    known: [8, 6],
     ref: function largestRectangleArea(heights) {
       const stack = []; // indexes of bars with increasing heights
       let best = 0;
@@ -207,11 +210,11 @@ Return the **area of the largest rectangle** that fits entirely inside the histo
       return best;
     },
     tests: [
-      [[2, 1, 5, 6, 2, 3]],
-      [[2, 4]],
+      [[3, 1, 4, 4, 2]],
+      [[3, 5]],
       [[1]],
       [[0, 0]],
-      [[6, 2, 5, 4, 5, 1, 6]],
+      [[4, 6, 3, 6, 4, 2]],
       [[2, 1, 2]],
       [[5, 5, 5, 5]],
       [[1, 2, 3, 4, 5]],
@@ -220,18 +223,19 @@ Return the **area of the largest rectangle** that fits entirely inside the histo
   }),
 
   problem('asteroid-collision', {
+    title: 'Marbles on a Track',
+    slug: 'marbles-on-a-track',
     statement: `
-You are given an array \`asteroids\` of integers describing asteroids in a row. The **absolute value** is the asteroid's size and the **sign** is its direction: positive moves right, negative moves left. All asteroids move at the same speed.
+Marbles roll along a straight track at the same speed. \`asteroids[i]\` describes marble \`i\` from left to right: its **absolute value is its weight**, and its **sign is its direction** (positive rolls right, negative rolls left).
 
-Asteroids moving in the same direction never meet. When two asteroids meet, the **smaller one explodes**. If they are the same size, **both explode**.
+When a right-rolling marble meets a left-rolling one, the **lighter marble shatters**; if they weigh the same, **both shatter**. Marbles rolling the same way never touch.
 
-Return the state of the asteroids after all collisions.
+Return the marbles that survive, from left to right.
 `,
     params: ['asteroids'],
     constraints: ['2 <= asteroids.length <= 10^4', '-1000 <= asteroids[i] <= 1000', 'asteroids[i] != 0'],
-    explain: ['The 10 and -5 meet and the -5 explodes. The 5 and 10 never meet.', 'The 8 and -8 have the same size, so both explode.', 'The 2 and -5 meet and the 2 explodes, then the 10 and -5 meet and the -5 explodes.'],
-    samples: 3,
-    known: [[5, 10], [], [10]],
+    explain: ['The -3 hits the 7 and shatters; the 4 is never reached.', 'Equal weights, so both shatter.'],
+    known: [[4, 7], []],
     ref: function asteroidCollision(asteroids) {
       const stack = [];
       for (const a of asteroids) {
@@ -247,12 +251,11 @@ Return the state of the asteroids after all collisions.
       return stack;
     },
     tests: [
-      [[5, 10, -5]],
-      [[8, -8]],
-      [[10, 2, -5]],
-      [[-2, -1, 1, 2]],
-      [[1, -2, -2, -2]],
-      [[-2, 2, 1, -2]],
+      [[4, 7, -3]],
+      [[6, -6]],
+      [[-3, -1, 2, 5]],
+      [[2, -4, -4]],
+      [[-1, 3, 2, -3]],
       [[3, 5, -6, 2, -1, 4]],
       [(() => { const r = rng(8); return Array.from({ length: 3000 }, () => (r() < 0.5 ? -1 : 1) * randInt(r, 1, 1000)); })()],
     ],

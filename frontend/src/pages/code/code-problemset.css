@@ -43,14 +43,12 @@
 .cx-col-status { width: 64px; text-align: center !important; }
 .cx-col-diff { width: 110px; }
 .cx-col-topic { width: 200px; }
-.cx-col-company { width: 200px; }
 
 
 .cx-row-title { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0; font-weight: 600; color: var(--cx-text); text-align: left; background: none; border: 0; cursor: pointer; }
 .cx-row-title:hover { color: var(--cx-accent); }
 .cx-row-num { color: var(--cx-faint); font-weight: 500; }
 .cx-tag--ai { gap: 0.25rem; color: var(--cx-blue); background: rgba(47, 111, 237, 0.12); }
-.cx-company-text { font-size: 0.82rem; color: var(--cx-faint); }
 
 .cx-pager { display: flex; align-items: center; justify-content: center; gap: 0.8rem; margin-top: 1rem; font-size: 0.86rem; color: var(--cx-muted); }
 .cx-pager-count { margin-left: 1rem; color: var(--cx-faint); }
@@ -89,7 +87,6 @@
 @media (max-width: 1040px) {
   .cx-ps { grid-template-columns: minmax(0, 1fr); }
   .cx-ps-side { position: static; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); order: -1; }
-  .cx-col-company { display: none; }
 }
 @media (max-width: 640px) {
   .cx-col-topic { display: none; }

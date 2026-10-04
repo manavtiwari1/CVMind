@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookOpen, Building2, Check, ChevronDown, History, Lock, Sparkles, Undo2 } from 'lucide-react';
+import { BookOpen, Check, History, Lock, Sparkles, Undo2 } from 'lucide-react';
 import type { CodingProblem } from '../../../data/codingProblems';
 import { levelOf } from '../../../data/codingLevels';
 import type { AiHint } from '../codeApi';
@@ -39,7 +39,6 @@ export default function DescriptionPane({
   problem, number, solved, tab, onTab, submissions, onRestore, hints, loadingLevel, hintError, onRequestHint,
 }: DescriptionPaneProps) {
   const [openSub, setOpenSub] = useState<string | null>(null);
-  const [showCompanies, setShowCompanies] = useState(false);
 
   return (
     <div className="cx-pane cx-left">
@@ -88,19 +87,6 @@ export default function DescriptionPane({
               </section>
             )}
 
-            {problem.companies?.length > 0 && (
-              <section className="cx-disclosure">
-                <button type="button" onClick={() => setShowCompanies((v) => !v)} aria-expanded={showCompanies}>
-                  <Building2 size={15} /> Companies <span className="cx-count">{problem.companies.length}</span>
-                  <ChevronDown size={15} className={showCompanies ? 'is-open' : ''} />
-                </button>
-                {showCompanies && (
-                  <div className="cx-company-list">
-                    {problem.companies.map((c) => <span key={c} className="cx-tag">{c}</span>)}
-                  </div>
-                )}
-              </section>
-            )}
           </article>
         )}
 

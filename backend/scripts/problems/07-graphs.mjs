@@ -10,14 +10,14 @@ const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 export default [
   problem('number-of-islands', {
     statement: `
-You are given an \`m x n\` grid of the characters \`"1"\` (land) and \`"0"\` (water). Return the **number of islands**.
+A satellite map \`grid\` marks land as \`"1"\` and water as \`"0"\`. Land cells that touch **side by side (not diagonally)** belong to the same island, and everything outside the map is water.
 
-An island is a group of land cells connected **horizontally or vertically**. You may assume all four edges of the grid are surrounded by water.
+Count the **islands** on the map.
 `,
     params: ['grid'],
-    constraints: ['m == grid.length, n == grid[i].length', '1 <= m, n <= 300', 'grid[i][j] is "0" or "1"'],
-    explain: ['All the land cells are connected, so there is one island.', 'There are three separate groups of land.'],
-    known: [1, 3],
+    constraints: ['m == grid.length, n == grid[i].length', '1 <= m, n <= 300', 'Every cell is "0" or "1"'],
+    explain: ['The left column pair, the top-right cell and the bottom-right pair are separate.', 'The land snakes from the top-left to the bottom-right without a break.'],
+    known: [3, 1],
     ref: function numIslands(grid) {
       const rows = grid.length;
       const cols = grid[0].length;
@@ -45,8 +45,8 @@ An island is a group of land cells connected **horizontally or vertically**. You
       return count;
     },
     tests: [
-      [[['1', '1', '1', '1', '0'], ['1', '1', '0', '1', '0'], ['1', '1', '0', '0', '0'], ['0', '0', '0', '0', '0']]],
-      [[['1', '1', '0', '0', '0'], ['1', '1', '0', '0', '0'], ['0', '0', '1', '0', '0'], ['0', '0', '0', '1', '1']]],
+      [[['1', '0', '1'], ['1', '0', '0'], ['0', '1', '1']]],
+      [[['1', '1', '0'], ['0', '1', '1'], ['0', '0', '1']]],
       [[['1']]],
       [[['0']]],
       [[['1', '0', '1', '0', '1']]],
@@ -58,14 +58,14 @@ An island is a group of land cells connected **horizontally or vertically**. You
 
   problem('max-area-of-island', {
     statement: `
-You are given an \`m x n\` binary matrix \`grid\`. An island is a group of \`1\`s (land) connected **horizontally or vertically**. The area of an island is the number of cells in it.
+In the map \`grid\`, \`1\` is land and \`0\` is water. Land cells that share a side form one island, and an island's size is how many cells it covers.
 
-Return the **maximum area** of an island in the grid, or \`0\` if there is no island.
+Return the **size of the biggest island**, or \`0\` if the map has no land.
 `,
     params: ['grid'],
-    constraints: ['m == grid.length, n == grid[i].length', '1 <= m, n <= 50', 'grid[i][j] is 0 or 1'],
-    explain: ['The largest island has 6 connected cells.', 'There is no land.'],
-    known: [6, 0],
+    constraints: ['m == grid.length, n == grid[i].length', '1 <= m, n <= 50', 'Every cell is 0 or 1'],
+    explain: ['The island on the right covers four cells; the top-left one covers three.', 'All water.'],
+    known: [4, 0],
     ref: function maxAreaOfIsland(grid) {
       const rows = grid.length;
       const cols = grid[0].length;
@@ -95,8 +95,8 @@ Return the **maximum area** of an island in the grid, or \`0\` if there is no is
       return best;
     },
     tests: [
-      [[[0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0], [0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0], [0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0]]],
-      [[[0, 0, 0, 0, 0, 0, 0, 0]]],
+      [[[1, 1, 0, 0], [0, 1, 0, 1], [1, 0, 1, 1], [0, 0, 0, 1]]],
+      [[[0, 0], [0, 0]]],
       [[[1]]],
       [[[0]]],
       [[[1, 1], [1, 1]]],
@@ -106,18 +106,20 @@ Return the **maximum area** of an island in the grid, or \`0\` if there is no is
   }),
 
   problem('pacific-atlantic-water-flow', {
+    title: 'Rainfall to Both Seas',
+    slug: 'rainfall-to-both-seas',
     statement: `
-An \`m x n\` grid \`heights\` gives the height above sea level of each cell of an island. The **Pacific Ocean** touches the island's left and top edges, and the **Atlantic Ocean** touches its right and bottom edges.
+\`heights\` is an elevation map of a rectangular valley. The **North Sea** lies along the top and left edges, and the **South Sea** along the bottom and right edges.
 
-Rain water flows from a cell to a neighbouring cell (up, down, left or right) whose height is **less than or equal** to its own. Water can flow into an ocean from any cell next to that ocean.
+Rain on a cell can run to a side neighbour that is **no higher** than the cell itself, and drains into a sea from any cell on that sea's edges.
 
-Return every cell \`[row, col]\` from which rain water can reach **both** oceans. You may return the cells in any order.
+Return every cell \`[row, col]\` whose rain can end up in **both** seas, in any order.
 `,
     params: ['heights'],
     meta: { compare: 'unordered' },
     constraints: ['m == heights.length, n == heights[r].length', '1 <= m, n <= 200', '0 <= heights[r][c] <= 10^5'],
-    explain: ['Water from these seven cells can flow to both oceans.', 'The only cell touches both oceans.'],
-    known: [[[0, 4], [1, 3], [1, 4], [2, 2], [3, 0], [3, 1], [4, 0]], [[0, 0]]],
+    explain: ['Only the two bottom-right cells are cut off from the North Sea.', 'Both cells sit on edges of both seas.'],
+    known: [[[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0]], [[0, 0], [0, 1]]],
     ref: function pacificAtlantic(heights) {
       const rows = heights.length;
       const cols = heights[0].length;
@@ -149,7 +151,8 @@ Return every cell \`[row, col]\` from which rain water can reach **both** oceans
       return out;
     },
     tests: [
-      [[[1, 2, 2, 3, 5], [3, 2, 3, 4, 4], [2, 4, 5, 3, 1], [6, 7, 1, 4, 5], [5, 1, 1, 2, 4]]],
+      [[[3, 2, 1], [4, 5, 2], [6, 3, 1]]],
+      [[[2, 1]]],
       [[[1]]],
       [[[1, 1], [1, 1]]],
       [[[3, 3, 3], [3, 1, 3], [0, 2, 4]]],
@@ -160,16 +163,14 @@ Return every cell \`[row, col]\` from which rain water can reach **both** oceans
 
   problem('surrounded-regions', {
     statement: `
-You are given an \`m x n\` matrix \`board\` containing the letters \`"X"\` and \`"O"\`. **Capture every region of \`"O"\`s that is fully surrounded by \`"X"\`s** by flipping all the \`"O"\`s in it to \`"X"\`.
+On the board, \`"O"\` cells that share a side form a group. A group that **cannot reach the edge of the board** through other \`"O"\` cells is enclosed, and every cell in it turns into \`"X"\`. Groups with at least one cell on the edge are untouched.
 
-A region is a group of \`"O"\` cells connected horizontally or vertically. A region is surrounded only if none of its cells lies on the border of the board, so any region that touches the border is left unchanged.
-
-Return the board after the capture.
+Return the board after all enclosed groups have been filled in.
 `,
     params: ['board'],
-    constraints: ['m == board.length, n == board[i].length', '1 <= m, n <= 200', 'board[i][j] is "X" or "O"'],
-    explain: ['The three O cells in the middle are surrounded, so they flip. The O in the bottom row touches the border and stays.', 'Nothing to capture.'],
-    known: [[['X', 'X', 'X', 'X'], ['X', 'X', 'X', 'X'], ['X', 'X', 'X', 'X'], ['X', 'O', 'X', 'X']], [['X']]],
+    constraints: ['m == board.length, n == board[i].length', '1 <= m, n <= 200', 'Every cell is "X" or "O"'],
+    explain: ['The two inner groups are enclosed and fill in; the O on the right edge survives.', 'Both cells are on the edge, so nothing changes.'],
+    known: [[['X', 'X', 'X', 'X', 'X'], ['X', 'X', 'X', 'X', 'X'], ['X', 'X', 'X', 'X', 'O'], ['X', 'X', 'X', 'X', 'X']], [['O', 'X']]],
     ref: function solve(board) {
       const rows = board.length;
       const cols = board[0].length;
@@ -191,7 +192,8 @@ Return the board after the capture.
       return out;
     },
     tests: [
-      [[['X', 'X', 'X', 'X'], ['X', 'O', 'O', 'X'], ['X', 'X', 'O', 'X'], ['X', 'O', 'X', 'X']]],
+      [[['X', 'X', 'X', 'X', 'X'], ['X', 'O', 'X', 'O', 'X'], ['X', 'O', 'X', 'X', 'O'], ['X', 'X', 'X', 'X', 'X']]],
+      [[['O', 'X']]],
       [[['X']]],
       [[['O']]],
       [[['O', 'O'], ['O', 'O']]],
@@ -202,22 +204,17 @@ Return the board after the capture.
   }),
 
   problem('rotting-oranges', {
+    title: 'Mold on the Bread Shelf',
+    slug: 'mold-on-the-bread-shelf',
     statement: `
-You are given an \`m x n\` grid where each cell is
+A bakery shelf is a grid where \`0\` is an empty spot, \`1\` is a fresh loaf and \`2\` is a moldy loaf. Each hour, mold spreads from every moldy loaf to the fresh loaves directly **above, below, left or right** of it.
 
-- \`0\`: empty,
-- \`1\`: a fresh orange, or
-- \`2\`: a rotten orange.
-
-Every minute, each fresh orange that is **4-directionally adjacent** to a rotten orange becomes rotten.
-
-Return the **minimum number of minutes** until no fresh orange is left. If that is impossible, return \`-1\`.
+Return how many **hours pass before no fresh loaf is left**, or \`-1\` if some loaf can never be reached.
 `,
     params: ['grid'],
-    constraints: ['m == grid.length, n == grid[i].length', '1 <= m, n <= 10', 'grid[i][j] is 0, 1 or 2'],
-    explain: ['All the oranges are rotten after 4 minutes.', 'The orange in the bottom-left corner is never reached.', 'There are no fresh oranges, so no time is needed.'],
-    samples: 3,
-    known: [4, -1, 0],
+    constraints: ['m == grid.length, n == grid[i].length', '1 <= m, n <= 10', 'Every cell is 0, 1 or 2'],
+    explain: ['Mold starts top-right and reaches the last loaf, bottom-left, in hour 4.', 'The empty spot shields the fresh loaf forever.'],
+    known: [4, -1],
     ref: function orangesRotting(grid) {
       const rows = grid.length;
       const cols = grid[0].length;
@@ -244,9 +241,9 @@ Return the **minimum number of minutes** until no fresh orange is left. If that 
       return fresh === 0 ? minutes : -1;
     },
     tests: [
-      [[[2, 1, 1], [1, 1, 0], [0, 1, 1]]],
-      [[[2, 1, 1], [0, 1, 1], [1, 0, 1]]],
-      [[[0, 2]]],
+      [[[1, 1, 2], [0, 1, 1], [1, 1, 0]]],
+      [[[2, 0, 1]]],
+      [[[2, 0]]],
       [[[0]]],
       [[[1]]],
       [[[2]]],
@@ -257,13 +254,13 @@ Return the **minimum number of minutes** until no fresh orange is left. If that 
 
   problem('course-schedule', {
     statement: `
-There are \`numCourses\` courses labelled \`0\` to \`numCourses - 1\`. The array \`prerequisites\` holds pairs \`[a, b]\`, meaning you **must take course \`b\` before course \`a\`**.
+A degree has courses numbered \`0\` to \`numCourses - 1\`. Each pair \`[a, b]\` in \`prerequisites\` says course \`b\` **must be completed before** course \`a\` can start.
 
-Return \`true\` if it is possible to finish all the courses, and \`false\` otherwise.
+Return \`true\` if a student can complete every course, or \`false\` if the requirements make that impossible.
 `,
     params: ['numCourses', 'prerequisites'],
-    constraints: ['1 <= numCourses <= 2000', '0 <= prerequisites.length <= 5000', 'prerequisites[i].length == 2', '0 <= a, b < numCourses', 'All the pairs are unique'],
-    explain: ['Take course 0, then course 1.', 'Each course requires the other, so it is impossible.'],
+    constraints: ['1 <= numCourses <= 2000', '0 <= prerequisites.length <= 5000', 'Each pair has two course numbers', '0 <= a, b < numCourses', 'No pair is repeated'],
+    explain: ['Course 0, then 2, then 1.', 'The three requirements form a loop, so none can start.'],
     known: [true, false],
     ref: function canFinish(numCourses, prerequisites) {
       const indegree = new Array(numCourses).fill(0);
@@ -280,12 +277,12 @@ Return \`true\` if it is possible to finish all the courses, and \`false\` other
       return taken === numCourses;
     },
     tests: [
-      [2, [[1, 0]]],
-      [2, [[1, 0], [0, 1]]],
+      [3, [[2, 0], [1, 2]]],
+      [3, [[0, 1], [1, 2], [2, 0]]],
       [1, []],
       [3, [[1, 0], [2, 1]]],
-      [3, [[1, 0], [2, 1], [0, 2]]],
-      [4, [[1, 0], [2, 0], [3, 1], [3, 2]]],
+      [2, [[0, 1], [1, 0]]],
+      [4, [[1, 0], [2, 0], [3, 2]]],
       [5, [[1, 4], [2, 4], [3, 1], [3, 2]]],
       (() => { const n = 1500; const pre = []; for (let i = 1; i < n; i++) pre.push([i, i - 1]); return [n, pre]; })(),
       (() => { const n = 1500; const pre = []; for (let i = 1; i < n; i++) pre.push([i, i - 1]); pre.push([0, n - 1]); return [n, pre]; })(),
@@ -294,17 +291,14 @@ Return \`true\` if it is possible to finish all the courses, and \`false\` other
 
   problem('course-schedule-ii', {
     statement: `
-There are \`numCourses\` courses labelled \`0\` to \`numCourses - 1\`. The array \`prerequisites\` holds pairs \`[a, b]\`, meaning you **must take course \`b\` before course \`a\`**.
+Courses are numbered \`0\` to \`numCourses - 1\`, and each pair \`[a, b]\` in \`prerequisites\` means course \`b\` comes **before** course \`a\`. Plan a timetable that takes **every course exactly once** and respects all the requirements. Return \`[]\` if no such timetable exists.
 
-Return an order in which you can take **all** the courses. If it is impossible to finish them all, return an empty array.
-
-Many valid orders can exist, so to make the answer unique, return the **lexicographically smallest** one: at every step take the smallest-numbered course whose prerequisites are already done.
+To keep the answer unique: whenever several courses are available, take the **lowest-numbered** one next.
 `,
     params: ['numCourses', 'prerequisites'],
-    constraints: ['1 <= numCourses <= 2000', '0 <= prerequisites.length <= numCourses * (numCourses - 1)', 'prerequisites[i].length == 2', '0 <= a, b < numCourses', 'a != b, and all the pairs are unique'],
-    explain: ['Course 0 comes first, then course 1.', 'After course 0, courses 1 and 2 are both available; the smaller number goes first.', 'A single course with no prerequisites.'],
-    samples: 3,
-    known: [[0, 1], [0, 1, 2, 3], [0]],
+    constraints: ['1 <= numCourses <= 2000', '0 <= prerequisites.length <= numCourses * (numCourses - 1)', 'Each pair has two course numbers', '0 <= a, b < numCourses', 'a != b, and no pair is repeated'],
+    explain: ['0 has no requirement, 2 needs 0, and 1 needs 2.', 'Only 1 is free at first; it unlocks 2 and 3 (2 goes first), and 3 unlocks 0.'],
+    known: [[0, 2, 1], [1, 2, 3, 0]],
     ref: function findOrder(numCourses, prerequisites) {
       const indegree = new Array(numCourses).fill(0);
       const next = Array.from({ length: numCourses }, () => []);
@@ -321,8 +315,8 @@ Many valid orders can exist, so to make the answer unique, return the **lexicogr
       return order.length === numCourses ? order : [];
     },
     tests: [
-      [2, [[1, 0]]],
-      [4, [[1, 0], [2, 0], [3, 1], [3, 2]]],
+      [3, [[2, 0], [1, 2]]],
+      [4, [[2, 1], [3, 1], [0, 3]]],
       [1, []],
       [2, [[1, 0], [0, 1]]],
       [3, []],

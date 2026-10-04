@@ -21,12 +21,12 @@ const BASE_TEMPLATES: Template[] = [
   {
     id: 'cvmind-executive',
     name: 'Executive Double-Column',
-    tag: 'Enhancv Style · Visual ATS',
+    tag: 'Executive · Visual ATS',
     icon: '✨',
     color: '#2563eb',
     accent: 'rgba(37,99,235,0.12)',
-    description: 'Executive 2-column resume with achievements, skills, My Time donut chart, and CVMind branding.',
-    highlights: ['Two-Column Layout', 'My Time Chart', 'CVMind Branding', 'Icon Achievements'],
+    description: 'Executive 2-column resume with achievements, skills, core-strength bars, and CVMind branding.',
+    highlights: ['Two-Column Layout', 'Strength Bars', 'CVMind Branding', 'Icon Achievements'],
     html: `<div style="font-family:'Inter',Arial,sans-serif;max-width:760px;margin:0 auto;padding:36px 32px;background:#ffffff;color:#1e293b;line-height:1.55;">
   <!-- HEADER -->
   <div style="margin-bottom:20px;">
@@ -260,39 +260,24 @@ const BASE_TEMPLATES: Template[] = [
           <span style="display:inline-block;border-bottom:2px solid #94a3b8;font-weight:600;font-size:12px;color:#334155;padding-bottom:2px;margin:3px 10px 4px 0;">Project Management</span>
         </div>
 
-        <!-- MY TIME SECTION -->
-        <div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:2.5px solid #0f172a;padding-bottom:3px;margin:18px 0 10px;">MY TIME</div>
-        <div style="border:1.5px solid #5eead4;border-radius:10px;padding:14px 12px;background:#ffffff;box-sizing:border-box;">
-          
-          <!-- Donut Chart SVG with badges A-F -->
-          <svg viewBox="0 0 160 160" style="width:130px;height:130px;display:block;margin:0 auto 10px;">
-            <circle r="42" cx="80" cy="80" fill="transparent" stroke="#2563eb" stroke-width="20" stroke-dasharray="70 213" stroke-dashoffset="0" />
-            <circle r="42" cx="80" cy="80" fill="transparent" stroke="#38bdf8" stroke-width="20" stroke-dasharray="50 233" stroke-dashoffset="-70" />
-            <circle r="42" cx="80" cy="80" fill="transparent" stroke="#60a5fa" stroke-width="20" stroke-dasharray="45 238" stroke-dashoffset="-120" />
-            <circle r="42" cx="80" cy="80" fill="transparent" stroke="#93c5fd" stroke-width="20" stroke-dasharray="40 243" stroke-dashoffset="-165" />
-            <circle r="42" cx="80" cy="80" fill="transparent" stroke="#bfdbfe" stroke-width="20" stroke-dasharray="38 245" stroke-dashoffset="-205" />
-            <circle r="42" cx="80" cy="80" fill="transparent" stroke="#1d4ed8" stroke-width="20" stroke-dasharray="39 244" stroke-dashoffset="-243" />
-            
-            <g><circle cx="126" cy="48" r="8" fill="#000" /><text x="126" y="51" fill="#fff" font-size="9" font-weight="700" text-anchor="middle" font-family="sans-serif">A</text></g>
-            <g><circle cx="138" cy="98" r="8" fill="#000" /><text x="138" y="101" fill="#fff" font-size="9" font-weight="700" text-anchor="middle" font-family="sans-serif">B</text></g>
-            <g><circle cx="118" cy="138" r="8" fill="#000" /><text x="118" y="141" fill="#fff" font-size="9" font-weight="700" text-anchor="middle" font-family="sans-serif">C</text></g>
-            <g><circle cx="68" cy="142" r="8" fill="#000" /><text x="68" y="145" fill="#fff" font-size="9" font-weight="700" text-anchor="middle" font-family="sans-serif">D</text></g>
-            <g><circle cx="26" cy="114" r="8" fill="#000" /><text x="26" y="117" fill="#fff" font-size="9" font-weight="700" text-anchor="middle" font-family="sans-serif">E</text></g>
-            <g><circle cx="34" cy="54" r="8" fill="#000" /><text x="34" y="57" fill="#fff" font-size="9" font-weight="700" text-anchor="middle" font-family="sans-serif">F</text></g>
-          </svg>
-
-          <!-- Legend -->
-          <div style="font-size:11px;color:#334155;line-height:1.7;text-align:left;">
-            <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#000;color:#fff;font-size:9px;font-weight:700;">A</span> Product roadmap planning</div>
-            <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#000;color:#fff;font-size:9px;font-weight:700;">B</span> QA work</div>
-            <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#000;color:#fff;font-size:9px;font-weight:700;">C</span> User interviews, research</div>
-            <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#000;color:#fff;font-size:9px;font-weight:700;">D</span> Mentoring my team of 10</div>
-            <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#000;color:#fff;font-size:9px;font-weight:700;">E</span> Cooking quesadillas with my cat</div>
-            <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#000;color:#fff;font-size:9px;font-weight:700;">F</span> Recharging in nature</div>
+        <!-- CORE STRENGTHS SECTION -->
+        <div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:2.5px solid #0f172a;padding-bottom:3px;margin:18px 0 12px;">CORE STRENGTHS</div>
+        <div>
+          <div style="margin-bottom:9px;">
+            <div style="font-size:11.5px;font-weight:600;color:#334155;margin-bottom:4px;">Strategic Planning</div>
+            <div style="height:6px;border-radius:3px;background:#e2e8f0;overflow:hidden;"><div style="width:90%;height:100%;background:#2563eb;border-radius:3px;"></div></div>
           </div>
-
-          <div style="text-align:center;margin-top:8px;">
-            <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1px solid #5eead4;color:#14b8a6;font-size:12px;font-weight:700;line-height:1;">+</span>
+          <div style="margin-bottom:9px;">
+            <div style="font-size:11.5px;font-weight:600;color:#334155;margin-bottom:4px;">Stakeholder Management</div>
+            <div style="height:6px;border-radius:3px;background:#e2e8f0;overflow:hidden;"><div style="width:80%;height:100%;background:#2563eb;border-radius:3px;"></div></div>
+          </div>
+          <div style="margin-bottom:9px;">
+            <div style="font-size:11.5px;font-weight:600;color:#334155;margin-bottom:4px;">Team Leadership</div>
+            <div style="height:6px;border-radius:3px;background:#e2e8f0;overflow:hidden;"><div style="width:75%;height:100%;background:#2563eb;border-radius:3px;"></div></div>
+          </div>
+          <div style="margin-bottom:9px;">
+            <div style="font-size:11.5px;font-weight:600;color:#334155;margin-bottom:4px;">Data-Driven Decisions</div>
+            <div style="height:6px;border-radius:3px;background:#e2e8f0;overflow:hidden;"><div style="width:70%;height:100%;background:#2563eb;border-radius:3px;"></div></div>
           </div>
         </div>
 

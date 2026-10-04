@@ -8,35 +8,35 @@ const ints = (seed, n, lo, hi) => {
 export default [
   problem('subsets', {
     statement: `
-Given an integer array \`nums\` of **unique** elements, return **all possible subsets** (the power set).
+The values in \`nums\` are all different. List **every possible selection** of them, from picking nothing to picking everything.
 
-The solution must not contain duplicate subsets. You may return the subsets and the numbers inside each subset in any order.
+Each selection should appear once. Selections, and the values inside them, can be in any order.
 `,
     params: ['nums'],
     meta: { compare: 'unordered-deep' },
-    constraints: ['1 <= nums.length <= 10', '-10 <= nums[i] <= 10', 'All the numbers of nums are unique'],
-    explain: ['There are 2^3 = 8 subsets, from the empty one to the whole array.', 'The empty subset and the subset with the single element.'],
-    known: [[[], [1], [2], [1, 2], [3], [1, 3], [2, 3], [1, 2, 3]], [[], [0]]],
+    constraints: ['1 <= nums.length <= 10', '-10 <= nums[i] <= 10', 'Values in nums are distinct'],
+    explain: ['Two values give four selections: none, either one, or both.', 'One value: take it or leave it.'],
+    known: [[[], [4], [6], [4, 6]], [[], [-1]]],
     ref: function subsets(nums) {
       const out = [[]];
       for (const n of nums) for (const s of [...out]) out.push([...s, n]);
       return out;
     },
-    tests: [[[1, 2, 3]], [[0]], [[5, -5]], [[1, 2, 3, 4]], [[-3, 7, 2, 9, 0]], [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]],
+    tests: [[[4, 6]], [[-1]], [[5, -5, 1]], [[1, 2, 3, 4]], [[-3, 7, 2, 9, 0]], [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]],
   }),
 
   problem('combination-sum', {
     statement: `
-Given an array of **distinct** integers \`candidates\` and a target integer \`target\`, return **every unique combination** of candidates that sums to \`target\`. You may return the combinations in any order.
+Each value in \`candidates\` is different, and **any value may be used as many times as you like**. Find every multiset of values that **adds up to \`target\`** and return them all.
 
-The same number may be used **an unlimited number of times**. Two combinations are different if the frequency of at least one chosen number differs.
+Two answers are the same if they use the same values the same number of times, so list each one once. Order does not matter.
 `,
     params: ['candidates', 'target'],
     meta: { compare: 'unordered-deep' },
-    constraints: ['1 <= candidates.length <= 30', '2 <= candidates[i] <= 40', 'All the elements of candidates are distinct', '1 <= target <= 40'],
-    explain: ['2 + 2 + 3 = 7 and 7 = 7 are the only combinations.', 'Three combinations reach 8.', 'No combination of 2s makes 1.'],
+    constraints: ['1 <= candidates.length <= 30', '2 <= candidates[i] <= 40', 'Values in candidates are distinct', '1 <= target <= 40'],
+    explain: ['3 + 3 + 3 and 4 + 5 both make 9.', 'Five 2s, or 2 + 2 + 6.', 'Only multiples of 4 can be built.'],
     samples: 3,
-    known: [[[2, 2, 3], [7]], [[2, 2, 2, 2], [2, 3, 3], [3, 5]], []],
+    known: [[[3, 3, 3], [4, 5]], [[2, 2, 2, 2, 2], [2, 2, 6]], []],
     ref: function combinationSum(candidates, target) {
       const nums = [...candidates].sort((a, b) => a - b);
       const out = [];
@@ -51,19 +51,18 @@ The same number may be used **an unlimited number of times**. Two combinations a
       walk(0, target, []);
       return out;
     },
-    tests: [[[2, 3, 6, 7], 7], [[2, 3, 5], 8], [[2], 1], [[7, 3, 2], 18], [[3, 5, 8], 11], [[2, 4, 6, 8], 40], [[5, 10, 15], 5], [[2, 3, 4, 5, 6, 7], 30]],
+    tests: [[[3, 4, 5], 9], [[2, 6], 10], [[4], 3], [[7, 3, 2], 18], [[3, 5, 8], 11], [[2, 4, 6, 8], 40], [[5, 10, 15], 5], [[2, 3, 4, 5, 6, 7], 30]],
   }),
 
   problem('permutations', {
     statement: `
-Given an array \`nums\` of **distinct** integers, return **all the possible permutations**. You may return the answer in any order.
+\`nums\` holds distinct integers. Return **every ordering** of all of them, in any order.
 `,
     params: ['nums'],
     meta: { compare: 'unordered' },
-    constraints: ['1 <= nums.length <= 6', '-10 <= nums[i] <= 10', 'All the integers of nums are unique'],
-    explain: ['Six arrangements of three numbers.', 'Two arrangements.', 'One number has one arrangement.'],
-    samples: 3,
-    known: [[[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]], [[0, 1], [1, 0]], [[1]]],
+    constraints: ['1 <= nums.length <= 6', '-10 <= nums[i] <= 10', 'Values in nums are distinct'],
+    explain: ['Three values can be lined up in 3 x 2 x 1 = 6 ways.', 'Two values, two orderings.'],
+    known: [[[5, 6, 8], [5, 8, 6], [6, 5, 8], [6, 8, 5], [8, 5, 6], [8, 6, 5]], [[4, 7], [7, 4]]],
     ref: function permute(nums) {
       const out = [];
       const used = new Array(nums.length).fill(false);
@@ -82,20 +81,20 @@ Given an array \`nums\` of **distinct** integers, return **all the possible perm
       walk();
       return out;
     },
-    tests: [[[1, 2, 3]], [[0, 1]], [[1]], [[-1, 4, 2, 9]], [[1, 2, 3, 4, 5]], [[3, 1, 4, 1 + 4, 9, 2]]],
+    tests: [[[5, 6, 8]], [[4, 7]], [[9]], [[-1, 4, 2, 9]], [[1, 2, 3, 4, 5]], [[3, 1, 4, 1 + 4, 9, 2]]],
   }),
 
   problem('subsets-ii', {
     statement: `
-Given an integer array \`nums\` that **may contain duplicates**, return **all possible subsets** (the power set).
+\`nums\` **may contain repeated values**. List every distinct selection of its elements (including picking none), where selections that contain the same values the same number of times count as one.
 
-The solution must not contain duplicate subsets. You may return the subsets and the numbers inside each subset in any order.
+Return them in any order.
 `,
     params: ['nums'],
     meta: { compare: 'unordered-deep' },
     constraints: ['1 <= nums.length <= 10', '-10 <= nums[i] <= 10'],
-    explain: ['Only six distinct subsets exist, because the two 2s are interchangeable.', 'The empty subset and the subset with the single element.'],
-    known: [[[], [1], [1, 2], [1, 2, 2], [2], [2, 2]], [[], [0]]],
+    explain: ['The two 3s are interchangeable, so there are six distinct selections, not eight.', 'Take the 7 or leave it.'],
+    known: [[[], [1], [1, 3], [1, 3, 3], [3], [3, 3]], [[], [7]]],
     ref: function subsetsWithDup(nums) {
       const sorted = [...nums].sort((a, b) => a - b);
       const out = [];
@@ -111,20 +110,20 @@ The solution must not contain duplicate subsets. You may return the subsets and 
       walk(0, []);
       return out;
     },
-    tests: [[[1, 2, 2]], [[0]], [[4, 4, 4, 1, 4]], [[1, 1, 2, 2, 3, 3]], [[-1, 1, -1, 2]], [[2, 2, 2, 2, 2, 2, 2, 2, 2, 2]]],
+    tests: [[[3, 3, 1]], [[7]], [[4, 4, 4, 1, 4]], [[1, 1, 2, 2, 3, 3]], [[-1, 1, -1, 2]], [[2, 2, 2, 2, 2, 2, 2, 2, 2, 2]]],
   }),
 
   problem('combination-sum-ii', {
     statement: `
-Given a collection of candidate numbers \`candidates\` (which may contain duplicates) and a \`target\`, return **every unique combination** that sums to \`target\`.
+\`candidates\` may contain repeated values, and **each entry can be used at most once**. Return every distinct group of entries that **adds up to \`target\`**.
 
-Each number in \`candidates\` may be used **at most once**. The answer must not contain duplicate combinations, and you may return them in any order.
+Groups with the same values count as one, so list each only once. Order does not matter.
 `,
     params: ['candidates', 'target'],
     meta: { compare: 'unordered-deep' },
     constraints: ['1 <= candidates.length <= 100', '1 <= candidates[i] <= 50', '1 <= target <= 30'],
-    explain: ['Four unique combinations reach 8.', 'The two combinations that reach 5.'],
-    known: [[[1, 1, 6], [1, 2, 5], [1, 7], [2, 6]], [[1, 2, 2], [5]]],
+    explain: ['1 + 1 + 3, 1 + 4 and 2 + 3 all make 5.', '3 + 3 uses both 3s once each; 6 stands alone.'],
+    known: [[[1, 1, 3], [1, 4], [2, 3]], [[3, 3], [6]]],
     ref: function combinationSum2(candidates, target) {
       const nums = [...candidates].sort((a, b) => a - b);
       const out = [];
@@ -140,18 +139,18 @@ Each number in \`candidates\` may be used **at most once**. The answer must not 
       walk(0, target, []);
       return out;
     },
-    tests: [[[10, 1, 2, 7, 6, 1, 5], 8], [[2, 5, 2, 1, 2], 5], [[1], 1], [[2], 1], [[1, 1, 1, 1, 1, 1], 3], [[3, 1, 3, 5, 1, 1], 8], [ints(201, 24, 1, 12), 20]],
+    tests: [[[4, 1, 3, 1, 2], 5], [[6, 3, 3], 6], [[1], 1], [[2], 1], [[1, 1, 1, 1, 1, 1], 3], [[3, 1, 3, 5, 1, 1], 8], [ints(201, 24, 1, 12), 20]],
   }),
 
   problem('word-search', {
     statement: `
-Given an \`m x n\` grid of characters \`board\` and a string \`word\`, return \`true\` if \`word\` exists in the grid.
+Can \`word\` be traced on the letter grid \`board\`? A trace starts on any cell and moves to a **side neighbour** (up, down, left or right) for each next letter, and **may not revisit a cell**.
 
-The word is built from letters of **sequentially adjacent** cells (horizontally or vertically neighbouring). The same cell may **not be used more than once** in a word.
+Return \`true\` if such a trace spells \`word\`, otherwise \`false\`.
 `,
     params: ['board', 'word'],
-    constraints: ['m == board.length, n == board[i].length', '1 <= m, n <= 6', '1 <= word.length <= 15', 'board and word consist of only lowercase and uppercase English letters'],
-    explain: ['The path A-B-C-C-E-D exists.', 'The path S-E-E exists.', 'The second B would need a cell that is already used.'],
+    constraints: ['m == board.length, n == board[i].length', '1 <= m, n <= 6', '1 <= word.length <= 15', 'board and word use only English letters'],
+    explain: ['C down to O, right to R, right to E.', 'T down to E, down to G.', 'No C touches the R.'],
     samples: 3,
     known: [true, true, false],
     ref: function exist(board, word) {
@@ -170,27 +169,27 @@ The word is built from letters of **sequentially adjacent** cells (horizontally 
       return false;
     },
     tests: [
-      [[['A', 'B', 'C', 'E'], ['S', 'F', 'C', 'S'], ['A', 'D', 'E', 'E']], 'ABCCED'],
-      [[['A', 'B', 'C', 'E'], ['S', 'F', 'C', 'S'], ['A', 'D', 'E', 'E']], 'SEE'],
-      [[['A', 'B', 'C', 'E'], ['S', 'F', 'C', 'S'], ['A', 'D', 'E', 'E']], 'ABCB'],
+      [[['C', 'A', 'T'], ['O', 'R', 'E'], ['D', 'O', 'G']], 'CORE'],
+      [[['C', 'A', 'T'], ['O', 'R', 'E'], ['D', 'O', 'G']], 'TEG'],
+      [[['C', 'A', 'T'], ['O', 'R', 'E'], ['D', 'O', 'G']], 'CARC'],
       [[['A']], 'A'],
       [[['A']], 'B'],
       [[['a', 'a']], 'aaa'],
-      [[['C', 'A', 'A'], ['A', 'A', 'A'], ['B', 'C', 'D']], 'AAB'],
+      [[['X', 'Y', 'Y'], ['Y', 'Y', 'Y'], ['Z', 'X', 'W']], 'YYZ'],
       [[['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a'], ['a', 'a', 'a', 'a']], 'aaaaaaaaaaaab'],
     ],
   }),
 
   problem('n-queens', {
     statement: `
-The **n-queens puzzle** asks you to place \`n\` chess queens on an \`n x n\` board so that **no two queens attack each other**: no two share a row, a column or a diagonal.
+Place \`n\` queens on an \`n x n\` chessboard so that **none of them can capture another**: no two share a row, a column or a diagonal.
 
-Given \`n\`, return **every distinct solution**. Each solution is a board written as an array of \`n\` strings, where \`"Q"\` is a queen and \`"."\` is an empty square. You may return the solutions in any order.
+Return **all such placements**. Write each placement as \`n\` strings, one per row, using \`"Q"\` for a queen and \`"."\` for an empty square. Placements may be listed in any order.
 `,
     params: ['n'],
     meta: { compare: 'unordered' },
     constraints: ['1 <= n <= 8'],
-    explain: ['There are two distinct solutions for a 4 x 4 board.', 'A single queen on a 1 x 1 board.'],
+    explain: ['A 4 x 4 board has exactly two placements, mirror images of each other.', 'One queen on one square.'],
     known: [[['.Q..', '...Q', 'Q...', '..Q.'], ['..Q.', 'Q...', '...Q', '.Q..']], [['Q']]],
     ref: function solveNQueens(n) {
       const out = [];
@@ -215,21 +214,21 @@ Given \`n\`, return **every distinct solution**. Each solution is a board writte
 
   problem('kth-largest-element-in-a-stream', {
     statement: `
-Design a class that finds the **\`k\`th largest element in a stream** of numbers. It is the \`k\`th largest in sorted order, not the \`k\`th distinct element.
+A leaderboard receives scores one at a time and must always report the score in **position \`k\`** when sorted from highest to lowest (duplicates each take a position).
 
 Implement the \`KthLargest\` class:
 
-- \`KthLargest(k, nums)\` creates the object with the integer \`k\` and the initial stream \`nums\`.
-- \`add(val)\` adds \`val\` to the stream and returns the current \`k\`th largest element.
+- \`KthLargest(k, nums)\` sets up the board with \`k\` and the scores already in \`nums\`.
+- \`add(val)\` records a new score and returns the current \`k\`th highest score.
 
 ${DESIGN_NOTE}
 `,
     meta: { kind: 'design' },
     design: { className: 'KthLargest', ctor: ['k', 'nums'], methods: [['add', ['val']]] , cpp: { ctor: ['int', 'vector<int>'], methods: [{ name: 'add', args: ['int'], names: ['val'], ret: 'int' }] } },
-    constraints: ['1 <= k <= 10^4', '0 <= nums.length <= 10^4', '-10^4 <= nums[i], val <= 10^4', 'At most 10^4 calls are made to add', 'There are at least k elements when add is called'],
-    explain: ['With k = 3, the stream 4, 5, 8, 2 and then adds 3, 5, 10, 9, 4 give the third largest after each add: 4, 5, 5, 8, 8.'],
+    constraints: ['1 <= k <= 10^4', '0 <= nums.length <= 10^4', '-10^4 <= nums[i], val <= 10^4', 'At most 10^4 calls to add', 'At least k scores exist whenever add returns'],
+    explain: ['With k = 2 and scores 6, 1, 9, the 2nd highest is 6. Adding 4 changes nothing; 7 lifts it to 7; 10 lifts it to 9; 2 changes nothing.'],
     samples: 1,
-    known: [[null, 4, 5, 5, 8, 8]],
+    known: [[null, 6, 7, 9, 9]],
     ref: class KthLargest {
       constructor(k, nums) {
         this.k = k;
@@ -246,8 +245,8 @@ ${DESIGN_NOTE}
       }
     },
     tests: [
-      [['KthLargest', 'add', 'add', 'add', 'add', 'add'], [[3, [4, 5, 8, 2]], [3], [5], [10], [9], [4]]],
-      [['KthLargest', 'add', 'add', 'add', 'add', 'add'], [[1, []], [-3], [-2], [-4], [0], [4]]],
+      [['KthLargest', 'add', 'add', 'add', 'add'], [[2, [6, 1, 9]], [4], [7], [10], [2]]],
+      [['KthLargest', 'add', 'add', 'add', 'add', 'add'], [[1, []], [5], [-2], [8], [0], [3]]],
       [['KthLargest', 'add', 'add', 'add'], [[2, [0]], [-1], [1], [-2]]],
       (() => {
         const r = rng(202);
@@ -260,20 +259,17 @@ ${DESIGN_NOTE}
   }),
 
   problem('last-stone-weight', {
+    title: 'Crushing Rocks',
+    slug: 'crushing-rocks',
     statement: `
-You are given an array \`stones\` where \`stones[i]\` is the weight of the \`i\`th stone.
+A rock crusher repeatedly takes the **two heaviest rocks** from the pile \`stones\` and crushes them together. With weights \`x <= y\`, equal rocks both turn to dust; otherwise only a rock of weight \`y - x\` goes back on the pile.
 
-Each turn, take the **two heaviest stones** and smash them together. If their weights are \`x <= y\`:
-
-- if \`x == y\`, both stones are destroyed;
-- otherwise the stone of weight \`x\` is destroyed and the stone of weight \`y\` becomes \`y - x\`.
-
-Return the weight of the last remaining stone, or \`0\` if no stones are left.
+When at most one rock is left, return its weight, or \`0\` if the pile is empty.
 `,
     params: ['stones'],
     constraints: ['1 <= stones.length <= 30', '1 <= stones[i] <= 1000'],
-    explain: ['Smashing 8 and 7 leaves 1, then the stones become [2,4,1,1,1], and so on until a single stone of weight 1 remains.', 'A single stone stays as it is.'],
-    known: [1, 1],
+    explain: ['6 and 4 leave 2; then 3 and 2 leave 1; then 2 and 1 leave 1.', 'The two 5s cancel, then the two 3s cancel.'],
+    known: [1, 0],
     ref: function lastStoneWeight(stones) {
       const pile = [...stones].sort((a, b) => a - b);
       while (pile.length > 1) {
@@ -288,26 +284,26 @@ Return the weight of the last remaining stone, or \`0\` if no stones are left.
       }
       return pile.length ? pile[0] : 0;
     },
-    tests: [[[2, 7, 4, 1, 8, 1]], [[1]], [[2, 2]], [[3, 7, 2]], [[1, 1, 1, 1]], [ints(204, 30, 1, 1000)]],
+    tests: [[[6, 3, 4, 2]], [[5, 5, 3, 3]], [[9]], [[2, 2]], [[3, 7, 2]], [[1, 1, 1, 1]], [ints(204, 30, 1, 1000)]],
   }),
 
   problem('k-closest-points-to-origin', {
     statement: `
-Given an array \`points\` where \`points[i] = [x, y]\` is a point on the plane, and an integer \`k\`, return the **\`k\` closest points to the origin** \`(0, 0)\`.
+\`points\` lists map locations as \`[x, y]\`. Return the **\`k\` locations nearest to \`(0, 0)\`** by straight-line distance, in any order.
 
-Distance is the usual Euclidean distance. You may return the points in any order. The answer is guaranteed to be unique, apart from its order.
+The inputs guarantee there is no tie at the cut-off.
 `,
     params: ['points', 'k'],
     meta: { compare: 'unordered' },
-    constraints: ['1 <= k <= points.length <= 10^4', '-10^4 <= x, y <= 10^4', 'The k closest points are uniquely defined'],
-    explain: ['The distance of [1,3] is sqrt(10) and of [-2,2] is sqrt(8), so [-2,2] is closer.', 'The two closest points are [3,3] and [-2,4].'],
-    known: [[[-2, 2]], [[3, 3], [-2, 4]]],
+    constraints: ['1 <= k <= points.length <= 10^4', '-10^4 <= x, y <= 10^4', 'The k nearest points are uniquely determined'],
+    explain: ['[2, -1] is sqrt(5) away and [0, 3] is 3 away.', 'Squared distances are 32, 5 and 10, so the last two win.'],
+    known: [[[2, -1]], [[1, -2], [-3, 1]]],
     ref: function kClosest(points, k) {
       return [...points].sort((a, b) => a[0] * a[0] + a[1] * a[1] - (b[0] * b[0] + b[1] * b[1])).slice(0, k);
     },
     tests: [
-      [[[1, 3], [-2, 2]], 1],
-      [[[3, 3], [5, -1], [-2, 4]], 2],
+      [[[2, -1], [0, 3]], 1],
+      [[[4, 4], [1, -2], [-3, 1]], 2],
       [[[0, 1], [1, 0]], 2],
       [[[1, 1]], 1],
       [[[2, 2], [2, 2], [3, 3]], 2],
@@ -317,33 +313,33 @@ Distance is the usual Euclidean distance. You may return the points in any order
 
   problem('kth-largest-element-in-an-array', {
     statement: `
-Given an integer array \`nums\` and an integer \`k\`, return the **\`k\`th largest element** in the array.
+Return the value that would be in **position \`k\` if \`nums\` were sorted from largest to smallest** (repeated values each take a position).
 
-It is the \`k\`th largest in sorted order, not the \`k\`th distinct element. Can you solve it without sorting the whole array?
+Try to beat a full sort.
 `,
     params: ['nums', 'k'],
     constraints: ['1 <= k <= nums.length <= 10^5', '-10^4 <= nums[i] <= 10^4'],
-    explain: ['The sorted array is [1,2,3,4,5,6]; the second largest is 5.', 'The sorted array is [1,2,2,3,3,4,5,5,6]; the fourth largest is 4.'],
-    known: [5, 4],
+    explain: ['Largest first: 9, 7, 4, 2. Position 2 is 7.', 'Largest first: 8, 8, 5, 3, 1. Both 8s count.'],
+    known: [7, 8],
     ref: function findKthLargest(nums, k) {
       return [...nums].sort((a, b) => b - a)[k - 1];
     },
-    tests: [[[3, 2, 1, 5, 6, 4], 2], [[3, 2, 3, 1, 2, 4, 5, 5, 6], 4], [[1], 1], [[2, 1], 2], [[-1, -1], 2], [[7, 6, 5, 4, 3, 2, 1], 5], [[ints(206, 8000, -10000, 10000), 4000][0], 4000]],
+    tests: [[[7, 2, 9, 4], 2], [[5, 8, 8, 1, 3], 2], [[1], 1], [[2, 1], 2], [[-1, -1], 2], [[7, 6, 5, 4, 3, 2, 1], 5], [[ints(206, 8000, -10000, 10000), 4000][0], 4000]],
   }),
 
   problem('task-scheduler', {
+    title: 'Jobs With a Cooldown',
+    slug: 'jobs-with-a-cooldown',
     statement: `
-You are given an array \`tasks\` of capital letters, where each letter is a type of task, and a non-negative integer \`n\`. Every task takes **one unit of time**, and each unit you either run a task or stay idle.
+A machine runs jobs one per time slot. \`tasks\` lists the jobs, each a capital letter naming its type, and jobs may run in any order. After running a job, the machine must wait **at least \`n\` slots before running another job of the same type**; it can run other jobs or sit idle meanwhile.
 
-Two tasks of the **same type** must be separated by at least \`n\` units of time. Tasks can be run in any order.
-
-Return the **minimum number of time units** needed to finish all the tasks.
+Return the **fewest slots** needed to finish every job.
 `,
     params: ['tasks', 'n'],
-    constraints: ['1 <= tasks.length <= 10^4', 'tasks[i] is an uppercase English letter', '0 <= n <= 100'],
-    explain: ['One possible schedule is A B idle A B idle A B, which takes 8 units.', 'A C A B D B takes 6 units with one unit between equal tasks.', 'A B idle idle A B idle idle A B takes 10 units.'],
+    constraints: ['1 <= tasks.length <= 10^4', 'Each task is a capital English letter', '0 <= n <= 100'],
+    explain: ['X Y idle X: the second X waits two slots.', 'P Q P Q R fits with no idle slot.', 'M N M idle M.'],
     samples: 3,
-    known: [8, 6, 10],
+    known: [4, 5, 5],
     ref: function leastInterval(tasks, n) {
       const count = new Array(26).fill(0);
       for (const t of tasks) count[t.charCodeAt(0) - 65]++;
@@ -351,27 +347,27 @@ Return the **minimum number of time units** needed to finish all the tasks.
       const withMax = count.filter((c) => c === max).length;
       return Math.max(tasks.length, (max - 1) * (n + 1) + withMax);
     },
-    tests: [[['A', 'A', 'A', 'B', 'B', 'B'], 2], [['A', 'C', 'A', 'B', 'D', 'B'], 1], [['A', 'A', 'A', 'B', 'B', 'B'], 3], [['A'], 5], [['A', 'A', 'A', 'A', 'A', 'A', 'B', 'C', 'D', 'E', 'F', 'G'], 2], [['A', 'B', 'C'], 0], [['A', 'A', 'B', 'B', 'C', 'C'], 100]],
+    tests: [[['X', 'X', 'Y'], 2], [['P', 'Q', 'P', 'Q', 'R'], 1], [['M', 'M', 'M', 'N'], 1], [['A'], 5], [['K', 'K', 'K', 'K', 'L', 'M', 'N', 'O'], 3], [['A', 'B', 'C'], 0], [['A', 'A', 'B', 'B', 'C', 'C'], 100]],
   }),
 
   problem('find-median-from-data-stream', {
     statement: `
-The **median** is the middle value of an ordered list of numbers. If the list has an even length, it is the average of the two middle values.
+Numbers arrive one at a time, and at any moment you may be asked for the **median** of everything received so far: the middle value once sorted, or the mean of the two middle values when the count is even.
 
-Design a data structure that supports a stream of numbers. Implement the \`MedianFinder\` class:
+Implement the \`MedianFinder\` class:
 
-- \`MedianFinder()\` creates the object.
-- \`addNum(num)\` adds an integer to the data structure.
-- \`findMedian()\` returns the median of all the numbers added so far. Answers within \`10^-5\` of the real value are accepted.
+- \`MedianFinder()\` starts empty.
+- \`addNum(num)\` receives another integer.
+- \`findMedian()\` returns the current median. Answers within \`10^-5\` are accepted.
 
 ${DESIGN_NOTE}
 `,
     meta: { kind: 'design' },
     design: { className: 'MedianFinder', ctor: [], methods: [['addNum', ['num']], ['findMedian', []]] , cpp: { ctor: [], methods: [{ name: 'addNum', args: ['int'], names: ['num'], ret: 'void' }, { name: 'findMedian', args: [], ret: 'double' }] } },
-    constraints: ['-10^5 <= num <= 10^5', 'findMedian is only called after at least one element has been added', 'At most 5 * 10^4 calls are made'],
-    explain: ['After adding 1 and 2 the median is 1.5. After adding 3 the median is 2.'],
+    constraints: ['-10^5 <= num <= 10^5', 'findMedian is only called after at least one number arrived', 'At most 5 * 10^4 calls in total'],
+    explain: ['After 4 and 10 the median is 7. Adding 6 makes it 6, and adding 1 makes it (4 + 6) / 2 = 5.'],
     samples: 1,
-    known: [[null, null, null, 1.5, null, 2]],
+    known: [[null, null, null, 7, null, 6, null, 5]],
     ref: class MedianFinder {
       constructor() { this.values = []; }
       addNum(num) {
@@ -387,7 +383,7 @@ ${DESIGN_NOTE}
       }
     },
     tests: [
-      [['MedianFinder', 'addNum', 'addNum', 'findMedian', 'addNum', 'findMedian'], [[], [1], [2], [], [3], []]],
+      [['MedianFinder', 'addNum', 'addNum', 'findMedian', 'addNum', 'findMedian', 'addNum', 'findMedian'], [[], [4], [10], [], [6], [], [1], []]],
       [['MedianFinder', 'addNum', 'findMedian'], [[], [-5], []]],
       [['MedianFinder', 'addNum', 'addNum', 'addNum', 'addNum', 'findMedian'], [[], [5], [5], [5], [5], []]],
       (() => {

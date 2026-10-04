@@ -168,14 +168,13 @@
 .ccl-topic:hover { color: var(--ccl-ink); }
 .ccl-topic.is-on { color: var(--ccl-ink); font-weight: 700; box-shadow: inset 3px 0 0 var(--ccl-accent); padding-left: 14px; }
 
-.ccl-tr { display: grid; grid-template-columns: 52px minmax(0, 2.2fr) minmax(0, 1.5fr) 80px 32px; align-items: center; gap: 16px; width: 100%; padding: 17px 8px; border: 0; border-bottom: 1px solid var(--ccl-line); background: transparent; color: var(--ccl-ink); font-family: var(--ccl-body); font-size: 1rem; text-align: left; }
+.ccl-tr { display: grid; grid-template-columns: 52px minmax(0, 1fr) 80px 32px; align-items: center; gap: 16px; width: 100%; padding: 17px 8px; border: 0; border-bottom: 1px solid var(--ccl-line); background: transparent; color: var(--ccl-ink); font-family: var(--ccl-body); font-size: 1rem; text-align: left; }
 button.ccl-tr { cursor: pointer; transition: background 0.1s; }
 button.ccl-tr:hover { background: var(--ccl-paper); }
 .ccl-tr--head { padding-block: 0 10px; font-family: var(--ccl-mono); font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ccl-mute); border-bottom-color: var(--ccl-ink); }
 .ccl-td-no { font-family: var(--ccl-mono); font-size: 0.86rem; color: var(--ccl-mute); }
 .ccl-td-title { font-weight: 600; }
 .ccl-td-title small { display: block; margin-top: 2px; font-size: 0.82rem; font-weight: 400; color: var(--ccl-mute); }
-.ccl-td-co { font-size: 0.88rem; color: var(--ccl-mute); }
 .ccl-td-go { color: var(--ccl-accent); opacity: 0; transition: opacity 0.1s; }
 button.ccl-tr:hover .ccl-td-go { opacity: 1; }
 .ccl-more { margin: 18px 0 0 8px; }
@@ -221,7 +220,7 @@ button.ccl-tr:hover .ccl-td-go { opacity: 1; }
 @media (max-width: 640px) {
   .ccl-vrow, .ccl-xrow { grid-template-columns: 1fr; gap: 8px; }
   .ccl-tr { grid-template-columns: 40px minmax(0, 1fr) 64px; }
-  .ccl-tr > :nth-child(3), .ccl-tr > :nth-child(5) { display: none; }
+  .ccl-tr > :nth-child(4) { display: none; }
   .ccl-sub { grid-template-columns: 44px 1fr; }
   .ccl-sub-note { grid-column: 1 / -1; }
   .ccl-ide { box-shadow: 6px 6px 0 var(--ccl-ink); }

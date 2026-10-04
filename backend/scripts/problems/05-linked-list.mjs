@@ -9,16 +9,15 @@ const sorted = (seed, n, lo, hi) => values(seed, n, lo, hi).sort((a, b) => a - b
 export default [
   problem('reverse-linked-list', {
     statement: `
-Given the head of a singly linked list, **reverse the list** and return the new head.
+**Flip the direction of every link** in a singly linked list, so the last node becomes the first, and return the new first node.
 
 ${LIST_NOTE}
 `,
     params: ['head'],
     meta: { argTypes: ['list'], returnType: 'list' },
-    constraints: ['The number of nodes is in the range [0, 5000]', '-5000 <= Node.val <= 5000'],
-    explain: ['The list 1 -> 2 -> 3 -> 4 -> 5 becomes 5 -> 4 -> 3 -> 2 -> 1.', 'Two nodes swap places.', 'An empty list stays empty.'],
-    samples: 3,
-    known: [[5, 4, 3, 2, 1], [2, 1], []],
+    constraints: ['0 to 5000 nodes', '-5000 <= Node.val <= 5000'],
+    explain: ['8 -> 3 -> 6 turns into 6 -> 3 -> 8.', 'An empty list has nothing to flip.'],
+    known: [[6, 3, 8], []],
     // the reference works on plain arrays; the solution below works on real nodes and is what the judge runs
     ref: function reverseList(head) { return [...head].reverse(); },
     sol: function reverseList(head) {
@@ -31,21 +30,20 @@ ${LIST_NOTE}
       }
       return prev;
     },
-    tests: [[[1, 2, 3, 4, 5]], [[1, 2]], [[]], [[7]], [[-1, 0, 1]], [values(31, 3000, -5000, 5000)]],
+    tests: [[[8, 3, 6]], [[]], [[7]], [[4, 9]], [[-1, 0, 1]], [values(31, 3000, -5000, 5000)]],
   }),
 
   problem('merge-two-sorted-lists', {
     statement: `
-You are given the heads of two **sorted** linked lists, \`list1\` and \`list2\`. Merge them into one sorted list by splicing together the nodes of the two lists, and return the head of the merged list.
+\`list1\` and \`list2\` are linked lists whose values never decrease. **Weave their nodes into a single list that also never decreases**, reusing the existing nodes, and return its first node.
 
 ${LIST_NOTE}
 `,
     params: ['list1', 'list2'],
     meta: { argTypes: ['list', 'list'], returnType: 'list' },
-    constraints: ['The number of nodes in each list is in the range [0, 50]', '-100 <= Node.val <= 100', 'Both lists are sorted in non-decreasing order'],
-    explain: ['Merging the two lists gives 1 -> 1 -> 2 -> 3 -> 4 -> 4.', 'Both lists are empty.', 'One list is empty, so the result is the other one.'],
-    samples: 3,
-    known: [[1, 1, 2, 3, 4, 4], [], [0]],
+    constraints: ['Each list has 0 to 50 nodes', '-100 <= Node.val <= 100', 'Both lists are in non-decreasing order'],
+    explain: ['The nodes interleave as 2 -> 3 -> 5 -> 5 -> 9.', 'With one list empty, the other is the answer.'],
+    known: [[2, 3, 5, 5, 9], [7]],
     ref: function mergeTwoLists(list1, list2) { return [...list1, ...list2].sort((a, b) => a - b); },
     sol: function mergeTwoLists(list1, list2) {
       const dummy = { next: null };
@@ -58,24 +56,22 @@ ${LIST_NOTE}
       tail.next = list1 || list2;
       return dummy.next;
     },
-    tests: [[[1, 2, 4], [1, 3, 4]], [[], []], [[], [0]], [[5], []], [[1, 1, 1], [1, 1]], [[-100, 0, 100], [-50, 50]], [sorted(32, 50, -100, 100), sorted(33, 50, -100, 100)]],
+    tests: [[[2, 5, 9], [3, 5]], [[], [7]], [[4], [1]], [[], []], [[5], []], [[1, 1, 1], [1, 1]], [[-100, 0, 100], [-50, 50]], [sorted(32, 50, -100, 100), sorted(33, 50, -100, 100)]],
   }),
 
   problem('reorder-list', {
     statement: `
-You are given the head of a singly linked list \`L0 -> L1 -> ... -> Ln-1 -> Ln\`. **Reorder** it into the form
+Rearrange a linked list so it **alternates between the front and the back**: first node, last node, second node, second-to-last node, and so on until the two ends meet. Return the first node.
 
-\`L0 -> Ln -> L1 -> Ln-1 -> L2 -> Ln-2 -> ...\`
-
-You may not change the values in the nodes; only the nodes themselves may be rearranged. Return the head of the reordered list.
+Move the nodes themselves; do not rewrite their values.
 
 ${LIST_NOTE}
 `,
     params: ['head'],
     meta: { argTypes: ['list'], returnType: 'list' },
-    constraints: ['The number of nodes is in the range [1, 5 * 10^4]', '1 <= Node.val <= 1000'],
-    explain: ['The last node goes after the first, the second to last after the second.', 'The middle node stays in the middle.'],
-    known: [[1, 4, 2, 3], [1, 5, 2, 4, 3]],
+    constraints: ['1 to 5 * 10^4 nodes', '1 <= Node.val <= 1000'],
+    explain: ['Front and back alternate: 10, 60, 20, 50, 30, 40.', 'With three nodes the middle one ends up last.'],
+    known: [[10, 60, 20, 50, 30, 40], [7, 9, 8]],
     ref: function reorderList(head) {
       const out = [];
       let i = 0;
@@ -107,21 +103,22 @@ ${LIST_NOTE}
       }
       return head;
     },
-    tests: [[[1, 2, 3, 4]], [[1, 2, 3, 4, 5]], [[1]], [[1, 2]], [[1, 2, 3]], [values(34, 5000, 1, 1000)], [values(35, 4999, 1, 1000)]],
+    tests: [[[10, 20, 30, 40, 50, 60]], [[7, 8, 9]], [[1]], [[1, 2]], [[4, 3, 2, 1, 5]], [values(34, 5000, 1, 1000)], [values(35, 4999, 1, 1000)]],
   }),
 
   problem('remove-nth-node-from-end-of-list', {
     statement: `
-Given the head of a linked list and an integer \`n\`, **remove the \`n\`th node from the end** of the list and return the head.
+Counting backwards from the tail (the tail is number 1), **unlink node number \`n\`** from the list and return the list's first node.
+
+Try to do it in a single pass.
 
 ${LIST_NOTE}
 `,
     params: ['head', 'n'],
     meta: { argTypes: ['list'], returnType: 'list' },
-    constraints: ['The number of nodes is sz, with 1 <= sz <= 30', '0 <= Node.val <= 100', '1 <= n <= sz'],
-    explain: ['The second node from the end is 4, so it is removed.', 'The only node is removed and the list becomes empty.', 'The last node is removed.'],
-    samples: 3,
-    known: [[1, 2, 3, 5], [], [1]],
+    constraints: ['The list has sz nodes, 1 <= sz <= 30', '0 <= Node.val <= 100', '1 <= n <= sz'],
+    explain: ['Third from the tail is 7.', 'n = 1 removes the tail.'],
+    known: [[6, 8, 9], [5]],
     ref: function removeNthFromEnd(head, n) {
       const out = [...head];
       out.splice(out.length - n, 1);
@@ -136,23 +133,24 @@ ${LIST_NOTE}
       slow.next = slow.next.next;
       return dummy.next;
     },
-    tests: [[[1, 2, 3, 4, 5], 2], [[1], 1], [[1, 2], 1], [[1, 2], 2], [[1, 2, 3], 3], [[10, 20, 30, 40], 4], [values(36, 30, 0, 100), 17]],
+    tests: [[[6, 7, 8, 9], 3], [[5, 1], 1], [[4], 1], [[1, 2], 2], [[1, 2, 3], 3], [[10, 20, 30, 40], 4], [values(36, 30, 0, 100), 17]],
   }),
 
   problem('add-two-numbers', {
+    title: 'Add Digit Lists',
+    slug: 'add-digit-lists',
     statement: `
-You are given two non-empty linked lists representing two non-negative integers. The digits are stored in **reverse order**, so the head holds the ones digit, and each node holds a single digit.
+Big numbers are stored as linked lists of single digits, **ones digit first**: \`3 -> 1 -> 5\` stands for 513. Given two such numbers \`l1\` and \`l2\`, return their **sum** in the same format.
 
-Add the two numbers and return the sum as a linked list in the same format. The numbers have no leading zeros, except for the number 0 itself.
+Neither input has extra zeros at its high end (except the number 0, which is a single \`0\` node).
 
 ${LIST_NOTE}
 `,
     params: ['l1', 'l2'],
     meta: { argTypes: ['list', 'list'], returnType: 'list' },
-    constraints: ['The number of nodes in each list is in the range [1, 100]', '0 <= Node.val <= 9', 'The lists represent numbers without leading zeros'],
-    explain: ['342 + 465 = 807.', '0 + 0 = 0.', '9999999 + 9999 = 10009998.'],
-    samples: 3,
-    known: [[7, 0, 8], [0], [8, 9, 9, 9, 0, 0, 0, 1]],
+    constraints: ['Each list has 1 to 100 nodes', '0 <= Node.val <= 9', 'No extra zeros at the high end'],
+    explain: ['513 + 28 = 541, stored as 1 -> 4 -> 5.', '99 + 1 = 100: the carry adds a new digit.'],
+    known: [[1, 4, 5], [0, 0, 1]],
     ref: function addTwoNumbers(l1, l2) {
       const out = [];
       let carry = 0;
@@ -177,23 +175,22 @@ ${LIST_NOTE}
       }
       return dummy.next;
     },
-    tests: [[[2, 4, 3], [5, 6, 4]], [[0], [0]], [[9, 9, 9, 9, 9, 9, 9], [9, 9, 9, 9]], [[1], [9, 9]], [[5], [5]], [values(37, 100, 0, 9).map((d, i, a) => (i === a.length - 1 && d === 0 ? 1 : d)), values(38, 60, 0, 9).map((d, i, a) => (i === a.length - 1 && d === 0 ? 1 : d))]],
+    tests: [[[3, 1, 5], [8, 2]], [[9, 9], [1]], [[0], [7]], [[8, 9, 9, 9, 9], [2, 9]], [[1], [9, 9]], [[5], [5]], [values(37, 100, 0, 9).map((d, i, a) => (i === a.length - 1 && d === 0 ? 1 : d)), values(38, 60, 0, 9).map((d, i, a) => (i === a.length - 1 && d === 0 ? 1 : d))]],
   }),
 
   problem('linked-list-cycle', {
     statement: `
-Given \`head\`, the head of a linked list, determine whether the list has a **cycle**: a node that can be reached again by following \`next\` pointers.
+Return \`true\` if following \`next\` pointers from \`head\` **eventually loops back to a node you already visited**, and \`false\` if it reaches the end.
 
-The judge builds the list from the \`head\` array and connects the tail to the node at index \`pos\`, or leaves it unconnected when \`pos\` is \`-1\`. Your function only receives the head node and must not depend on \`pos\`. Return \`true\` if there is a cycle, otherwise \`false\`.
+To build the test, the judge takes the values in \`head\` and, if \`pos\` is not \`-1\`, points the last node back at the node in position \`pos\`. Your function sees only the head node, not \`pos\`. Can you do it with O(1) extra memory?
 
 ${LIST_NOTE}
 `,
     params: ['head'],
     meta: { adapter: 'cyclic-list' },
-    constraints: ['The number of nodes is in the range [0, 10^4]', '-10^5 <= Node.val <= 10^5', 'pos is -1 or a valid index of the list'],
-    explain: ['The tail connects back to the node at index 1.', 'The tail connects back to the node at index 0.', 'There is a single node and it points to nothing.'],
-    samples: 3,
-    known: [true, true, false],
+    constraints: ['0 to 10^4 nodes', '-10^5 <= Node.val <= 10^5', 'pos is -1 or a valid position in the list'],
+    explain: ['The last node points back at 15, so walking never ends.', 'The last node points nowhere.'],
+    known: [true, false],
     ref: function hasCycle(head, pos) { return head.length > 0 && pos >= 0; },
     sol: function hasCycle(head) {
       let slow = head;
@@ -205,20 +202,19 @@ ${LIST_NOTE}
       }
       return false;
     },
-    tests: [[[3, 2, 0, -4], 1], [[1, 2], 0], [[1], -1], [[], -1], [[1, 2, 3, 4, 5], -1], [[1, 2, 3, 4, 5], 4], [values(39, 8000, -100000, 100000), 4000], [values(40, 8000, -100000, 100000), -1]],
+    tests: [[[4, 8, 15, 16], 2], [[6, 1, 9], -1], [[5], 0], [[], -1], [[1, 2, 3, 4, 5], -1], [[1, 2, 3, 4, 5], 4], [values(39, 8000, -100000, 100000), 4000], [values(40, 8000, -100000, 100000), -1]],
   }),
 
   problem('find-the-duplicate-number', {
     statement: `
-You are given an array \`nums\` of \`n + 1\` integers where every integer is in the range \`[1, n]\`. There is **exactly one repeated number**, although it may appear more than twice.
+\`nums\` has \`n + 1\` entries, each between \`1\` and \`n\`, so some value must repeat. **Exactly one value repeats** (possibly more than twice). Return it.
 
-Return the repeated number. Try to solve it **without modifying \`nums\`** and using only constant extra space.
+For the full challenge, leave \`nums\` unchanged and use only O(1) extra memory.
 `,
     params: ['nums'],
-    constraints: ['1 <= n <= 10^5', 'nums.length == n + 1', '1 <= nums[i] <= n', 'Exactly one integer appears two or more times; every other integer appears once'],
-    explain: ['2 appears twice.', '3 appears twice.', '3 fills the whole array.'],
-    samples: 3,
-    known: [2, 3, 3],
+    constraints: ['1 <= n <= 10^5', 'nums.length == n + 1', '1 <= nums[i] <= n', 'One value appears two or more times; no other value repeats'],
+    explain: ['Six entries, values 1 to 5: the 5 shows up twice.', '4 shows up three times.'],
+    known: [5, 4],
     ref: function findDuplicate(nums) {
       const seen = new Set();
       for (const x of nums) {
@@ -228,9 +224,9 @@ Return the repeated number. Try to solve it **without modifying \`nums\`** and u
       return -1;
     },
     tests: [
-      [[1, 3, 4, 2, 2]],
-      [[3, 1, 3, 4, 2]],
-      [[3, 3, 3, 3, 3]],
+      [[2, 5, 1, 3, 4, 5]],
+      [[4, 2, 1, 4, 3, 4]],
+      [[2, 2, 2]],
       [[1, 1]],
       [[1, 1, 2]],
       [[2, 2, 2, 2, 2]],
@@ -240,24 +236,24 @@ Return the repeated number. Try to solve it **without modifying \`nums\`** and u
 
   problem('lru-cache', {
     statement: `
-Design a data structure that follows the rules of a **Least Recently Used (LRU) cache**.
+Build a fixed-size cache that, when full, **throws out the entry that has gone unused the longest** (an LRU cache).
 
 Implement the \`LRUCache\` class:
 
-- \`LRUCache(capacity)\` creates a cache that holds at most \`capacity\` entries.
-- \`get(key)\` returns the value of \`key\` if it is in the cache, otherwise \`-1\`. A successful \`get\` makes the key the most recently used one.
-- \`put(key, value)\` inserts or updates the value. If the cache is already full, it first evicts the **least recently used** key. An update also makes the key the most recently used one.
+- \`LRUCache(capacity)\` makes an empty cache with room for \`capacity\` entries.
+- \`get(key)\` returns the stored value for \`key\`, or \`-1\` if it is not cached. Reading a key counts as using it.
+- \`put(key, value)\` stores or overwrites \`key\`, which also counts as using it. If this adds a new key to a full cache, first drop the least recently used key.
 
-Both \`get\` and \`put\` must run in **O(1)** average time.
+Make both operations **O(1)** on average.
 
 ${DESIGN_NOTE}
 `,
     meta: { kind: 'design' },
     design: { className: 'LRUCache', ctor: ['capacity'], methods: [['get', ['key']], ['put', ['key', 'value']]] , cpp: { ctor: ['int'], methods: [{ name: 'get', args: ['int'], names: ['key'], ret: 'int' }, { name: 'put', args: ['int', 'int'], names: ['key', 'value'], ret: 'void' }] } },
-    constraints: ['1 <= capacity <= 3000', '0 <= key <= 10^4', '0 <= value <= 10^5', 'At most 2 * 10^5 calls are made'],
-    explain: ['After put(1), put(2) and get(1), key 2 is least recently used. Adding key 3 evicts 2, so get(2) is -1. Adding key 4 then evicts 1.'],
+    constraints: ['1 <= capacity <= 3000', '0 <= key <= 10^4', '0 <= value <= 10^5', 'At most 2 * 10^5 calls in total'],
+    explain: ['Reading 6 leaves 5 as the stalest key, so adding 7 drops 5. Rewriting 6 then makes 7 the stalest, so adding 8 drops 7.'],
     samples: 1,
-    known: [[null, null, null, 1, null, -1, null, -1, 3, 4]],
+    known: [[null, null, null, 60, null, -1, 70, null, null, -1, 61]],
     ref: class LRUCache {
       constructor(capacity) { this.capacity = capacity; this.map = new Map(); }
       get(key) {
@@ -274,10 +270,10 @@ ${DESIGN_NOTE}
       }
     },
     tests: [
-      [['LRUCache', 'put', 'put', 'get', 'put', 'get', 'put', 'get', 'get', 'get'], [[2], [1, 1], [2, 2], [1], [3, 3], [2], [4, 4], [1], [3], [4]]],
-      [['LRUCache', 'put', 'get', 'put', 'get', 'get'], [[1], [2, 1], [2], [3, 2], [2], [3]]],
-      [['LRUCache', 'put', 'put', 'put', 'get', 'get'], [[2], [2, 1], [2, 2], [1, 1], [2], [1]]],
-      [['LRUCache', 'put', 'put', 'get', 'put', 'put', 'get'], [[2], [2, 1], [1, 1], [2], [4, 1], [1, 2], [2]]],
+      [['LRUCache', 'put', 'put', 'get', 'put', 'get', 'get', 'put', 'put', 'get', 'get'], [[2], [5, 50], [6, 60], [6], [7, 70], [5], [7], [6, 61], [8, 80], [7], [6]]],
+      [['LRUCache', 'put', 'get', 'put', 'get', 'get'], [[1], [4, 9], [4], [5, 3], [4], [5]]],
+      [['LRUCache', 'put', 'put', 'put', 'get', 'get'], [[2], [3, 1], [3, 2], [1, 1], [3], [1]]],
+      [['LRUCache', 'put', 'put', 'get', 'put', 'put', 'get'], [[2], [3, 1], [1, 1], [3], [6, 1], [1, 2], [3]]],
       (() => {
         const r = rng(42);
         const ops = ['LRUCache'];
@@ -293,18 +289,17 @@ ${DESIGN_NOTE}
 
   problem('merge-k-sorted-lists', {
     statement: `
-You are given an array of \`k\` linked lists \`lists\`, each sorted in ascending order. **Merge all the lists into one sorted linked list** and return its head.
+\`lists\` holds \`k\` linked lists, each already in increasing order. **Combine all of their nodes into one list in increasing order** and return its first node.
 
-Every list in \`lists\` is given as an array of node values; your function receives an array of head nodes (an empty list is \`null\`).
+In the tests each list is written as an array of values; your function receives an array of first nodes, with \`null\` for an empty list.
 
 ${LIST_NOTE}
 `,
     params: ['lists'],
     meta: { argTypes: ['lists'], returnType: 'list' },
-    constraints: ['k == lists.length', '0 <= k <= 10^4', '0 <= lists[i].length <= 500', '-10^4 <= lists[i][j] <= 10^4', 'Each lists[i] is sorted in ascending order', 'The total number of nodes does not exceed 10^4'],
-    explain: ['Merging the three lists gives 1 -> 1 -> 2 -> 3 -> 4 -> 4 -> 5 -> 6.', 'There are no lists.', 'The only list is empty.'],
-    samples: 3,
-    known: [[1, 1, 2, 3, 4, 4, 5, 6], [], []],
+    constraints: ['k == lists.length', '0 <= k <= 10^4', '0 <= lists[i].length <= 500', '-10^4 <= lists[i][j] <= 10^4', 'Each list is in increasing order', 'At most 10^4 nodes in total'],
+    explain: ['All six values end up in one sorted chain.', 'An empty list contributes nothing.'],
+    known: [[1, 3, 4, 8, 9, 10], [2, 2]],
     ref: function mergeKLists(lists) { return lists.flat().sort((a, b) => a - b); },
     sol: function mergeKLists(lists) {
       const nodes = [];
@@ -316,7 +311,8 @@ ${LIST_NOTE}
       return nodes.length ? nodes[0] : null;
     },
     tests: [
-      [[[1, 4, 5], [1, 3, 4], [2, 6]]],
+      [[[3, 8], [1, 9, 10], [4]]],
+      [[[], [2, 2]]],
       [[]],
       [[[]]],
       [[[1], [0]]],

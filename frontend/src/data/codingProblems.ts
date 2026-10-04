@@ -48,20 +48,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "two-sum",
     "difficulty": "Easy",
     "category": "Arrays & Hashing",
-    "companies": ["Google","Amazon","Meta","Apple","Microsoft"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array of integers `nums` and an integer `target`, return the **indices of the two numbers** that add up to `target`.\n\nYou may assume that each input has **exactly one solution**, and you may not use the same element twice. You can return the two indices in any order.",
-    "constraints": ["2 <= nums.length <= 10^4","-10^9 <= nums[i] <= 10^9","-10^9 <= target <= 10^9","Exactly one valid answer exists"],
+    "description": "A shop lists its item prices in `nums`, and you hold a gift card worth exactly `target`. Pick **two different items whose prices add up to `target`** and return their positions (0-based) as a two-element array.\n\nEvery input has exactly one such pair, and an item cannot be picked twice. The two positions may come back in either order.",
+    "constraints": ["2 <= nums.length <= 10^4","-10^9 <= nums[i], target <= 10^9","Exactly one pair reaches target"],
     "examples": [
       {
-        "input": "nums = [2,7,11,15], target = 9",
-        "output": "[0,1]",
-        "explanation": "nums[0] + nums[1] = 2 + 7 = 9, so the answer is [0, 1]."
+        "input": "nums = [4,9,1,7], target = 10",
+        "output": "[1,2]",
+        "explanation": "9 + 1 = 10, and those prices sit at positions 1 and 2."
       },
       {
-        "input": "nums = [3,2,4], target = 6",
-        "output": "[1,2]",
-        "explanation": "nums[1] + nums[2] = 2 + 4 = 6."
+        "input": "nums = [5,-3,8,12], target = 9",
+        "output": "[1,3]",
+        "explanation": "-3 + 12 = 9, at positions 1 and 3."
       }
     ],
     "functionName": "twoSum",
@@ -74,12 +74,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,7,11,15],9],
-        "expected": [0,1]
+        "input": [[4,9,1,7],10],
+        "expected": [1,2]
       },
       {
-        "input": [[3,2,4],6],
-        "expected": [1,2]
+        "input": [[5,-3,8,12],9],
+        "expected": [1,3]
       }
     ]
   },
@@ -89,20 +89,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "valid-anagram",
     "difficulty": "Easy",
     "category": "Arrays & Hashing",
-    "companies": ["Google","Amazon","Meta","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given two strings `s` and `t`, return `true` if `t` is an **anagram** of `s`, and `false` otherwise.\n\nAn anagram is a word formed by rearranging the letters of another word, using every original letter exactly once.",
-    "constraints": ["1 <= s.length, t.length <= 5 * 10^4","s and t consist of lowercase English letters"],
+    "description": "Two words are **anagrams** when one can be turned into the other just by reordering its letters, with every letter used exactly as many times as it appears.\n\nReturn `true` if `s` and `t` are anagrams of each other, and `false` otherwise.",
+    "constraints": ["1 <= s.length, t.length <= 5 * 10^4","Both strings use only lowercase English letters"],
     "examples": [
       {
-        "input": "s = \"anagram\", t = \"nagaram\"",
+        "input": "s = \"night\", t = \"thing\"",
         "output": "true",
-        "explanation": "Both words use the same letters the same number of times."
+        "explanation": "Both words use g, h, i, n and t exactly once."
       },
       {
-        "input": "s = \"rat\", t = \"car\"",
+        "input": "s = \"apple\", t = \"paper\"",
         "output": "false",
-        "explanation": "\"rat\" has no letter \"c\"."
+        "explanation": "\"apple\" has an \"l\" that \"paper\" does not."
       }
     ],
     "functionName": "isAnagram",
@@ -114,11 +114,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": ["anagram","nagaram"],
+        "input": ["night","thing"],
         "expected": true
       },
       {
-        "input": ["rat","car"],
+        "input": ["apple","paper"],
         "expected": false
       }
     ]
@@ -129,20 +129,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "contains-duplicate",
     "difficulty": "Easy",
     "category": "Arrays & Hashing",
-    "companies": ["Apple","Microsoft","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums`, return `true` if **any value appears at least twice**, and `false` if every element is distinct.",
+    "description": "A ticket scanner records the ticket numbers it sees in `nums`. Return `true` if **some ticket number was scanned more than once**, and `false` if all of them are different.",
     "constraints": ["1 <= nums.length <= 10^5","-10^9 <= nums[i] <= 10^9"],
     "examples": [
       {
-        "input": "nums = [1,2,3,1]",
+        "input": "nums = [7,3,9,3]",
         "output": "true",
-        "explanation": "The value 1 appears twice."
+        "explanation": "Ticket 3 was scanned twice."
       },
       {
-        "input": "nums = [1,2,3,4]",
+        "input": "nums = [10,20,30]",
         "output": "false",
-        "explanation": "Every element is distinct."
+        "explanation": "All three tickets are different."
       }
     ],
     "functionName": "containsDuplicate",
@@ -154,11 +154,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,1]],
+        "input": [[7,3,9,3]],
         "expected": true
       },
       {
-        "input": [[1,2,3,4]],
+        "input": [[10,20,30]],
         "expected": false
       }
     ]
@@ -169,25 +169,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "group-anagrams",
     "difficulty": "Medium",
     "category": "Arrays & Hashing",
-    "companies": ["Amazon","Microsoft","Apple","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array of strings `strs`, **group the anagrams together**. You may return the groups in any order, and the words inside a group in any order.",
-    "constraints": ["1 <= strs.length <= 10^4","0 <= strs[i].length <= 100","strs[i] consists of lowercase English letters"],
+    "description": "Sort the words in `strs` into groups so that **two words share a group exactly when they are anagrams** (made of the same letters, the same number of times). Return the list of groups.\n\nThe groups, and the words inside each group, may be returned in any order.",
+    "constraints": ["1 <= strs.length <= 10^4","0 <= strs[i].length <= 100","Words use only lowercase English letters"],
     "examples": [
       {
-        "input": "strs = [\"a\"]",
-        "output": "[[\"a\"]]",
-        "explanation": "A single word forms a single group."
+        "input": "strs = [\"dusty\",\"night\",\"act\",\"study\",\"thing\",\"cat\"]",
+        "output": "[[\"dusty\",\"study\"],[\"night\",\"thing\"],[\"act\",\"cat\"]]",
+        "explanation": "\"dusty\"/\"study\", \"night\"/\"thing\" and \"act\"/\"cat\" each form a pair."
       },
       {
-        "input": "strs = [\"\"]",
-        "output": "[[\"\"]]",
-        "explanation": "The empty string forms its own group."
-      },
-      {
-        "input": "strs = [\"eat\",\"tea\",\"tan\",\"ate\",\"nat\",\"bat\"]",
-        "output": "[[\"eat\",\"tea\",\"ate\"],[\"tan\",\"nat\"],[\"bat\"]]",
-        "explanation": "\"eat\", \"tea\" and \"ate\" are anagrams of each other, and so are \"tan\" and \"nat\"."
+        "input": "strs = [\"abc\",\"x\"]",
+        "output": "[[\"abc\"],[\"x\"]]",
+        "explanation": "Words with different letters stay in separate groups."
       }
     ],
     "functionName": "groupAnagrams",
@@ -200,16 +195,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [["a"]],
-        "expected": [["a"]]
+        "input": [["dusty","night","act","study","thing","cat"]],
+        "expected": [["dusty","study"],["night","thing"],["act","cat"]]
       },
       {
-        "input": [[""]],
-        "expected": [[""]]
-      },
-      {
-        "input": [["eat","tea","tan","ate","nat","bat"]],
-        "expected": [["eat","tea","ate"],["tan","nat"],["bat"]]
+        "input": [["abc","x"]],
+        "expected": [["abc"],["x"]]
       }
     ]
   },
@@ -219,20 +210,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "top-k-frequent-elements",
     "difficulty": "Medium",
     "category": "Arrays & Hashing",
-    "companies": ["Amazon","Facebook","Bloomberg"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums` and an integer `k`, return the **`k` most frequent elements**. You may return the answer in any order.\n\nThe answer is guaranteed to be unique: no other element ties with the `k`th most frequent one.",
-    "constraints": ["1 <= nums.length <= 10^5","-10^4 <= nums[i] <= 10^4","1 <= k <= the number of distinct elements in nums","The answer is unique"],
+    "description": "`nums` is a log of product ids, one per sale. Return the **`k` ids that were sold most often**, in any order.\n\nThe inputs are chosen so the answer is unambiguous: nothing outside the answer ties with the `k`th best seller.",
+    "constraints": ["1 <= nums.length <= 10^5","-10^4 <= nums[i] <= 10^4","k is between 1 and the number of distinct ids","The answer is unique"],
     "examples": [
       {
-        "input": "nums = [1,1,1,2,2,3], k = 2",
-        "output": "[1,2]",
-        "explanation": "1 appears three times and 2 appears twice."
+        "input": "nums = [7,7,8,8,8,9], k = 1",
+        "output": "[8]",
+        "explanation": "8 was sold three times, more than any other id."
       },
       {
-        "input": "nums = [1], k = 1",
-        "output": "[1]",
-        "explanation": "Only one element exists."
+        "input": "nums = [4,4,5,5,5,6,6,6,6], k = 2",
+        "output": "[6,5]",
+        "explanation": "6 sold four times and 5 sold three times."
       }
     ],
     "functionName": "topKFrequent",
@@ -245,12 +236,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,1,1,2,2,3],2],
-        "expected": [1,2]
+        "input": [[7,7,8,8,8,9],1],
+        "expected": [8]
       },
       {
-        "input": [[1],1],
-        "expected": [1]
+        "input": [[4,4,5,5,5,6,6,6,6],2],
+        "expected": [6,5]
       }
     ]
   },
@@ -260,20 +251,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "product-of-array-except-self",
     "difficulty": "Medium",
     "category": "Arrays & Hashing",
-    "companies": ["Amazon","Apple","Asana"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums`, return an array `answer` where `answer[i]` is the **product of all the elements of `nums` except `nums[i]`**.\n\nYour algorithm must run in **O(n)** time and must not use division.",
-    "constraints": ["2 <= nums.length <= 10^5","-30 <= nums[i] <= 30","The product of any prefix or suffix of nums fits in a 32-bit integer"],
+    "description": "For each position `i` of `nums`, work out what you get by **multiplying every other number together**, leaving `nums[i]` out. Return these results as an array of the same length.\n\nAim for **O(n)** time, and do not use division.",
+    "constraints": ["2 <= nums.length <= 10^5","-30 <= nums[i] <= 30","Every prefix and suffix product fits in a 32-bit integer"],
     "examples": [
       {
-        "input": "nums = [1,2,3,4]",
-        "output": "[24,12,8,6]",
-        "explanation": "Each output is the product of the other three numbers."
+        "input": "nums = [2,5,3]",
+        "output": "[15,6,10]",
+        "explanation": "5 x 3 = 15, 2 x 3 = 6 and 2 x 5 = 10."
       },
       {
-        "input": "nums = [-1,1,0,-3,3]",
-        "output": "[0,0,9,0,0]",
-        "explanation": "A zero makes every product zero except the one that skips it."
+        "input": "nums = [3,0,4,2]",
+        "output": "[0,24,0,0]",
+        "explanation": "Only the position holding the zero avoids multiplying by zero: 3 x 4 x 2 = 24."
       }
     ],
     "functionName": "productExceptSelf",
@@ -285,12 +276,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,4]],
-        "expected": [24,12,8,6]
+        "input": [[2,5,3]],
+        "expected": [15,6,10]
       },
       {
-        "input": [[-1,1,0,-3,3]],
-        "expected": [0,0,9,0,0]
+        "input": [[3,0,4,2]],
+        "expected": [0,24,0,0]
       }
     ]
   },
@@ -300,20 +291,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "longest-consecutive-sequence",
     "difficulty": "Medium",
     "category": "Arrays & Hashing",
-    "companies": ["Google","Microsoft","Spotify"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an unsorted array of integers `nums`, return the **length of the longest run of consecutive integers** that can be formed from its elements.\n\nFor example, the elements `4, 2, 3, 1` form the run `1, 2, 3, 4`. The elements need not be next to each other in the array. Your algorithm must run in **O(n)** time.",
+    "description": "Pages fell out of a book and were picked up in random order; `nums` holds their page numbers. Find the **longest stretch of back-to-back page numbers** (like 7, 8, 9) you can assemble and return how many pages it has.\n\nThe numbers can be anywhere in the array, and repeats count once. Aim for **O(n)** time.",
     "constraints": ["0 <= nums.length <= 10^5","-10^9 <= nums[i] <= 10^9"],
     "examples": [
       {
-        "input": "nums = [100,4,200,1,3,2]",
+        "input": "nums = [10,5,12,3,11,4,13]",
         "output": "4",
-        "explanation": "The longest run is 1, 2, 3, 4."
+        "explanation": "10, 11, 12, 13 is the longest stretch."
       },
       {
-        "input": "nums = [0,3,7,2,5,8,4,6,0,1]",
-        "output": "9",
-        "explanation": "The longest run is 0 through 8."
+        "input": "nums = [9,1,-1,0,8]",
+        "output": "3",
+        "explanation": "-1, 0, 1 beats 8, 9."
       }
     ],
     "functionName": "longestConsecutive",
@@ -325,12 +316,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[100,4,200,1,3,2]],
+        "input": [[10,5,12,3,11,4,13]],
         "expected": 4
       },
       {
-        "input": [[0,3,7,2,5,8,4,6,0,1]],
-        "expected": 9
+        "input": [[9,1,-1,0,8]],
+        "expected": 3
       }
     ]
   },
@@ -340,20 +331,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "maximum-subarray",
     "difficulty": "Medium",
     "category": "Arrays & Hashing",
-    "companies": ["Amazon","Apple","LinkedIn"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums`, find the **contiguous non-empty subarray** with the largest sum and return that sum.",
+    "description": "`nums` holds a trader's profit (or loss, when negative) for each day. Choose **one unbroken run of at least one day** and return the biggest total profit such a run can have.",
     "constraints": ["1 <= nums.length <= 10^5","-10^4 <= nums[i] <= 10^4"],
     "examples": [
       {
-        "input": "nums = [-2,1,-3,4,-1,2,1,-5,4]",
+        "input": "nums = [3,-4,5,-1,2,-6,4]",
         "output": "6",
-        "explanation": "The subarray [4, -1, 2, 1] has the largest sum, 6."
+        "explanation": "Days 3 to 5 give 5 - 1 + 2 = 6."
       },
       {
-        "input": "nums = [1]",
-        "output": "1",
-        "explanation": "A single element is the whole array."
+        "input": "nums = [-7]",
+        "output": "-7",
+        "explanation": "With one day, its value is the answer, even when negative."
       }
     ],
     "functionName": "maxSubArray",
@@ -365,12 +356,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[-2,1,-3,4,-1,2,1,-5,4]],
+        "input": [[3,-4,5,-1,2,-6,4]],
         "expected": 6
       },
       {
-        "input": [[1]],
-        "expected": 1
+        "input": [[-7]],
+        "expected": -7
       }
     ]
   },
@@ -380,20 +371,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "majority-element",
     "difficulty": "Easy",
     "category": "Arrays & Hashing",
-    "companies": ["Google","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array `nums` of size `n`, return the **majority element**: the element that appears **more than `floor(n / 2)` times**.\n\nYou may assume the majority element always exists in the array.",
-    "constraints": ["n == nums.length","1 <= n <= 5 * 10^4","-10^9 <= nums[i] <= 10^9","A majority element always exists"],
+    "description": "An election's ballots are listed in `nums`, one candidate id per ballot. One candidate won **more than half of all the ballots**. Return that candidate's id.",
+    "constraints": ["n == nums.length","1 <= n <= 5 * 10^4","-10^9 <= nums[i] <= 10^9","Some value fills more than half the array"],
     "examples": [
       {
-        "input": "nums = [3,2,3]",
-        "output": "3",
-        "explanation": "3 appears twice out of three."
+        "input": "nums = [4,9,4]",
+        "output": "4",
+        "explanation": "4 got two of the three ballots."
       },
       {
-        "input": "nums = [2,2,1,1,1,2,2]",
-        "output": "2",
-        "explanation": "2 appears four times out of seven."
+        "input": "nums = [1,8,8,2,8]",
+        "output": "8",
+        "explanation": "8 got three of the five ballots."
       }
     ],
     "functionName": "majorityElement",
@@ -405,12 +396,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,2,3]],
-        "expected": 3
+        "input": [[4,9,4]],
+        "expected": 4
       },
       {
-        "input": [[2,2,1,1,1,2,2]],
-        "expected": 2
+        "input": [[1,8,8,2,8]],
+        "expected": 8
       }
     ]
   },
@@ -420,20 +411,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "sort-colors",
     "difficulty": "Medium",
     "category": "Arrays & Hashing",
-    "companies": ["Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `nums` of `n` objects colored red, white or blue, written as the numbers `0`, `1` and `2`.\n\nSort them so that objects of the same color are adjacent, in the order red (0), white (1), blue (2), **without using a library sort function**. Return the sorted array.",
-    "constraints": ["n == nums.length","1 <= n <= 300","nums[i] is 0, 1 or 2"],
+    "description": "A conveyor carries parcels tagged `0` (express), `1` (standard) or `2` (economy), listed in `nums`. Rearrange them so **all 0s come first, then all 1s, then all 2s**, and return the result.\n\nDo it **without a library sort**; one pass over the array is enough.",
+    "constraints": ["n == nums.length","1 <= n <= 300","Every value is 0, 1 or 2"],
     "examples": [
       {
-        "input": "nums = [2,0,2,1,1,0]",
-        "output": "[0,0,1,1,2,2]",
-        "explanation": "The zeros come first, then the ones, then the twos."
+        "input": "nums = [1,2,0,0,2]",
+        "output": "[0,0,1,2,2]",
+        "explanation": "Both 0s move to the front and both 2s to the back."
       },
       {
-        "input": "nums = [2,0,1]",
-        "output": "[0,1,2]",
-        "explanation": "Each color appears once."
+        "input": "nums = [2,1]",
+        "output": "[1,2]",
+        "explanation": "The 1 moves ahead of the 2."
       }
     ],
     "functionName": "sortColors",
@@ -445,12 +436,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,0,2,1,1,0]],
-        "expected": [0,0,1,1,2,2]
+        "input": [[1,2,0,0,2]],
+        "expected": [0,0,1,2,2]
       },
       {
-        "input": [[2,0,1]],
-        "expected": [0,1,2]
+        "input": [[2,1]],
+        "expected": [1,2]
       }
     ]
   },
@@ -460,20 +451,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "valid-palindrome",
     "difficulty": "Easy",
     "category": "Two Pointers",
-    "companies": ["Meta","Microsoft","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "A phrase is a **palindrome** if, after converting all uppercase letters to lowercase and removing every character that is not a letter or a digit, it reads the same forwards and backwards.\n\nGiven a string `s`, return `true` if it is a palindrome, and `false` otherwise.",
-    "constraints": ["1 <= s.length <= 2 * 10^5","s consists only of printable ASCII characters"],
+    "description": "Ignore case, and throw away everything in `s` that is not a letter or a digit. Return `true` if **what is left reads the same from both ends**, and `false` otherwise.",
+    "constraints": ["1 <= s.length <= 2 * 10^5","s contains printable ASCII characters only"],
     "examples": [
       {
-        "input": "s = \"A man, a plan, a canal: Panama\"",
+        "input": "s = \"Was it a car or a cat I saw?\"",
         "output": "true",
-        "explanation": "After cleaning, the phrase is \"amanaplanacanalpanama\", which reads the same in both directions."
+        "explanation": "Cleaned up, it is \"wasitacaroracatisaw\", the same backwards."
       },
       {
-        "input": "s = \"race a car\"",
+        "input": "s = \"Step on no cats\"",
         "output": "false",
-        "explanation": "The cleaned phrase \"raceacar\" is not a palindrome."
+        "explanation": "\"steponnocats\" reversed is \"stacnonopets\"."
       }
     ],
     "functionName": "isPalindrome",
@@ -485,11 +476,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": ["A man, a plan, a canal: Panama"],
+        "input": ["Was it a car or a cat I saw?"],
         "expected": true
       },
       {
-        "input": ["race a car"],
+        "input": ["Step on no cats"],
         "expected": false
       }
     ]
@@ -500,20 +491,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "two-sum-ii-input-array-is-sorted",
     "difficulty": "Medium",
     "category": "Two Pointers",
-    "companies": ["Amazon","Google"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a **1-indexed** array of integers `numbers` that is already **sorted in non-decreasing order**, find two numbers that add up to `target`.\n\nReturn the **1-based indices** `[index1, index2]` of the two numbers, with `index1 < index2`. Each input has exactly one solution and you may not use the same element twice. Use only **constant extra space**.",
-    "constraints": ["2 <= numbers.length <= 3 * 10^4","-1000 <= numbers[i] <= 1000","numbers is sorted in non-decreasing order","-1000 <= target <= 1000","Exactly one solution exists"],
+    "description": "`numbers` is already **sorted from smallest to largest**. Find the two entries that add up to `target` and return their positions **counting from 1**, smaller position first.\n\nThere is exactly one such pair, and one entry cannot be used twice. Solve it with **O(1) extra memory**.",
+    "constraints": ["2 <= numbers.length <= 3 * 10^4","-1000 <= numbers[i], target <= 1000","numbers never decreases","Exactly one pair reaches target"],
     "examples": [
       {
-        "input": "numbers = [2,7,11,15], target = 9",
-        "output": "[1,2]",
-        "explanation": "2 + 7 = 9, at positions 1 and 2."
+        "input": "numbers = [1,3,4,8,10], target = 12",
+        "output": "[3,4]",
+        "explanation": "4 + 8 = 12, at positions 3 and 4."
       },
       {
-        "input": "numbers = [2,3,4], target = 6",
-        "output": "[1,3]",
-        "explanation": "2 + 4 = 6, at positions 1 and 3."
+        "input": "numbers = [-5,-2,0,6], target = -2",
+        "output": "[2,3]",
+        "explanation": "-2 + 0 = -2, at positions 2 and 3."
       }
     ],
     "functionName": "twoSum",
@@ -525,12 +516,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,7,11,15],9],
-        "expected": [1,2]
+        "input": [[1,3,4,8,10],12],
+        "expected": [3,4]
       },
       {
-        "input": [[2,3,4],6],
-        "expected": [1,3]
+        "input": [[-5,-2,0,6],-2],
+        "expected": [2,3]
       }
     ]
   },
@@ -540,20 +531,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "3sum",
     "difficulty": "Medium",
     "category": "Two Pointers",
-    "companies": ["Meta","Amazon","Apple"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums`, return **all the unique triplets** `[nums[i], nums[j], nums[k]]` with `i`, `j` and `k` all different and `nums[i] + nums[j] + nums[k] == 0`.\n\nThe answer must not contain duplicate triplets. You may return the triplets in any order, and the numbers inside a triplet in any order.",
+    "description": "Find every way to **pick three entries of `nums` (at three different positions) whose values sum to zero**. Return the distinct value triples: two triples with the same three values count once.\n\nTriples, and the values inside each, can be in any order.",
     "constraints": ["3 <= nums.length <= 3000","-10^5 <= nums[i] <= 10^5"],
     "examples": [
       {
-        "input": "nums = [0,1,1]",
+        "input": "nums = [1,2,3]",
         "output": "[]",
-        "explanation": "No three numbers add up to zero."
+        "explanation": "All values are positive, so nothing sums to zero."
       },
       {
-        "input": "nums = [0,0,0]",
-        "output": "[[0,0,0]]",
-        "explanation": "The only triplet is [0, 0, 0]."
+        "input": "nums = [-3,1,2,0]",
+        "output": "[[-3,1,2]]",
+        "explanation": "-3 + 1 + 2 = 0 is the only zero-sum triple."
       }
     ],
     "functionName": "threeSum",
@@ -566,35 +557,35 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[0,1,1]],
+        "input": [[1,2,3]],
         "expected": []
       },
       {
-        "input": [[0,0,0]],
-        "expected": [[0,0,0]]
+        "input": [[-3,1,2,0]],
+        "expected": [[-3,1,2]]
       }
     ]
   },
   {
     "id": "container-with-most-water",
-    "title": "Container With Most Water",
-    "slug": "container-with-most-water",
+    "title": "Two Fence Posts",
+    "slug": "two-fence-posts",
     "difficulty": "Medium",
     "category": "Two Pointers",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an integer array `height` of length `n`. There are `n` vertical lines, where line `i` goes from `(i, 0)` to `(i, height[i])`.\n\nPick two lines that, together with the x-axis, form a container, and return the **maximum amount of water** a container can store. You may not tilt the container.",
+    "description": "Fence posts stand one metre apart along a ditch; post `i` is `height[i]` metres tall. A tarp stretched between **any two posts** holds water up to the shorter post, so the pair at positions `i < j` holds `min(height[i], height[j]) * (j - i)`.\n\nReturn the **most water any pair of posts can hold**.",
     "constraints": ["n == height.length","2 <= n <= 10^5","0 <= height[i] <= 10^4"],
     "examples": [
       {
-        "input": "height = [1,8,6,2,5,4,8,3,7]",
-        "output": "49",
-        "explanation": "The best pair is the line of height 8 (index 1) and the line of height 7 (index 8): min(8, 7) x 7 = 49."
+        "input": "height = [3,1,6,2,5]",
+        "output": "12",
+        "explanation": "Posts 0 and 4 hold min(3, 5) x 4 = 12."
       },
       {
-        "input": "height = [1,1]",
-        "output": "1",
-        "explanation": "Two lines of height 1 that are 1 apart hold 1."
+        "input": "height = [2,2]",
+        "output": "2",
+        "explanation": "The only pair holds min(2, 2) x 1 = 2."
       }
     ],
     "functionName": "maxArea",
@@ -606,35 +597,35 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,8,6,2,5,4,8,3,7]],
-        "expected": 49
+        "input": [[3,1,6,2,5]],
+        "expected": 12
       },
       {
-        "input": [[1,1]],
-        "expected": 1
+        "input": [[2,2]],
+        "expected": 2
       }
     ]
   },
   {
     "id": "trapping-rain-water",
-    "title": "Trapping Rain Water",
-    "slug": "trapping-rain-water",
+    "title": "Puddles Between Pillars",
+    "slug": "puddles-between-pillars",
     "difficulty": "Hard",
     "category": "Two Pointers",
-    "companies": ["Google","Goldman Sachs","Amazon","Bloomberg"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given `n` non-negative integers representing an elevation map where the width of each bar is `1`, compute **how much water it can trap** after raining.",
+    "description": "A row of stone pillars, each one unit wide, has heights `height`. After a storm, water collects in every dip that has a taller pillar somewhere on **both** sides; water above a pillar rises to the lower of the tallest pillars to its left and right.\n\nReturn the **total units of water** left standing on the pillars.",
     "constraints": ["n == height.length","1 <= n <= 2 * 10^4","0 <= height[i] <= 10^5"],
     "examples": [
       {
-        "input": "height = [0,1,0,2,1,0,1,3,2,1,2,1]",
-        "output": "6",
-        "explanation": "Six units of water are trapped between the bars."
+        "input": "height = [3,0,2,0,4]",
+        "output": "7",
+        "explanation": "3 + 1 + 3 = 7 units sit between the walls of height 3 and 4."
       },
       {
-        "input": "height = [4,2,0,3,2,5]",
-        "output": "9",
-        "explanation": "Nine units are trapped in the wide pit in the middle."
+        "input": "height = [2,1,3,1,2]",
+        "output": "2",
+        "explanation": "Each of the two dips of height 1 holds one unit."
       }
     ],
     "functionName": "trap",
@@ -646,12 +637,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[0,1,0,2,1,0,1,3,2,1,2,1]],
-        "expected": 6
+        "input": [[3,0,2,0,4]],
+        "expected": 7
       },
       {
-        "input": [[4,2,0,3,2,5]],
-        "expected": 9
+        "input": [[2,1,3,1,2]],
+        "expected": 2
       }
     ]
   },
@@ -661,20 +652,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "move-zeroes",
     "difficulty": "Easy",
     "category": "Two Pointers",
-    "companies": ["Meta","Bloomberg"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums`, **move all the `0`s to the end** while keeping the relative order of the non-zero elements. Return the resulting array.\n\nTry to do it without making a copy of the array.",
+    "description": "Shift **every zero in `nums` to the back** of the array. The other numbers must stay in the order they started in. Return the rearranged array.\n\nTry to do it in place, without building a second array.",
     "constraints": ["1 <= nums.length <= 10^4","-2^31 <= nums[i] <= 2^31 - 1"],
     "examples": [
       {
-        "input": "nums = [0,1,0,3,12]",
-        "output": "[1,3,12,0,0]",
-        "explanation": "The non-zero numbers keep their order and the zeros move to the end."
+        "input": "nums = [5,0,0,7,2]",
+        "output": "[5,7,2,0,0]",
+        "explanation": "5, 7, 2 keep their order; both zeros go to the back."
       },
       {
-        "input": "nums = [0]",
-        "output": "[0]",
-        "explanation": "A single zero stays where it is."
+        "input": "nums = [0,9]",
+        "output": "[9,0]",
+        "explanation": "The zero moves behind the 9."
       }
     ],
     "functionName": "moveZeroes",
@@ -686,12 +677,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[0,1,0,3,12]],
-        "expected": [1,3,12,0,0]
+        "input": [[5,0,0,7,2]],
+        "expected": [5,7,2,0,0]
       },
       {
-        "input": [[0]],
-        "expected": [0]
+        "input": [[0,9]],
+        "expected": [9,0]
       }
     ]
   },
@@ -701,20 +692,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "best-time-to-buy-and-sell-stock",
     "difficulty": "Easy",
     "category": "Sliding Window",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `prices` where `prices[i]` is the price of a stock on day `i`.\n\nYou may choose **one day to buy** one share and a **later day to sell** it. Return the maximum profit you can make. If no profit is possible, return `0`.",
+    "description": "`prices[i]` is what one share of a stock costs on day `i`. You may **buy one share on some day and sell it on a later day**, at most once.\n\nReturn the largest profit this single trade can make, or `0` if every possible trade loses money.",
     "constraints": ["1 <= prices.length <= 10^5","0 <= prices[i] <= 10^4"],
     "examples": [
       {
-        "input": "prices = [7,1,5,3,6,4]",
-        "output": "5",
-        "explanation": "Buy on day 2 (price 1) and sell on day 5 (price 6): profit = 6 - 1 = 5."
+        "input": "prices = [9,4,6,2,8,3]",
+        "output": "6",
+        "explanation": "Buy at 2 on day 3 and sell at 8 on day 4 for a profit of 6."
       },
       {
-        "input": "prices = [7,6,4,3,1]",
+        "input": "prices = [8,5,5,2]",
         "output": "0",
-        "explanation": "Prices only fall, so no profitable trade exists."
+        "explanation": "The price never rises after a buy, so the best is to not trade."
       }
     ],
     "functionName": "maxProfit",
@@ -726,11 +717,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[7,1,5,3,6,4]],
-        "expected": 5
+        "input": [[9,4,6,2,8,3]],
+        "expected": 6
       },
       {
-        "input": [[7,6,4,3,1]],
+        "input": [[8,5,5,2]],
         "expected": 0
       }
     ]
@@ -741,20 +732,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "longest-substring-without-repeating-characters",
     "difficulty": "Medium",
     "category": "Sliding Window",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a string `s`, find the length of the **longest substring** that contains no repeated characters.\n\nA substring is a contiguous run of characters inside the string.",
-    "constraints": ["0 <= s.length <= 5 * 10^4","s consists of English letters, digits, symbols and spaces"],
+    "description": "Return the length of the **longest unbroken stretch of `s` in which no character appears twice**.\n\nThe stretch must be contiguous: you cannot skip characters.",
+    "constraints": ["0 <= s.length <= 5 * 10^4","s may contain letters, digits, symbols and spaces"],
     "examples": [
       {
-        "input": "s = \"abcabcbb\"",
-        "output": "3",
-        "explanation": "The longest such substring is \"abc\", so the answer is 3."
+        "input": "s = \"xyzxyw\"",
+        "output": "4",
+        "explanation": "\"zxyw\" has four different characters; any longer stretch repeats one."
       },
       {
-        "input": "s = \"bbbbb\"",
+        "input": "s = \"qqqq\"",
         "output": "1",
-        "explanation": "Every character is the same, so the longest substring is a single \"b\"."
+        "explanation": "With only one distinct character, the best stretch is one long."
       }
     ],
     "functionName": "lengthOfLongestSubstring",
@@ -766,11 +757,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": ["abcabcbb"],
-        "expected": 3
+        "input": ["xyzxyw"],
+        "expected": 4
       },
       {
-        "input": ["bbbbb"],
+        "input": ["qqqq"],
         "expected": 1
       }
     ]
@@ -781,20 +772,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "longest-repeating-character-replacement",
     "difficulty": "Medium",
     "category": "Sliding Window",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given a string `s` of uppercase English letters and an integer `k`. In one operation you can change any character of `s` into any other uppercase letter. You may perform **at most `k`** operations.\n\nReturn the length of the longest substring made of a single repeated letter that you can obtain.",
-    "constraints": ["1 <= s.length <= 10^5","s consists of uppercase English letters","0 <= k <= s.length"],
+    "description": "`s` is a string of capital letters. You may **repaint at most `k` of its characters**, turning each into any capital letter you like.\n\nAfter repainting, what is the longest stretch of `s` in which every character is the same letter? Return its length.",
+    "constraints": ["1 <= s.length <= 10^5","s uses only capital English letters","0 <= k <= s.length"],
     "examples": [
       {
-        "input": "s = \"ABAB\", k = 2",
-        "output": "4",
-        "explanation": "Replace the two \"A\"s with \"B\"s (or the other way round) to get \"BBBB\"."
+        "input": "s = \"XYYX\", k = 1",
+        "output": "3",
+        "explanation": "Repaint one \"X\" to get \"YYY\" next to the other letter; four in a row would need two repaints."
       },
       {
-        "input": "s = \"AABABBA\", k = 1",
-        "output": "4",
-        "explanation": "Replace the \"B\" in the middle to get \"AAAA\"."
+        "input": "s = \"MMNMM\", k = 1",
+        "output": "5",
+        "explanation": "Repaint the \"N\" and the whole string is \"M\"."
       }
     ],
     "functionName": "characterReplacement",
@@ -806,12 +797,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": ["ABAB",2],
-        "expected": 4
+        "input": ["XYYX",1],
+        "expected": 3
       },
       {
-        "input": ["AABABBA",1],
-        "expected": 4
+        "input": ["MMNMM",1],
+        "expected": 5
       }
     ]
   },
@@ -821,20 +812,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "permutation-in-string",
     "difficulty": "Medium",
     "category": "Sliding Window",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given two strings `s1` and `s2`, return `true` if `s2` contains a **permutation** of `s1` as a substring, and `false` otherwise.\n\nIn other words, return `true` if some substring of `s2` has exactly the same letters as `s1`, in any order.",
-    "constraints": ["1 <= s1.length, s2.length <= 10^4","s1 and s2 consist of lowercase English letters"],
+    "description": "Return `true` if `s2` has a stretch of exactly `s1.length` characters that **uses the same letters as `s1`, just possibly shuffled**. Otherwise return `false`.",
+    "constraints": ["1 <= s1.length, s2.length <= 10^4","Both strings use only lowercase English letters"],
     "examples": [
       {
-        "input": "s1 = \"ab\", s2 = \"eidbaooo\"",
+        "input": "s1 = \"xy\", s2 = \"abyxc\"",
         "output": "true",
-        "explanation": "\"ba\" is a permutation of \"ab\" and appears in s2."
+        "explanation": "\"yx\" appears in s2 and is \"xy\" reordered."
       },
       {
-        "input": "s1 = \"ab\", s2 = \"eidboaoo\"",
+        "input": "s1 = \"xy\", s2 = \"axcyb\"",
         "output": "false",
-        "explanation": "No substring of s2 contains exactly one \"a\" and one \"b\" side by side."
+        "explanation": "\"x\" and \"y\" never sit next to each other in s2."
       }
     ],
     "functionName": "checkInclusion",
@@ -846,11 +837,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": ["ab","eidbaooo"],
+        "input": ["xy","abyxc"],
         "expected": true
       },
       {
-        "input": ["ab","eidboaoo"],
+        "input": ["xy","axcyb"],
         "expected": false
       }
     ]
@@ -861,25 +852,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "minimum-window-substring",
     "difficulty": "Hard",
     "category": "Sliding Window",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given two strings `s` and `t`, return the **shortest substring of `s`** that contains every character of `t`, including duplicates. If there is no such substring, return the empty string `\"\"`.\n\nIf several windows share the minimum length, return the one that starts first.",
-    "constraints": ["1 <= s.length, t.length <= 10^5","s and t consist of uppercase and lowercase English letters"],
+    "description": "Find the **shortest stretch of `s` that contains every character of `t`**, counting repeats (if `t` has two `a`s, the stretch needs two `a`s). Return that stretch, or `\"\"` if none exists.\n\nWhen several shortest stretches exist, return the leftmost one.",
+    "constraints": ["1 <= s.length, t.length <= 10^5","Both strings use only English letters (either case)"],
     "examples": [
       {
-        "input": "s = \"ADOBECODEBANC\", t = \"ABC\"",
-        "output": "\"BANC\"",
-        "explanation": "\"BANC\" is the shortest window that contains A, B and C."
+        "input": "s = \"XAYBZAXC\", t = \"ABC\"",
+        "output": "\"BZAXC\"",
+        "explanation": "\"BZAXC\" holds an A, a B and a C, and no shorter stretch does."
       },
       {
-        "input": "s = \"a\", t = \"a\"",
-        "output": "\"a\"",
-        "explanation": "The whole string is the window."
-      },
-      {
-        "input": "s = \"a\", t = \"aa\"",
+        "input": "s = \"q\", t = \"qq\"",
         "output": "\"\"",
-        "explanation": "The single \"a\" cannot cover the two \"a\"s in t, so there is no window."
+        "explanation": "There is only one \"q\" to cover the two in t."
       }
     ],
     "functionName": "minWindow",
@@ -891,15 +877,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": ["ADOBECODEBANC","ABC"],
-        "expected": "BANC"
+        "input": ["XAYBZAXC","ABC"],
+        "expected": "BZAXC"
       },
       {
-        "input": ["a","a"],
-        "expected": "a"
-      },
-      {
-        "input": ["a","aa"],
+        "input": ["q","qq"],
         "expected": ""
       }
     ]
@@ -910,20 +892,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "sliding-window-maximum",
     "difficulty": "Hard",
     "category": "Sliding Window",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an integer array `nums` and a window size `k`. The window starts at the very left of the array and moves one position to the right each step, always covering exactly `k` numbers.\n\nReturn an array containing the **maximum value of the window** at every position.",
+    "description": "A window exactly `k` numbers wide starts at the left end of `nums` and slides right one step at a time until it reaches the right end.\n\nReturn the **largest number inside the window at each of its positions**, in order.",
     "constraints": ["1 <= nums.length <= 10^5","-10^4 <= nums[i] <= 10^4","1 <= k <= nums.length"],
     "examples": [
       {
-        "input": "nums = [1,3,-1,-3,5,3,6,7], k = 3",
-        "output": "[3,3,5,5,6,7]",
-        "explanation": "Window position -> maximum: [1 3 -1] -> 3, [3 -1 -3] -> 3, [-1 -3 5] -> 5, [-3 5 3] -> 5, [5 3 6] -> 6, [3 6 7] -> 7."
+        "input": "nums = [2,7,3,1,8,4], k = 3",
+        "output": "[7,7,8,8]",
+        "explanation": "Windows [2 7 3], [7 3 1], [3 1 8] and [1 8 4] peak at 7, 7, 8 and 8."
       },
       {
-        "input": "nums = [1], k = 1",
-        "output": "[1]",
-        "explanation": "A single window holds the only element."
+        "input": "nums = [5,-2], k = 1",
+        "output": "[5,-2]",
+        "explanation": "With k = 1 every number is its own window."
       }
     ],
     "functionName": "maxSlidingWindow",
@@ -935,12 +917,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,3,-1,-3,5,3,6,7],3],
-        "expected": [3,3,5,5,6,7]
+        "input": [[2,7,3,1,8,4],3],
+        "expected": [7,7,8,8]
       },
       {
-        "input": [[1],1],
-        "expected": [1]
+        "input": [[5,-2],1],
+        "expected": [5,-2]
       }
     ]
   },
@@ -950,20 +932,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "find-all-anagrams-in-a-string",
     "difficulty": "Medium",
     "category": "Sliding Window",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given two strings `s` and `p`, return the **start index of every substring of `s` that is an anagram of `p`**, in increasing order.\n\nAn anagram uses exactly the same letters as the original, in any order.",
-    "constraints": ["1 <= s.length, p.length <= 3 * 10^4","s and p consist of lowercase English letters"],
+    "description": "Slide over `s` looking at every stretch that is as long as `p`. Return the **starting positions of the stretches that are rearrangements of `p`**, from left to right.",
+    "constraints": ["1 <= s.length, p.length <= 3 * 10^4","Both strings use only lowercase English letters"],
     "examples": [
       {
-        "input": "s = \"cbaebabacd\", p = \"abc\"",
-        "output": "[0,6]",
-        "explanation": "The substring starting at 0 is \"cba\" and the one starting at 6 is \"bac\". Both are anagrams of \"abc\"."
+        "input": "s = \"xyzzyxz\", p = \"xyz\"",
+        "output": "[0,3,4]",
+        "explanation": "\"xyz\" at 0, \"zyx\" at 3 and \"yxz\" at 4 all use x, y and z once."
       },
       {
-        "input": "s = \"abab\", p = \"ab\"",
-        "output": "[0,1,2]",
-        "explanation": "Substrings starting at 0, 1 and 2 are \"ab\", \"ba\" and \"ab\"."
+        "input": "s = \"pqqp\", p = \"pq\"",
+        "output": "[0,2]",
+        "explanation": "\"pq\" at 0 and \"qp\" at 2 match; \"qq\" at 1 does not."
       }
     ],
     "functionName": "findAnagrams",
@@ -975,12 +957,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": ["cbaebabacd","abc"],
-        "expected": [0,6]
+        "input": ["xyzzyxz","xyz"],
+        "expected": [0,3,4]
       },
       {
-        "input": ["abab","ab"],
-        "expected": [0,1,2]
+        "input": ["pqqp","pq"],
+        "expected": [0,2]
       }
     ]
   },
@@ -990,20 +972,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "minimum-size-subarray-sum",
     "difficulty": "Medium",
     "category": "Sliding Window",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array of **positive** integers `nums` and a positive integer `target`, return the **minimal length of a contiguous subarray** whose sum is greater than or equal to `target`.\n\nIf no such subarray exists, return `0`.",
+    "description": "Every number in `nums` is **positive**. Find the **shortest unbroken run of numbers whose total is at least `target`** and return how many numbers it has.\n\nReturn `0` if even the whole array falls short.",
     "constraints": ["1 <= target <= 10^9","1 <= nums.length <= 10^5","1 <= nums[i] <= 10^4"],
     "examples": [
       {
-        "input": "target = 7, nums = [2,3,1,2,4,3]",
-        "output": "2",
-        "explanation": "The subarray [4, 3] has sum 7 and is the shortest one that reaches the target."
+        "input": "target = 9, nums = [1,4,2,5,3]",
+        "output": "3",
+        "explanation": "4 + 2 + 5 = 11 reaches 9; no two neighbours add up to 9."
       },
       {
-        "input": "target = 4, nums = [1,4,4]",
+        "input": "target = 6, nums = [2,6,1]",
         "output": "1",
-        "explanation": "The single element 4 is enough."
+        "explanation": "The 6 alone is enough."
       }
     ],
     "functionName": "minSubArrayLen",
@@ -1015,11 +997,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [7,[2,3,1,2,4,3]],
-        "expected": 2
+        "input": [9,[1,4,2,5,3]],
+        "expected": 3
       },
       {
-        "input": [4,[1,4,4]],
+        "input": [6,[2,6,1]],
         "expected": 1
       }
     ]
@@ -1030,25 +1012,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "valid-parentheses",
     "difficulty": "Easy",
     "category": "Stack",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a string `s` made only of the characters `'('`, `')'`, `'{'`, `'}'`, `'['` and `']'`, decide whether it is **valid**.\n\nA string is valid when:\n\n- every open bracket is closed by a bracket of the same type, and\n- brackets are closed in the correct order, and\n- every close bracket has a matching open bracket.",
-    "constraints": ["1 <= s.length <= 10^4","s consists only of the characters ()[]{}"],
+    "description": "`s` is made only of the bracket characters `( ) [ ] { }`. Return `true` if the brackets are **properly balanced**, and `false` otherwise.\n\nBalanced means each closing bracket closes the most recent bracket that is still open, the two are of the same kind, and nothing is left open at the end.",
+    "constraints": ["1 <= s.length <= 10^4","s uses only the characters ()[]{}"],
     "examples": [
       {
-        "input": "s = \"()\"",
+        "input": "s = \"{[()]}\"",
         "output": "true",
-        "explanation": "Every bracket is closed in the right order."
+        "explanation": "Each bracket closes the innermost one still open."
       },
       {
-        "input": "s = \"()[]{}\"",
-        "output": "true",
-        "explanation": "Each pair is closed before the next one opens."
-      },
-      {
-        "input": "s = \"(]\"",
+        "input": "s = \"[(])\"",
         "output": "false",
-        "explanation": "The \"]\" does not match the \"(\" that is open."
+        "explanation": "The \"]\" arrives while \"(\" is the innermost open bracket."
       }
     ],
     "functionName": "isValid",
@@ -1060,15 +1037,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": ["()"],
+        "input": ["{[()]}"],
         "expected": true
       },
       {
-        "input": ["()[]{}"],
-        "expected": true
-      },
-      {
-        "input": ["(]"],
+        "input": ["[(])"],
         "expected": false
       }
     ]
@@ -1079,15 +1052,15 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "min-stack",
     "difficulty": "Medium",
     "category": "Stack",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Design a stack that supports `push`, `pop`, `top` and retrieving the **minimum element**, all in **constant time**.\n\nImplement the `MinStack` class:\n\n- `MinStack()` creates an empty stack.\n- `push(val)` pushes `val` onto the stack.\n- `pop()` removes the element on top of the stack.\n- `top()` returns the element on top of the stack.\n- `getMin()` returns the smallest element currently in the stack.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
-    "constraints": ["-2^31 <= val <= 2^31 - 1","pop, top and getMin are always called on a non-empty stack","At most 3 * 10^4 calls are made"],
+    "description": "Build a stack that can also report **the smallest value it currently holds**. Every operation must take **O(1)** time.\n\nImplement the `MinStack` class:\n\n- `MinStack()` starts with an empty stack.\n- `push(val)` places `val` on top.\n- `pop()` discards the top value.\n- `top()` returns the top value without removing it.\n- `getMin()` returns the smallest value anywhere in the stack.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
+    "constraints": ["-2^31 <= val <= 2^31 - 1","pop, top and getMin are only called when the stack is not empty","At most 3 * 10^4 calls in total"],
     "examples": [
       {
-        "input": "operations = [\"MinStack\",\"push\",\"push\",\"push\",\"getMin\",\"pop\",\"top\",\"getMin\"], arguments = [[],[-2],[0],[-3],[],[],[],[]]",
-        "output": "[null,null,null,null,-3,null,0,-2]",
-        "explanation": "After pushing -2, 0 and -3 the minimum is -3. After one pop the top is 0 and the minimum is -2."
+        "input": "operations = [\"MinStack\",\"push\",\"push\",\"getMin\",\"push\",\"getMin\",\"pop\",\"getMin\",\"top\"], arguments = [[],[4],[7],[],[1],[],[],[],[]]",
+        "output": "[null,null,null,4,null,1,null,4,7]",
+        "explanation": "With 4 and 7 inside the minimum is 4. Pushing 1 lowers it to 1, and popping the 1 brings it back to 4, with 7 on top."
       }
     ],
     "functionName": "MinStack",
@@ -1099,8 +1072,8 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [["MinStack","push","push","push","getMin","pop","top","getMin"],[[],[-2],[0],[-3],[],[],[],[]]],
-        "expected": [null,null,null,null,-3,null,0,-2]
+        "input": [["MinStack","push","push","getMin","push","getMin","pop","getMin","top"],[[],[4],[7],[],[1],[],[],[],[]]],
+        "expected": [null,null,null,4,null,1,null,4,7]
       }
     ]
   },
@@ -1110,25 +1083,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "evaluate-reverse-polish-notation",
     "difficulty": "Medium",
     "category": "Stack",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array of strings `tokens` that holds an arithmetic expression in **Reverse Polish Notation** (postfix). Evaluate it and return the result as an integer.\n\n- The valid operators are `+`, `-`, `*` and `/`. Each operand is an integer or another expression.\n- Division between two integers **truncates toward zero**.\n- The expression is always valid, never divides by zero, and every intermediate value fits in a 32-bit integer.",
-    "constraints": ["1 <= tokens.length <= 10^4","tokens[i] is an operator or an integer in the range [-200, 200]"],
+    "description": "`tokens` is an arithmetic expression written in **postfix order**: each operator comes right after its two operands, so `3 4 +` means `3 + 4`. Compute its value.\n\n- Operators are `+`, `-`, `*` and `/`; everything else is an integer.\n- `/` is integer division that **drops the fractional part** (it rounds toward zero).\n- The expression is always well formed, never divides by zero, and stays within 32-bit integers.",
+    "constraints": ["1 <= tokens.length <= 10^4","Each token is an operator or an integer from -200 to 200"],
     "examples": [
       {
-        "input": "tokens = [\"2\",\"1\",\"+\",\"3\",\"*\"]",
-        "output": "9",
-        "explanation": "((2 + 1) * 3) = 9"
+        "input": "tokens = [\"6\",\"2\",\"-\",\"4\",\"*\"]",
+        "output": "16",
+        "explanation": "(6 - 2) * 4 = 16"
       },
       {
-        "input": "tokens = [\"4\",\"13\",\"5\",\"/\",\"+\"]",
-        "output": "6",
-        "explanation": "(4 + (13 / 5)) = 4 + 2 = 6"
-      },
-      {
-        "input": "tokens = [\"10\",\"6\",\"9\",\"3\",\"+\",\"-11\",\"*\",\"/\",\"*\",\"17\",\"+\",\"5\",\"+\"]",
-        "output": "22",
-        "explanation": "The expression reduces step by step to 22."
+        "input": "tokens = [\"20\",\"3\",\"4\",\"+\",\"/\"]",
+        "output": "2",
+        "explanation": "20 / (3 + 4) = 2, since the fraction is dropped."
       }
     ],
     "functionName": "evalRPN",
@@ -1140,16 +1108,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [["2","1","+","3","*"]],
-        "expected": 9
+        "input": [["6","2","-","4","*"]],
+        "expected": 16
       },
       {
-        "input": [["4","13","5","/","+"]],
-        "expected": 6
-      },
-      {
-        "input": [["10","6","9","3","+","-11","*","/","*","17","+","5","+"]],
-        "expected": 22
+        "input": [["20","3","4","+","/"]],
+        "expected": 2
       }
     ]
   },
@@ -1159,20 +1123,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "generate-parentheses",
     "difficulty": "Medium",
     "category": "Stack",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given `n` pairs of parentheses, return **every well-formed combination** of exactly `n` pairs.\n\nA combination is well-formed when every opening parenthesis is closed in the right order. You may return the combinations in any order.",
+    "description": "List **every balanced string made of `n` opening and `n` closing parentheses**. Balanced means that, reading left to right, you never close more parentheses than you have opened.\n\nReturn the strings in any order.",
     "constraints": ["1 <= n <= 8"],
     "examples": [
       {
-        "input": "n = 1",
-        "output": "[\"()\"]",
-        "explanation": "Only one arrangement exists for a single pair."
+        "input": "n = 2",
+        "output": "[\"(())\",\"()()\"]",
+        "explanation": "Two pairs can be nested or placed side by side."
       },
       {
-        "input": "n = 3",
-        "output": "[\"((()))\",\"(()())\",\"(())()\",\"()(())\",\"()()()\"]",
-        "explanation": "There are five well-formed arrangements of three pairs."
+        "input": "n = 1",
+        "output": "[\"()\"]",
+        "explanation": "One pair has a single arrangement."
       }
     ],
     "functionName": "generateParenthesis",
@@ -1185,35 +1149,35 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [1],
-        "expected": ["()"]
+        "input": [2],
+        "expected": ["(())","()()"]
       },
       {
-        "input": [3],
-        "expected": ["((()))","(()())","(())()","()(())","()()()"]
+        "input": [1],
+        "expected": ["()"]
       }
     ]
   },
   {
     "id": "daily-temperatures",
-    "title": "Daily Temperatures",
-    "slug": "daily-temperatures",
+    "title": "Wait for a Warmer Day",
+    "slug": "wait-for-a-warmer-day",
     "difficulty": "Medium",
     "category": "Stack",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array `temperatures` of daily temperatures, return an array `answer` where `answer[i]` is the **number of days you have to wait after day `i`** to get a warmer temperature.\n\nIf there is no future day with a warmer temperature, `answer[i]` is `0`.",
+    "description": "`temperatures` is a forecast, one reading per day. For each day, count **how many days pass until a strictly warmer day arrives**, and return these counts as an array.\n\nUse `0` for days that are never followed by a warmer one.",
     "constraints": ["1 <= temperatures.length <= 10^5","30 <= temperatures[i] <= 100"],
     "examples": [
       {
-        "input": "temperatures = [73,74,75,71,69,72,76,73]",
-        "output": "[1,1,4,2,1,1,0,0]",
-        "explanation": "For example, day 0 (73) waits one day for 74, and day 2 (75) waits four days for 76."
+        "input": "temperatures = [60,58,62,61,65]",
+        "output": "[2,1,2,1,0]",
+        "explanation": "Day 0 (60) waits two days for 62; day 2 (62) waits two days for 65."
       },
       {
-        "input": "temperatures = [30,40,50,60]",
-        "output": "[1,1,1,0]",
-        "explanation": "Every day is followed by a warmer one, except the last."
+        "input": "temperatures = [40,45,50]",
+        "output": "[1,1,0]",
+        "explanation": "Each day is beaten by the next, except the last."
       }
     ],
     "functionName": "dailyTemperatures",
@@ -1225,35 +1189,35 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[73,74,75,71,69,72,76,73]],
-        "expected": [1,1,4,2,1,1,0,0]
+        "input": [[60,58,62,61,65]],
+        "expected": [2,1,2,1,0]
       },
       {
-        "input": [[30,40,50,60]],
-        "expected": [1,1,1,0]
+        "input": [[40,45,50]],
+        "expected": [1,1,0]
       }
     ]
   },
   {
     "id": "car-fleet",
-    "title": "Car Fleet",
-    "slug": "car-fleet",
+    "title": "Convoys on a Narrow Road",
+    "slug": "convoys-on-a-narrow-road",
     "difficulty": "Medium",
     "category": "Stack",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "There are `n` cars driving towards a destination that is `target` miles away along a single-lane road. Car `i` starts at `position[i]` and drives at a constant `speed[i]` miles per hour.\n\nA car cannot pass the car in front of it. If it catches up, it slows down and drives at that car's speed, forming a **fleet** with it. Cars that catch up exactly at the destination also count as one fleet.\n\nReturn the number of car fleets that arrive at the destination.",
-    "constraints": ["1 <= n <= 10^5","0 < target <= 10^6","0 <= position[i] < target, and all positions are different","0 < speed[i] <= 10^6"],
+    "description": "Trucks travel one way along a road with no overtaking, all heading for a depot `target` km away. Truck `i` starts `position[i]` km along the road and drives at `speed[i]` km per hour.\n\nWhen a truck catches up with the one ahead, it slows down and they continue together as a **convoy**. Trucks that catch up exactly at the depot also count as one convoy.\n\nReturn **how many convoys reach the depot**.",
+    "constraints": ["1 <= n <= 10^5","0 < target <= 10^6","0 <= position[i] < target, all different","0 < speed[i] <= 10^6"],
     "examples": [
       {
-        "input": "target = 12, position = [10,8,0,5,3], speed = [2,4,1,1,3]",
-        "output": "3",
-        "explanation": "The cars starting at 10 and 8 become a fleet that meets at 12. The car at 0 never catches anyone. The cars at 5 and 3 become a fleet that meets at 6. That is 3 fleets."
+        "input": "target = 10, position = [6,2,0], speed = [2,4,1]",
+        "output": "2",
+        "explanation": "The trucks at 6 and 2 both need 2 hours, so they arrive together; the truck at 0 needs 10 hours and arrives alone."
       },
       {
-        "input": "target = 10, position = [3], speed = [3]",
+        "input": "target = 15, position = [5], speed = [2]",
         "output": "1",
-        "explanation": "A single car is a single fleet."
+        "explanation": "One truck is one convoy."
       }
     ],
     "functionName": "carFleet",
@@ -1265,11 +1229,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [12,[10,8,0,5,3],[2,4,1,1,3]],
-        "expected": 3
+        "input": [10,[6,2,0],[2,4,1]],
+        "expected": 2
       },
       {
-        "input": [10,[3],[3]],
+        "input": [15,[5],[2]],
         "expected": 1
       }
     ]
@@ -1280,20 +1244,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "largest-rectangle-in-histogram",
     "difficulty": "Hard",
     "category": "Stack",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `heights` representing the heights of the bars of a histogram. Every bar has width `1`.\n\nReturn the **area of the largest rectangle** that fits entirely inside the histogram.",
+    "description": "A bar chart has bars of width `1` standing side by side, with heights `heights`. Draw an axis-aligned rectangle that **stays inside the bars** (it may span several neighbouring bars, but no higher than the shortest of them).\n\nReturn the **largest area** such a rectangle can have.",
     "constraints": ["1 <= heights.length <= 10^5","0 <= heights[i] <= 10^4"],
     "examples": [
       {
-        "input": "heights = [2,1,5,6,2,3]",
-        "output": "10",
-        "explanation": "The largest rectangle spans the bars of height 5 and 6 and has area 5 x 2 = 10."
+        "input": "heights = [3,1,4,4,2]",
+        "output": "8",
+        "explanation": "The two bars of height 4 give 4 x 2 = 8."
       },
       {
-        "input": "heights = [2,4]",
-        "output": "4",
-        "explanation": "The largest rectangle is a single bar of height 4."
+        "input": "heights = [3,5]",
+        "output": "6",
+        "explanation": "Both bars at height 3 give 6, more than the 5 alone."
       }
     ],
     "functionName": "largestRectangleArea",
@@ -1305,40 +1269,35 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,1,5,6,2,3]],
-        "expected": 10
+        "input": [[3,1,4,4,2]],
+        "expected": 8
       },
       {
-        "input": [[2,4]],
-        "expected": 4
+        "input": [[3,5]],
+        "expected": 6
       }
     ]
   },
   {
     "id": "asteroid-collision",
-    "title": "Asteroid Collision",
-    "slug": "asteroid-collision",
+    "title": "Marbles on a Track",
+    "slug": "marbles-on-a-track",
     "difficulty": "Medium",
     "category": "Stack",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `asteroids` of integers describing asteroids in a row. The **absolute value** is the asteroid's size and the **sign** is its direction: positive moves right, negative moves left. All asteroids move at the same speed.\n\nAsteroids moving in the same direction never meet. When two asteroids meet, the **smaller one explodes**. If they are the same size, **both explode**.\n\nReturn the state of the asteroids after all collisions.",
+    "description": "Marbles roll along a straight track at the same speed. `asteroids[i]` describes marble `i` from left to right: its **absolute value is its weight**, and its **sign is its direction** (positive rolls right, negative rolls left).\n\nWhen a right-rolling marble meets a left-rolling one, the **lighter marble shatters**; if they weigh the same, **both shatter**. Marbles rolling the same way never touch.\n\nReturn the marbles that survive, from left to right.",
     "constraints": ["2 <= asteroids.length <= 10^4","-1000 <= asteroids[i] <= 1000","asteroids[i] != 0"],
     "examples": [
       {
-        "input": "asteroids = [5,10,-5]",
-        "output": "[5,10]",
-        "explanation": "The 10 and -5 meet and the -5 explodes. The 5 and 10 never meet."
+        "input": "asteroids = [4,7,-3]",
+        "output": "[4,7]",
+        "explanation": "The -3 hits the 7 and shatters; the 4 is never reached."
       },
       {
-        "input": "asteroids = [8,-8]",
+        "input": "asteroids = [6,-6]",
         "output": "[]",
-        "explanation": "The 8 and -8 have the same size, so both explode."
-      },
-      {
-        "input": "asteroids = [10,2,-5]",
-        "output": "[10]",
-        "explanation": "The 2 and -5 meet and the 2 explodes, then the 10 and -5 meet and the -5 explodes."
+        "explanation": "Equal weights, so both shatter."
       }
     ],
     "functionName": "asteroidCollision",
@@ -1350,16 +1309,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[5,10,-5]],
-        "expected": [5,10]
+        "input": [[4,7,-3]],
+        "expected": [4,7]
       },
       {
-        "input": [[8,-8]],
+        "input": [[6,-6]],
         "expected": []
-      },
-      {
-        "input": [[10,2,-5]],
-        "expected": [10]
       }
     ]
   },
@@ -1369,20 +1324,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "binary-search",
     "difficulty": "Easy",
     "category": "Binary Search",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `nums` of integers sorted in **ascending order** and an integer `target`.\n\nReturn the index of `target` in `nums`, or `-1` if it is not present. Your solution must run in **O(log n)** time.",
-    "constraints": ["1 <= nums.length <= 10^4","-10^4 < nums[i], target < 10^4","All values in nums are unique and sorted in ascending order"],
+    "description": "`nums` holds distinct integers in **increasing order**. Return the position of `target` in `nums`, or `-1` if it is missing.\n\nYour solution must take **O(log n)** time.",
+    "constraints": ["1 <= nums.length <= 10^4","-10^4 < nums[i], target < 10^4","Values in nums are distinct and increasing"],
     "examples": [
       {
-        "input": "nums = [-1,0,3,5,9,12], target = 9",
+        "input": "nums = [-6,-2,1,4,7,15], target = 7",
         "output": "4",
-        "explanation": "9 is at index 4."
+        "explanation": "7 sits at position 4."
       },
       {
-        "input": "nums = [-1,0,3,5,9,12], target = 2",
+        "input": "nums = [-6,-2,1,4,7,15], target = 5",
         "output": "-1",
-        "explanation": "2 is not in the array."
+        "explanation": "There is no 5 in the array."
       }
     ],
     "functionName": "search",
@@ -1394,11 +1349,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[-1,0,3,5,9,12],9],
+        "input": [[-6,-2,1,4,7,15],7],
         "expected": 4
       },
       {
-        "input": [[-1,0,3,5,9,12],2],
+        "input": [[-6,-2,1,4,7,15],5],
         "expected": -1
       }
     ]
@@ -1409,20 +1364,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "search-a-2d-matrix",
     "difficulty": "Medium",
     "category": "Binary Search",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an `m x n` integer matrix with two properties:\n\n- each row is sorted in ascending order, and\n- the first integer of each row is greater than the last integer of the previous row.\n\nReturn `true` if `target` is in the matrix and `false` otherwise. Your solution should run in **O(log(m * n))** time.",
+    "description": "Read the grid `matrix` row by row, left to right, and the numbers **only ever increase**: each row is increasing, and every row starts above where the previous row ended.\n\nReturn `true` if `target` appears in the grid, otherwise `false`. Aim for **O(log(m * n))** time.",
     "constraints": ["m == matrix.length, n == matrix[i].length","1 <= m, n <= 100","-10^4 <= matrix[i][j], target <= 10^4"],
     "examples": [
       {
-        "input": "matrix = [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target = 3",
+        "input": "matrix = [[2,4,8],[12,15,19],[25,31,40]], target = 15",
         "output": "true",
-        "explanation": "3 is in the first row."
+        "explanation": "15 sits in the middle row."
       },
       {
-        "input": "matrix = [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target = 13",
+        "input": "matrix = [[2,4,8],[12,15,19],[25,31,40]], target = 9",
         "output": "false",
-        "explanation": "13 is not in the matrix."
+        "explanation": "9 would fall between 8 and 12, but it is not there."
       }
     ],
     "functionName": "searchMatrix",
@@ -1434,40 +1389,35 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[[1,3,5,7],[10,11,16,20],[23,30,34,60]],3],
+        "input": [[[2,4,8],[12,15,19],[25,31,40]],15],
         "expected": true
       },
       {
-        "input": [[[1,3,5,7],[10,11,16,20],[23,30,34,60]],13],
+        "input": [[[2,4,8],[12,15,19],[25,31,40]],9],
         "expected": false
       }
     ]
   },
   {
     "id": "koko-eating-bananas",
-    "title": "Koko Eating Bananas",
-    "slug": "koko-eating-bananas",
+    "title": "Slowest Reading Pace",
+    "slug": "slowest-reading-pace",
     "difficulty": "Medium",
     "category": "Binary Search",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Koko loves bananas. There are `n` piles, and pile `i` holds `piles[i]` bananas. The guards will be away for `h` hours.\n\nKoko picks an eating speed of `k` bananas per hour. Each hour she chooses one pile and eats up to `k` bananas from it. If the pile has fewer than `k` bananas she eats them all and does nothing else that hour.\n\nReturn the **minimum integer speed `k`** that lets her finish all the bananas within `h` hours.",
+    "description": "A student must read a stack of reports before an exam in `h` hours; report `i` has `piles[i]` pages. They pick a pace of `k` pages per hour. In each hour they read up to `k` pages of **one** report, and if that report ends early they rest for the rest of the hour.\n\nReturn the **smallest whole-number pace `k`** that gets every report read within `h` hours.",
     "constraints": ["1 <= piles.length <= 10^4","piles.length <= h <= 10^9","1 <= piles[i] <= 10^9"],
     "examples": [
       {
-        "input": "piles = [3,6,7,11], h = 8",
-        "output": "4",
-        "explanation": "At speed 4 the piles take 1 + 2 + 2 + 3 = 8 hours."
+        "input": "piles = [5,9,2,12], h = 7",
+        "output": "5",
+        "explanation": "At 5 pages an hour the reports take 1 + 2 + 1 + 3 = 7 hours; at 4 they would take 9."
       },
       {
-        "input": "piles = [30,11,23,4,20], h = 5",
-        "output": "30",
-        "explanation": "Only five hours for five piles means she must finish each pile in one hour."
-      },
-      {
-        "input": "piles = [30,11,23,4,20], h = 6",
-        "output": "23",
-        "explanation": "At speed 23 the piles take 2 + 1 + 1 + 1 + 1 = 6 hours."
+        "input": "piles = [14,6,9], h = 3",
+        "output": "14",
+        "explanation": "Three hours for three reports: each must be read in one hour, so the pace must cover the longest."
       }
     ],
     "functionName": "minEatingSpeed",
@@ -1479,16 +1429,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,6,7,11],8],
-        "expected": 4
+        "input": [[5,9,2,12],7],
+        "expected": 5
       },
       {
-        "input": [[30,11,23,4,20],5],
-        "expected": 30
-      },
-      {
-        "input": [[30,11,23,4,20],6],
-        "expected": 23
+        "input": [[14,6,9],3],
+        "expected": 14
       }
     ]
   },
@@ -1498,25 +1444,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "find-minimum-in-rotated-sorted-array",
     "difficulty": "Medium",
     "category": "Binary Search",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "An array of **unique** integers that was sorted in ascending order has been **rotated** between 1 and `n` times. For example, `[0,1,2,4,5,6,7]` may become `[4,5,6,7,0,1,2]`.\n\nReturn the **minimum element** of the rotated array. Your solution must run in **O(log n)** time.",
-    "constraints": ["1 <= nums.length <= 5000","-5000 <= nums[i] <= 5000","All integers of nums are unique","nums is sorted and rotated between 1 and n times"],
+    "description": "`nums` started as distinct integers in increasing order, then some number of elements were **moved from the front to the back** (possibly none, or all of them). For instance `[2,4,6,8,9]` could have become `[6,8,9,2,4]`.\n\nReturn the **smallest value** in `nums` in **O(log n)** time.",
+    "constraints": ["1 <= nums.length <= 5000","-5000 <= nums[i] <= 5000","Values are distinct","nums is an increasing array after such a rotation"],
     "examples": [
       {
-        "input": "nums = [3,4,5,1,2]",
-        "output": "1",
-        "explanation": "The original array was [1,2,3,4,5], rotated 3 times."
+        "input": "nums = [6,8,9,2,4]",
+        "output": "2",
+        "explanation": "The sorted order restarts at 2."
       },
       {
-        "input": "nums = [4,5,6,7,0,1,2]",
-        "output": "0",
-        "explanation": "The original array was [0,1,2,4,5,6,7], rotated 4 times."
-      },
-      {
-        "input": "nums = [11,13,15,17]",
-        "output": "11",
-        "explanation": "The array was rotated 4 times, which leaves it unchanged."
+        "input": "nums = [10,20,30]",
+        "output": "10",
+        "explanation": "Nothing was moved, so the first value is the smallest."
       }
     ],
     "functionName": "findMin",
@@ -1528,16 +1469,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,4,5,1,2]],
-        "expected": 1
+        "input": [[6,8,9,2,4]],
+        "expected": 2
       },
       {
-        "input": [[4,5,6,7,0,1,2]],
-        "expected": 0
-      },
-      {
-        "input": [[11,13,15,17]],
-        "expected": 11
+        "input": [[10,20,30]],
+        "expected": 10
       }
     ]
   },
@@ -1547,25 +1484,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "search-in-rotated-sorted-array",
     "difficulty": "Medium",
     "category": "Binary Search",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "An array of **distinct** integers that was sorted in ascending order has been rotated at an unknown pivot. For example, `[0,1,2,4,5,6,7]` may become `[4,5,6,7,0,1,2]`.\n\nGiven the rotated array `nums` and an integer `target`, return the index of `target`, or `-1` if it is not in the array. Your solution must run in **O(log n)** time.",
-    "constraints": ["1 <= nums.length <= 5000","-10^4 <= nums[i] <= 10^4","All values of nums are unique","-10^4 <= target <= 10^4"],
+    "description": "`nums` is an increasing list of distinct integers that has been **cut at some point and had its two halves swapped**, so `[3,7,9,12,15,19]` might now read `[12,15,19,3,7,9]`.\n\nReturn the position of `target` in `nums`, or `-1` if it is absent, in **O(log n)** time.",
+    "constraints": ["1 <= nums.length <= 5000","-10^4 <= nums[i], target <= 10^4","Values are distinct"],
     "examples": [
       {
-        "input": "nums = [4,5,6,7,0,1,2], target = 0",
+        "input": "nums = [12,15,19,3,7,9], target = 7",
         "output": "4",
-        "explanation": "0 is at index 4."
+        "explanation": "7 is at position 4, in the second half."
       },
       {
-        "input": "nums = [4,5,6,7,0,1,2], target = 3",
+        "input": "nums = [12,15,19,3,7,9], target = 10",
         "output": "-1",
-        "explanation": "3 is not in the array."
-      },
-      {
-        "input": "nums = [1], target = 0",
-        "output": "-1",
-        "explanation": "The array has one element and it is not 0."
+        "explanation": "10 is not in the list."
       }
     ],
     "functionName": "search",
@@ -1577,47 +1509,43 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[4,5,6,7,0,1,2],0],
+        "input": [[12,15,19,3,7,9],7],
         "expected": 4
       },
       {
-        "input": [[4,5,6,7,0,1,2],3],
-        "expected": -1
-      },
-      {
-        "input": [[1],0],
+        "input": [[12,15,19,3,7,9],10],
         "expected": -1
       }
     ]
   },
   {
     "id": "time-based-key-value-store",
-    "title": "Time Based Key-Value Store",
-    "slug": "time-based-key-value-store",
+    "title": "Settings History",
+    "slug": "settings-history",
     "difficulty": "Medium",
     "category": "Binary Search",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Design a key-value store that keeps **multiple values for the same key at different timestamps** and can return the value a key had at a given time.\n\nImplement the `TimeMap` class:\n\n- `TimeMap()` creates the store.\n- `set(key, value, timestamp)` stores `value` for `key` at the given `timestamp`.\n- `get(key, timestamp)` returns the value that was set with the **largest timestamp that is less than or equal to** the requested one. If there is no such value, it returns `\"\"`.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
-    "constraints": ["1 <= key.length, value.length <= 100","key and value consist of lowercase letters and digits","1 <= timestamp <= 10^7","All timestamps passed to set for the same key are strictly increasing","At most 2 * 10^5 calls are made"],
+    "description": "An app saves every change to its settings, so you can later ask **what a setting was at any moment in the past**.\n\nImplement the `SettingsHistory` class:\n\n- `SettingsHistory()` starts with no saved changes.\n- `set(key, value, timestamp)` records that setting `key` changed to `value` at time `timestamp`.\n- `get(key, timestamp)` returns the value `key` held at time `timestamp`: the value from its **latest change at or before that time**, or `\"\"` if it had not been set yet.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
+    "constraints": ["1 <= key.length, value.length <= 100","Keys and values use lowercase letters and digits","1 <= timestamp <= 10^7","Each key is set with strictly increasing timestamps","At most 2 * 10^5 calls in total"],
     "examples": [
       {
-        "input": "operations = [\"TimeMap\",\"set\",\"get\",\"get\",\"set\",\"get\",\"get\"], arguments = [[],[\"foo\",\"bar\",1],[\"foo\",1],[\"foo\",3],[\"foo\",\"bar2\",4],[\"foo\",4],[\"foo\",5]]",
-        "output": "[null,null,\"bar\",\"bar\",null,\"bar2\",\"bar2\"]",
-        "explanation": "The value set at time 1 is returned for times 1 and 3. After \"bar2\" is set at time 4, it is returned for times 4 and 5."
+        "input": "operations = [\"SettingsHistory\",\"set\",\"get\",\"get\",\"set\",\"get\"], arguments = [[],[\"theme\",\"dark\",2],[\"theme\",1],[\"theme\",6],[\"theme\",\"light\",7],[\"theme\",8]]",
+        "output": "[null,null,\"\",\"dark\",null,\"light\"]",
+        "explanation": "\"theme\" was unset at time 1 and \"dark\" at time 6. After it changes to \"light\" at time 7, time 8 sees \"light\"."
       }
     ],
-    "functionName": "TimeMap",
+    "functionName": "SettingsHistory",
     "kind": "design",
     "starterCode": {
-      "javascript": "class TimeMap {\n  constructor() {\n  }\n\n  set(key, value, timestamp) {\n  }\n\n  get(key, timestamp) {\n  }\n}",
-      "python": "class TimeMap:\n    def __init__(self):\n        pass\n\n    def set(self, key, value, timestamp):\n        pass\n\n    def get(self, key, timestamp):\n        pass",
-      "cpp": "class TimeMap {\npublic:\n    TimeMap() {\n    }\n\n    void set(string key, string value, int timestamp) {\n    }\n\n    string get(string key, int timestamp) {\n    }\n};"
+      "javascript": "class SettingsHistory {\n  constructor() {\n  }\n\n  set(key, value, timestamp) {\n  }\n\n  get(key, timestamp) {\n  }\n}",
+      "python": "class SettingsHistory:\n    def __init__(self):\n        pass\n\n    def set(self, key, value, timestamp):\n        pass\n\n    def get(self, key, timestamp):\n        pass",
+      "cpp": "class SettingsHistory {\npublic:\n    SettingsHistory() {\n    }\n\n    void set(string key, string value, int timestamp) {\n    }\n\n    string get(string key, int timestamp) {\n    }\n};"
     },
     "sampleTestCases": [
       {
-        "input": [["TimeMap","set","get","get","set","get","get"],[[],["foo","bar",1],["foo",1],["foo",3],["foo","bar2",4],["foo",4],["foo",5]]],
-        "expected": [null,null,"bar","bar",null,"bar2","bar2"]
+        "input": [["SettingsHistory","set","get","get","set","get"],[[],["theme","dark",2],["theme",1],["theme",6],["theme","light",7],["theme",8]]],
+        "expected": [null,null,"","dark",null,"light"]
       }
     ]
   },
@@ -1627,20 +1555,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "median-of-two-sorted-arrays",
     "difficulty": "Hard",
     "category": "Binary Search",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given two sorted arrays `nums1` and `nums2` of sizes `m` and `n`. Return the **median** of the two arrays combined.\n\nThe median is the middle value of the sorted combined values, or the average of the two middle values when the total count is even. The overall run time should be **O(log(m + n))**.",
+    "description": "Two sorted lists of exam scores, `nums1` and `nums2`, come from two classrooms. Return the **median score across both classrooms together**: the middle score once everything is pooled and sorted, or the mean of the two middle scores if the pooled count is even.\n\nAim for **O(log(m + n))** time, where `m` and `n` are the two lengths.",
     "constraints": ["0 <= m, n <= 1000","1 <= m + n <= 2000","-10^6 <= nums1[i], nums2[i] <= 10^6"],
     "examples": [
       {
-        "input": "nums1 = [1,3], nums2 = [2]",
-        "output": "2",
-        "explanation": "Merged array = [1,2,3] and the median is 2."
+        "input": "nums1 = [2,6], nums2 = [4]",
+        "output": "4",
+        "explanation": "Pooled: [2, 4, 6], so the median is 4."
       },
       {
-        "input": "nums1 = [1,2], nums2 = [3,4]",
-        "output": "2.5",
-        "explanation": "Merged array = [1,2,3,4] and the median is (2 + 3) / 2 = 2.5."
+        "input": "nums1 = [1,7], nums2 = [3,9]",
+        "output": "5",
+        "explanation": "Pooled: [1, 3, 7, 9], so the median is (3 + 7) / 2 = 5."
       }
     ],
     "functionName": "findMedianSortedArrays",
@@ -1653,12 +1581,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,3],[2]],
-        "expected": 2
+        "input": [[2,6],[4]],
+        "expected": 4
       },
       {
-        "input": [[1,2],[3,4]],
-        "expected": 2.5
+        "input": [[1,7],[3,9]],
+        "expected": 5
       }
     ]
   },
@@ -1668,20 +1596,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "peak-index-in-a-mountain-array",
     "difficulty": "Medium",
     "category": "Binary Search",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "An array `arr` is a **mountain** if its length is at least 3 and there is an index `i` with `0 < i < arr.length - 1` such that\n\n- `arr[0] < arr[1] < ... < arr[i]`, and\n- `arr[i] > arr[i + 1] > ... > arr[arr.length - 1]`.\n\nGiven a mountain array, return the index `i` of its peak. Your solution must run in **O(log n)** time.",
-    "constraints": ["3 <= arr.length <= 10^5","0 <= arr[i] <= 10^6","arr is guaranteed to be a mountain array"],
+    "description": "A hiking trail's altitude readings `arr` **climb strictly to a single summit and then descend strictly** to the end; the summit is never the first or last reading.\n\nReturn the position of the summit in **O(log n)** time.",
+    "constraints": ["3 <= arr.length <= 10^5","0 <= arr[i] <= 10^6","arr always rises then falls as described"],
     "examples": [
       {
-        "input": "arr = [0,1,0]",
-        "output": "1",
-        "explanation": "The peak is 1 at index 1."
+        "input": "arr = [1,4,9,6,2]",
+        "output": "2",
+        "explanation": "The trail tops out at 9, position 2."
       },
       {
-        "input": "arr = [0,2,1,0]",
+        "input": "arr = [3,8,5]",
         "output": "1",
-        "explanation": "The peak is 2 at index 1."
+        "explanation": "The summit 8 is at position 1."
       }
     ],
     "functionName": "peakIndexInMountainArray",
@@ -1693,11 +1621,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[0,1,0]],
-        "expected": 1
+        "input": [[1,4,9,6,2]],
+        "expected": 2
       },
       {
-        "input": [[0,2,1,0]],
+        "input": [[3,8,5]],
         "expected": 1
       }
     ]
@@ -1708,25 +1636,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "reverse-linked-list",
     "difficulty": "Easy",
     "category": "Linked List",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the head of a singly linked list, **reverse the list** and return the new head.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
-    "constraints": ["The number of nodes is in the range [0, 5000]","-5000 <= Node.val <= 5000"],
+    "description": "**Flip the direction of every link** in a singly linked list, so the last node becomes the first, and return the new first node.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
+    "constraints": ["0 to 5000 nodes","-5000 <= Node.val <= 5000"],
     "examples": [
       {
-        "input": "head = [1,2,3,4,5]",
-        "output": "[5,4,3,2,1]",
-        "explanation": "The list 1 -> 2 -> 3 -> 4 -> 5 becomes 5 -> 4 -> 3 -> 2 -> 1."
-      },
-      {
-        "input": "head = [1,2]",
-        "output": "[2,1]",
-        "explanation": "Two nodes swap places."
+        "input": "head = [8,3,6]",
+        "output": "[6,3,8]",
+        "explanation": "8 -> 3 -> 6 turns into 6 -> 3 -> 8."
       },
       {
         "input": "head = []",
         "output": "[]",
-        "explanation": "An empty list stays empty."
+        "explanation": "An empty list has nothing to flip."
       }
     ],
     "functionName": "reverseList",
@@ -1740,12 +1663,8 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,4,5]],
-        "expected": [5,4,3,2,1]
-      },
-      {
-        "input": [[1,2]],
-        "expected": [2,1]
+        "input": [[8,3,6]],
+        "expected": [6,3,8]
       },
       {
         "input": [[]],
@@ -1759,25 +1678,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "merge-two-sorted-lists",
     "difficulty": "Easy",
     "category": "Linked List",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given the heads of two **sorted** linked lists, `list1` and `list2`. Merge them into one sorted list by splicing together the nodes of the two lists, and return the head of the merged list.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
-    "constraints": ["The number of nodes in each list is in the range [0, 50]","-100 <= Node.val <= 100","Both lists are sorted in non-decreasing order"],
+    "description": "`list1` and `list2` are linked lists whose values never decrease. **Weave their nodes into a single list that also never decreases**, reusing the existing nodes, and return its first node.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
+    "constraints": ["Each list has 0 to 50 nodes","-100 <= Node.val <= 100","Both lists are in non-decreasing order"],
     "examples": [
       {
-        "input": "list1 = [1,2,4], list2 = [1,3,4]",
-        "output": "[1,1,2,3,4,4]",
-        "explanation": "Merging the two lists gives 1 -> 1 -> 2 -> 3 -> 4 -> 4."
+        "input": "list1 = [2,5,9], list2 = [3,5]",
+        "output": "[2,3,5,5,9]",
+        "explanation": "The nodes interleave as 2 -> 3 -> 5 -> 5 -> 9."
       },
       {
-        "input": "list1 = [], list2 = []",
-        "output": "[]",
-        "explanation": "Both lists are empty."
-      },
-      {
-        "input": "list1 = [], list2 = [0]",
-        "output": "[0]",
-        "explanation": "One list is empty, so the result is the other one."
+        "input": "list1 = [], list2 = [7]",
+        "output": "[7]",
+        "explanation": "With one list empty, the other is the answer."
       }
     ],
     "functionName": "mergeTwoLists",
@@ -1791,16 +1705,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,4],[1,3,4]],
-        "expected": [1,1,2,3,4,4]
+        "input": [[2,5,9],[3,5]],
+        "expected": [2,3,5,5,9]
       },
       {
-        "input": [[],[]],
-        "expected": []
-      },
-      {
-        "input": [[],[0]],
-        "expected": [0]
+        "input": [[],[7]],
+        "expected": [7]
       }
     ]
   },
@@ -1810,20 +1720,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "reorder-list",
     "difficulty": "Medium",
     "category": "Linked List",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given the head of a singly linked list `L0 -> L1 -> ... -> Ln-1 -> Ln`. **Reorder** it into the form\n\n`L0 -> Ln -> L1 -> Ln-1 -> L2 -> Ln-2 -> ...`\n\nYou may not change the values in the nodes; only the nodes themselves may be rearranged. Return the head of the reordered list.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
-    "constraints": ["The number of nodes is in the range [1, 5 * 10^4]","1 <= Node.val <= 1000"],
+    "description": "Rearrange a linked list so it **alternates between the front and the back**: first node, last node, second node, second-to-last node, and so on until the two ends meet. Return the first node.\n\nMove the nodes themselves; do not rewrite their values.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
+    "constraints": ["1 to 5 * 10^4 nodes","1 <= Node.val <= 1000"],
     "examples": [
       {
-        "input": "head = [1,2,3,4]",
-        "output": "[1,4,2,3]",
-        "explanation": "The last node goes after the first, the second to last after the second."
+        "input": "head = [10,20,30,40,50,60]",
+        "output": "[10,60,20,50,30,40]",
+        "explanation": "Front and back alternate: 10, 60, 20, 50, 30, 40."
       },
       {
-        "input": "head = [1,2,3,4,5]",
-        "output": "[1,5,2,4,3]",
-        "explanation": "The middle node stays in the middle."
+        "input": "head = [7,8,9]",
+        "output": "[7,9,8]",
+        "explanation": "With three nodes the middle one ends up last."
       }
     ],
     "functionName": "reorderList",
@@ -1837,12 +1747,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,4]],
-        "expected": [1,4,2,3]
+        "input": [[10,20,30,40,50,60]],
+        "expected": [10,60,20,50,30,40]
       },
       {
-        "input": [[1,2,3,4,5]],
-        "expected": [1,5,2,4,3]
+        "input": [[7,8,9]],
+        "expected": [7,9,8]
       }
     ]
   },
@@ -1852,25 +1762,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "remove-nth-node-from-end-of-list",
     "difficulty": "Medium",
     "category": "Linked List",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the head of a linked list and an integer `n`, **remove the `n`th node from the end** of the list and return the head.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
-    "constraints": ["The number of nodes is sz, with 1 <= sz <= 30","0 <= Node.val <= 100","1 <= n <= sz"],
+    "description": "Counting backwards from the tail (the tail is number 1), **unlink node number `n`** from the list and return the list's first node.\n\nTry to do it in a single pass.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
+    "constraints": ["The list has sz nodes, 1 <= sz <= 30","0 <= Node.val <= 100","1 <= n <= sz"],
     "examples": [
       {
-        "input": "head = [1,2,3,4,5], n = 2",
-        "output": "[1,2,3,5]",
-        "explanation": "The second node from the end is 4, so it is removed."
+        "input": "head = [6,7,8,9], n = 3",
+        "output": "[6,8,9]",
+        "explanation": "Third from the tail is 7."
       },
       {
-        "input": "head = [1], n = 1",
-        "output": "[]",
-        "explanation": "The only node is removed and the list becomes empty."
-      },
-      {
-        "input": "head = [1,2], n = 1",
-        "output": "[1]",
-        "explanation": "The last node is removed."
+        "input": "head = [5,1], n = 1",
+        "output": "[5]",
+        "explanation": "n = 1 removes the tail."
       }
     ],
     "functionName": "removeNthFromEnd",
@@ -1884,44 +1789,35 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,4,5],2],
-        "expected": [1,2,3,5]
+        "input": [[6,7,8,9],3],
+        "expected": [6,8,9]
       },
       {
-        "input": [[1],1],
-        "expected": []
-      },
-      {
-        "input": [[1,2],1],
-        "expected": [1]
+        "input": [[5,1],1],
+        "expected": [5]
       }
     ]
   },
   {
     "id": "add-two-numbers",
-    "title": "Add Two Numbers",
-    "slug": "add-two-numbers",
+    "title": "Add Digit Lists",
+    "slug": "add-digit-lists",
     "difficulty": "Medium",
     "category": "Linked List",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given two non-empty linked lists representing two non-negative integers. The digits are stored in **reverse order**, so the head holds the ones digit, and each node holds a single digit.\n\nAdd the two numbers and return the sum as a linked list in the same format. The numbers have no leading zeros, except for the number 0 itself.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
-    "constraints": ["The number of nodes in each list is in the range [1, 100]","0 <= Node.val <= 9","The lists represent numbers without leading zeros"],
+    "description": "Big numbers are stored as linked lists of single digits, **ones digit first**: `3 -> 1 -> 5` stands for 513. Given two such numbers `l1` and `l2`, return their **sum** in the same format.\n\nNeither input has extra zeros at its high end (except the number 0, which is a single `0` node).\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
+    "constraints": ["Each list has 1 to 100 nodes","0 <= Node.val <= 9","No extra zeros at the high end"],
     "examples": [
       {
-        "input": "l1 = [2,4,3], l2 = [5,6,4]",
-        "output": "[7,0,8]",
-        "explanation": "342 + 465 = 807."
+        "input": "l1 = [3,1,5], l2 = [8,2]",
+        "output": "[1,4,5]",
+        "explanation": "513 + 28 = 541, stored as 1 -> 4 -> 5."
       },
       {
-        "input": "l1 = [0], l2 = [0]",
-        "output": "[0]",
-        "explanation": "0 + 0 = 0."
-      },
-      {
-        "input": "l1 = [9,9,9,9,9,9,9], l2 = [9,9,9,9]",
-        "output": "[8,9,9,9,0,0,0,1]",
-        "explanation": "9999999 + 9999 = 10009998."
+        "input": "l1 = [9,9], l2 = [1]",
+        "output": "[0,0,1]",
+        "explanation": "99 + 1 = 100: the carry adds a new digit."
       }
     ],
     "functionName": "addTwoNumbers",
@@ -1935,16 +1831,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,4,3],[5,6,4]],
-        "expected": [7,0,8]
+        "input": [[3,1,5],[8,2]],
+        "expected": [1,4,5]
       },
       {
-        "input": [[0],[0]],
-        "expected": [0]
-      },
-      {
-        "input": [[9,9,9,9,9,9,9],[9,9,9,9]],
-        "expected": [8,9,9,9,0,0,0,1]
+        "input": [[9,9],[1]],
+        "expected": [0,0,1]
       }
     ]
   },
@@ -1954,25 +1846,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "linked-list-cycle",
     "difficulty": "Easy",
     "category": "Linked List",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given `head`, the head of a linked list, determine whether the list has a **cycle**: a node that can be reached again by following `next` pointers.\n\nThe judge builds the list from the `head` array and connects the tail to the node at index `pos`, or leaves it unconnected when `pos` is `-1`. Your function only receives the head node and must not depend on `pos`. Return `true` if there is a cycle, otherwise `false`.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
-    "constraints": ["The number of nodes is in the range [0, 10^4]","-10^5 <= Node.val <= 10^5","pos is -1 or a valid index of the list"],
+    "description": "Return `true` if following `next` pointers from `head` **eventually loops back to a node you already visited**, and `false` if it reaches the end.\n\nTo build the test, the judge takes the values in `head` and, if `pos` is not `-1`, points the last node back at the node in position `pos`. Your function sees only the head node, not `pos`. Can you do it with O(1) extra memory?\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
+    "constraints": ["0 to 10^4 nodes","-10^5 <= Node.val <= 10^5","pos is -1 or a valid position in the list"],
     "examples": [
       {
-        "input": "head = [3,2,0,-4], pos = 1",
+        "input": "head = [4,8,15,16], pos = 2",
         "output": "true",
-        "explanation": "The tail connects back to the node at index 1."
+        "explanation": "The last node points back at 15, so walking never ends."
       },
       {
-        "input": "head = [1,2], pos = 0",
-        "output": "true",
-        "explanation": "The tail connects back to the node at index 0."
-      },
-      {
-        "input": "head = [1], pos = -1",
+        "input": "head = [6,1,9], pos = -1",
         "output": "false",
-        "explanation": "There is a single node and it points to nothing."
+        "explanation": "The last node points nowhere."
       }
     ],
     "functionName": "hasCycle",
@@ -1985,15 +1872,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,2,0,-4],1],
+        "input": [[4,8,15,16],2],
         "expected": true
       },
       {
-        "input": [[1,2],0],
-        "expected": true
-      },
-      {
-        "input": [[1],-1],
+        "input": [[6,1,9],-1],
         "expected": false
       }
     ]
@@ -2004,25 +1887,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "find-the-duplicate-number",
     "difficulty": "Medium",
     "category": "Linked List",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `nums` of `n + 1` integers where every integer is in the range `[1, n]`. There is **exactly one repeated number**, although it may appear more than twice.\n\nReturn the repeated number. Try to solve it **without modifying `nums`** and using only constant extra space.",
-    "constraints": ["1 <= n <= 10^5","nums.length == n + 1","1 <= nums[i] <= n","Exactly one integer appears two or more times; every other integer appears once"],
+    "description": "`nums` has `n + 1` entries, each between `1` and `n`, so some value must repeat. **Exactly one value repeats** (possibly more than twice). Return it.\n\nFor the full challenge, leave `nums` unchanged and use only O(1) extra memory.",
+    "constraints": ["1 <= n <= 10^5","nums.length == n + 1","1 <= nums[i] <= n","One value appears two or more times; no other value repeats"],
     "examples": [
       {
-        "input": "nums = [1,3,4,2,2]",
-        "output": "2",
-        "explanation": "2 appears twice."
+        "input": "nums = [2,5,1,3,4,5]",
+        "output": "5",
+        "explanation": "Six entries, values 1 to 5: the 5 shows up twice."
       },
       {
-        "input": "nums = [3,1,3,4,2]",
-        "output": "3",
-        "explanation": "3 appears twice."
-      },
-      {
-        "input": "nums = [3,3,3,3,3]",
-        "output": "3",
-        "explanation": "3 fills the whole array."
+        "input": "nums = [4,2,1,4,3,4]",
+        "output": "4",
+        "explanation": "4 shows up three times."
       }
     ],
     "functionName": "findDuplicate",
@@ -2034,16 +1912,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,3,4,2,2]],
-        "expected": 2
+        "input": [[2,5,1,3,4,5]],
+        "expected": 5
       },
       {
-        "input": [[3,1,3,4,2]],
-        "expected": 3
-      },
-      {
-        "input": [[3,3,3,3,3]],
-        "expected": 3
+        "input": [[4,2,1,4,3,4]],
+        "expected": 4
       }
     ]
   },
@@ -2053,15 +1927,15 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "lru-cache",
     "difficulty": "Medium",
     "category": "Linked List",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Design a data structure that follows the rules of a **Least Recently Used (LRU) cache**.\n\nImplement the `LRUCache` class:\n\n- `LRUCache(capacity)` creates a cache that holds at most `capacity` entries.\n- `get(key)` returns the value of `key` if it is in the cache, otherwise `-1`. A successful `get` makes the key the most recently used one.\n- `put(key, value)` inserts or updates the value. If the cache is already full, it first evicts the **least recently used** key. An update also makes the key the most recently used one.\n\nBoth `get` and `put` must run in **O(1)** average time.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
-    "constraints": ["1 <= capacity <= 3000","0 <= key <= 10^4","0 <= value <= 10^5","At most 2 * 10^5 calls are made"],
+    "description": "Build a fixed-size cache that, when full, **throws out the entry that has gone unused the longest** (an LRU cache).\n\nImplement the `LRUCache` class:\n\n- `LRUCache(capacity)` makes an empty cache with room for `capacity` entries.\n- `get(key)` returns the stored value for `key`, or `-1` if it is not cached. Reading a key counts as using it.\n- `put(key, value)` stores or overwrites `key`, which also counts as using it. If this adds a new key to a full cache, first drop the least recently used key.\n\nMake both operations **O(1)** on average.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
+    "constraints": ["1 <= capacity <= 3000","0 <= key <= 10^4","0 <= value <= 10^5","At most 2 * 10^5 calls in total"],
     "examples": [
       {
-        "input": "operations = [\"LRUCache\",\"put\",\"put\",\"get\",\"put\",\"get\",\"put\",\"get\",\"get\",\"get\"], arguments = [[2],[1,1],[2,2],[1],[3,3],[2],[4,4],[1],[3],[4]]",
-        "output": "[null,null,null,1,null,-1,null,-1,3,4]",
-        "explanation": "After put(1), put(2) and get(1), key 2 is least recently used. Adding key 3 evicts 2, so get(2) is -1. Adding key 4 then evicts 1."
+        "input": "operations = [\"LRUCache\",\"put\",\"put\",\"get\",\"put\",\"get\",\"get\",\"put\",\"put\",\"get\",\"get\"], arguments = [[2],[5,50],[6,60],[6],[7,70],[5],[7],[6,61],[8,80],[7],[6]]",
+        "output": "[null,null,null,60,null,-1,70,null,null,-1,61]",
+        "explanation": "Reading 6 leaves 5 as the stalest key, so adding 7 drops 5. Rewriting 6 then makes 7 the stalest, so adding 8 drops 7."
       }
     ],
     "functionName": "LRUCache",
@@ -2073,8 +1947,8 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [["LRUCache","put","put","get","put","get","put","get","get","get"],[[2],[1,1],[2,2],[1],[3,3],[2],[4,4],[1],[3],[4]]],
-        "expected": [null,null,null,1,null,-1,null,-1,3,4]
+        "input": [["LRUCache","put","put","get","put","get","get","put","put","get","get"],[[2],[5,50],[6,60],[6],[7,70],[5],[7],[6,61],[8,80],[7],[6]]],
+        "expected": [null,null,null,60,null,-1,70,null,null,-1,61]
       }
     ]
   },
@@ -2084,25 +1958,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "merge-k-sorted-lists",
     "difficulty": "Hard",
     "category": "Linked List",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array of `k` linked lists `lists`, each sorted in ascending order. **Merge all the lists into one sorted linked list** and return its head.\n\nEvery list in `lists` is given as an array of node values; your function receives an array of head nodes (an empty list is `null`).\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
-    "constraints": ["k == lists.length","0 <= k <= 10^4","0 <= lists[i].length <= 500","-10^4 <= lists[i][j] <= 10^4","Each lists[i] is sorted in ascending order","The total number of nodes does not exceed 10^4"],
+    "description": "`lists` holds `k` linked lists, each already in increasing order. **Combine all of their nodes into one list in increasing order** and return its first node.\n\nIn the tests each list is written as an array of values; your function receives an array of first nodes, with `null` for an empty list.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
+    "constraints": ["k == lists.length","0 <= k <= 10^4","0 <= lists[i].length <= 500","-10^4 <= lists[i][j] <= 10^4","Each list is in increasing order","At most 10^4 nodes in total"],
     "examples": [
       {
-        "input": "lists = [[1,4,5],[1,3,4],[2,6]]",
-        "output": "[1,1,2,3,4,4,5,6]",
-        "explanation": "Merging the three lists gives 1 -> 1 -> 2 -> 3 -> 4 -> 4 -> 5 -> 6."
+        "input": "lists = [[3,8],[1,9,10],[4]]",
+        "output": "[1,3,4,8,9,10]",
+        "explanation": "All six values end up in one sorted chain."
       },
       {
-        "input": "lists = []",
-        "output": "[]",
-        "explanation": "There are no lists."
-      },
-      {
-        "input": "lists = [[]]",
-        "output": "[]",
-        "explanation": "The only list is empty."
+        "input": "lists = [[],[2,2]]",
+        "output": "[2,2]",
+        "explanation": "An empty list contributes nothing."
       }
     ],
     "functionName": "mergeKLists",
@@ -2116,16 +1985,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[[1,4,5],[1,3,4],[2,6]]],
-        "expected": [1,1,2,3,4,4,5,6]
+        "input": [[[3,8],[1,9,10],[4]]],
+        "expected": [1,3,4,8,9,10]
       },
       {
-        "input": [[]],
-        "expected": []
-      },
-      {
-        "input": [[[]]],
-        "expected": []
+        "input": [[[],[2,2]]],
+        "expected": [2,2]
       }
     ]
   },
@@ -2135,25 +2000,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "invert-binary-tree",
     "difficulty": "Easy",
     "category": "Trees & Graphs",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the root of a binary tree, **invert the tree** (swap the left and right child of every node) and return its root.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [0, 100]","-100 <= Node.val <= 100"],
+    "description": "Turn a binary tree into its **mirror image**: at every node, the left child and the right child trade places. Return the root.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["0 to 100 nodes","-100 <= Node.val <= 100"],
     "examples": [
       {
-        "input": "root = [4,2,7,1,3,6,9]",
-        "output": "[4,7,2,9,6,3,1]",
-        "explanation": "Every node swaps its children."
-      },
-      {
-        "input": "root = [2,1,3]",
-        "output": "[2,3,1]",
-        "explanation": "The two children of the root swap."
+        "input": "root = [5,3,8,1,4]",
+        "output": "[5,8,3,null,null,4,1]",
+        "explanation": "8 moves to the left of 5, and below 3 the children 1 and 4 trade places."
       },
       {
         "input": "root = []",
         "output": "[]",
-        "explanation": "An empty tree stays empty."
+        "explanation": "An empty tree is its own mirror."
       }
     ],
     "functionName": "invertTree",
@@ -2167,12 +2027,8 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[4,2,7,1,3,6,9]],
-        "expected": [4,7,2,9,6,3,1]
-      },
-      {
-        "input": [[2,1,3]],
-        "expected": [2,3,1]
+        "input": [[5,3,8,1,4]],
+        "expected": [5,8,3,null,null,4,1]
       },
       {
         "input": [[]],
@@ -2186,20 +2042,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "maximum-depth-of-binary-tree",
     "difficulty": "Easy",
     "category": "Trees & Graphs",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the root of a binary tree, return its **maximum depth**: the number of nodes along the longest path from the root down to the farthest leaf.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [0, 10^4]","-100 <= Node.val <= 100"],
+    "description": "How many levels does a binary tree have? Return the **number of nodes on the longest downward path** from the root to any leaf (an empty tree has depth 0).\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["0 to 10^4 nodes","-100 <= Node.val <= 100"],
     "examples": [
       {
-        "input": "root = [3,9,20,null,null,15,7]",
-        "output": "3",
-        "explanation": "The longest path is 3 -> 20 -> 15 (or 7), which has 3 nodes."
+        "input": "root = [8,4,null,2,null,7]",
+        "output": "4",
+        "explanation": "The path 8 -> 4 -> 2 -> 7 has four nodes."
       },
       {
-        "input": "root = [1,null,2]",
+        "input": "root = [5,1,9]",
         "output": "2",
-        "explanation": "The longest path is 1 -> 2, which has 2 nodes."
+        "explanation": "Root plus one level of children."
       }
     ],
     "functionName": "maxDepth",
@@ -2212,11 +2068,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,9,20,null,null,15,7]],
-        "expected": 3
+        "input": [[8,4,null,2,null,7]],
+        "expected": 4
       },
       {
-        "input": [[1,null,2]],
+        "input": [[5,1,9]],
         "expected": 2
       }
     ]
@@ -2227,20 +2083,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "diameter-of-binary-tree",
     "difficulty": "Easy",
     "category": "Trees & Graphs",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the root of a binary tree, return the length of its **diameter**: the number of **edges** on the longest path between any two nodes. The path may or may not pass through the root.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [1, 10^4]","-100 <= Node.val <= 100"],
+    "description": "Treat a binary tree as a network of cables, one per parent-child link. Return the **most cables you would pass through travelling between any two nodes** without backtracking. The route does not have to go through the root.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["1 to 10^4 nodes","-100 <= Node.val <= 100"],
     "examples": [
       {
-        "input": "root = [1,2,3,4,5]",
-        "output": "3",
-        "explanation": "The longest path is 4 -> 2 -> 1 -> 3 (or 5 -> 2 -> 1 -> 3), which has 3 edges."
+        "input": "root = [1,2,3,null,4,null,null,5,6]",
+        "output": "4",
+        "explanation": "5 -> 4 -> 2 -> 1 -> 3 crosses four links."
       },
       {
-        "input": "root = [1,2]",
+        "input": "root = [7,null,3]",
         "output": "1",
-        "explanation": "The two nodes are joined by a single edge."
+        "explanation": "Two nodes, one link."
       }
     ],
     "functionName": "diameterOfBinaryTree",
@@ -2253,11 +2109,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,4,5]],
-        "expected": 3
+        "input": [[1,2,3,null,4,null,null,5,6]],
+        "expected": 4
       },
       {
-        "input": [[1,2]],
+        "input": [[7,null,3]],
         "expected": 1
       }
     ]
@@ -2268,25 +2124,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "balanced-binary-tree",
     "difficulty": "Easy",
     "category": "Trees & Graphs",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the root of a binary tree, determine whether it is **height-balanced**: for every node, the heights of its left and right subtrees differ by **at most one**.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [0, 5000]","-10^4 <= Node.val <= 10^4"],
+    "description": "Return `true` if, **at every node** of the binary tree, the depths of the left branch and the right branch **differ by no more than 1**. Otherwise return `false`.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["0 to 5000 nodes","-10^4 <= Node.val <= 10^4"],
     "examples": [
       {
-        "input": "root = [3,9,20,null,null,15,7]",
+        "input": "root = [4,2,6,1]",
         "output": "true",
-        "explanation": "Every node is balanced."
+        "explanation": "The deepest gap anywhere is one level."
       },
       {
-        "input": "root = [1,2,2,3,3,null,null,4,4]",
+        "input": "root = [4,2,null,1]",
         "output": "false",
-        "explanation": "At the root, the left subtree is two levels taller than the right subtree, so the tree is not balanced."
-      },
-      {
-        "input": "root = []",
-        "output": "true",
-        "explanation": "An empty tree is balanced."
+        "explanation": "At the root the left branch is two levels deep and the right branch is empty."
       }
     ],
     "functionName": "isBalanced",
@@ -2299,16 +2150,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,9,20,null,null,15,7]],
+        "input": [[4,2,6,1]],
         "expected": true
       },
       {
-        "input": [[1,2,2,3,3,null,null,4,4]],
+        "input": [[4,2,null,1]],
         "expected": false
-      },
-      {
-        "input": [[]],
-        "expected": true
       }
     ]
   },
@@ -2318,25 +2165,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "same-tree",
     "difficulty": "Easy",
     "category": "Trees & Graphs",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the roots of two binary trees `p` and `q`, return `true` if they are the **same tree**: they have the same structure and every pair of corresponding nodes holds the same value.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes in both trees is in the range [0, 100]","-10^4 <= Node.val <= 10^4"],
+    "description": "Return `true` if the binary trees `p` and `q` are **exact copies**: the same shape, with equal values in matching positions. Otherwise return `false`.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["Each tree has 0 to 100 nodes","-10^4 <= Node.val <= 10^4"],
     "examples": [
       {
-        "input": "p = [1,2,3], q = [1,2,3]",
+        "input": "p = [4,7,1], q = [4,7,1]",
         "output": "true",
-        "explanation": "Both trees are identical."
+        "explanation": "Same shape, same values."
       },
       {
-        "input": "p = [1,2], q = [1,null,2]",
+        "input": "p = [4,7,1], q = [4,1,7]",
         "output": "false",
-        "explanation": "The second tree has its child on the other side, so the structures differ."
-      },
-      {
-        "input": "p = [1,2,1], q = [1,1,2]",
-        "output": "false",
-        "explanation": "The values of the two leaves are swapped."
+        "explanation": "Same shape, but 7 and 1 sit on opposite sides."
       }
     ],
     "functionName": "isSameTree",
@@ -2349,15 +2191,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3],[1,2,3]],
+        "input": [[4,7,1],[4,7,1]],
         "expected": true
       },
       {
-        "input": [[1,2],[1,null,2]],
-        "expected": false
-      },
-      {
-        "input": [[1,2,1],[1,1,2]],
+        "input": [[4,7,1],[4,1,7]],
         "expected": false
       }
     ]
@@ -2368,20 +2206,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "subtree-of-another-tree",
     "difficulty": "Easy",
     "category": "Trees & Graphs",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the roots of two binary trees `root` and `subRoot`, return `true` if there is a node in `root` whose subtree has **exactly the same structure and node values** as `subRoot`, and `false` otherwise.\n\nA subtree of a tree is a node together with all of its descendants.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes in root is in the range [1, 2000]","The number of nodes in subRoot is in the range [1, 1000]","-10^4 <= root.val, subRoot.val <= 10^4"],
+    "description": "Pick any node of `root` and take it **together with everything below it**. Return `true` if some such piece is an exact copy of the tree `subRoot` (same shape, same values), otherwise `false`.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["root has 1 to 2000 nodes","subRoot has 1 to 1000 nodes","-10^4 <= Node.val <= 10^4"],
     "examples": [
       {
-        "input": "root = [3,4,5,1,2], subRoot = [4,1,2]",
+        "input": "root = [8,5,9,2,6], subRoot = [5,2,6]",
         "output": "true",
-        "explanation": "The subtree rooted at 4 matches subRoot."
+        "explanation": "The piece hanging from 5 is exactly 5 -> (2, 6)."
       },
       {
-        "input": "root = [3,4,5,1,2,null,null,null,null,0], subRoot = [4,1,2]",
+        "input": "root = [8,5,9,2,6,null,null,1], subRoot = [5,2,6]",
         "output": "false",
-        "explanation": "The subtree rooted at 4 has an extra node 0, so it does not match."
+        "explanation": "Below 5 the 2 now has a child 1, so it no longer matches."
       }
     ],
     "functionName": "isSubtree",
@@ -2394,11 +2232,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,4,5,1,2],[4,1,2]],
+        "input": [[8,5,9,2,6],[5,2,6]],
         "expected": true
       },
       {
-        "input": [[3,4,5,1,2,null,null,null,null,0],[4,1,2]],
+        "input": [[8,5,9,2,6,null,null,1],[5,2,6]],
         "expected": false
       }
     ]
@@ -2409,25 +2247,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "lowest-common-ancestor-of-a-bst",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a **binary search tree** and two values `p` and `q` that are present in it, return the **value of their lowest common ancestor** (LCA).\n\nThe LCA of two nodes is the lowest node that has both of them as descendants, where a node may be a descendant of itself.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [2, 10^5]","-10^9 <= Node.val <= 10^9","All Node.val are unique","p != q, and both p and q exist in the BST"],
+    "description": "`root` is a **binary search tree** (smaller values to the left, larger to the right) that contains the values `p` and `q`. Return the value of the **deepest node that has both `p` and `q` beneath it**, counting a node as being beneath itself.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["2 to 10^5 nodes","-10^9 <= Node.val <= 10^9","Values are distinct","p != q, and both are in the tree"],
     "examples": [
       {
-        "input": "root = [6,2,8,0,4,7,9,null,null,3,5], p = 2, q = 8",
-        "output": "6",
-        "explanation": "The LCA of 2 and 8 is 6."
+        "input": "root = [10,5,15,2,7,12,20,null,null,6,8], p = 2, q = 20",
+        "output": "10",
+        "explanation": "2 lies left of 10 and 20 lies right of it, so they split at 10."
       },
       {
-        "input": "root = [6,2,8,0,4,7,9,null,null,3,5], p = 2, q = 4",
-        "output": "2",
-        "explanation": "The LCA of 2 and 4 is 2, because a node can be its own descendant."
-      },
-      {
-        "input": "root = [2,1], p = 2, q = 1",
-        "output": "2",
-        "explanation": "The LCA of 2 and 1 is 2."
+        "input": "root = [10,5,15,2,7,12,20,null,null,6,8], p = 5, q = 8",
+        "output": "5",
+        "explanation": "8 is beneath 5, and 5 counts as beneath itself."
       }
     ],
     "functionName": "lowestCommonAncestor",
@@ -2440,16 +2273,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[6,2,8,0,4,7,9,null,null,3,5],2,8],
-        "expected": 6
+        "input": [[10,5,15,2,7,12,20,null,null,6,8],2,20],
+        "expected": 10
       },
       {
-        "input": [[6,2,8,0,4,7,9,null,null,3,5],2,4],
-        "expected": 2
-      },
-      {
-        "input": [[2,1],2,1],
-        "expected": 2
+        "input": [[10,5,15,2,7,12,20,null,null,6,8],5,8],
+        "expected": 5
       }
     ]
   },
@@ -2459,25 +2288,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "binary-tree-level-order-traversal",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the root of a binary tree, return the **level-order traversal** of its nodes' values: from left to right, level by level, as an array of arrays.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [0, 2000]","-1000 <= Node.val <= 1000"],
+    "description": "Group the values of a binary tree **by depth**: one array for the root's level, one for its children, one for its grandchildren, and so on. Within a level, list values from left to right.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["0 to 2000 nodes","-1000 <= Node.val <= 1000"],
     "examples": [
       {
-        "input": "root = [3,9,20,null,null,15,7]",
-        "output": "[[3],[9,20],[15,7]]",
-        "explanation": "Level 0 is [3], level 1 is [9, 20] and level 2 is [15, 7]."
+        "input": "root = [8,4,11,null,5,9]",
+        "output": "[[8],[4,11],[5,9]]",
+        "explanation": "Depth 0 holds 8, depth 1 holds 4 and 11, depth 2 holds 5 and 9."
       },
       {
-        "input": "root = [1]",
-        "output": "[[1]]",
-        "explanation": "A single node gives a single level."
-      },
-      {
-        "input": "root = []",
-        "output": "[]",
-        "explanation": "An empty tree has no levels."
+        "input": "root = [6]",
+        "output": "[[6]]",
+        "explanation": "One node, one level."
       }
     ],
     "functionName": "levelOrder",
@@ -2490,16 +2314,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,9,20,null,null,15,7]],
-        "expected": [[3],[9,20],[15,7]]
+        "input": [[8,4,11,null,5,9]],
+        "expected": [[8],[4,11],[5,9]]
       },
       {
-        "input": [[1]],
-        "expected": [[1]]
-      },
-      {
-        "input": [[]],
-        "expected": []
+        "input": [[6]],
+        "expected": [[6]]
       }
     ]
   },
@@ -2509,20 +2329,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "binary-tree-right-side-view",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Imagine standing on the **right side** of a binary tree. Return the values of the nodes you can see, ordered from top to bottom.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [0, 100]","-100 <= Node.val <= 100"],
+    "description": "For each level of a binary tree, take the **rightmost node on that level**. Return those values from the top level down.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["0 to 100 nodes","-100 <= Node.val <= 100"],
     "examples": [
       {
-        "input": "root = [1,2,3,null,5,null,4]",
-        "output": "[1,3,4]",
-        "explanation": "From the right you see 1, then 3, then 4."
+        "input": "root = [6,3,9,2]",
+        "output": "[6,9,2]",
+        "explanation": "The rightmost nodes are 6, then 9, then 2."
       },
       {
-        "input": "root = [1,null,3]",
-        "output": "[1,3]",
-        "explanation": "You see 1 and 3."
+        "input": "root = [1,2,null,3]",
+        "output": "[1,2,3]",
+        "explanation": "Each level has a single node, even though they lean left."
       }
     ],
     "functionName": "rightSideView",
@@ -2535,40 +2355,35 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,null,5,null,4]],
-        "expected": [1,3,4]
+        "input": [[6,3,9,2]],
+        "expected": [6,9,2]
       },
       {
-        "input": [[1,null,3]],
-        "expected": [1,3]
+        "input": [[1,2,null,3]],
+        "expected": [1,2,3]
       }
     ]
   },
   {
     "id": "count-good-nodes-in-binary-tree",
-    "title": "Count Good Nodes in Binary Tree",
-    "slug": "count-good-nodes-in-binary-tree",
+    "title": "Nodes Without a Bigger Ancestor",
+    "slug": "nodes-without-a-bigger-ancestor",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "In a binary tree, a node `X` is **good** if no node on the path from the root to `X` has a value greater than `X`'s value.\n\nGiven the root of a binary tree, return the number of good nodes.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [1, 10^5]","-10^4 <= Node.val <= 10^4"],
+    "description": "Walk down a binary tree from the root. Count the nodes whose value is **at least as large as every value above them** on their path from the root. The root always counts.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["1 to 10^5 nodes","-10^4 <= Node.val <= 10^4"],
     "examples": [
       {
-        "input": "root = [3,1,4,3,null,1,5]",
+        "input": "root = [5,3,8,6,null,7,9]",
         "output": "4",
-        "explanation": "The good nodes are 3 (the root), 4, 5 and the 3 below the 1."
+        "explanation": "5, 6, 8 and 9 qualify; 3 sits below 5 and 7 sits below 8."
       },
       {
-        "input": "root = [3,3,null,4,2]",
-        "output": "3",
-        "explanation": "The good nodes are 3 (the root), 3 and 4."
-      },
-      {
-        "input": "root = [1]",
-        "output": "1",
-        "explanation": "The root is always good."
+        "input": "root = [2,2,1]",
+        "output": "2",
+        "explanation": "A tie with an ancestor still counts, so both 2s qualify."
       }
     ],
     "functionName": "goodNodes",
@@ -2581,16 +2396,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,1,4,3,null,1,5]],
+        "input": [[5,3,8,6,null,7,9]],
         "expected": 4
       },
       {
-        "input": [[3,3,null,4,2]],
-        "expected": 3
-      },
-      {
-        "input": [[1]],
-        "expected": 1
+        "input": [[2,2,1]],
+        "expected": 2
       }
     ]
   },
@@ -2600,20 +2411,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "validate-binary-search-tree",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the root of a binary tree, determine whether it is a **valid binary search tree** (BST).\n\nIn a valid BST, for every node:\n\n- all values in its **left** subtree are **strictly less** than the node's value,\n- all values in its **right** subtree are **strictly greater** than the node's value, and\n- both subtrees are themselves valid BSTs.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [1, 10^4]","-2^31 <= Node.val <= 2^31 - 1"],
+    "description": "Check whether a binary tree is a **binary search tree**: for every node, **everything** in its left branch must be strictly smaller than it and **everything** in its right branch strictly larger. Return `true` or `false`.\n\nComparing a node only with its direct children is not enough.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["1 to 10^4 nodes","-2^31 <= Node.val <= 2^31 - 1"],
     "examples": [
       {
-        "input": "root = [2,1,3]",
+        "input": "root = [8,3,10]",
         "output": "true",
-        "explanation": "Every node respects the ordering."
+        "explanation": "3 < 8 < 10."
       },
       {
-        "input": "root = [5,1,4,null,null,3,6]",
+        "input": "root = [8,3,10,null,null,6,12]",
         "output": "false",
-        "explanation": "The root is 5, but its right child 4 is smaller than 5, so the tree is not a BST."
+        "explanation": "6 is in the right branch of 8 but smaller than 8."
       }
     ],
     "functionName": "isValidBST",
@@ -2626,11 +2437,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,1,3]],
+        "input": [[8,3,10]],
         "expected": true
       },
       {
-        "input": [[5,1,4,null,null,3,6]],
+        "input": [[8,3,10,null,null,6,12]],
         "expected": false
       }
     ]
@@ -2641,20 +2452,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "kth-smallest-element-in-a-bst",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the root of a **binary search tree** and an integer `k`, return the **`k`th smallest value** (1-indexed) among all node values in the tree.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is n, with 1 <= k <= n <= 10^4","0 <= Node.val <= 10^4"],
+    "description": "`root` is a binary search tree. If you listed all its values from smallest to largest, **which value would be in position `k`** (counting from 1)?\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["n nodes, with 1 <= k <= n <= 10^4","0 <= Node.val <= 10^4"],
     "examples": [
       {
-        "input": "root = [3,1,4,null,2], k = 1",
-        "output": "1",
-        "explanation": "The smallest value is 1."
+        "input": "root = [6,2,8,null,4], k = 2",
+        "output": "4",
+        "explanation": "Sorted: 2, 4, 6, 8. Position 2 holds 4."
       },
       {
-        "input": "root = [5,3,6,2,4,null,null,1], k = 3",
-        "output": "3",
-        "explanation": "The values in order are 1, 2, 3, 4, 5, 6, so the third smallest is 3."
+        "input": "root = [7,4,9,3,5], k = 4",
+        "output": "7",
+        "explanation": "Sorted: 3, 4, 5, 7, 9. Position 4 holds 7."
       }
     ],
     "functionName": "kthSmallest",
@@ -2667,12 +2478,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,1,4,null,2],1],
-        "expected": 1
+        "input": [[6,2,8,null,4],2],
+        "expected": 4
       },
       {
-        "input": [[5,3,6,2,4,null,null,1],3],
-        "expected": 3
+        "input": [[7,4,9,3,5],4],
+        "expected": 7
       }
     ]
   },
@@ -2682,20 +2493,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "number-of-islands",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an `m x n` grid of the characters `\"1\"` (land) and `\"0\"` (water). Return the **number of islands**.\n\nAn island is a group of land cells connected **horizontally or vertically**. You may assume all four edges of the grid are surrounded by water.",
-    "constraints": ["m == grid.length, n == grid[i].length","1 <= m, n <= 300","grid[i][j] is \"0\" or \"1\""],
+    "description": "A satellite map `grid` marks land as `\"1\"` and water as `\"0\"`. Land cells that touch **side by side (not diagonally)** belong to the same island, and everything outside the map is water.\n\nCount the **islands** on the map.",
+    "constraints": ["m == grid.length, n == grid[i].length","1 <= m, n <= 300","Every cell is \"0\" or \"1\""],
     "examples": [
       {
-        "input": "grid = [[\"1\",\"1\",\"1\",\"1\",\"0\"],[\"1\",\"1\",\"0\",\"1\",\"0\"],[\"1\",\"1\",\"0\",\"0\",\"0\"],[\"0\",\"0\",\"0\",\"0\",\"0\"]]",
-        "output": "1",
-        "explanation": "All the land cells are connected, so there is one island."
+        "input": "grid = [[\"1\",\"0\",\"1\"],[\"1\",\"0\",\"0\"],[\"0\",\"1\",\"1\"]]",
+        "output": "3",
+        "explanation": "The left column pair, the top-right cell and the bottom-right pair are separate."
       },
       {
-        "input": "grid = [[\"1\",\"1\",\"0\",\"0\",\"0\"],[\"1\",\"1\",\"0\",\"0\",\"0\"],[\"0\",\"0\",\"1\",\"0\",\"0\"],[\"0\",\"0\",\"0\",\"1\",\"1\"]]",
-        "output": "3",
-        "explanation": "There are three separate groups of land."
+        "input": "grid = [[\"1\",\"1\",\"0\"],[\"0\",\"1\",\"1\"],[\"0\",\"0\",\"1\"]]",
+        "output": "1",
+        "explanation": "The land snakes from the top-left to the bottom-right without a break."
       }
     ],
     "functionName": "numIslands",
@@ -2707,12 +2518,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[["1","1","1","1","0"],["1","1","0","1","0"],["1","1","0","0","0"],["0","0","0","0","0"]]],
-        "expected": 1
+        "input": [[["1","0","1"],["1","0","0"],["0","1","1"]]],
+        "expected": 3
       },
       {
-        "input": [[["1","1","0","0","0"],["1","1","0","0","0"],["0","0","1","0","0"],["0","0","0","1","1"]]],
-        "expected": 3
+        "input": [[["1","1","0"],["0","1","1"],["0","0","1"]]],
+        "expected": 1
       }
     ]
   },
@@ -2722,20 +2533,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "max-area-of-island",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an `m x n` binary matrix `grid`. An island is a group of `1`s (land) connected **horizontally or vertically**. The area of an island is the number of cells in it.\n\nReturn the **maximum area** of an island in the grid, or `0` if there is no island.",
-    "constraints": ["m == grid.length, n == grid[i].length","1 <= m, n <= 50","grid[i][j] is 0 or 1"],
+    "description": "In the map `grid`, `1` is land and `0` is water. Land cells that share a side form one island, and an island's size is how many cells it covers.\n\nReturn the **size of the biggest island**, or `0` if the map has no land.",
+    "constraints": ["m == grid.length, n == grid[i].length","1 <= m, n <= 50","Every cell is 0 or 1"],
     "examples": [
       {
-        "input": "grid = [[0,0,1,0,0,0,0,1,0,0,0,0,0],[0,0,0,0,0,0,0,1,1,1,0,0,0],[0,1,1,0,1,0,0,0,0,0,0,0,0],[0,1,0,0,1,1,0,0,1,0,1,0,0],[0,1,0,0,1,1,0,0,1,1,1,0,0],[0,0,0,0,0,0,0,0,0,0,1,0,0],[0,0,0,0,0,0,0,1,1,1,0,0,0],[0,0,0,0,0,0,0,1,1,0,0,0,0]]",
-        "output": "6",
-        "explanation": "The largest island has 6 connected cells."
+        "input": "grid = [[1,1,0,0],[0,1,0,1],[1,0,1,1],[0,0,0,1]]",
+        "output": "4",
+        "explanation": "The island on the right covers four cells; the top-left one covers three."
       },
       {
-        "input": "grid = [[0,0,0,0,0,0,0,0]]",
+        "input": "grid = [[0,0],[0,0]]",
         "output": "0",
-        "explanation": "There is no land."
+        "explanation": "All water."
       }
     ],
     "functionName": "maxAreaOfIsland",
@@ -2747,35 +2558,35 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[[0,0,1,0,0,0,0,1,0,0,0,0,0],[0,0,0,0,0,0,0,1,1,1,0,0,0],[0,1,1,0,1,0,0,0,0,0,0,0,0],[0,1,0,0,1,1,0,0,1,0,1,0,0],[0,1,0,0,1,1,0,0,1,1,1,0,0],[0,0,0,0,0,0,0,0,0,0,1,0,0],[0,0,0,0,0,0,0,1,1,1,0,0,0],[0,0,0,0,0,0,0,1,1,0,0,0,0]]],
-        "expected": 6
+        "input": [[[1,1,0,0],[0,1,0,1],[1,0,1,1],[0,0,0,1]]],
+        "expected": 4
       },
       {
-        "input": [[[0,0,0,0,0,0,0,0]]],
+        "input": [[[0,0],[0,0]]],
         "expected": 0
       }
     ]
   },
   {
     "id": "pacific-atlantic-water-flow",
-    "title": "Pacific Atlantic Water Flow",
-    "slug": "pacific-atlantic-water-flow",
+    "title": "Rainfall to Both Seas",
+    "slug": "rainfall-to-both-seas",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "An `m x n` grid `heights` gives the height above sea level of each cell of an island. The **Pacific Ocean** touches the island's left and top edges, and the **Atlantic Ocean** touches its right and bottom edges.\n\nRain water flows from a cell to a neighbouring cell (up, down, left or right) whose height is **less than or equal** to its own. Water can flow into an ocean from any cell next to that ocean.\n\nReturn every cell `[row, col]` from which rain water can reach **both** oceans. You may return the cells in any order.",
+    "description": "`heights` is an elevation map of a rectangular valley. The **North Sea** lies along the top and left edges, and the **South Sea** along the bottom and right edges.\n\nRain on a cell can run to a side neighbour that is **no higher** than the cell itself, and drains into a sea from any cell on that sea's edges.\n\nReturn every cell `[row, col]` whose rain can end up in **both** seas, in any order.",
     "constraints": ["m == heights.length, n == heights[r].length","1 <= m, n <= 200","0 <= heights[r][c] <= 10^5"],
     "examples": [
       {
-        "input": "heights = [[1,2,2,3,5],[3,2,3,4,4],[2,4,5,3,1],[6,7,1,4,5],[5,1,1,2,4]]",
-        "output": "[[0,4],[1,3],[1,4],[2,2],[3,0],[3,1],[4,0]]",
-        "explanation": "Water from these seven cells can flow to both oceans."
+        "input": "heights = [[3,2,1],[4,5,2],[6,3,1]]",
+        "output": "[[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0]]",
+        "explanation": "Only the two bottom-right cells are cut off from the North Sea."
       },
       {
-        "input": "heights = [[1]]",
-        "output": "[[0,0]]",
-        "explanation": "The only cell touches both oceans."
+        "input": "heights = [[2,1]]",
+        "output": "[[0,0],[0,1]]",
+        "explanation": "Both cells sit on edges of both seas."
       }
     ],
     "functionName": "pacificAtlantic",
@@ -2788,12 +2599,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[[1,2,2,3,5],[3,2,3,4,4],[2,4,5,3,1],[6,7,1,4,5],[5,1,1,2,4]]],
-        "expected": [[0,4],[1,3],[1,4],[2,2],[3,0],[3,1],[4,0]]
+        "input": [[[3,2,1],[4,5,2],[6,3,1]]],
+        "expected": [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0]]
       },
       {
-        "input": [[[1]]],
-        "expected": [[0,0]]
+        "input": [[[2,1]]],
+        "expected": [[0,0],[0,1]]
       }
     ]
   },
@@ -2803,20 +2614,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "surrounded-regions",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an `m x n` matrix `board` containing the letters `\"X\"` and `\"O\"`. **Capture every region of `\"O\"`s that is fully surrounded by `\"X\"`s** by flipping all the `\"O\"`s in it to `\"X\"`.\n\nA region is a group of `\"O\"` cells connected horizontally or vertically. A region is surrounded only if none of its cells lies on the border of the board, so any region that touches the border is left unchanged.\n\nReturn the board after the capture.",
-    "constraints": ["m == board.length, n == board[i].length","1 <= m, n <= 200","board[i][j] is \"X\" or \"O\""],
+    "description": "On the board, `\"O\"` cells that share a side form a group. A group that **cannot reach the edge of the board** through other `\"O\"` cells is enclosed, and every cell in it turns into `\"X\"`. Groups with at least one cell on the edge are untouched.\n\nReturn the board after all enclosed groups have been filled in.",
+    "constraints": ["m == board.length, n == board[i].length","1 <= m, n <= 200","Every cell is \"X\" or \"O\""],
     "examples": [
       {
-        "input": "board = [[\"X\",\"X\",\"X\",\"X\"],[\"X\",\"O\",\"O\",\"X\"],[\"X\",\"X\",\"O\",\"X\"],[\"X\",\"O\",\"X\",\"X\"]]",
-        "output": "[[\"X\",\"X\",\"X\",\"X\"],[\"X\",\"X\",\"X\",\"X\"],[\"X\",\"X\",\"X\",\"X\"],[\"X\",\"O\",\"X\",\"X\"]]",
-        "explanation": "The three O cells in the middle are surrounded, so they flip. The O in the bottom row touches the border and stays."
+        "input": "board = [[\"X\",\"X\",\"X\",\"X\",\"X\"],[\"X\",\"O\",\"X\",\"O\",\"X\"],[\"X\",\"O\",\"X\",\"X\",\"O\"],[\"X\",\"X\",\"X\",\"X\",\"X\"]]",
+        "output": "[[\"X\",\"X\",\"X\",\"X\",\"X\"],[\"X\",\"X\",\"X\",\"X\",\"X\"],[\"X\",\"X\",\"X\",\"X\",\"O\"],[\"X\",\"X\",\"X\",\"X\",\"X\"]]",
+        "explanation": "The two inner groups are enclosed and fill in; the O on the right edge survives."
       },
       {
-        "input": "board = [[\"X\"]]",
-        "output": "[[\"X\"]]",
-        "explanation": "Nothing to capture."
+        "input": "board = [[\"O\",\"X\"]]",
+        "output": "[[\"O\",\"X\"]]",
+        "explanation": "Both cells are on the edge, so nothing changes."
       }
     ],
     "functionName": "solve",
@@ -2828,40 +2639,35 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[["X","X","X","X"],["X","O","O","X"],["X","X","O","X"],["X","O","X","X"]]],
-        "expected": [["X","X","X","X"],["X","X","X","X"],["X","X","X","X"],["X","O","X","X"]]
+        "input": [[["X","X","X","X","X"],["X","O","X","O","X"],["X","O","X","X","O"],["X","X","X","X","X"]]],
+        "expected": [["X","X","X","X","X"],["X","X","X","X","X"],["X","X","X","X","O"],["X","X","X","X","X"]]
       },
       {
-        "input": [[["X"]]],
-        "expected": [["X"]]
+        "input": [[["O","X"]]],
+        "expected": [["O","X"]]
       }
     ]
   },
   {
     "id": "rotting-oranges",
-    "title": "Rotting Oranges",
-    "slug": "rotting-oranges",
+    "title": "Mold on the Bread Shelf",
+    "slug": "mold-on-the-bread-shelf",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an `m x n` grid where each cell is\n\n- `0`: empty,\n- `1`: a fresh orange, or\n- `2`: a rotten orange.\n\nEvery minute, each fresh orange that is **4-directionally adjacent** to a rotten orange becomes rotten.\n\nReturn the **minimum number of minutes** until no fresh orange is left. If that is impossible, return `-1`.",
-    "constraints": ["m == grid.length, n == grid[i].length","1 <= m, n <= 10","grid[i][j] is 0, 1 or 2"],
+    "description": "A bakery shelf is a grid where `0` is an empty spot, `1` is a fresh loaf and `2` is a moldy loaf. Each hour, mold spreads from every moldy loaf to the fresh loaves directly **above, below, left or right** of it.\n\nReturn how many **hours pass before no fresh loaf is left**, or `-1` if some loaf can never be reached.",
+    "constraints": ["m == grid.length, n == grid[i].length","1 <= m, n <= 10","Every cell is 0, 1 or 2"],
     "examples": [
       {
-        "input": "grid = [[2,1,1],[1,1,0],[0,1,1]]",
+        "input": "grid = [[1,1,2],[0,1,1],[1,1,0]]",
         "output": "4",
-        "explanation": "All the oranges are rotten after 4 minutes."
+        "explanation": "Mold starts top-right and reaches the last loaf, bottom-left, in hour 4."
       },
       {
-        "input": "grid = [[2,1,1],[0,1,1],[1,0,1]]",
+        "input": "grid = [[2,0,1]]",
         "output": "-1",
-        "explanation": "The orange in the bottom-left corner is never reached."
-      },
-      {
-        "input": "grid = [[0,2]]",
-        "output": "0",
-        "explanation": "There are no fresh oranges, so no time is needed."
+        "explanation": "The empty spot shields the fresh loaf forever."
       }
     ],
     "functionName": "orangesRotting",
@@ -2873,16 +2679,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[[2,1,1],[1,1,0],[0,1,1]]],
+        "input": [[[1,1,2],[0,1,1],[1,1,0]]],
         "expected": 4
       },
       {
-        "input": [[[2,1,1],[0,1,1],[1,0,1]]],
+        "input": [[[2,0,1]]],
         "expected": -1
-      },
-      {
-        "input": [[[0,2]]],
-        "expected": 0
       }
     ]
   },
@@ -2892,20 +2694,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "course-schedule",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "There are `numCourses` courses labelled `0` to `numCourses - 1`. The array `prerequisites` holds pairs `[a, b]`, meaning you **must take course `b` before course `a`**.\n\nReturn `true` if it is possible to finish all the courses, and `false` otherwise.",
-    "constraints": ["1 <= numCourses <= 2000","0 <= prerequisites.length <= 5000","prerequisites[i].length == 2","0 <= a, b < numCourses","All the pairs are unique"],
+    "description": "A degree has courses numbered `0` to `numCourses - 1`. Each pair `[a, b]` in `prerequisites` says course `b` **must be completed before** course `a` can start.\n\nReturn `true` if a student can complete every course, or `false` if the requirements make that impossible.",
+    "constraints": ["1 <= numCourses <= 2000","0 <= prerequisites.length <= 5000","Each pair has two course numbers","0 <= a, b < numCourses","No pair is repeated"],
     "examples": [
       {
-        "input": "numCourses = 2, prerequisites = [[1,0]]",
+        "input": "numCourses = 3, prerequisites = [[2,0],[1,2]]",
         "output": "true",
-        "explanation": "Take course 0, then course 1."
+        "explanation": "Course 0, then 2, then 1."
       },
       {
-        "input": "numCourses = 2, prerequisites = [[1,0],[0,1]]",
+        "input": "numCourses = 3, prerequisites = [[0,1],[1,2],[2,0]]",
         "output": "false",
-        "explanation": "Each course requires the other, so it is impossible."
+        "explanation": "The three requirements form a loop, so none can start."
       }
     ],
     "functionName": "canFinish",
@@ -2917,11 +2719,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [2,[[1,0]]],
+        "input": [3,[[2,0],[1,2]]],
         "expected": true
       },
       {
-        "input": [2,[[1,0],[0,1]]],
+        "input": [3,[[0,1],[1,2],[2,0]]],
         "expected": false
       }
     ]
@@ -2932,25 +2734,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "course-schedule-ii",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "There are `numCourses` courses labelled `0` to `numCourses - 1`. The array `prerequisites` holds pairs `[a, b]`, meaning you **must take course `b` before course `a`**.\n\nReturn an order in which you can take **all** the courses. If it is impossible to finish them all, return an empty array.\n\nMany valid orders can exist, so to make the answer unique, return the **lexicographically smallest** one: at every step take the smallest-numbered course whose prerequisites are already done.",
-    "constraints": ["1 <= numCourses <= 2000","0 <= prerequisites.length <= numCourses * (numCourses - 1)","prerequisites[i].length == 2","0 <= a, b < numCourses","a != b, and all the pairs are unique"],
+    "description": "Courses are numbered `0` to `numCourses - 1`, and each pair `[a, b]` in `prerequisites` means course `b` comes **before** course `a`. Plan a timetable that takes **every course exactly once** and respects all the requirements. Return `[]` if no such timetable exists.\n\nTo keep the answer unique: whenever several courses are available, take the **lowest-numbered** one next.",
+    "constraints": ["1 <= numCourses <= 2000","0 <= prerequisites.length <= numCourses * (numCourses - 1)","Each pair has two course numbers","0 <= a, b < numCourses","a != b, and no pair is repeated"],
     "examples": [
       {
-        "input": "numCourses = 2, prerequisites = [[1,0]]",
-        "output": "[0,1]",
-        "explanation": "Course 0 comes first, then course 1."
+        "input": "numCourses = 3, prerequisites = [[2,0],[1,2]]",
+        "output": "[0,2,1]",
+        "explanation": "0 has no requirement, 2 needs 0, and 1 needs 2."
       },
       {
-        "input": "numCourses = 4, prerequisites = [[1,0],[2,0],[3,1],[3,2]]",
-        "output": "[0,1,2,3]",
-        "explanation": "After course 0, courses 1 and 2 are both available; the smaller number goes first."
-      },
-      {
-        "input": "numCourses = 1, prerequisites = []",
-        "output": "[0]",
-        "explanation": "A single course with no prerequisites."
+        "input": "numCourses = 4, prerequisites = [[2,1],[3,1],[0,3]]",
+        "output": "[1,2,3,0]",
+        "explanation": "Only 1 is free at first; it unlocks 2 and 3 (2 goes first), and 3 unlocks 0."
       }
     ],
     "functionName": "findOrder",
@@ -2962,16 +2759,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [2,[[1,0]]],
-        "expected": [0,1]
+        "input": [3,[[2,0],[1,2]]],
+        "expected": [0,2,1]
       },
       {
-        "input": [4,[[1,0],[2,0],[3,1],[3,2]]],
-        "expected": [0,1,2,3]
-      },
-      {
-        "input": [1,[]],
-        "expected": [0]
+        "input": [4,[[2,1],[3,1],[0,3]]],
+        "expected": [1,2,3,0]
       }
     ]
   },
@@ -2981,20 +2774,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "climbing-stairs",
     "difficulty": "Easy",
     "category": "Dynamic Programming",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are climbing a staircase with `n` steps. Each time you can climb either **1 or 2** steps.\n\nReturn the number of distinct ways you can climb to the top.",
+    "description": "A staircase has `n` steps, and with each stride you go up **either 1 step or 2 steps**.\n\nCount the different sequences of strides that take you from the bottom exactly to the top step.",
     "constraints": ["1 <= n <= 45"],
     "examples": [
       {
-        "input": "n = 2",
-        "output": "2",
-        "explanation": "Two ways: 1 + 1 or 2."
+        "input": "n = 4",
+        "output": "5",
+        "explanation": "Five sequences: 1+1+1+1, 1+1+2, 1+2+1, 2+1+1 and 2+2."
       },
       {
-        "input": "n = 3",
-        "output": "3",
-        "explanation": "Three ways: 1 + 1 + 1, 1 + 2 or 2 + 1."
+        "input": "n = 5",
+        "output": "8",
+        "explanation": "Eight sequences reach step 5."
       }
     ],
     "functionName": "climbStairs",
@@ -3006,35 +2799,35 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [2],
-        "expected": 2
+        "input": [4],
+        "expected": 5
       },
       {
-        "input": [3],
-        "expected": 3
+        "input": [5],
+        "expected": 8
       }
     ]
   },
   {
     "id": "min-cost-climbing-stairs",
-    "title": "Min Cost Climbing Stairs",
-    "slug": "min-cost-climbing-stairs",
+    "title": "Cheapest Way Up the Stairs",
+    "slug": "cheapest-way-up-the-stairs",
     "difficulty": "Easy",
     "category": "Dynamic Programming",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `cost` where `cost[i]` is the price of stepping **off** stair `i`. After paying the cost you can climb **one or two** stairs.\n\nYou may start from stair `0` or stair `1`. Return the **minimum total cost** to reach the top of the floor, which is one step past the last stair.",
+    "description": "Each step of a staircase has a toll: `cost[i]` is paid when you **leave step `i`**, and from there you may move up **one or two** steps.\n\nYou can begin on step `0` or step `1` for free. Return the **least total toll** to get past the last step.",
     "constraints": ["2 <= cost.length <= 1000","0 <= cost[i] <= 999"],
     "examples": [
       {
-        "input": "cost = [10,15,20]",
-        "output": "15",
-        "explanation": "Start at index 1, pay 15 and climb two steps to the top."
+        "input": "cost = [4,9,3]",
+        "output": "7",
+        "explanation": "Start on step 0 (pay 4, jump two), then pay 3 and step off the top: 7."
       },
       {
-        "input": "cost = [1,100,1,1,1,100,1,1,100,1]",
-        "output": "6",
-        "explanation": "Start at index 0 and step on the stairs of cost 1 only, paying 6 in total."
+        "input": "cost = [2,6,1,8,1]",
+        "output": "4",
+        "explanation": "Start on step 0 (pay 2), then hop over to steps 2 and 4 paying 1 each: 4."
       }
     ],
     "functionName": "minCostClimbingStairs",
@@ -3046,35 +2839,35 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[10,15,20]],
-        "expected": 15
+        "input": [[4,9,3]],
+        "expected": 7
       },
       {
-        "input": [[1,100,1,1,1,100,1,1,100,1]],
-        "expected": 6
+        "input": [[2,6,1,8,1]],
+        "expected": 4
       }
     ]
   },
   {
     "id": "house-robber",
-    "title": "House Robber",
-    "slug": "house-robber",
+    "title": "Booking Festival Booths",
+    "slug": "booking-festival-booths",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are a robber planning to rob houses along a street. Each house `i` holds `nums[i]` dollars, but **adjacent houses have linked alarms**: robbing two neighbouring houses sets off the alarm.\n\nReturn the **maximum amount** you can rob without triggering the alarm.",
+    "description": "A festival rents out booths in a single row, and booth `i` would earn you `nums[i]`. Noise rules forbid you from renting **two booths that are next to each other**.\n\nReturn the **most you can earn** with the booths you choose.",
     "constraints": ["1 <= nums.length <= 100","0 <= nums[i] <= 400"],
     "examples": [
       {
-        "input": "nums = [1,2,3,1]",
-        "output": "4",
-        "explanation": "Rob houses 0 and 2 for 1 + 3 = 4."
+        "input": "nums = [3,8,4]",
+        "output": "8",
+        "explanation": "The middle booth alone (8) beats the two ends together (3 + 4)."
       },
       {
-        "input": "nums = [2,7,9,3,1]",
-        "output": "12",
-        "explanation": "Rob houses 0, 2 and 4 for 2 + 9 + 1 = 12."
+        "input": "nums = [6,1,2,7]",
+        "output": "13",
+        "explanation": "Booths 0 and 3 are not neighbours: 6 + 7 = 13."
       }
     ],
     "functionName": "rob",
@@ -3086,40 +2879,35 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,1]],
-        "expected": 4
+        "input": [[3,8,4]],
+        "expected": 8
       },
       {
-        "input": [[2,7,9,3,1]],
-        "expected": 12
+        "input": [[6,1,2,7]],
+        "expected": 13
       }
     ]
   },
   {
     "id": "house-robber-ii",
-    "title": "House Robber II",
-    "slug": "house-robber-ii",
+    "title": "Booking Festival Booths II",
+    "slug": "booking-festival-booths-ii",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "The houses are now arranged in a **circle**, so the first and the last house are neighbours. As before, robbing two adjacent houses sets off the alarm.\n\nGiven `nums`, where `nums[i]` is the money in house `i`, return the **maximum amount** you can rob without triggering the alarm.",
+    "description": "This time the booths stand in a **ring** around a fountain, so the first and last booths are also neighbours. Booth `i` earns `nums[i]`, and you still may not rent two neighbouring booths.\n\nReturn the **most you can earn**.",
     "constraints": ["1 <= nums.length <= 100","0 <= nums[i] <= 1000"],
     "examples": [
       {
-        "input": "nums = [2,3,2]",
-        "output": "3",
-        "explanation": "Houses 0 and 2 are neighbours in the circle, so you cannot rob both. The best is the middle house: 3."
-      },
-      {
-        "input": "nums = [1,2,3,1]",
+        "input": "nums = [4,1,4]",
         "output": "4",
-        "explanation": "Rob house 0 and house 2 for 1 + 3 = 4."
+        "explanation": "In a ring of three every pair is adjacent, so only one booth: 4."
       },
       {
-        "input": "nums = [1,2,3]",
-        "output": "3",
-        "explanation": "Houses 0 and 2 are neighbours in the circle, so the best is to rob house 2 alone: 3."
+        "input": "nums = [2,5,1,6]",
+        "output": "11",
+        "explanation": "Booths 1 and 3 are not neighbours: 5 + 6 = 11."
       }
     ],
     "functionName": "rob",
@@ -3131,16 +2919,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,3,2]],
-        "expected": 3
-      },
-      {
-        "input": [[1,2,3,1]],
+        "input": [[4,1,4]],
         "expected": 4
       },
       {
-        "input": [[1,2,3]],
-        "expected": 3
+        "input": [[2,5,1,6]],
+        "expected": 11
       }
     ]
   },
@@ -3150,25 +2934,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "longest-palindromic-substring",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a string `s`, return its **longest palindromic substring**.\n\nIf several palindromic substrings share the maximum length, return the one that **starts first** in `s`.",
-    "constraints": ["1 <= s.length <= 1000","s consists of digits and English letters"],
+    "description": "Find the **longest unbroken stretch of `s` that reads the same backwards** and return it.\n\nIf there is a tie for the longest, return the one that begins earliest.",
+    "constraints": ["1 <= s.length <= 1000","s contains only English letters and digits"],
     "examples": [
       {
-        "input": "s = \"babad\"",
-        "output": "\"bab\"",
-        "explanation": "\"aba\" is also valid, but \"bab\" starts first."
+        "input": "s = \"xabay\"",
+        "output": "\"aba\"",
+        "explanation": "\"aba\" is the only palindrome longer than one character."
       },
       {
-        "input": "s = \"cbbd\"",
-        "output": "\"bb\"",
-        "explanation": "The longest palindrome is \"bb\"."
-      },
-      {
-        "input": "s = \"a\"",
-        "output": "\"a\"",
-        "explanation": "A single character is a palindrome."
+        "input": "s = \"ppqq\"",
+        "output": "\"pp\"",
+        "explanation": "\"pp\" and \"qq\" tie; \"pp\" comes first."
       }
     ],
     "functionName": "longestPalindrome",
@@ -3180,16 +2959,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": ["babad"],
-        "expected": "bab"
+        "input": ["xabay"],
+        "expected": "aba"
       },
       {
-        "input": ["cbbd"],
-        "expected": "bb"
-      },
-      {
-        "input": ["a"],
-        "expected": "a"
+        "input": ["ppqq"],
+        "expected": "pp"
       }
     ]
   },
@@ -3199,20 +2974,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "palindromic-substrings",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a string `s`, return the **number of palindromic substrings** in it.\n\nA substring is a contiguous sequence of characters. Substrings at different positions count separately, even if they contain the same characters.",
-    "constraints": ["1 <= s.length <= 1000","s consists of lowercase English letters"],
+    "description": "Count the **stretches of `s` that read the same backwards**. Every start and end position counts separately, so identical text at two different places is counted twice.",
+    "constraints": ["1 <= s.length <= 1000","s uses only lowercase English letters"],
     "examples": [
       {
-        "input": "s = \"abc\"",
+        "input": "s = \"xyz\"",
         "output": "3",
-        "explanation": "Three palindromes: \"a\", \"b\" and \"c\"."
+        "explanation": "Only the three single letters."
       },
       {
-        "input": "s = \"aaa\"",
-        "output": "6",
-        "explanation": "Six palindromes: \"a\", \"a\", \"a\", \"aa\", \"aa\" and \"aaa\"."
+        "input": "s = \"aba\"",
+        "output": "4",
+        "explanation": "\"a\", \"b\", \"a\" and \"aba\"."
       }
     ],
     "functionName": "countSubstrings",
@@ -3224,12 +2999,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": ["abc"],
+        "input": ["xyz"],
         "expected": 3
       },
       {
-        "input": ["aaa"],
-        "expected": 6
+        "input": ["aba"],
+        "expected": 4
       }
     ]
   },
@@ -3239,25 +3014,25 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "decode-ways",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "A message made of capital letters is encoded as digits using the mapping `\"A\" -> \"1\"`, `\"B\" -> \"2\"`, ..., `\"Z\" -> \"26\"`.\n\nGiven a string `s` of digits, return the **number of ways to decode it**. A way is valid only if every group maps to a letter; for example `\"06\"` cannot be decoded because `\"0\"` and `\"06\"` do not map to any letter.\n\nThe answer is guaranteed to fit in a 32-bit integer.",
-    "constraints": ["1 <= s.length <= 100","s contains only digits and may contain leading zeros"],
+    "description": "A secret message was written with `A = 1`, `B = 2`, ..., `Z = 26`, and the numbers were then run together, so the spaces are lost. Given the digit string `s`, count **how many letter messages could have produced it**.\n\nEvery chunk must be a number from `1` to `26` with no leading zero: `\"0\"` and `\"05\"` are not letters. The count fits in a 32-bit integer.",
+    "constraints": ["1 <= s.length <= 100","s contains only digits, possibly starting with 0"],
     "examples": [
       {
-        "input": "s = \"12\"",
+        "input": "s = \"17\"",
         "output": "2",
-        "explanation": "\"12\" can be decoded as \"AB\" (1 2) or \"L\" (12)."
+        "explanation": "\"17\" is either \"AG\" (1, 7) or \"Q\" (17)."
       },
       {
-        "input": "s = \"226\"",
-        "output": "3",
-        "explanation": "\"226\" can be \"BZ\" (2 26), \"VF\" (22 6) or \"BBF\" (2 2 6)."
+        "input": "s = \"1201\"",
+        "output": "1",
+        "explanation": "The 0 must pair with the 2 as 20, leaving 1, 20, 1 = \"ATA\"."
       },
       {
-        "input": "s = \"06\"",
+        "input": "s = \"30\"",
         "output": "0",
-        "explanation": "\"06\" has no valid decoding."
+        "explanation": "\"30\" and a lone \"0\" are not letters."
       }
     ],
     "functionName": "numDecodings",
@@ -3269,15 +3044,15 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": ["12"],
+        "input": ["17"],
         "expected": 2
       },
       {
-        "input": ["226"],
-        "expected": 3
+        "input": ["1201"],
+        "expected": 1
       },
       {
-        "input": ["06"],
+        "input": ["30"],
         "expected": 0
       }
     ]
@@ -3288,25 +3063,25 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "coin-change",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an integer array `coins` of coin denominations and an integer `amount`. You have an unlimited supply of each coin.\n\nReturn the **fewest coins** needed to make up `amount`. If it cannot be made up by any combination of the coins, return `-1`.",
+    "description": "A vending machine must return exactly `amount` in change, and it has an endless supply of coins with the values in `coins`. Return the **smallest number of coins** that adds up to `amount`, or `-1` if no combination works.",
     "constraints": ["1 <= coins.length <= 12","1 <= coins[i] <= 2^31 - 1","0 <= amount <= 10^4"],
     "examples": [
       {
-        "input": "coins = [1,2,5], amount = 11",
+        "input": "coins = [3,7], amount = 13",
         "output": "3",
-        "explanation": "11 = 5 + 5 + 1, which uses three coins."
+        "explanation": "7 + 3 + 3 = 13 uses three coins."
       },
       {
-        "input": "coins = [2], amount = 3",
+        "input": "coins = [4], amount = 6",
         "output": "-1",
-        "explanation": "The amount 3 cannot be made with coins of 2."
+        "explanation": "Coins of 4 can only make multiples of 4."
       },
       {
-        "input": "coins = [1], amount = 0",
+        "input": "coins = [2], amount = 0",
         "output": "0",
-        "explanation": "The amount 0 needs no coins."
+        "explanation": "No change needed, no coins."
       }
     ],
     "functionName": "coinChange",
@@ -3318,15 +3093,15 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,5],11],
+        "input": [[3,7],13],
         "expected": 3
       },
       {
-        "input": [[2],3],
+        "input": [[4],6],
         "expected": -1
       },
       {
-        "input": [[1],0],
+        "input": [[2],0],
         "expected": 0
       }
     ]
@@ -3337,20 +3112,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "maximum-product-subarray",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums`, find a **contiguous non-empty subarray** whose product is the largest, and return that product.\n\nThe answer is guaranteed to fit in a 32-bit integer.",
-    "constraints": ["1 <= nums.length <= 2 * 10^4","-10 <= nums[i] <= 10","The product of any prefix or suffix of nums fits in a 32-bit integer"],
+    "description": "Choose **one unbroken, non-empty run of numbers** in `nums` and multiply them together. Return the **largest product** any such run can give.\n\nThe answer fits in a 32-bit integer.",
+    "constraints": ["1 <= nums.length <= 2 * 10^4","-10 <= nums[i] <= 10","Every prefix and suffix product fits in a 32-bit integer"],
     "examples": [
       {
-        "input": "nums = [2,3,-2,4]",
-        "output": "6",
-        "explanation": "The subarray [2, 3] has the largest product, 6."
+        "input": "nums = [3,-1,4,2]",
+        "output": "8",
+        "explanation": "4 x 2 = 8; including the -1 would make it negative."
       },
       {
-        "input": "nums = [-2,0,-1]",
+        "input": "nums = [-3,0,-2]",
         "output": "0",
-        "explanation": "The result cannot be 2 because [-2, -1] is not contiguous; the best is 0."
+        "explanation": "The two negatives are separated by 0, so 0 is the best."
       }
     ],
     "functionName": "maxProduct",
@@ -3362,11 +3137,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,3,-2,4]],
-        "expected": 6
+        "input": [[3,-1,4,2]],
+        "expected": 8
       },
       {
-        "input": [[-2,0,-1]],
+        "input": [[-3,0,-2]],
         "expected": 0
       }
     ]
@@ -3377,25 +3152,25 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "word-break",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a string `s` and a dictionary of strings `wordDict`, return `true` if `s` can be split into a sequence of **one or more dictionary words**.\n\nA dictionary word may be reused as many times as you like.",
-    "constraints": ["1 <= s.length <= 300","1 <= wordDict.length <= 1000","1 <= wordDict[i].length <= 20","s and wordDict[i] consist of lowercase English letters","All strings in wordDict are unique"],
+    "description": "Can the text `s` be **chopped into pieces that are all words from `wordDict`**, with nothing left over? Words may be used any number of times. Return `true` or `false`.",
+    "constraints": ["1 <= s.length <= 300","1 <= wordDict.length <= 1000","1 <= wordDict[i].length <= 20","All strings use only lowercase English letters","Dictionary words are distinct"],
     "examples": [
       {
-        "input": "s = \"leetcode\", wordDict = [\"leet\",\"code\"]",
+        "input": "s = \"sunflower\", wordDict = [\"sun\",\"flow\",\"flower\",\"er\"]",
         "output": "true",
-        "explanation": "\"leetcode\" can be split as \"leet code\"."
+        "explanation": "\"sun\" + \"flower\"."
       },
       {
-        "input": "s = \"applepenapple\", wordDict = [\"apple\",\"pen\"]",
+        "input": "s = \"nightmare\", wordDict = [\"night\",\"mare\",\"ma\"]",
         "output": "true",
-        "explanation": "\"applepenapple\" can be split as \"apple pen apple\"."
+        "explanation": "\"night\" + \"mare\"; \"ma\" alone would leave \"re\"."
       },
       {
-        "input": "s = \"catsandog\", wordDict = [\"cats\",\"dog\",\"sand\",\"and\",\"cat\"]",
+        "input": "s = \"pineapples\", wordDict = [\"pine\",\"apple\",\"pen\"]",
         "output": "false",
-        "explanation": "No split uses only dictionary words."
+        "explanation": "\"pine\" + \"apple\" leaves an \"s\" that is not a word."
       }
     ],
     "functionName": "wordBreak",
@@ -3407,15 +3182,15 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": ["leetcode",["leet","code"]],
+        "input": ["sunflower",["sun","flow","flower","er"]],
         "expected": true
       },
       {
-        "input": ["applepenapple",["apple","pen"]],
+        "input": ["nightmare",["night","mare","ma"]],
         "expected": true
       },
       {
-        "input": ["catsandog",["cats","dog","sand","and","cat"]],
+        "input": ["pineapples",["pine","apple","pen"]],
         "expected": false
       }
     ]
@@ -3426,25 +3201,25 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "longest-increasing-subsequence",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums`, return the **length of the longest strictly increasing subsequence**.\n\nA subsequence keeps the original order of elements but may skip some of them.",
+    "description": "Cross out as few numbers of `nums` as you like (keeping the rest in order) so that what remains is **strictly increasing**. Return the **most numbers you can keep**.",
     "constraints": ["1 <= nums.length <= 2500","-10^4 <= nums[i] <= 10^4"],
     "examples": [
       {
-        "input": "nums = [10,9,2,5,3,7,101,18]",
+        "input": "nums = [5,1,6,2,7,3,8]",
         "output": "4",
-        "explanation": "One longest subsequence is [2, 3, 7, 101]."
+        "explanation": "Keep 5, 6, 7, 8 (or 1, 2, 3, 8)."
       },
       {
-        "input": "nums = [0,1,0,3,2,3]",
-        "output": "4",
-        "explanation": "One longest subsequence is [0, 1, 2, 3]."
-      },
-      {
-        "input": "nums = [7,7,7,7,7,7,7]",
+        "input": "nums = [9,9,9]",
         "output": "1",
-        "explanation": "Strictly increasing means equal values cannot be repeated."
+        "explanation": "Equal values never count as increasing."
+      },
+      {
+        "input": "nums = [2,8,3,4,1]",
+        "output": "3",
+        "explanation": "Keep 2, 3, 4."
       }
     ],
     "functionName": "lengthOfLIS",
@@ -3456,16 +3231,16 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[10,9,2,5,3,7,101,18]],
+        "input": [[5,1,6,2,7,3,8]],
         "expected": 4
       },
       {
-        "input": [[0,1,0,3,2,3]],
-        "expected": 4
-      },
-      {
-        "input": [[7,7,7,7,7,7,7]],
+        "input": [[9,9,9]],
         "expected": 1
+      },
+      {
+        "input": [[2,8,3,4,1]],
+        "expected": 3
       }
     ]
   },
@@ -3475,20 +3250,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "unique-paths",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "A robot stands in the top-left corner of an `m x n` grid and wants to reach the bottom-right corner. At each step it can move only **down or right**.\n\nReturn the number of **unique paths** the robot can take.",
-    "constraints": ["1 <= m, n <= 100","The answer is guaranteed to be less than or equal to 2 * 10^9"],
+    "description": "A city is a grid of `m` rows by `n` columns of blocks. A courier starts at the top-left block and must reach the bottom-right block, moving only **down or right** one block at a time.\n\nCount the **different routes** the courier can take.",
+    "constraints": ["1 <= m, n <= 100","The answer is at most 2 * 10^9"],
     "examples": [
       {
-        "input": "m = 3, n = 7",
-        "output": "28",
-        "explanation": "There are 28 paths through a 3 x 7 grid."
+        "input": "m = 4, n = 5",
+        "output": "35",
+        "explanation": "Any route is 3 downs and 4 rights in some order: 35 routes."
       },
       {
-        "input": "m = 3, n = 2",
+        "input": "m = 2, n = 3",
         "output": "3",
-        "explanation": "There are 3 paths through a 3 x 2 grid: right-down-down, down-down-right and down-right-down."
+        "explanation": "One down and two rights: right-right-down, right-down-right or down-right-right."
       }
     ],
     "functionName": "uniquePaths",
@@ -3500,11 +3275,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [3,7],
-        "expected": 28
+        "input": [4,5],
+        "expected": 35
       },
       {
-        "input": [3,2],
+        "input": [2,3],
         "expected": 3
       }
     ]
@@ -3515,20 +3290,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "jump-game",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an integer array `nums`. You start at the first index and each element `nums[i]` is your **maximum jump length** from position `i`.\n\nReturn `true` if you can reach the **last index**, and `false` otherwise.",
+    "description": "You stand on the first square of a row. The number on square `i`, `nums[i]`, is **the farthest you may jump forward from it** (any shorter jump is allowed too).\n\nReturn `true` if you can land on the last square, otherwise `false`.",
     "constraints": ["1 <= nums.length <= 10^4","0 <= nums[i] <= 10^5"],
     "examples": [
       {
-        "input": "nums = [2,3,1,1,4]",
+        "input": "nums = [1,2,0,1]",
         "output": "true",
-        "explanation": "Jump 1 step from index 0 to 1, then 3 steps to the last index."
+        "explanation": "Jump to square 1, and from there two squares to the end."
       },
       {
-        "input": "nums = [3,2,1,0,4]",
+        "input": "nums = [2,1,0,3]",
         "output": "false",
-        "explanation": "You always arrive at index 3, whose jump length is 0, so you can never reach the last index."
+        "explanation": "Every route gets stuck on the 0 at square 2."
       }
     ],
     "functionName": "canJump",
@@ -3540,11 +3315,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,3,1,1,4]],
+        "input": [[1,2,0,1]],
         "expected": true
       },
       {
-        "input": [[3,2,1,0,4]],
+        "input": [[2,1,0,3]],
         "expected": false
       }
     ]
@@ -3555,20 +3330,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "jump-game-ii",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an integer array `nums` and start at index `0`. Each `nums[i]` is your **maximum jump length** from index `i`.\n\nReturn the **minimum number of jumps** needed to reach the last index. You can assume the last index is always reachable.",
-    "constraints": ["1 <= nums.length <= 10^4","0 <= nums[i] <= 1000","The last index is always reachable"],
+    "description": "As before, square `i` lets you jump forward **up to `nums[i]` squares**. The last square can always be reached.\n\nReturn the **fewest jumps** needed to get from the first square to the last.",
+    "constraints": ["1 <= nums.length <= 10^4","0 <= nums[i] <= 1000","The last square is always reachable"],
     "examples": [
       {
-        "input": "nums = [2,3,1,1,4]",
+        "input": "nums = [1,4,1,1,1]",
         "output": "2",
-        "explanation": "Jump 1 step to index 1, then 3 steps to the last index: 2 jumps."
+        "explanation": "Hop to square 1, then the 4 carries you to the end."
       },
       {
-        "input": "nums = [2,3,0,1,4]",
-        "output": "2",
-        "explanation": "Jump to index 1, then to the end: 2 jumps."
+        "input": "nums = [3,1,1,1]",
+        "output": "1",
+        "explanation": "One jump of three reaches the end."
       }
     ],
     "functionName": "jump",
@@ -3580,35 +3355,35 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,3,1,1,4]],
+        "input": [[1,4,1,1,1]],
         "expected": 2
       },
       {
-        "input": [[2,3,0,1,4]],
-        "expected": 2
+        "input": [[3,1,1,1]],
+        "expected": 1
       }
     ]
   },
   {
     "id": "gas-station",
-    "title": "Gas Station",
-    "slug": "gas-station",
+    "title": "Fuel Stops on a Ring Road",
+    "slug": "fuel-stops-on-a-ring-road",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "There are `n` gas stations on a circular route. Station `i` has `gas[i]` units of fuel, and driving from station `i` to the next one costs `cost[i]` units. Your tank starts empty and has unlimited capacity.\n\nReturn the **index of the station where you should start** to complete the full circuit clockwise, or `-1` if that is impossible. If a solution exists it is guaranteed to be unique.",
-    "constraints": ["n == gas.length == cost.length","1 <= n <= 10^5","0 <= gas[i], cost[i] <= 10^4","If a solution exists, it is unique"],
+    "description": "A ring road has `n` fuel stops. At stop `i` you can take on `gas[i]` litres, and the drive from stop `i` to stop `i + 1` (wrapping around after the last) burns `cost[i]` litres. Your tank starts empty and never overflows.\n\nReturn the stop to **start from so you can drive one full lap**, or `-1` if no start works. When an answer exists, it is the only one.",
+    "constraints": ["n == gas.length == cost.length","1 <= n <= 10^5","0 <= gas[i], cost[i] <= 10^4","At most one start works"],
     "examples": [
       {
-        "input": "gas = [1,2,3,4,5], cost = [3,4,5,1,2]",
-        "output": "3",
-        "explanation": "Start at station 3 with 4 units, and every later stop leaves you with enough fuel."
+        "input": "gas = [2,5,1,4], cost = [3,2,4,1]",
+        "output": "1",
+        "explanation": "From stop 1 the tank reads 3, 0, 3 and 2 after each leg, never below zero."
       },
       {
-        "input": "gas = [2,3,4], cost = [3,4,3]",
+        "input": "gas = [1,2,3], cost = [2,2,3]",
         "output": "-1",
-        "explanation": "Whichever station you start at, you run out of fuel before finishing the circuit."
+        "explanation": "The road burns 7 litres but only 6 are available."
       }
     ],
     "functionName": "canCompleteCircuit",
@@ -3620,11 +3395,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,4,5],[3,4,5,1,2]],
-        "expected": 3
+        "input": [[2,5,1,4],[3,2,4,1]],
+        "expected": 1
       },
       {
-        "input": [[2,3,4],[3,4,3]],
+        "input": [[1,2,3],[2,2,3]],
         "expected": -1
       }
     ]
@@ -3635,20 +3410,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "insert-interval",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `intervals` of **non-overlapping** intervals `[start, end]`, **sorted by start**, and another interval `newInterval`.\n\nInsert `newInterval` so that the result is still sorted and has no overlapping intervals, **merging** any intervals that overlap with it. Return the resulting array.",
-    "constraints": ["0 <= intervals.length <= 10^4","intervals[i].length == 2","0 <= start <= end <= 10^5","intervals is sorted by start in ascending order","newInterval.length == 2"],
+    "description": "`intervals` is a list of **non-overlapping** `[start, end]` bookings, ordered by start. Add the booking `newInterval`, **joining it with any bookings it overlaps** so the list stays ordered and free of overlaps, and return the new list.",
+    "constraints": ["0 <= intervals.length <= 10^4","Each interval has two numbers","0 <= start <= end <= 10^5","intervals is ordered by start","newInterval has two numbers"],
     "examples": [
       {
-        "input": "intervals = [[1,3],[6,9]], newInterval = [2,5]",
-        "output": "[[1,5],[6,9]]",
-        "explanation": "The new interval overlaps [1, 3], so they merge into [1, 5]."
+        "input": "intervals = [[2,4],[7,9],[12,14]], newInterval = [8,13]",
+        "output": "[[2,4],[7,14]]",
+        "explanation": "[8, 13] overlaps both [7, 9] and [12, 14], so the three join into [7, 14]."
       },
       {
-        "input": "intervals = [[1,2],[3,5],[6,7],[8,10],[12,16]], newInterval = [4,8]",
-        "output": "[[1,2],[3,10],[12,16]]",
-        "explanation": "The new interval [4, 8] overlaps [3, 5], [6, 7] and [8, 10], which merge into [3, 10]."
+        "input": "intervals = [[1,3]], newInterval = [5,6]",
+        "output": "[[1,3],[5,6]]",
+        "explanation": "No overlap, so the booking is simply added at the end."
       }
     ],
     "functionName": "insert",
@@ -3660,12 +3435,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[[1,3],[6,9]],[2,5]],
-        "expected": [[1,5],[6,9]]
+        "input": [[[2,4],[7,9],[12,14]],[8,13]],
+        "expected": [[2,4],[7,14]]
       },
       {
-        "input": [[[1,2],[3,5],[6,7],[8,10],[12,16]],[4,8]],
-        "expected": [[1,2],[3,10],[12,16]]
+        "input": [[[1,3]],[5,6]],
+        "expected": [[1,3],[5,6]]
       }
     ]
   },
@@ -3675,20 +3450,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "merge-intervals",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array of `intervals` where `intervals[i] = [start, end]`, **merge all overlapping intervals** and return an array of the non-overlapping intervals that cover all the input intervals, sorted by start.\n\nTwo intervals that share only an endpoint, such as `[1, 4]` and `[4, 5]`, are considered overlapping.",
-    "constraints": ["1 <= intervals.length <= 10^4","intervals[i].length == 2","0 <= start <= end <= 10^4"],
+    "description": "`intervals` lists time ranges `[start, end]` in no particular order. **Combine every group of overlapping ranges into one range** and return the result ordered by start.\n\nRanges that just touch, like `[3, 7]` and `[7, 9]`, count as overlapping.",
+    "constraints": ["1 <= intervals.length <= 10^4","Each interval has two numbers","0 <= start <= end <= 10^4"],
     "examples": [
       {
-        "input": "intervals = [[1,3],[2,6],[8,10],[15,18]]",
-        "output": "[[1,6],[8,10],[15,18]]",
-        "explanation": "[1, 3] and [2, 6] overlap and merge into [1, 6]."
+        "input": "intervals = [[5,8],[1,2],[6,10],[12,13]]",
+        "output": "[[1,2],[5,10],[12,13]]",
+        "explanation": "[5, 8] and [6, 10] overlap and become [5, 10]."
       },
       {
-        "input": "intervals = [[1,4],[4,5]]",
-        "output": "[[1,5]]",
-        "explanation": "The two intervals touch at 4, so they merge."
+        "input": "intervals = [[3,7],[7,9]]",
+        "output": "[[3,9]]",
+        "explanation": "The ranges meet at 7, so they join."
       }
     ],
     "functionName": "merge",
@@ -3700,12 +3475,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[[1,3],[2,6],[8,10],[15,18]]],
-        "expected": [[1,6],[8,10],[15,18]]
+        "input": [[[5,8],[1,2],[6,10],[12,13]]],
+        "expected": [[1,2],[5,10],[12,13]]
       },
       {
-        "input": [[[1,4],[4,5]]],
-        "expected": [[1,5]]
+        "input": [[[3,7],[7,9]]],
+        "expected": [[3,9]]
       }
     ]
   },
@@ -3715,25 +3490,25 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "non-overlapping-intervals",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array of `intervals` where `intervals[i] = [start, end]`, return the **minimum number of intervals you must remove** so that the rest are non-overlapping.\n\nIntervals that only touch at an endpoint, such as `[1, 2]` and `[2, 3]`, do **not** overlap.",
-    "constraints": ["1 <= intervals.length <= 10^5","intervals[i].length == 2","-5 * 10^4 <= start < end <= 5 * 10^4"],
+    "description": "A meeting room has requests `intervals`, each `[start, end]`. Return the **fewest requests you must cancel** so that no two remaining meetings overlap.\n\nA meeting may start at the exact moment another ends; that is not an overlap.",
+    "constraints": ["1 <= intervals.length <= 10^5","Each interval has two numbers","-5 * 10^4 <= start < end <= 5 * 10^4"],
     "examples": [
       {
-        "input": "intervals = [[1,2],[2,3],[3,4],[1,3]]",
+        "input": "intervals = [[1,4],[2,3],[3,6]]",
         "output": "1",
-        "explanation": "Removing [1, 3] leaves three non-overlapping intervals."
+        "explanation": "Cancel [1, 4]; [2, 3] and [3, 6] fit back to back."
       },
       {
-        "input": "intervals = [[1,2],[1,2],[1,2]]",
-        "output": "2",
-        "explanation": "The three intervals are identical, so two must go."
+        "input": "intervals = [[0,5],[0,5]]",
+        "output": "1",
+        "explanation": "Two identical requests: one must go."
       },
       {
-        "input": "intervals = [[1,2],[2,3]]",
+        "input": "intervals = [[4,6],[6,8]]",
         "output": "0",
-        "explanation": "The intervals only touch, so nothing needs to be removed."
+        "explanation": "The meetings only touch at 6."
       }
     ],
     "functionName": "eraseOverlapIntervals",
@@ -3745,15 +3520,15 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[[1,2],[2,3],[3,4],[1,3]]],
+        "input": [[[1,4],[2,3],[3,6]]],
         "expected": 1
       },
       {
-        "input": [[[1,2],[1,2],[1,2]]],
-        "expected": 2
+        "input": [[[0,5],[0,5]]],
+        "expected": 1
       },
       {
-        "input": [[[1,2],[2,3]]],
+        "input": [[[4,6],[6,8]]],
         "expected": 0
       }
     ]
@@ -3764,20 +3539,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "subsets",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums` of **unique** elements, return **all possible subsets** (the power set).\n\nThe solution must not contain duplicate subsets. You may return the subsets and the numbers inside each subset in any order.",
-    "constraints": ["1 <= nums.length <= 10","-10 <= nums[i] <= 10","All the numbers of nums are unique"],
+    "description": "The values in `nums` are all different. List **every possible selection** of them, from picking nothing to picking everything.\n\nEach selection should appear once. Selections, and the values inside them, can be in any order.",
+    "constraints": ["1 <= nums.length <= 10","-10 <= nums[i] <= 10","Values in nums are distinct"],
     "examples": [
       {
-        "input": "nums = [1,2,3]",
-        "output": "[[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]",
-        "explanation": "There are 2^3 = 8 subsets, from the empty one to the whole array."
+        "input": "nums = [4,6]",
+        "output": "[[],[4],[6],[4,6]]",
+        "explanation": "Two values give four selections: none, either one, or both."
       },
       {
-        "input": "nums = [0]",
-        "output": "[[],[0]]",
-        "explanation": "The empty subset and the subset with the single element."
+        "input": "nums = [-1]",
+        "output": "[[],[-1]]",
+        "explanation": "One value: take it or leave it."
       }
     ],
     "functionName": "subsets",
@@ -3790,12 +3565,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3]],
-        "expected": [[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]
+        "input": [[4,6]],
+        "expected": [[],[4],[6],[4,6]]
       },
       {
-        "input": [[0]],
-        "expected": [[],[0]]
+        "input": [[-1]],
+        "expected": [[],[-1]]
       }
     ]
   },
@@ -3805,25 +3580,25 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "combination-sum",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array of **distinct** integers `candidates` and a target integer `target`, return **every unique combination** of candidates that sums to `target`. You may return the combinations in any order.\n\nThe same number may be used **an unlimited number of times**. Two combinations are different if the frequency of at least one chosen number differs.",
-    "constraints": ["1 <= candidates.length <= 30","2 <= candidates[i] <= 40","All the elements of candidates are distinct","1 <= target <= 40"],
+    "description": "Each value in `candidates` is different, and **any value may be used as many times as you like**. Find every multiset of values that **adds up to `target`** and return them all.\n\nTwo answers are the same if they use the same values the same number of times, so list each one once. Order does not matter.",
+    "constraints": ["1 <= candidates.length <= 30","2 <= candidates[i] <= 40","Values in candidates are distinct","1 <= target <= 40"],
     "examples": [
       {
-        "input": "candidates = [2,3,6,7], target = 7",
-        "output": "[[2,2,3],[7]]",
-        "explanation": "2 + 2 + 3 = 7 and 7 = 7 are the only combinations."
+        "input": "candidates = [3,4,5], target = 9",
+        "output": "[[3,3,3],[4,5]]",
+        "explanation": "3 + 3 + 3 and 4 + 5 both make 9."
       },
       {
-        "input": "candidates = [2,3,5], target = 8",
-        "output": "[[2,2,2,2],[2,3,3],[3,5]]",
-        "explanation": "Three combinations reach 8."
+        "input": "candidates = [2,6], target = 10",
+        "output": "[[2,2,2,2,2],[2,2,6]]",
+        "explanation": "Five 2s, or 2 + 2 + 6."
       },
       {
-        "input": "candidates = [2], target = 1",
+        "input": "candidates = [4], target = 3",
         "output": "[]",
-        "explanation": "No combination of 2s makes 1."
+        "explanation": "Only multiples of 4 can be built."
       }
     ],
     "functionName": "combinationSum",
@@ -3836,15 +3611,15 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,3,6,7],7],
-        "expected": [[2,2,3],[7]]
+        "input": [[3,4,5],9],
+        "expected": [[3,3,3],[4,5]]
       },
       {
-        "input": [[2,3,5],8],
-        "expected": [[2,2,2,2],[2,3,3],[3,5]]
+        "input": [[2,6],10],
+        "expected": [[2,2,2,2,2],[2,2,6]]
       },
       {
-        "input": [[2],1],
+        "input": [[4],3],
         "expected": []
       }
     ]
@@ -3855,25 +3630,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "permutations",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array `nums` of **distinct** integers, return **all the possible permutations**. You may return the answer in any order.",
-    "constraints": ["1 <= nums.length <= 6","-10 <= nums[i] <= 10","All the integers of nums are unique"],
+    "description": "`nums` holds distinct integers. Return **every ordering** of all of them, in any order.",
+    "constraints": ["1 <= nums.length <= 6","-10 <= nums[i] <= 10","Values in nums are distinct"],
     "examples": [
       {
-        "input": "nums = [1,2,3]",
-        "output": "[[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]",
-        "explanation": "Six arrangements of three numbers."
+        "input": "nums = [5,6,8]",
+        "output": "[[5,6,8],[5,8,6],[6,5,8],[6,8,5],[8,5,6],[8,6,5]]",
+        "explanation": "Three values can be lined up in 3 x 2 x 1 = 6 ways."
       },
       {
-        "input": "nums = [0,1]",
-        "output": "[[0,1],[1,0]]",
-        "explanation": "Two arrangements."
-      },
-      {
-        "input": "nums = [1]",
-        "output": "[[1]]",
-        "explanation": "One number has one arrangement."
+        "input": "nums = [4,7]",
+        "output": "[[4,7],[7,4]]",
+        "explanation": "Two values, two orderings."
       }
     ],
     "functionName": "permute",
@@ -3886,16 +3656,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3]],
-        "expected": [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
+        "input": [[5,6,8]],
+        "expected": [[5,6,8],[5,8,6],[6,5,8],[6,8,5],[8,5,6],[8,6,5]]
       },
       {
-        "input": [[0,1]],
-        "expected": [[0,1],[1,0]]
-      },
-      {
-        "input": [[1]],
-        "expected": [[1]]
+        "input": [[4,7]],
+        "expected": [[4,7],[7,4]]
       }
     ]
   },
@@ -3905,20 +3671,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "subsets-ii",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums` that **may contain duplicates**, return **all possible subsets** (the power set).\n\nThe solution must not contain duplicate subsets. You may return the subsets and the numbers inside each subset in any order.",
+    "description": "`nums` **may contain repeated values**. List every distinct selection of its elements (including picking none), where selections that contain the same values the same number of times count as one.\n\nReturn them in any order.",
     "constraints": ["1 <= nums.length <= 10","-10 <= nums[i] <= 10"],
     "examples": [
       {
-        "input": "nums = [1,2,2]",
-        "output": "[[],[1],[1,2],[1,2,2],[2],[2,2]]",
-        "explanation": "Only six distinct subsets exist, because the two 2s are interchangeable."
+        "input": "nums = [3,3,1]",
+        "output": "[[],[1],[1,3],[1,3,3],[3],[3,3]]",
+        "explanation": "The two 3s are interchangeable, so there are six distinct selections, not eight."
       },
       {
-        "input": "nums = [0]",
-        "output": "[[],[0]]",
-        "explanation": "The empty subset and the subset with the single element."
+        "input": "nums = [7]",
+        "output": "[[],[7]]",
+        "explanation": "Take the 7 or leave it."
       }
     ],
     "functionName": "subsetsWithDup",
@@ -3931,12 +3697,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,2]],
-        "expected": [[],[1],[1,2],[1,2,2],[2],[2,2]]
+        "input": [[3,3,1]],
+        "expected": [[],[1],[1,3],[1,3,3],[3],[3,3]]
       },
       {
-        "input": [[0]],
-        "expected": [[],[0]]
+        "input": [[7]],
+        "expected": [[],[7]]
       }
     ]
   },
@@ -3946,20 +3712,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "combination-sum-ii",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a collection of candidate numbers `candidates` (which may contain duplicates) and a `target`, return **every unique combination** that sums to `target`.\n\nEach number in `candidates` may be used **at most once**. The answer must not contain duplicate combinations, and you may return them in any order.",
+    "description": "`candidates` may contain repeated values, and **each entry can be used at most once**. Return every distinct group of entries that **adds up to `target`**.\n\nGroups with the same values count as one, so list each only once. Order does not matter.",
     "constraints": ["1 <= candidates.length <= 100","1 <= candidates[i] <= 50","1 <= target <= 30"],
     "examples": [
       {
-        "input": "candidates = [10,1,2,7,6,1,5], target = 8",
-        "output": "[[1,1,6],[1,2,5],[1,7],[2,6]]",
-        "explanation": "Four unique combinations reach 8."
+        "input": "candidates = [4,1,3,1,2], target = 5",
+        "output": "[[1,1,3],[1,4],[2,3]]",
+        "explanation": "1 + 1 + 3, 1 + 4 and 2 + 3 all make 5."
       },
       {
-        "input": "candidates = [2,5,2,1,2], target = 5",
-        "output": "[[1,2,2],[5]]",
-        "explanation": "The two combinations that reach 5."
+        "input": "candidates = [6,3,3], target = 6",
+        "output": "[[3,3],[6]]",
+        "explanation": "3 + 3 uses both 3s once each; 6 stands alone."
       }
     ],
     "functionName": "combinationSum2",
@@ -3972,12 +3738,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[10,1,2,7,6,1,5],8],
-        "expected": [[1,1,6],[1,2,5],[1,7],[2,6]]
+        "input": [[4,1,3,1,2],5],
+        "expected": [[1,1,3],[1,4],[2,3]]
       },
       {
-        "input": [[2,5,2,1,2],5],
-        "expected": [[1,2,2],[5]]
+        "input": [[6,3,3],6],
+        "expected": [[3,3],[6]]
       }
     ]
   },
@@ -3987,25 +3753,25 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "word-search",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an `m x n` grid of characters `board` and a string `word`, return `true` if `word` exists in the grid.\n\nThe word is built from letters of **sequentially adjacent** cells (horizontally or vertically neighbouring). The same cell may **not be used more than once** in a word.",
-    "constraints": ["m == board.length, n == board[i].length","1 <= m, n <= 6","1 <= word.length <= 15","board and word consist of only lowercase and uppercase English letters"],
+    "description": "Can `word` be traced on the letter grid `board`? A trace starts on any cell and moves to a **side neighbour** (up, down, left or right) for each next letter, and **may not revisit a cell**.\n\nReturn `true` if such a trace spells `word`, otherwise `false`.",
+    "constraints": ["m == board.length, n == board[i].length","1 <= m, n <= 6","1 <= word.length <= 15","board and word use only English letters"],
     "examples": [
       {
-        "input": "board = [[\"A\",\"B\",\"C\",\"E\"],[\"S\",\"F\",\"C\",\"S\"],[\"A\",\"D\",\"E\",\"E\"]], word = \"ABCCED\"",
+        "input": "board = [[\"C\",\"A\",\"T\"],[\"O\",\"R\",\"E\"],[\"D\",\"O\",\"G\"]], word = \"CORE\"",
         "output": "true",
-        "explanation": "The path A-B-C-C-E-D exists."
+        "explanation": "C down to O, right to R, right to E."
       },
       {
-        "input": "board = [[\"A\",\"B\",\"C\",\"E\"],[\"S\",\"F\",\"C\",\"S\"],[\"A\",\"D\",\"E\",\"E\"]], word = \"SEE\"",
+        "input": "board = [[\"C\",\"A\",\"T\"],[\"O\",\"R\",\"E\"],[\"D\",\"O\",\"G\"]], word = \"TEG\"",
         "output": "true",
-        "explanation": "The path S-E-E exists."
+        "explanation": "T down to E, down to G."
       },
       {
-        "input": "board = [[\"A\",\"B\",\"C\",\"E\"],[\"S\",\"F\",\"C\",\"S\"],[\"A\",\"D\",\"E\",\"E\"]], word = \"ABCB\"",
+        "input": "board = [[\"C\",\"A\",\"T\"],[\"O\",\"R\",\"E\"],[\"D\",\"O\",\"G\"]], word = \"CARC\"",
         "output": "false",
-        "explanation": "The second B would need a cell that is already used."
+        "explanation": "No C touches the R."
       }
     ],
     "functionName": "exist",
@@ -4017,15 +3783,15 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]],"ABCCED"],
+        "input": [[["C","A","T"],["O","R","E"],["D","O","G"]],"CORE"],
         "expected": true
       },
       {
-        "input": [[["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]],"SEE"],
+        "input": [[["C","A","T"],["O","R","E"],["D","O","G"]],"TEG"],
         "expected": true
       },
       {
-        "input": [[["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]],"ABCB"],
+        "input": [[["C","A","T"],["O","R","E"],["D","O","G"]],"CARC"],
         "expected": false
       }
     ]
@@ -4036,20 +3802,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "n-queens",
     "difficulty": "Hard",
     "category": "Backtracking & Heaps",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "The **n-queens puzzle** asks you to place `n` chess queens on an `n x n` board so that **no two queens attack each other**: no two share a row, a column or a diagonal.\n\nGiven `n`, return **every distinct solution**. Each solution is a board written as an array of `n` strings, where `\"Q\"` is a queen and `\".\"` is an empty square. You may return the solutions in any order.",
+    "description": "Place `n` queens on an `n x n` chessboard so that **none of them can capture another**: no two share a row, a column or a diagonal.\n\nReturn **all such placements**. Write each placement as `n` strings, one per row, using `\"Q\"` for a queen and `\".\"` for an empty square. Placements may be listed in any order.",
     "constraints": ["1 <= n <= 8"],
     "examples": [
       {
         "input": "n = 4",
         "output": "[[\".Q..\",\"...Q\",\"Q...\",\"..Q.\"],[\"..Q.\",\"Q...\",\"...Q\",\".Q..\"]]",
-        "explanation": "There are two distinct solutions for a 4 x 4 board."
+        "explanation": "A 4 x 4 board has exactly two placements, mirror images of each other."
       },
       {
         "input": "n = 1",
         "output": "[[\"Q\"]]",
-        "explanation": "A single queen on a 1 x 1 board."
+        "explanation": "One queen on one square."
       }
     ],
     "functionName": "solveNQueens",
@@ -4077,15 +3843,15 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "kth-largest-element-in-a-stream",
     "difficulty": "Easy",
     "category": "Backtracking & Heaps",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Design a class that finds the **`k`th largest element in a stream** of numbers. It is the `k`th largest in sorted order, not the `k`th distinct element.\n\nImplement the `KthLargest` class:\n\n- `KthLargest(k, nums)` creates the object with the integer `k` and the initial stream `nums`.\n- `add(val)` adds `val` to the stream and returns the current `k`th largest element.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
-    "constraints": ["1 <= k <= 10^4","0 <= nums.length <= 10^4","-10^4 <= nums[i], val <= 10^4","At most 10^4 calls are made to add","There are at least k elements when add is called"],
+    "description": "A leaderboard receives scores one at a time and must always report the score in **position `k`** when sorted from highest to lowest (duplicates each take a position).\n\nImplement the `KthLargest` class:\n\n- `KthLargest(k, nums)` sets up the board with `k` and the scores already in `nums`.\n- `add(val)` records a new score and returns the current `k`th highest score.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
+    "constraints": ["1 <= k <= 10^4","0 <= nums.length <= 10^4","-10^4 <= nums[i], val <= 10^4","At most 10^4 calls to add","At least k scores exist whenever add returns"],
     "examples": [
       {
-        "input": "operations = [\"KthLargest\",\"add\",\"add\",\"add\",\"add\",\"add\"], arguments = [[3,[4,5,8,2]],[3],[5],[10],[9],[4]]",
-        "output": "[null,4,5,5,8,8]",
-        "explanation": "With k = 3, the stream 4, 5, 8, 2 and then adds 3, 5, 10, 9, 4 give the third largest after each add: 4, 5, 5, 8, 8."
+        "input": "operations = [\"KthLargest\",\"add\",\"add\",\"add\",\"add\"], arguments = [[2,[6,1,9]],[4],[7],[10],[2]]",
+        "output": "[null,6,7,9,9]",
+        "explanation": "With k = 2 and scores 6, 1, 9, the 2nd highest is 6. Adding 4 changes nothing; 7 lifts it to 7; 10 lifts it to 9; 2 changes nothing."
       }
     ],
     "functionName": "KthLargest",
@@ -4097,31 +3863,31 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [["KthLargest","add","add","add","add","add"],[[3,[4,5,8,2]],[3],[5],[10],[9],[4]]],
-        "expected": [null,4,5,5,8,8]
+        "input": [["KthLargest","add","add","add","add"],[[2,[6,1,9]],[4],[7],[10],[2]]],
+        "expected": [null,6,7,9,9]
       }
     ]
   },
   {
     "id": "last-stone-weight",
-    "title": "Last Stone Weight",
-    "slug": "last-stone-weight",
+    "title": "Crushing Rocks",
+    "slug": "crushing-rocks",
     "difficulty": "Easy",
     "category": "Backtracking & Heaps",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `stones` where `stones[i]` is the weight of the `i`th stone.\n\nEach turn, take the **two heaviest stones** and smash them together. If their weights are `x <= y`:\n\n- if `x == y`, both stones are destroyed;\n- otherwise the stone of weight `x` is destroyed and the stone of weight `y` becomes `y - x`.\n\nReturn the weight of the last remaining stone, or `0` if no stones are left.",
+    "description": "A rock crusher repeatedly takes the **two heaviest rocks** from the pile `stones` and crushes them together. With weights `x <= y`, equal rocks both turn to dust; otherwise only a rock of weight `y - x` goes back on the pile.\n\nWhen at most one rock is left, return its weight, or `0` if the pile is empty.",
     "constraints": ["1 <= stones.length <= 30","1 <= stones[i] <= 1000"],
     "examples": [
       {
-        "input": "stones = [2,7,4,1,8,1]",
+        "input": "stones = [6,3,4,2]",
         "output": "1",
-        "explanation": "Smashing 8 and 7 leaves 1, then the stones become [2,4,1,1,1], and so on until a single stone of weight 1 remains."
+        "explanation": "6 and 4 leave 2; then 3 and 2 leave 1; then 2 and 1 leave 1."
       },
       {
-        "input": "stones = [1]",
-        "output": "1",
-        "explanation": "A single stone stays as it is."
+        "input": "stones = [5,5,3,3]",
+        "output": "0",
+        "explanation": "The two 5s cancel, then the two 3s cancel."
       }
     ],
     "functionName": "lastStoneWeight",
@@ -4133,12 +3899,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,7,4,1,8,1]],
+        "input": [[6,3,4,2]],
         "expected": 1
       },
       {
-        "input": [[1]],
-        "expected": 1
+        "input": [[5,5,3,3]],
+        "expected": 0
       }
     ]
   },
@@ -4148,20 +3914,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "k-closest-points-to-origin",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array `points` where `points[i] = [x, y]` is a point on the plane, and an integer `k`, return the **`k` closest points to the origin** `(0, 0)`.\n\nDistance is the usual Euclidean distance. You may return the points in any order. The answer is guaranteed to be unique, apart from its order.",
-    "constraints": ["1 <= k <= points.length <= 10^4","-10^4 <= x, y <= 10^4","The k closest points are uniquely defined"],
+    "description": "`points` lists map locations as `[x, y]`. Return the **`k` locations nearest to `(0, 0)`** by straight-line distance, in any order.\n\nThe inputs guarantee there is no tie at the cut-off.",
+    "constraints": ["1 <= k <= points.length <= 10^4","-10^4 <= x, y <= 10^4","The k nearest points are uniquely determined"],
     "examples": [
       {
-        "input": "points = [[1,3],[-2,2]], k = 1",
-        "output": "[[-2,2]]",
-        "explanation": "The distance of [1,3] is sqrt(10) and of [-2,2] is sqrt(8), so [-2,2] is closer."
+        "input": "points = [[2,-1],[0,3]], k = 1",
+        "output": "[[2,-1]]",
+        "explanation": "[2, -1] is sqrt(5) away and [0, 3] is 3 away."
       },
       {
-        "input": "points = [[3,3],[5,-1],[-2,4]], k = 2",
-        "output": "[[3,3],[-2,4]]",
-        "explanation": "The two closest points are [3,3] and [-2,4]."
+        "input": "points = [[4,4],[1,-2],[-3,1]], k = 2",
+        "output": "[[1,-2],[-3,1]]",
+        "explanation": "Squared distances are 32, 5 and 10, so the last two win."
       }
     ],
     "functionName": "kClosest",
@@ -4174,12 +3940,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[[1,3],[-2,2]],1],
-        "expected": [[-2,2]]
+        "input": [[[2,-1],[0,3]],1],
+        "expected": [[2,-1]]
       },
       {
-        "input": [[[3,3],[5,-1],[-2,4]],2],
-        "expected": [[3,3],[-2,4]]
+        "input": [[[4,4],[1,-2],[-3,1]],2],
+        "expected": [[1,-2],[-3,1]]
       }
     ]
   },
@@ -4189,20 +3955,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "kth-largest-element-in-an-array",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums` and an integer `k`, return the **`k`th largest element** in the array.\n\nIt is the `k`th largest in sorted order, not the `k`th distinct element. Can you solve it without sorting the whole array?",
+    "description": "Return the value that would be in **position `k` if `nums` were sorted from largest to smallest** (repeated values each take a position).\n\nTry to beat a full sort.",
     "constraints": ["1 <= k <= nums.length <= 10^5","-10^4 <= nums[i] <= 10^4"],
     "examples": [
       {
-        "input": "nums = [3,2,1,5,6,4], k = 2",
-        "output": "5",
-        "explanation": "The sorted array is [1,2,3,4,5,6]; the second largest is 5."
+        "input": "nums = [7,2,9,4], k = 2",
+        "output": "7",
+        "explanation": "Largest first: 9, 7, 4, 2. Position 2 is 7."
       },
       {
-        "input": "nums = [3,2,3,1,2,4,5,5,6], k = 4",
-        "output": "4",
-        "explanation": "The sorted array is [1,2,2,3,3,4,5,5,6]; the fourth largest is 4."
+        "input": "nums = [5,8,8,1,3], k = 2",
+        "output": "8",
+        "explanation": "Largest first: 8, 8, 5, 3, 1. Both 8s count."
       }
     ],
     "functionName": "findKthLargest",
@@ -4214,40 +3980,40 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,2,1,5,6,4],2],
-        "expected": 5
+        "input": [[7,2,9,4],2],
+        "expected": 7
       },
       {
-        "input": [[3,2,3,1,2,4,5,5,6],4],
-        "expected": 4
+        "input": [[5,8,8,1,3],2],
+        "expected": 8
       }
     ]
   },
   {
     "id": "task-scheduler",
-    "title": "Task Scheduler",
-    "slug": "task-scheduler",
+    "title": "Jobs With a Cooldown",
+    "slug": "jobs-with-a-cooldown",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `tasks` of capital letters, where each letter is a type of task, and a non-negative integer `n`. Every task takes **one unit of time**, and each unit you either run a task or stay idle.\n\nTwo tasks of the **same type** must be separated by at least `n` units of time. Tasks can be run in any order.\n\nReturn the **minimum number of time units** needed to finish all the tasks.",
-    "constraints": ["1 <= tasks.length <= 10^4","tasks[i] is an uppercase English letter","0 <= n <= 100"],
+    "description": "A machine runs jobs one per time slot. `tasks` lists the jobs, each a capital letter naming its type, and jobs may run in any order. After running a job, the machine must wait **at least `n` slots before running another job of the same type**; it can run other jobs or sit idle meanwhile.\n\nReturn the **fewest slots** needed to finish every job.",
+    "constraints": ["1 <= tasks.length <= 10^4","Each task is a capital English letter","0 <= n <= 100"],
     "examples": [
       {
-        "input": "tasks = [\"A\",\"A\",\"A\",\"B\",\"B\",\"B\"], n = 2",
-        "output": "8",
-        "explanation": "One possible schedule is A B idle A B idle A B, which takes 8 units."
+        "input": "tasks = [\"X\",\"X\",\"Y\"], n = 2",
+        "output": "4",
+        "explanation": "X Y idle X: the second X waits two slots."
       },
       {
-        "input": "tasks = [\"A\",\"C\",\"A\",\"B\",\"D\",\"B\"], n = 1",
-        "output": "6",
-        "explanation": "A C A B D B takes 6 units with one unit between equal tasks."
+        "input": "tasks = [\"P\",\"Q\",\"P\",\"Q\",\"R\"], n = 1",
+        "output": "5",
+        "explanation": "P Q P Q R fits with no idle slot."
       },
       {
-        "input": "tasks = [\"A\",\"A\",\"A\",\"B\",\"B\",\"B\"], n = 3",
-        "output": "10",
-        "explanation": "A B idle idle A B idle idle A B takes 10 units."
+        "input": "tasks = [\"M\",\"M\",\"M\",\"N\"], n = 1",
+        "output": "5",
+        "explanation": "M N M idle M."
       }
     ],
     "functionName": "leastInterval",
@@ -4259,16 +4025,16 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [["A","A","A","B","B","B"],2],
-        "expected": 8
+        "input": [["X","X","Y"],2],
+        "expected": 4
       },
       {
-        "input": [["A","C","A","B","D","B"],1],
-        "expected": 6
+        "input": [["P","Q","P","Q","R"],1],
+        "expected": 5
       },
       {
-        "input": [["A","A","A","B","B","B"],3],
-        "expected": 10
+        "input": [["M","M","M","N"],1],
+        "expected": 5
       }
     ]
   },
@@ -4278,15 +4044,15 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "find-median-from-data-stream",
     "difficulty": "Hard",
     "category": "Backtracking & Heaps",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "The **median** is the middle value of an ordered list of numbers. If the list has an even length, it is the average of the two middle values.\n\nDesign a data structure that supports a stream of numbers. Implement the `MedianFinder` class:\n\n- `MedianFinder()` creates the object.\n- `addNum(num)` adds an integer to the data structure.\n- `findMedian()` returns the median of all the numbers added so far. Answers within `10^-5` of the real value are accepted.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
-    "constraints": ["-10^5 <= num <= 10^5","findMedian is only called after at least one element has been added","At most 5 * 10^4 calls are made"],
+    "description": "Numbers arrive one at a time, and at any moment you may be asked for the **median** of everything received so far: the middle value once sorted, or the mean of the two middle values when the count is even.\n\nImplement the `MedianFinder` class:\n\n- `MedianFinder()` starts empty.\n- `addNum(num)` receives another integer.\n- `findMedian()` returns the current median. Answers within `10^-5` are accepted.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
+    "constraints": ["-10^5 <= num <= 10^5","findMedian is only called after at least one number arrived","At most 5 * 10^4 calls in total"],
     "examples": [
       {
-        "input": "operations = [\"MedianFinder\",\"addNum\",\"addNum\",\"findMedian\",\"addNum\",\"findMedian\"], arguments = [[],[1],[2],[],[3],[]]",
-        "output": "[null,null,null,1.5,null,2]",
-        "explanation": "After adding 1 and 2 the median is 1.5. After adding 3 the median is 2."
+        "input": "operations = [\"MedianFinder\",\"addNum\",\"addNum\",\"findMedian\",\"addNum\",\"findMedian\",\"addNum\",\"findMedian\"], arguments = [[],[4],[10],[],[6],[],[1],[]]",
+        "output": "[null,null,null,7,null,6,null,5]",
+        "explanation": "After 4 and 10 the median is 7. Adding 6 makes it 6, and adding 1 makes it (4 + 6) / 2 = 5."
       }
     ],
     "functionName": "MedianFinder",
@@ -4298,8 +4064,8 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [["MedianFinder","addNum","addNum","findMedian","addNum","findMedian"],[[],[1],[2],[],[3],[]]],
-        "expected": [null,null,null,1.5,null,2]
+        "input": [["MedianFinder","addNum","addNum","findMedian","addNum","findMedian","addNum","findMedian"],[[],[4],[10],[],[6],[],[1],[]]],
+        "expected": [null,null,null,7,null,6,null,5]
       }
     ]
   },
@@ -4309,20 +4075,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "single-number",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Every element of the integer array `nums` appears **twice** except for one element, which appears exactly once. Find that single element.\n\nYour solution should run in linear time and use only constant extra space.",
-    "constraints": ["1 <= nums.length <= 3 * 10^4","-3 * 10^4 <= nums[i] <= 3 * 10^4","Each element appears twice except for one that appears once"],
+    "description": "In `nums`, **every value shows up exactly twice except one**, which shows up only once. Return that lonely value.\n\nAim for linear time and constant extra memory.",
+    "constraints": ["1 <= nums.length <= 3 * 10^4","-3 * 10^4 <= nums[i] <= 3 * 10^4","Exactly one value appears once; all others appear twice"],
     "examples": [
       {
-        "input": "nums = [2,2,1]",
-        "output": "1",
-        "explanation": "Only 1 appears once."
+        "input": "nums = [6,3,6]",
+        "output": "3",
+        "explanation": "6 appears twice, 3 only once."
       },
       {
-        "input": "nums = [4,1,2,1,2]",
-        "output": "4",
-        "explanation": "Only 4 appears once."
+        "input": "nums = [8,2,9,2,8]",
+        "output": "9",
+        "explanation": "8 and 2 come in pairs, 9 does not."
       }
     ],
     "functionName": "singleNumber",
@@ -4334,12 +4100,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,2,1]],
-        "expected": 1
+        "input": [[6,3,6]],
+        "expected": 3
       },
       {
-        "input": [[4,1,2,1,2]],
-        "expected": 4
+        "input": [[8,2,9,2,8]],
+        "expected": 9
       }
     ]
   },
@@ -4349,25 +4115,25 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "number-of-1-bits",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a positive integer `n`, treated as a **32-bit unsigned integer**, return the number of `1` bits in its binary representation (its **Hamming weight**).",
+    "description": "Write the positive integer `n` in binary as a **32-bit unsigned value** and count **how many of its bits are 1**.",
     "constraints": ["1 <= n <= 2^32 - 1"],
     "examples": [
       {
-        "input": "n = 11",
+        "input": "n = 13",
         "output": "3",
-        "explanation": "11 is 1011 in binary, which has three 1 bits."
+        "explanation": "13 is 1101 in binary: three 1s."
       },
       {
-        "input": "n = 128",
+        "input": "n = 256",
         "output": "1",
-        "explanation": "128 is 10000000 in binary, which has one 1 bit."
+        "explanation": "256 is a single 1 followed by eight 0s."
       },
       {
-        "input": "n = 2147483645",
-        "output": "30",
-        "explanation": "2147483645 is 1111111111111111111111111111101 in binary, which has thirty 1 bits."
+        "input": "n = 4294967294",
+        "output": "31",
+        "explanation": "4294967294 is thirty-one 1s and a final 0."
       }
     ],
     "functionName": "hammingWeight",
@@ -4379,16 +4145,16 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [11],
+        "input": [13],
         "expected": 3
       },
       {
-        "input": [128],
+        "input": [256],
         "expected": 1
       },
       {
-        "input": [2147483645],
-        "expected": 30
+        "input": [4294967294],
+        "expected": 31
       }
     ]
   },
@@ -4398,20 +4164,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "counting-bits",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer `n`, return an array `ans` of length `n + 1` where `ans[i]` is the **number of `1` bits** in the binary representation of `i`, for every `0 <= i <= n`.\n\nCan you do it in a single pass, without counting the bits of each number separately?",
+    "description": "For every whole number `i` from `0` up to `n`, count the **1s in the binary form of `i`**. Return the `n + 1` counts as an array, with the count for `i` at position `i`.\n\nTry to reuse earlier counts instead of examining each number from scratch.",
     "constraints": ["0 <= n <= 10^5"],
     "examples": [
       {
-        "input": "n = 2",
-        "output": "[0,1,1]",
-        "explanation": "0, 1 and 2 have 0, 1 and 1 set bits."
+        "input": "n = 3",
+        "output": "[0,1,1,2]",
+        "explanation": "0, 1, 10 and 11 in binary contain 0, 1, 1 and 2 ones."
       },
       {
-        "input": "n = 5",
-        "output": "[0,1,1,2,1,2]",
-        "explanation": "0 to 5 are 0, 1, 10, 11, 100 and 101 in binary, which have 0, 1, 1, 2, 1 and 2 set bits."
+        "input": "n = 6",
+        "output": "[0,1,1,2,1,2,2]",
+        "explanation": "4, 5 and 6 are 100, 101 and 110: 1, 2 and 2 ones."
       }
     ],
     "functionName": "countBits",
@@ -4423,12 +4189,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [2],
-        "expected": [0,1,1]
+        "input": [3],
+        "expected": [0,1,1,2]
       },
       {
-        "input": [5],
-        "expected": [0,1,1,2,1,2]
+        "input": [6],
+        "expected": [0,1,1,2,1,2,2]
       }
     ]
   },
@@ -4438,20 +4204,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "reverse-bits",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Reverse the bits of a **32-bit unsigned integer** `n` and return the result as an unsigned integer.\n\nFor example, the 32-bit input `00000010100101000001111010011100` becomes `00111001011110000010100101000000`.",
+    "description": "Write `n` as exactly **32 binary digits** (with leading zeros), **read those digits backwards**, and return the unsigned integer they form.\n\nFor instance `00000000000000000000000000000110` (6) turns into `01100000000000000000000000000000`.",
     "constraints": ["0 <= n <= 2^32 - 1"],
     "examples": [
       {
-        "input": "n = 43261596",
-        "output": "964176192",
-        "explanation": "43261596 reversed bit by bit is 964176192."
+        "input": "n = 1",
+        "output": "2147483648",
+        "explanation": "The lowest bit moves to the highest position: 2^31."
       },
       {
-        "input": "n = 4294967293",
-        "output": "3221225471",
-        "explanation": "4294967293 reversed bit by bit is 3221225471."
+        "input": "n = 6",
+        "output": "1610612736",
+        "explanation": "6 becomes 2^30 + 2^29."
       }
     ],
     "functionName": "reverseBits",
@@ -4463,12 +4229,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [43261596],
-        "expected": 964176192
+        "input": [1],
+        "expected": 2147483648
       },
       {
-        "input": [4294967293],
-        "expected": 3221225471
+        "input": [6],
+        "expected": 1610612736
       }
     ]
   },
@@ -4478,25 +4244,25 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "missing-number",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array `nums` containing `n` **distinct** numbers taken from the range `[0, n]`, return the **one number in that range that is missing** from the array.",
-    "constraints": ["n == nums.length","1 <= n <= 10^4","0 <= nums[i] <= n","All the numbers of nums are unique"],
+    "description": "`nums` has `n` different numbers, all chosen from `0, 1, ..., n`. Exactly **one number from that range was left out**. Return it.",
+    "constraints": ["n == nums.length","1 <= n <= 10^4","0 <= nums[i] <= n","Values in nums are distinct"],
     "examples": [
       {
-        "input": "nums = [3,0,1]",
-        "output": "2",
-        "explanation": "n = 3, so the range is [0, 3]. The number 2 is missing."
+        "input": "nums = [4,0,1,2]",
+        "output": "3",
+        "explanation": "With four numbers the range is 0 to 4, and 3 is absent."
       },
       {
-        "input": "nums = [0,1]",
-        "output": "2",
-        "explanation": "n = 2, so the range is [0, 2]. The number 2 is missing."
+        "input": "nums = [1]",
+        "output": "0",
+        "explanation": "The range is 0 to 1, and 0 is absent."
       },
       {
-        "input": "nums = [9,6,4,2,3,5,7,0,1]",
-        "output": "8",
-        "explanation": "n = 9, so the range is [0, 9]. The number 8 is missing."
+        "input": "nums = [2,0,1]",
+        "output": "3",
+        "explanation": "The range is 0 to 3, and 3 is absent."
       }
     ],
     "functionName": "missingNumber",
@@ -4508,16 +4274,16 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,0,1]],
-        "expected": 2
+        "input": [[4,0,1,2]],
+        "expected": 3
       },
       {
-        "input": [[0,1]],
-        "expected": 2
+        "input": [[1]],
+        "expected": 0
       },
       {
-        "input": [[9,6,4,2,3,5,7,0,1]],
-        "expected": 8
+        "input": [[2,0,1]],
+        "expected": 3
       }
     ]
   },
@@ -4527,20 +4293,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "sum-of-two-integers",
     "difficulty": "Medium",
     "category": "Math & Bit Manipulation",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given two integers `a` and `b`, return their **sum** without using the operators `+` and `-`.\n\nHint: think about how a computer adds binary numbers with XOR and carry.",
+    "description": "Add the integers `a` and `b` and return the result, **without using the `+` or `-` operators** anywhere in your code.\n\nHint: binary addition can be split into a sum without carries (XOR) and the carries themselves (AND, shifted left).",
     "constraints": ["-1000 <= a, b <= 1000"],
     "examples": [
       {
-        "input": "a = 1, b = 2",
-        "output": "3",
-        "explanation": "1 + 2 = 3."
+        "input": "a = 4, b = 9",
+        "output": "13",
+        "explanation": "4 + 9 = 13."
       },
       {
-        "input": "a = 2, b = 3",
-        "output": "5",
-        "explanation": "2 + 3 = 5."
+        "input": "a = -6, b = 2",
+        "output": "-4",
+        "explanation": "-6 + 2 = -4."
       }
     ],
     "functionName": "getSum",
@@ -4552,12 +4318,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [1,2],
-        "expected": 3
+        "input": [4,9],
+        "expected": 13
       },
       {
-        "input": [2,3],
-        "expected": 5
+        "input": [-6,2],
+        "expected": -4
       }
     ]
   },
@@ -4567,25 +4333,25 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "reverse-integer",
     "difficulty": "Medium",
     "category": "Math & Bit Manipulation",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a signed 32-bit integer `x`, return `x` with its **digits reversed**. If reversing makes the value go outside the signed 32-bit range `[-2^31, 2^31 - 1]`, return `0`.\n\nAssume the environment does not let you store 64-bit integers.",
+    "description": "Return the 32-bit signed integer `x` with its **decimal digits in reverse order**, keeping its sign. If the reversed number does not fit in `[-2^31, 2^31 - 1]`, return `0` instead.\n\nPretend you cannot use 64-bit integers.",
     "constraints": ["-2^31 <= x <= 2^31 - 1"],
     "examples": [
       {
-        "input": "x = 123",
-        "output": "321",
-        "explanation": "Reversing 123 gives 321."
+        "input": "x = 456",
+        "output": "654",
+        "explanation": "456 backwards is 654."
       },
       {
-        "input": "x = -123",
-        "output": "-321",
-        "explanation": "The sign is kept: -123 becomes -321."
+        "input": "x = -890",
+        "output": "-98",
+        "explanation": "The minus sign stays in front: -890 becomes -98 (the leading zero drops)."
       },
       {
-        "input": "x = 120",
-        "output": "21",
-        "explanation": "Trailing zeros disappear: 120 becomes 21."
+        "input": "x = 1000",
+        "output": "1",
+        "explanation": "1000 backwards is 0001, which is 1."
       }
     ],
     "functionName": "reverse",
@@ -4597,16 +4363,16 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [123],
-        "expected": 321
+        "input": [456],
+        "expected": 654
       },
       {
-        "input": [-123],
-        "expected": -321
+        "input": [-890],
+        "expected": -98
       },
       {
-        "input": [120],
-        "expected": 21
+        "input": [1000],
+        "expected": 1
       }
     ]
   },
@@ -4616,20 +4382,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "palindrome-number",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer `x`, return `true` if `x` is a **palindrome** (it reads the same forwards and backwards), and `false` otherwise.\n\nTry to solve it without converting the integer to a string.",
+    "description": "Return `true` if the decimal digits of the integer `x` **read the same left to right as right to left**, and `false` otherwise. A minus sign counts as a character, so negative numbers never qualify.\n\nAs a challenge, solve it with arithmetic only, without turning `x` into a string.",
     "constraints": ["-2^31 <= x <= 2^31 - 1"],
     "examples": [
       {
-        "input": "x = 121",
+        "input": "x = 4554",
         "output": "true",
-        "explanation": "121 reads the same in both directions."
+        "explanation": "4554 is the same in both directions."
       },
       {
-        "input": "x = -121",
+        "input": "x = -707",
         "output": "false",
-        "explanation": "Read backwards it becomes 121-, so it is not a palindrome."
+        "explanation": "Backwards it would read 707-."
       }
     ],
     "functionName": "isPalindrome",
@@ -4641,11 +4407,11 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [121],
+        "input": [4554],
         "expected": true
       },
       {
-        "input": [-121],
+        "input": [-707],
         "expected": false
       }
     ]
@@ -4656,25 +4422,25 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "roman-to-integer",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Roman numerals use the symbols `I` (1), `V` (5), `X` (10), `L` (50), `C` (100), `D` (500) and `M` (1000). Symbols are normally written from largest to smallest and added together, except that a smaller symbol **before** a larger one is subtracted:\n\n- `I` before `V` or `X` makes 4 and 9,\n- `X` before `L` or `C` makes 40 and 90,\n- `C` before `D` or `M` makes 400 and 900.\n\nGiven a Roman numeral `s`, convert it to an integer.",
-    "constraints": ["1 <= s.length <= 15","s contains only the characters I, V, X, L, C, D and M","s is a valid Roman numeral in the range [1, 3999]"],
+    "description": "Turn the Roman numeral `s` into an ordinary integer. The letters are worth `I = 1`, `V = 5`, `X = 10`, `L = 50`, `C = 100`, `D = 500` and `M = 1000`.\n\nValues are usually added from left to right. The exception: when a letter is **worth less than the letter right after it**, it is subtracted instead (`IV = 4`, `XC = 90`, `CM = 900`, and so on).",
+    "constraints": ["1 <= s.length <= 15","s uses only I, V, X, L, C, D and M","s is a valid numeral between 1 and 3999"],
     "examples": [
       {
-        "input": "s = \"III\"",
-        "output": "3",
-        "explanation": "III = 3."
+        "input": "s = \"XIV\"",
+        "output": "14",
+        "explanation": "X + IV = 10 + 4."
       },
       {
-        "input": "s = \"LVIII\"",
-        "output": "58",
-        "explanation": "L = 50, V = 5 and III = 3."
+        "input": "s = \"LXXX\"",
+        "output": "80",
+        "explanation": "L + XXX = 50 + 30."
       },
       {
-        "input": "s = \"MCMXCIV\"",
-        "output": "1994",
-        "explanation": "M = 1000, CM = 900, XC = 90 and IV = 4."
+        "input": "s = \"CDXCVII\"",
+        "output": "497",
+        "explanation": "CD + XC + VII = 400 + 90 + 7."
       }
     ],
     "functionName": "romanToInt",
@@ -4686,16 +4452,16 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": ["III"],
-        "expected": 3
+        "input": ["XIV"],
+        "expected": 14
       },
       {
-        "input": ["LVIII"],
-        "expected": 58
+        "input": ["LXXX"],
+        "expected": 80
       },
       {
-        "input": ["MCMXCIV"],
-        "expected": 1994
+        "input": ["CDXCVII"],
+        "expected": 497
       }
     ]
   },
@@ -4705,25 +4471,25 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "integer-to-roman",
     "difficulty": "Medium",
     "category": "Math & Bit Manipulation",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Convert the integer `num` to a **Roman numeral**.\n\nRoman numerals use the symbols `I` (1), `V` (5), `X` (10), `L` (50), `C` (100), `D` (500) and `M` (1000). Write the value from the largest symbol down, using the subtractive forms `IV` (4), `IX` (9), `XL` (40), `XC` (90), `CD` (400) and `CM` (900) where they apply. A symbol is never repeated more than three times in a row.",
+    "description": "Write `num` as a **Roman numeral** using `I = 1`, `V = 5`, `X = 10`, `L = 50`, `C = 100`, `D = 500` and `M = 1000`.\n\nBuild it from the largest value downwards. Where a digit is 4 or 9, use the subtractive pairs `IV`, `IX`, `XL`, `XC`, `CD` or `CM`, so no letter ever appears more than three times in a row.",
     "constraints": ["1 <= num <= 3999"],
     "examples": [
       {
-        "input": "num = 3",
-        "output": "\"III\"",
-        "explanation": "3 is three ones."
+        "input": "num = 14",
+        "output": "\"XIV\"",
+        "explanation": "10 + 4 is X + IV."
       },
       {
-        "input": "num = 58",
-        "output": "\"LVIII\"",
-        "explanation": "58 is L + V + III."
+        "input": "num = 80",
+        "output": "\"LXXX\"",
+        "explanation": "50 + 30 is L + XXX."
       },
       {
-        "input": "num = 1994",
-        "output": "\"MCMXCIV\"",
-        "explanation": "1994 is M + CM + XC + IV."
+        "input": "num = 497",
+        "output": "\"CDXCVII\"",
+        "explanation": "400 + 90 + 7 is CD + XC + VII."
       }
     ],
     "functionName": "intToRoman",
@@ -4735,16 +4501,16 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [3],
-        "expected": "III"
+        "input": [14],
+        "expected": "XIV"
       },
       {
-        "input": [58],
-        "expected": "LVIII"
+        "input": [80],
+        "expected": "LXXX"
       },
       {
-        "input": [1994],
-        "expected": "MCMXCIV"
+        "input": [497],
+        "expected": "CDXCVII"
       }
     ]
   },
@@ -4754,25 +4520,25 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "powx-n",
     "difficulty": "Medium",
     "category": "Math & Bit Manipulation",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Implement `pow(x, n)`, which raises the number `x` to the integer power `n` and returns `x^n`.\n\nAnswers within `10^-5` of the exact value are accepted. Try to use **fast exponentiation** so that large exponents finish quickly.",
-    "constraints": ["-100.0 < x < 100.0","-2^31 <= n <= 2^31 - 1","n is an integer","Either x is not zero or n > 0","-10^4 <= x^n <= 10^4"],
+    "description": "Compute `x` raised to the whole-number power `n` (which may be negative or zero) and return it.\n\nAnswers within `10^-5` are accepted. With exponents up to two billion, multiplying one step at a time is too slow, so use **repeated squaring**.",
+    "constraints": ["-100.0 < x < 100.0","-2^31 <= n <= 2^31 - 1","n is a whole number","x is not zero, or n > 0","-10^4 <= x^n <= 10^4"],
     "examples": [
       {
-        "input": "x = 2, n = 10",
-        "output": "1024",
-        "explanation": "2 to the 10th power is 1024."
+        "input": "x = 3, n = 4",
+        "output": "81",
+        "explanation": "3 x 3 x 3 x 3 = 81."
       },
       {
-        "input": "x = 2.1, n = 3",
-        "output": "9.261000000000001",
-        "explanation": "2.1 cubed is 9.261."
+        "input": "x = 1.5, n = 2",
+        "output": "2.25",
+        "explanation": "1.5 squared is 2.25."
       },
       {
-        "input": "x = 2, n = -2",
+        "input": "x = 4, n = -1",
         "output": "0.25",
-        "explanation": "A negative exponent means a reciprocal: 2^-2 = 1 / 4 = 0.25."
+        "explanation": "A negative power flips the result: 4^-1 = 1 / 4."
       }
     ],
     "functionName": "myPow",
@@ -4785,15 +4551,15 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [2,10],
-        "expected": 1024
+        "input": [3,4],
+        "expected": 81
       },
       {
-        "input": [2.1,3],
-        "expected": 9.261000000000001
+        "input": [1.5,2],
+        "expected": 2.25
       },
       {
-        "input": [2,-2],
+        "input": [4,-1],
         "expected": 0.25
       }
     ]
@@ -4804,20 +4570,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "sqrtx",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a non-negative integer `x`, return the **square root of `x` rounded down** to the nearest integer. The result must be non-negative.\n\nYou must not use any built-in exponent function or operator such as `pow(x, 0.5)` or `x ** 0.5`.",
+    "description": "Return the **largest whole number whose square is at most `x`**, that is, the square root of `x` rounded down.\n\nBuilt-in power or square-root helpers (`Math.sqrt`, `x ** 0.5` and friends) are off limits.",
     "constraints": ["0 <= x <= 2^31 - 1"],
     "examples": [
       {
-        "input": "x = 4",
-        "output": "2",
-        "explanation": "The square root of 4 is exactly 2."
+        "input": "x = 9",
+        "output": "3",
+        "explanation": "3 x 3 = 9 exactly."
       },
       {
-        "input": "x = 8",
-        "output": "2",
-        "explanation": "The square root of 8 is about 2.83, which rounds down to 2."
+        "input": "x = 15",
+        "output": "3",
+        "explanation": "3 x 3 = 9 fits under 15, but 4 x 4 = 16 does not."
       }
     ],
     "functionName": "mySqrt",
@@ -4829,12 +4595,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [4],
-        "expected": 2
+        "input": [9],
+        "expected": 3
       },
       {
-        "input": [8],
-        "expected": 2
+        "input": [15],
+        "expected": 3
       }
     ]
   },
@@ -4844,25 +4610,25 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "plus-one",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given a **large integer** as an array `digits`, where `digits[i]` is the `i`th digit and the digits are ordered from most significant to least significant. The number has no leading zeros.\n\nAdd **one** to the integer and return the resulting array of digits.",
-    "constraints": ["1 <= digits.length <= 100","0 <= digits[i] <= 9","digits does not contain leading zeros"],
+    "description": "A very long number is stored digit by digit in `digits`, **most significant digit first**, with no leading zeros. Add `1` to it and return the new digit array.",
+    "constraints": ["1 <= digits.length <= 100","0 <= digits[i] <= 9","No leading zeros"],
     "examples": [
       {
-        "input": "digits = [1,2,3]",
-        "output": "[1,2,4]",
-        "explanation": "The array represents 123, and 123 + 1 = 124."
+        "input": "digits = [2,7,9]",
+        "output": "[2,8,0]",
+        "explanation": "279 + 1 = 280: the 9 rolls over and carries."
       },
       {
-        "input": "digits = [4,3,2,1]",
-        "output": "[4,3,2,2]",
-        "explanation": "The array represents 4321, and 4321 + 1 = 4322."
+        "input": "digits = [5]",
+        "output": "[6]",
+        "explanation": "5 + 1 = 6."
       },
       {
-        "input": "digits = [9]",
-        "output": "[1,0]",
-        "explanation": "The array represents 9, and 9 + 1 = 10."
+        "input": "digits = [9,9]",
+        "output": "[1,0,0]",
+        "explanation": "99 + 1 = 100 needs an extra digit."
       }
     ],
     "functionName": "plusOne",
@@ -4874,16 +4640,16 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3]],
-        "expected": [1,2,4]
+        "input": [[2,7,9]],
+        "expected": [2,8,0]
       },
       {
-        "input": [[4,3,2,1]],
-        "expected": [4,3,2,2]
+        "input": [[5]],
+        "expected": [6]
       },
       {
-        "input": [[9]],
-        "expected": [1,0]
+        "input": [[9,9]],
+        "expected": [1,0,0]
       }
     ]
   },
@@ -4893,20 +4659,20 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     "slug": "add-binary",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given two binary strings `a` and `b`, return their **sum as a binary string**.",
-    "constraints": ["1 <= a.length, b.length <= 10^4","a and b consist only of the characters \"0\" and \"1\"","Each string contains no leading zeros, except for the string \"0\" itself"],
+    "description": "`a` and `b` are numbers written in binary as strings of `0`s and `1`s. Return **their sum, also written in binary**.",
+    "constraints": ["1 <= a.length, b.length <= 10^4","Both strings contain only \"0\" and \"1\"","No leading zeros, except the string \"0\" itself"],
     "examples": [
       {
-        "input": "a = \"11\", b = \"1\"",
-        "output": "\"100\"",
-        "explanation": "1 + 1 carries into a new digit: 11 + 1 = 100."
+        "input": "a = \"101\", b = \"11\"",
+        "output": "\"1000\"",
+        "explanation": "5 + 3 = 8, which is 1000 in binary."
       },
       {
-        "input": "a = \"1010\", b = \"1011\"",
-        "output": "\"10101\"",
-        "explanation": "1010 + 1011 = 10101."
+        "input": "a = \"1001\", b = \"110\"",
+        "output": "\"1111\"",
+        "explanation": "9 + 6 = 15, which is 1111."
       }
     ],
     "functionName": "addBinary",
@@ -4918,12 +4684,12 @@ export const CODING_PROBLEMS: CodingProblem[] = [
     },
     "sampleTestCases": [
       {
-        "input": ["11","1"],
-        "expected": "100"
+        "input": ["101","11"],
+        "expected": "1000"
       },
       {
-        "input": ["1010","1011"],
-        "expected": "10101"
+        "input": ["1001","110"],
+        "expected": "1111"
       }
     ]
   }

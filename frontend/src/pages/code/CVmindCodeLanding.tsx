@@ -139,13 +139,11 @@ export default function CVmindCodeLanding() {
   const stats = useMemo(() => {
     const byDiff = { Easy: 0, Medium: 0, Hard: 0 };
     const byTopic = new Map<string, number>();
-    const companies = new Set<string>();
     PROBLEMS.forEach((p) => {
       byDiff[p.difficulty] += 1;
       byTopic.set(p.category, (byTopic.get(p.category) ?? 0) + 1);
-      p.companies.forEach((c) => companies.add(c));
     });
-    return { byDiff, byTopic, companyCount: companies.size };
+    return { byDiff, byTopic };
   }, []);
 
   const topics = TOPICS.filter((t) => t !== 'All' && stats.byTopic.has(t));
@@ -228,7 +226,6 @@ export default function CVmindCodeLanding() {
         <div className="ccl-board-row">
           <span><b>{COUNT}</b> problems</span>
           <span><b>{topics.length}</b> topics</span>
-          <span><b>{stats.companyCount}</b> companies tagged</span>
           <span className="ccl-board-key"><i className="ccl-sw ccl-sw--easy" />Easy <b>{stats.byDiff.Easy}</b></span>
           <span className="ccl-board-key"><i className="ccl-sw ccl-sw--med" />Medium <b>{stats.byDiff.Medium}</b></span>
           <span className="ccl-board-key"><i className="ccl-sw ccl-sw--hard" />Hard <b>{stats.byDiff.Hard}</b></span>
@@ -261,7 +258,6 @@ export default function CVmindCodeLanding() {
           <div className="ccl-tr ccl-tr--head">
             <span>#</span>
             <span>Title</span>
-            <span>Asked at</span>
             <span>Level</span>
             <span />
           </div>
@@ -269,7 +265,6 @@ export default function CVmindCodeLanding() {
             <button key={p.id} className="ccl-tr" onClick={() => openArena('arena', p.id)}>
               <span className="ccl-td-no">{no}</span>
               <span className="ccl-td-title">{p.title}<small>{p.category}</small></span>
-              <span className="ccl-td-co">{p.companies.slice(0, 3).join(', ')}</span>
               <span className={`ccl-d ccl-d--${p.difficulty.toLowerCase()}`}>{p.difficulty}</span>
               <span className="ccl-td-go"><ArrowRight size={16} /></span>
             </button>

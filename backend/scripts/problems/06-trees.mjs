@@ -12,16 +12,15 @@ const kBst = randomTree(80, 1500, { bst: true, lo: 0, hi: 10000 });
 export default [
   problem('invert-binary-tree', {
     statement: `
-Given the root of a binary tree, **invert the tree** (swap the left and right child of every node) and return its root.
+Turn a binary tree into its **mirror image**: at every node, the left child and the right child trade places. Return the root.
 
 ${T}
 `,
     params: ['root'],
     meta: { argTypes: ['tree'], returnType: 'tree' },
-    constraints: ['The number of nodes is in the range [0, 100]', '-100 <= Node.val <= 100'],
-    explain: ['Every node swaps its children.', 'The two children of the root swap.', 'An empty tree stays empty.'],
-    samples: 3,
-    known: [[4, 7, 2, 9, 6, 3, 1], [2, 3, 1], []],
+    constraints: ['0 to 100 nodes', '-100 <= Node.val <= 100'],
+    explain: ['8 moves to the left of 5, and below 3 the children 1 and 4 trade places.', 'An empty tree is its own mirror.'],
+    known: [[5, 8, 3, null, null, 4, 1], []],
     ref: (root) => {
       const flip = (n) => { if (!n) return null; const l = flip(n.left); const r = flip(n.right); n.left = r; n.right = l; return n; };
       return fromTree(flip(toTree(root)));
@@ -34,39 +33,39 @@ ${T}
       root.right = left;
       return root;
     },
-    tests: [[[4, 2, 7, 1, 3, 6, 9]], [[2, 1, 3]], [[]], [[1]], [[1, 2]], [[1, null, 2]], [randomTree(61, 80)]],
+    tests: [[[5, 3, 8, 1, 4]], [[]], [[6, 2, 9]], [[1]], [[1, 2]], [[1, null, 2]], [randomTree(61, 80)]],
   }),
 
   problem('maximum-depth-of-binary-tree', {
     statement: `
-Given the root of a binary tree, return its **maximum depth**: the number of nodes along the longest path from the root down to the farthest leaf.
+How many levels does a binary tree have? Return the **number of nodes on the longest downward path** from the root to any leaf (an empty tree has depth 0).
 
 ${T}
 `,
     params: ['root'],
     meta: { argTypes: ['tree'] },
-    constraints: ['The number of nodes is in the range [0, 10^4]', '-100 <= Node.val <= 100'],
-    explain: ['The longest path is 3 -> 20 -> 15 (or 7), which has 3 nodes.', 'The longest path is 1 -> 2, which has 2 nodes.'],
-    known: [3, 2],
+    constraints: ['0 to 10^4 nodes', '-100 <= Node.val <= 100'],
+    explain: ['The path 8 -> 4 -> 2 -> 7 has four nodes.', 'Root plus one level of children.'],
+    known: [4, 2],
     ref: (root) => { const d = (n) => (n ? 1 + Math.max(d(n.left), d(n.right)) : 0); return d(toTree(root)); },
     sol: function maxDepth(root) {
       if (!root) return 0;
       return 1 + Math.max(maxDepth(root.left), maxDepth(root.right));
     },
-    tests: [[[3, 9, 20, null, null, 15, 7]], [[1, null, 2]], [[]], [[0]], [[1, 2, 3, 4, 5]], [skewedRight(800)], [bigTree]],
+    tests: [[[8, 4, null, 2, null, 7]], [[5, 1, 9]], [[]], [[0]], [[6, 2, 7, 1, 3]], [skewedRight(800)], [bigTree]],
   }),
 
   problem('diameter-of-binary-tree', {
     statement: `
-Given the root of a binary tree, return the length of its **diameter**: the number of **edges** on the longest path between any two nodes. The path may or may not pass through the root.
+Treat a binary tree as a network of cables, one per parent-child link. Return the **most cables you would pass through travelling between any two nodes** without backtracking. The route does not have to go through the root.
 
 ${T}
 `,
     params: ['root'],
     meta: { argTypes: ['tree'] },
-    constraints: ['The number of nodes is in the range [1, 10^4]', '-100 <= Node.val <= 100'],
-    explain: ['The longest path is 4 -> 2 -> 1 -> 3 (or 5 -> 2 -> 1 -> 3), which has 3 edges.', 'The two nodes are joined by a single edge.'],
-    known: [3, 1],
+    constraints: ['1 to 10^4 nodes', '-100 <= Node.val <= 100'],
+    explain: ['5 -> 4 -> 2 -> 1 -> 3 crosses four links.', 'Two nodes, one link.'],
+    known: [4, 1],
     ref: (root) => {
       let best = 0;
       const depth = (n) => { if (!n) return 0; const l = depth(n.left); const r = depth(n.right); best = Math.max(best, l + r); return 1 + Math.max(l, r); };
@@ -85,21 +84,20 @@ ${T}
       depth(root);
       return best;
     },
-    tests: [[[1, 2, 3, 4, 5]], [[1, 2]], [[1]], [[1, 2, null, 3, null, 4]], [[1, 2, 3, 4, null, null, 5, 6, null, null, 7]], [skewedRight(500)], [bigTree]],
+    tests: [[[1, 2, 3, null, 4, null, null, 5, 6]], [[7, null, 3]], [[1]], [[1, 2, null, 3, null, 4]], [[1, 2, 3, 4, null, null, 5, 6, null, null, 7]], [skewedRight(500)], [bigTree]],
   }),
 
   problem('balanced-binary-tree', {
     statement: `
-Given the root of a binary tree, determine whether it is **height-balanced**: for every node, the heights of its left and right subtrees differ by **at most one**.
+Return \`true\` if, **at every node** of the binary tree, the depths of the left branch and the right branch **differ by no more than 1**. Otherwise return \`false\`.
 
 ${T}
 `,
     params: ['root'],
     meta: { argTypes: ['tree'] },
-    constraints: ['The number of nodes is in the range [0, 5000]', '-10^4 <= Node.val <= 10^4'],
-    explain: ['Every node is balanced.', 'At the root, the left subtree is two levels taller than the right subtree, so the tree is not balanced.', 'An empty tree is balanced.'],
-    samples: 3,
-    known: [true, false, true],
+    constraints: ['0 to 5000 nodes', '-10^4 <= Node.val <= 10^4'],
+    explain: ['The deepest gap anywhere is one level.', 'At the root the left branch is two levels deep and the right branch is empty.'],
+    known: [true, false],
     ref: (root) => {
       const h = (n) => { if (!n) return 0; const l = h(n.left); const r = h(n.right); if (l < 0 || r < 0 || Math.abs(l - r) > 1) return -1; return 1 + Math.max(l, r); };
       return h(toTree(root)) >= 0;
@@ -114,42 +112,39 @@ ${T}
       }
       return height(root) >= 0;
     },
-    tests: [[[3, 9, 20, null, null, 15, 7]], [[1, 2, 2, 3, 3, null, null, 4, 4]], [[]], [[1]], [[1, 2, null, 3]], [[1, 2, 3, 4, 5, 6, 7]], [randomTree(62, 60)], [skewedRight(400)]],
+    tests: [[[4, 2, 6, 1]], [[4, 2, null, 1]], [[]], [[1]], [[1, 2, null, 3]], [[1, 2, 3, 4, 5, 6, 7]], [randomTree(62, 60)], [skewedRight(400)]],
   }),
 
   problem('same-tree', {
     statement: `
-Given the roots of two binary trees \`p\` and \`q\`, return \`true\` if they are the **same tree**: they have the same structure and every pair of corresponding nodes holds the same value.
+Return \`true\` if the binary trees \`p\` and \`q\` are **exact copies**: the same shape, with equal values in matching positions. Otherwise return \`false\`.
 
 ${T}
 `,
     params: ['p', 'q'],
     meta: { argTypes: ['tree', 'tree'] },
-    constraints: ['The number of nodes in both trees is in the range [0, 100]', '-10^4 <= Node.val <= 10^4'],
-    explain: ['Both trees are identical.', 'The second tree has its child on the other side, so the structures differ.', 'The values of the two leaves are swapped.'],
-    samples: 3,
-    known: [true, false, false],
+    constraints: ['Each tree has 0 to 100 nodes', '-10^4 <= Node.val <= 10^4'],
+    explain: ['Same shape, same values.', 'Same shape, but 7 and 1 sit on opposite sides.'],
+    known: [true, false],
     ref: (p, q) => JSON.stringify(fromTree(toTree(p))) === JSON.stringify(fromTree(toTree(q))),
     sol: function isSameTree(p, q) {
       if (!p && !q) return true;
       if (!p || !q || p.val !== q.val) return false;
       return isSameTree(p.left, q.left) && isSameTree(p.right, q.right);
     },
-    tests: [[[1, 2, 3], [1, 2, 3]], [[1, 2], [1, null, 2]], [[1, 2, 1], [1, 1, 2]], [[], []], [[], [1]], [[0], [0]], [randomTree(63, 70), randomTree(63, 70)], [randomTree(64, 70), randomTree(65, 70)]],
+    tests: [[[4, 7, 1], [4, 7, 1]], [[4, 7, 1], [4, 1, 7]], [[3, 5], [3, null, 5]], [[], []], [[], [1]], [[0], [0]], [randomTree(63, 70), randomTree(63, 70)], [randomTree(64, 70), randomTree(65, 70)]],
   }),
 
   problem('subtree-of-another-tree', {
     statement: `
-Given the roots of two binary trees \`root\` and \`subRoot\`, return \`true\` if there is a node in \`root\` whose subtree has **exactly the same structure and node values** as \`subRoot\`, and \`false\` otherwise.
-
-A subtree of a tree is a node together with all of its descendants.
+Pick any node of \`root\` and take it **together with everything below it**. Return \`true\` if some such piece is an exact copy of the tree \`subRoot\` (same shape, same values), otherwise \`false\`.
 
 ${T}
 `,
     params: ['root', 'subRoot'],
     meta: { argTypes: ['tree', 'tree'] },
-    constraints: ['The number of nodes in root is in the range [1, 2000]', 'The number of nodes in subRoot is in the range [1, 1000]', '-10^4 <= root.val, subRoot.val <= 10^4'],
-    explain: ['The subtree rooted at 4 matches subRoot.', 'The subtree rooted at 4 has an extra node 0, so it does not match.'],
+    constraints: ['root has 1 to 2000 nodes', 'subRoot has 1 to 1000 nodes', '-10^4 <= Node.val <= 10^4'],
+    explain: ['The piece hanging from 5 is exactly 5 -> (2, 6).', 'Below 5 the 2 now has a child 1, so it no longer matches.'],
     known: [true, false],
     ref: (root, sub) => {
       const same = (a, b) => (!a && !b) || (!!a && !!b && a.val === b.val && same(a.left, b.left) && same(a.right, b.right));
@@ -169,8 +164,8 @@ ${T}
       return walk(root);
     },
     tests: [
-      [[3, 4, 5, 1, 2], [4, 1, 2]],
-      [[3, 4, 5, 1, 2, null, null, null, null, 0], [4, 1, 2]],
+      [[8, 5, 9, 2, 6], [5, 2, 6]],
+      [[8, 5, 9, 2, 6, null, null, 1], [5, 2, 6]],
       [[1], [1]],
       [[1, 1], [1]],
       [[1, 2, 3], [2]],
@@ -182,18 +177,15 @@ ${T}
 
   problem('lowest-common-ancestor-of-a-bst', {
     statement: `
-Given a **binary search tree** and two values \`p\` and \`q\` that are present in it, return the **value of their lowest common ancestor** (LCA).
-
-The LCA of two nodes is the lowest node that has both of them as descendants, where a node may be a descendant of itself.
+\`root\` is a **binary search tree** (smaller values to the left, larger to the right) that contains the values \`p\` and \`q\`. Return the value of the **deepest node that has both \`p\` and \`q\` beneath it**, counting a node as being beneath itself.
 
 ${T}
 `,
     params: ['root', 'p', 'q'],
     meta: { argTypes: ['tree'] },
-    constraints: ['The number of nodes is in the range [2, 10^5]', '-10^9 <= Node.val <= 10^9', 'All Node.val are unique', 'p != q, and both p and q exist in the BST'],
-    explain: ['The LCA of 2 and 8 is 6.', 'The LCA of 2 and 4 is 2, because a node can be its own descendant.', 'The LCA of 2 and 1 is 2.'],
-    samples: 3,
-    known: [6, 2, 2],
+    constraints: ['2 to 10^5 nodes', '-10^9 <= Node.val <= 10^9', 'Values are distinct', 'p != q, and both are in the tree'],
+    explain: ['2 lies left of 10 and 20 lies right of it, so they split at 10.', '8 is beneath 5, and 5 counts as beneath itself.'],
+    known: [10, 5],
     ref: (root, p, q) => {
       let n = toTree(root);
       while (n) {
@@ -213,11 +205,11 @@ ${T}
       return -1;
     },
     tests: [
-      [[6, 2, 8, 0, 4, 7, 9, null, null, 3, 5], 2, 8],
-      [[6, 2, 8, 0, 4, 7, 9, null, null, 3, 5], 2, 4],
-      [[2, 1], 2, 1],
-      [[6, 2, 8, 0, 4, 7, 9, null, null, 3, 5], 3, 5],
-      [[6, 2, 8, 0, 4, 7, 9, null, null, 3, 5], 0, 9],
+      [[10, 5, 15, 2, 7, 12, 20, null, null, 6, 8], 2, 20],
+      [[10, 5, 15, 2, 7, 12, 20, null, null, 6, 8], 5, 8],
+      [[4, 3], 4, 3],
+      [[10, 5, 15, 2, 7, 12, 20, null, null, 6, 8], 6, 8],
+      [[10, 5, 15, 2, 7, 12, 20, null, null, 6, 8], 12, 20],
       [[5, 3, 8, 1, 4, 7, 9], 1, 4],
       [bigBst, bigBst.filter((v) => v !== null)[10], bigBst.filter((v) => v !== null)[900]],
     ],
@@ -225,16 +217,15 @@ ${T}
 
   problem('binary-tree-level-order-traversal', {
     statement: `
-Given the root of a binary tree, return the **level-order traversal** of its nodes' values: from left to right, level by level, as an array of arrays.
+Group the values of a binary tree **by depth**: one array for the root's level, one for its children, one for its grandchildren, and so on. Within a level, list values from left to right.
 
 ${T}
 `,
     params: ['root'],
     meta: { argTypes: ['tree'] },
-    constraints: ['The number of nodes is in the range [0, 2000]', '-1000 <= Node.val <= 1000'],
-    explain: ['Level 0 is [3], level 1 is [9, 20] and level 2 is [15, 7].', 'A single node gives a single level.', 'An empty tree has no levels.'],
-    samples: 3,
-    known: [[[3], [9, 20], [15, 7]], [[1]], []],
+    constraints: ['0 to 2000 nodes', '-1000 <= Node.val <= 1000'],
+    explain: ['Depth 0 holds 8, depth 1 holds 4 and 11, depth 2 holds 5 and 9.', 'One node, one level.'],
+    known: [[[8], [4, 11], [5, 9]], [[6]]],
     ref: (root) => {
       const out = [];
       let level = toTree(root) ? [toTree(root)] : [];
@@ -258,20 +249,20 @@ ${T}
       }
       return out;
     },
-    tests: [[[3, 9, 20, null, null, 15, 7]], [[1]], [[]], [[1, 2, 3, 4, 5, 6, 7]], [[1, null, 2, null, 3]], [bigTree]],
+    tests: [[[8, 4, 11, null, 5, 9]], [[6]], [[]], [[1, 2, 3, 4, 5, 6, 7]], [[1, null, 2, null, 3]], [bigTree]],
   }),
 
   problem('binary-tree-right-side-view', {
     statement: `
-Imagine standing on the **right side** of a binary tree. Return the values of the nodes you can see, ordered from top to bottom.
+For each level of a binary tree, take the **rightmost node on that level**. Return those values from the top level down.
 
 ${T}
 `,
     params: ['root'],
     meta: { argTypes: ['tree'] },
-    constraints: ['The number of nodes is in the range [0, 100]', '-100 <= Node.val <= 100'],
-    explain: ['From the right you see 1, then 3, then 4.', 'You see 1 and 3.'],
-    known: [[1, 3, 4], [1, 3]],
+    constraints: ['0 to 100 nodes', '-100 <= Node.val <= 100'],
+    explain: ['The rightmost nodes are 6, then 9, then 2.', 'Each level has a single node, even though they lean left.'],
+    known: [[6, 9, 2], [1, 2, 3]],
     ref: (root) => {
       const out = [];
       let level = toTree(root) ? [toTree(root)] : [];
@@ -295,23 +286,22 @@ ${T}
       }
       return out;
     },
-    tests: [[[1, 2, 3, null, 5, null, 4]], [[1, null, 3]], [[]], [[1]], [[1, 2]], [[1, 2, 3, 4]], [randomTree(66, 90)]],
+    tests: [[[6, 3, 9, 2]], [[1, 2, null, 3]], [[]], [[1]], [[1, 2]], [[1, 2, 3, 4]], [randomTree(66, 90)]],
   }),
 
   problem('count-good-nodes-in-binary-tree', {
+    title: 'Nodes Without a Bigger Ancestor',
+    slug: 'nodes-without-a-bigger-ancestor',
     statement: `
-In a binary tree, a node \`X\` is **good** if no node on the path from the root to \`X\` has a value greater than \`X\`'s value.
-
-Given the root of a binary tree, return the number of good nodes.
+Walk down a binary tree from the root. Count the nodes whose value is **at least as large as every value above them** on their path from the root. The root always counts.
 
 ${T}
 `,
     params: ['root'],
     meta: { argTypes: ['tree'] },
-    constraints: ['The number of nodes is in the range [1, 10^5]', '-10^4 <= Node.val <= 10^4'],
-    explain: ['The good nodes are 3 (the root), 4, 5 and the 3 below the 1.', 'The good nodes are 3 (the root), 3 and 4.', 'The root is always good.'],
-    samples: 3,
-    known: [4, 3, 1],
+    constraints: ['1 to 10^5 nodes', '-10^4 <= Node.val <= 10^4'],
+    explain: ['5, 6, 8 and 9 qualify; 3 sits below 5 and 7 sits below 8.', 'A tie with an ancestor still counts, so both 2s qualify.'],
+    known: [4, 2],
     ref: (root) => {
       const walk = (n, max) => (n ? (n.val >= max ? 1 : 0) + walk(n.left, Math.max(max, n.val)) + walk(n.right, Math.max(max, n.val)) : 0);
       const r = toTree(root);
@@ -326,25 +316,21 @@ ${T}
       }
       return walk(root, -Infinity);
     },
-    tests: [[[3, 1, 4, 3, null, 1, 5]], [[3, 3, null, 4, 2]], [[1]], [[9, null, 3, 6]], [[2, null, 4, 10, 8, null, null, 4]], [bigTree]],
+    tests: [[[5, 3, 8, 6, null, 7, 9]], [[2, 2, 1]], [[1]], [[9, null, 3, 6]], [[2, null, 4, 10, 8, null, null, 4]], [bigTree]],
   }),
 
   problem('validate-binary-search-tree', {
     statement: `
-Given the root of a binary tree, determine whether it is a **valid binary search tree** (BST).
+Check whether a binary tree is a **binary search tree**: for every node, **everything** in its left branch must be strictly smaller than it and **everything** in its right branch strictly larger. Return \`true\` or \`false\`.
 
-In a valid BST, for every node:
-
-- all values in its **left** subtree are **strictly less** than the node's value,
-- all values in its **right** subtree are **strictly greater** than the node's value, and
-- both subtrees are themselves valid BSTs.
+Comparing a node only with its direct children is not enough.
 
 ${T}
 `,
     params: ['root'],
     meta: { argTypes: ['tree'] },
-    constraints: ['The number of nodes is in the range [1, 10^4]', '-2^31 <= Node.val <= 2^31 - 1'],
-    explain: ['Every node respects the ordering.', 'The root is 5, but its right child 4 is smaller than 5, so the tree is not a BST.'],
+    constraints: ['1 to 10^4 nodes', '-2^31 <= Node.val <= 2^31 - 1'],
+    explain: ['3 < 8 < 10.', '6 is in the right branch of 8 but smaller than 8.'],
     known: [true, false],
     ref: (root) => {
       const ok = (n, lo, hi) => !n || (n.val > lo && n.val < hi && ok(n.left, lo, n.val) && ok(n.right, n.val, hi));
@@ -358,20 +344,20 @@ ${T}
       }
       return check(root, -Infinity, Infinity);
     },
-    tests: [[[2, 1, 3]], [[5, 1, 4, null, null, 3, 6]], [[1]], [[2, 2, 2]], [[5, 4, 6, null, null, 3, 7]], [[0, -1]], [[2147483647]], [bigBst], [bigTree]],
+    tests: [[[8, 3, 10]], [[8, 3, 10, null, null, 6, 12]], [[1]], [[2, 2, 2]], [[10, 5, 15, null, null, 6, 20]], [[0, -1]], [[2147483647]], [bigBst], [bigTree]],
   }),
 
   problem('kth-smallest-element-in-a-bst', {
     statement: `
-Given the root of a **binary search tree** and an integer \`k\`, return the **\`k\`th smallest value** (1-indexed) among all node values in the tree.
+\`root\` is a binary search tree. If you listed all its values from smallest to largest, **which value would be in position \`k\`** (counting from 1)?
 
 ${T}
 `,
     params: ['root', 'k'],
     meta: { argTypes: ['tree'] },
-    constraints: ['The number of nodes is n, with 1 <= k <= n <= 10^4', '0 <= Node.val <= 10^4'],
-    explain: ['The smallest value is 1.', 'The values in order are 1, 2, 3, 4, 5, 6, so the third smallest is 3.'],
-    known: [1, 3],
+    constraints: ['n nodes, with 1 <= k <= n <= 10^4', '0 <= Node.val <= 10^4'],
+    explain: ['Sorted: 2, 4, 6, 8. Position 2 holds 4.', 'Sorted: 3, 4, 5, 7, 9. Position 4 holds 7.'],
+    known: [4, 7],
     ref: (root, k) => {
       const out = [];
       const walk = (n) => { if (!n) return; walk(n.left); out.push(n.val); walk(n.right); };
@@ -389,6 +375,6 @@ ${T}
       }
       return -1;
     },
-    tests: [[[3, 1, 4, null, 2], 1], [[5, 3, 6, 2, 4, null, null, 1], 3], [[1], 1], [[2, 1], 2], [[5, 3, 6, 2, 4, null, null, 1], 6], [kBst, 700]],
+    tests: [[[6, 2, 8, null, 4], 2], [[7, 4, 9, 3, 5], 4], [[1], 1], [[2, 1], 2], [[7, 4, 9, 3, 5], 5], [kBst, 700]],
   }),
 ];

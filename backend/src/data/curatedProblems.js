@@ -6,20 +6,20 @@ export const CURATED_PROBLEMS = [
     "slug": "two-sum",
     "difficulty": "Easy",
     "category": "Arrays & Hashing",
-    "companies": ["Google","Amazon","Meta","Apple","Microsoft"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array of integers `nums` and an integer `target`, return the **indices of the two numbers** that add up to `target`.\n\nYou may assume that each input has **exactly one solution**, and you may not use the same element twice. You can return the two indices in any order.",
-    "constraints": ["2 <= nums.length <= 10^4","-10^9 <= nums[i] <= 10^9","-10^9 <= target <= 10^9","Exactly one valid answer exists"],
+    "description": "A shop lists its item prices in `nums`, and you hold a gift card worth exactly `target`. Pick **two different items whose prices add up to `target`** and return their positions (0-based) as a two-element array.\n\nEvery input has exactly one such pair, and an item cannot be picked twice. The two positions may come back in either order.",
+    "constraints": ["2 <= nums.length <= 10^4","-10^9 <= nums[i], target <= 10^9","Exactly one pair reaches target"],
     "examples": [
       {
-        "input": "nums = [2,7,11,15], target = 9",
-        "output": "[0,1]",
-        "explanation": "nums[0] + nums[1] = 2 + 7 = 9, so the answer is [0, 1]."
+        "input": "nums = [4,9,1,7], target = 10",
+        "output": "[1,2]",
+        "explanation": "9 + 1 = 10, and those prices sit at positions 1 and 2."
       },
       {
-        "input": "nums = [3,2,4], target = 6",
-        "output": "[1,2]",
-        "explanation": "nums[1] + nums[2] = 2 + 4 = 6."
+        "input": "nums = [5,-3,8,12], target = 9",
+        "output": "[1,3]",
+        "explanation": "-3 + 12 = 9, at positions 1 and 3."
       }
     ],
     "functionName": "twoSum",
@@ -47,17 +47,17 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,7,11,15],9],
-        "expected": [0,1]
+        "input": [[4,9,1,7],10],
+        "expected": [1,2]
       },
       {
-        "input": [[3,2,4],6],
-        "expected": [1,2]
+        "input": [[5,-3,8,12],9],
+        "expected": [1,3]
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [[3,3],6],
+        "input": [[6,6],12],
         "expected": [0,1]
       },
       {
@@ -88,20 +88,20 @@ export const CURATED_PROBLEMS = [
     "slug": "valid-anagram",
     "difficulty": "Easy",
     "category": "Arrays & Hashing",
-    "companies": ["Google","Amazon","Meta","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given two strings `s` and `t`, return `true` if `t` is an **anagram** of `s`, and `false` otherwise.\n\nAn anagram is a word formed by rearranging the letters of another word, using every original letter exactly once.",
-    "constraints": ["1 <= s.length, t.length <= 5 * 10^4","s and t consist of lowercase English letters"],
+    "description": "Two words are **anagrams** when one can be turned into the other just by reordering its letters, with every letter used exactly as many times as it appears.\n\nReturn `true` if `s` and `t` are anagrams of each other, and `false` otherwise.",
+    "constraints": ["1 <= s.length, t.length <= 5 * 10^4","Both strings use only lowercase English letters"],
     "examples": [
       {
-        "input": "s = \"anagram\", t = \"nagaram\"",
+        "input": "s = \"night\", t = \"thing\"",
         "output": "true",
-        "explanation": "Both words use the same letters the same number of times."
+        "explanation": "Both words use g, h, i, n and t exactly once."
       },
       {
-        "input": "s = \"rat\", t = \"car\"",
+        "input": "s = \"apple\", t = \"paper\"",
         "output": "false",
-        "explanation": "\"rat\" has no letter \"c\"."
+        "explanation": "\"apple\" has an \"l\" that \"paper\" does not."
       }
     ],
     "functionName": "isAnagram",
@@ -128,11 +128,11 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": ["anagram","nagaram"],
+        "input": ["night","thing"],
         "expected": true
       },
       {
-        "input": ["rat","car"],
+        "input": ["apple","paper"],
         "expected": false
       }
     ],
@@ -169,20 +169,20 @@ export const CURATED_PROBLEMS = [
     "slug": "contains-duplicate",
     "difficulty": "Easy",
     "category": "Arrays & Hashing",
-    "companies": ["Apple","Microsoft","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums`, return `true` if **any value appears at least twice**, and `false` if every element is distinct.",
+    "description": "A ticket scanner records the ticket numbers it sees in `nums`. Return `true` if **some ticket number was scanned more than once**, and `false` if all of them are different.",
     "constraints": ["1 <= nums.length <= 10^5","-10^9 <= nums[i] <= 10^9"],
     "examples": [
       {
-        "input": "nums = [1,2,3,1]",
+        "input": "nums = [7,3,9,3]",
         "output": "true",
-        "explanation": "The value 1 appears twice."
+        "explanation": "Ticket 3 was scanned twice."
       },
       {
-        "input": "nums = [1,2,3,4]",
+        "input": "nums = [10,20,30]",
         "output": "false",
-        "explanation": "Every element is distinct."
+        "explanation": "All three tickets are different."
       }
     ],
     "functionName": "containsDuplicate",
@@ -205,11 +205,11 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,1]],
+        "input": [[7,3,9,3]],
         "expected": true
       },
       {
-        "input": [[1,2,3,4]],
+        "input": [[10,20,30]],
         "expected": false
       }
     ],
@@ -219,7 +219,7 @@ export const CURATED_PROBLEMS = [
         "expected": false
       },
       {
-        "input": [[1,1,1,3,3,4,3,2,4,2]],
+        "input": [[2,8,8,5,2,9]],
         "expected": true
       },
       {
@@ -246,25 +246,20 @@ export const CURATED_PROBLEMS = [
     "slug": "group-anagrams",
     "difficulty": "Medium",
     "category": "Arrays & Hashing",
-    "companies": ["Amazon","Microsoft","Apple","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array of strings `strs`, **group the anagrams together**. You may return the groups in any order, and the words inside a group in any order.",
-    "constraints": ["1 <= strs.length <= 10^4","0 <= strs[i].length <= 100","strs[i] consists of lowercase English letters"],
+    "description": "Sort the words in `strs` into groups so that **two words share a group exactly when they are anagrams** (made of the same letters, the same number of times). Return the list of groups.\n\nThe groups, and the words inside each group, may be returned in any order.",
+    "constraints": ["1 <= strs.length <= 10^4","0 <= strs[i].length <= 100","Words use only lowercase English letters"],
     "examples": [
       {
-        "input": "strs = [\"a\"]",
-        "output": "[[\"a\"]]",
-        "explanation": "A single word forms a single group."
+        "input": "strs = [\"dusty\",\"night\",\"act\",\"study\",\"thing\",\"cat\"]",
+        "output": "[[\"dusty\",\"study\"],[\"night\",\"thing\"],[\"act\",\"cat\"]]",
+        "explanation": "\"dusty\"/\"study\", \"night\"/\"thing\" and \"act\"/\"cat\" each form a pair."
       },
       {
-        "input": "strs = [\"\"]",
-        "output": "[[\"\"]]",
-        "explanation": "The empty string forms its own group."
-      },
-      {
-        "input": "strs = [\"eat\",\"tea\",\"tan\",\"ate\",\"nat\",\"bat\"]",
-        "output": "[[\"eat\",\"tea\",\"ate\"],[\"tan\",\"nat\"],[\"bat\"]]",
-        "explanation": "\"eat\", \"tea\" and \"ate\" are anagrams of each other, and so are \"tan\" and \"nat\"."
+        "input": "strs = [\"abc\",\"x\"]",
+        "output": "[[\"abc\"],[\"x\"]]",
+        "explanation": "Words with different letters stay in separate groups."
       }
     ],
     "functionName": "groupAnagrams",
@@ -288,19 +283,23 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [["a"]],
-        "expected": [["a"]]
+        "input": [["dusty","night","act","study","thing","cat"]],
+        "expected": [["dusty","study"],["night","thing"],["act","cat"]]
+      },
+      {
+        "input": [["abc","x"]],
+        "expected": [["abc"],["x"]]
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": [["z"]],
+        "expected": [["z"]]
       },
       {
         "input": [[""]],
         "expected": [[""]]
       },
-      {
-        "input": [["eat","tea","tan","ate","nat","bat"]],
-        "expected": [["eat","tea","ate"],["tan","nat"],["bat"]]
-      }
-    ],
-    "hiddenTestCases": [
       {
         "input": [["",""]],
         "expected": [["",""]]
@@ -325,20 +324,20 @@ export const CURATED_PROBLEMS = [
     "slug": "top-k-frequent-elements",
     "difficulty": "Medium",
     "category": "Arrays & Hashing",
-    "companies": ["Amazon","Facebook","Bloomberg"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums` and an integer `k`, return the **`k` most frequent elements**. You may return the answer in any order.\n\nThe answer is guaranteed to be unique: no other element ties with the `k`th most frequent one.",
-    "constraints": ["1 <= nums.length <= 10^5","-10^4 <= nums[i] <= 10^4","1 <= k <= the number of distinct elements in nums","The answer is unique"],
+    "description": "`nums` is a log of product ids, one per sale. Return the **`k` ids that were sold most often**, in any order.\n\nThe inputs are chosen so the answer is unambiguous: nothing outside the answer ties with the `k`th best seller.",
+    "constraints": ["1 <= nums.length <= 10^5","-10^4 <= nums[i] <= 10^4","k is between 1 and the number of distinct ids","The answer is unique"],
     "examples": [
       {
-        "input": "nums = [1,1,1,2,2,3], k = 2",
-        "output": "[1,2]",
-        "explanation": "1 appears three times and 2 appears twice."
+        "input": "nums = [7,7,8,8,8,9], k = 1",
+        "output": "[8]",
+        "explanation": "8 was sold three times, more than any other id."
       },
       {
-        "input": "nums = [1], k = 1",
-        "output": "[1]",
-        "explanation": "Only one element exists."
+        "input": "nums = [4,4,5,5,5,6,6,6,6], k = 2",
+        "output": "[6,5]",
+        "explanation": "6 sold four times and 5 sold three times."
       }
     ],
     "functionName": "topKFrequent",
@@ -366,15 +365,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,1,1,2,2,3],2],
-        "expected": [1,2]
+        "input": [[7,7,8,8,8,9],1],
+        "expected": [8]
       },
       {
-        "input": [[1],1],
-        "expected": [1]
+        "input": [[4,4,5,5,5,6,6,6,6],2],
+        "expected": [6,5]
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[3],1],
+        "expected": [3]
+      },
       {
         "input": [[4,1,-1,2,-1,2,3,-1,2,2],2],
         "expected": [2,-1]
@@ -399,20 +402,20 @@ export const CURATED_PROBLEMS = [
     "slug": "product-of-array-except-self",
     "difficulty": "Medium",
     "category": "Arrays & Hashing",
-    "companies": ["Amazon","Apple","Asana"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums`, return an array `answer` where `answer[i]` is the **product of all the elements of `nums` except `nums[i]`**.\n\nYour algorithm must run in **O(n)** time and must not use division.",
-    "constraints": ["2 <= nums.length <= 10^5","-30 <= nums[i] <= 30","The product of any prefix or suffix of nums fits in a 32-bit integer"],
+    "description": "For each position `i` of `nums`, work out what you get by **multiplying every other number together**, leaving `nums[i]` out. Return these results as an array of the same length.\n\nAim for **O(n)** time, and do not use division.",
+    "constraints": ["2 <= nums.length <= 10^5","-30 <= nums[i] <= 30","Every prefix and suffix product fits in a 32-bit integer"],
     "examples": [
       {
-        "input": "nums = [1,2,3,4]",
-        "output": "[24,12,8,6]",
-        "explanation": "Each output is the product of the other three numbers."
+        "input": "nums = [2,5,3]",
+        "output": "[15,6,10]",
+        "explanation": "5 x 3 = 15, 2 x 3 = 6 and 2 x 5 = 10."
       },
       {
-        "input": "nums = [-1,1,0,-3,3]",
-        "output": "[0,0,9,0,0]",
-        "explanation": "A zero makes every product zero except the one that skips it."
+        "input": "nums = [3,0,4,2]",
+        "output": "[0,24,0,0]",
+        "explanation": "Only the position holding the zero avoids multiplying by zero: 3 x 4 x 2 = 24."
       }
     ],
     "functionName": "productExceptSelf",
@@ -435,12 +438,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,4]],
-        "expected": [24,12,8,6]
+        "input": [[2,5,3]],
+        "expected": [15,6,10]
       },
       {
-        "input": [[-1,1,0,-3,3]],
-        "expected": [0,0,9,0,0]
+        "input": [[3,0,4,2]],
+        "expected": [0,24,0,0]
       }
     ],
     "hiddenTestCases": [
@@ -472,20 +475,20 @@ export const CURATED_PROBLEMS = [
     "slug": "longest-consecutive-sequence",
     "difficulty": "Medium",
     "category": "Arrays & Hashing",
-    "companies": ["Google","Microsoft","Spotify"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an unsorted array of integers `nums`, return the **length of the longest run of consecutive integers** that can be formed from its elements.\n\nFor example, the elements `4, 2, 3, 1` form the run `1, 2, 3, 4`. The elements need not be next to each other in the array. Your algorithm must run in **O(n)** time.",
+    "description": "Pages fell out of a book and were picked up in random order; `nums` holds their page numbers. Find the **longest stretch of back-to-back page numbers** (like 7, 8, 9) you can assemble and return how many pages it has.\n\nThe numbers can be anywhere in the array, and repeats count once. Aim for **O(n)** time.",
     "constraints": ["0 <= nums.length <= 10^5","-10^9 <= nums[i] <= 10^9"],
     "examples": [
       {
-        "input": "nums = [100,4,200,1,3,2]",
+        "input": "nums = [10,5,12,3,11,4,13]",
         "output": "4",
-        "explanation": "The longest run is 1, 2, 3, 4."
+        "explanation": "10, 11, 12, 13 is the longest stretch."
       },
       {
-        "input": "nums = [0,3,7,2,5,8,4,6,0,1]",
-        "output": "9",
-        "explanation": "The longest run is 0 through 8."
+        "input": "nums = [9,1,-1,0,8]",
+        "output": "3",
+        "explanation": "-1, 0, 1 beats 8, 9."
       }
     ],
     "functionName": "longestConsecutive",
@@ -508,12 +511,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[100,4,200,1,3,2]],
+        "input": [[10,5,12,3,11,4,13]],
         "expected": 4
       },
       {
-        "input": [[0,3,7,2,5,8,4,6,0,1]],
-        "expected": 9
+        "input": [[9,1,-1,0,8]],
+        "expected": 3
       }
     ],
     "hiddenTestCases": [
@@ -522,7 +525,7 @@ export const CURATED_PROBLEMS = [
         "expected": 0
       },
       {
-        "input": [[1,2,0,1]],
+        "input": [[2,3,1,3]],
         "expected": 3
       },
       {
@@ -545,20 +548,20 @@ export const CURATED_PROBLEMS = [
     "slug": "maximum-subarray",
     "difficulty": "Medium",
     "category": "Arrays & Hashing",
-    "companies": ["Amazon","Apple","LinkedIn"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums`, find the **contiguous non-empty subarray** with the largest sum and return that sum.",
+    "description": "`nums` holds a trader's profit (or loss, when negative) for each day. Choose **one unbroken run of at least one day** and return the biggest total profit such a run can have.",
     "constraints": ["1 <= nums.length <= 10^5","-10^4 <= nums[i] <= 10^4"],
     "examples": [
       {
-        "input": "nums = [-2,1,-3,4,-1,2,1,-5,4]",
+        "input": "nums = [3,-4,5,-1,2,-6,4]",
         "output": "6",
-        "explanation": "The subarray [4, -1, 2, 1] has the largest sum, 6."
+        "explanation": "Days 3 to 5 give 5 - 1 + 2 = 6."
       },
       {
-        "input": "nums = [1]",
-        "output": "1",
-        "explanation": "A single element is the whole array."
+        "input": "nums = [-7]",
+        "output": "-7",
+        "explanation": "With one day, its value is the answer, even when negative."
       }
     ],
     "functionName": "maxSubArray",
@@ -581,22 +584,22 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[-2,1,-3,4,-1,2,1,-5,4]],
+        "input": [[3,-4,5,-1,2,-6,4]],
+        "expected": 6
+      },
+      {
+        "input": [[-7]],
+        "expected": -7
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": [[2,2,-1,3]],
         "expected": 6
       },
       {
         "input": [[1]],
         "expected": 1
-      }
-    ],
-    "hiddenTestCases": [
-      {
-        "input": [[5,4,-1,7,8]],
-        "expected": 23
-      },
-      {
-        "input": [[-1]],
-        "expected": -1
       },
       {
         "input": [[-2,-1]],
@@ -618,20 +621,20 @@ export const CURATED_PROBLEMS = [
     "slug": "majority-element",
     "difficulty": "Easy",
     "category": "Arrays & Hashing",
-    "companies": ["Google","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array `nums` of size `n`, return the **majority element**: the element that appears **more than `floor(n / 2)` times**.\n\nYou may assume the majority element always exists in the array.",
-    "constraints": ["n == nums.length","1 <= n <= 5 * 10^4","-10^9 <= nums[i] <= 10^9","A majority element always exists"],
+    "description": "An election's ballots are listed in `nums`, one candidate id per ballot. One candidate won **more than half of all the ballots**. Return that candidate's id.",
+    "constraints": ["n == nums.length","1 <= n <= 5 * 10^4","-10^9 <= nums[i] <= 10^9","Some value fills more than half the array"],
     "examples": [
       {
-        "input": "nums = [3,2,3]",
-        "output": "3",
-        "explanation": "3 appears twice out of three."
+        "input": "nums = [4,9,4]",
+        "output": "4",
+        "explanation": "4 got two of the three ballots."
       },
       {
-        "input": "nums = [2,2,1,1,1,2,2]",
-        "output": "2",
-        "explanation": "2 appears four times out of seven."
+        "input": "nums = [1,8,8,2,8]",
+        "output": "8",
+        "explanation": "8 got three of the five ballots."
       }
     ],
     "functionName": "majorityElement",
@@ -654,12 +657,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,2,3]],
-        "expected": 3
+        "input": [[4,9,4]],
+        "expected": 4
       },
       {
-        "input": [[2,2,1,1,1,2,2]],
-        "expected": 2
+        "input": [[1,8,8,2,8]],
+        "expected": 8
       }
     ],
     "hiddenTestCases": [
@@ -687,20 +690,20 @@ export const CURATED_PROBLEMS = [
     "slug": "sort-colors",
     "difficulty": "Medium",
     "category": "Arrays & Hashing",
-    "companies": ["Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `nums` of `n` objects colored red, white or blue, written as the numbers `0`, `1` and `2`.\n\nSort them so that objects of the same color are adjacent, in the order red (0), white (1), blue (2), **without using a library sort function**. Return the sorted array.",
-    "constraints": ["n == nums.length","1 <= n <= 300","nums[i] is 0, 1 or 2"],
+    "description": "A conveyor carries parcels tagged `0` (express), `1` (standard) or `2` (economy), listed in `nums`. Rearrange them so **all 0s come first, then all 1s, then all 2s**, and return the result.\n\nDo it **without a library sort**; one pass over the array is enough.",
+    "constraints": ["n == nums.length","1 <= n <= 300","Every value is 0, 1 or 2"],
     "examples": [
       {
-        "input": "nums = [2,0,2,1,1,0]",
-        "output": "[0,0,1,1,2,2]",
-        "explanation": "The zeros come first, then the ones, then the twos."
+        "input": "nums = [1,2,0,0,2]",
+        "output": "[0,0,1,2,2]",
+        "explanation": "Both 0s move to the front and both 2s to the back."
       },
       {
-        "input": "nums = [2,0,1]",
-        "output": "[0,1,2]",
-        "explanation": "Each color appears once."
+        "input": "nums = [2,1]",
+        "output": "[1,2]",
+        "explanation": "The 1 moves ahead of the 2."
       }
     ],
     "functionName": "sortColors",
@@ -723,12 +726,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,0,2,1,1,0]],
-        "expected": [0,0,1,1,2,2]
+        "input": [[1,2,0,0,2]],
+        "expected": [0,0,1,2,2]
       },
       {
-        "input": [[2,0,1]],
-        "expected": [0,1,2]
+        "input": [[2,1]],
+        "expected": [1,2]
       }
     ],
     "hiddenTestCases": [
@@ -760,20 +763,20 @@ export const CURATED_PROBLEMS = [
     "slug": "valid-palindrome",
     "difficulty": "Easy",
     "category": "Two Pointers",
-    "companies": ["Meta","Microsoft","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "A phrase is a **palindrome** if, after converting all uppercase letters to lowercase and removing every character that is not a letter or a digit, it reads the same forwards and backwards.\n\nGiven a string `s`, return `true` if it is a palindrome, and `false` otherwise.",
-    "constraints": ["1 <= s.length <= 2 * 10^5","s consists only of printable ASCII characters"],
+    "description": "Ignore case, and throw away everything in `s` that is not a letter or a digit. Return `true` if **what is left reads the same from both ends**, and `false` otherwise.",
+    "constraints": ["1 <= s.length <= 2 * 10^5","s contains printable ASCII characters only"],
     "examples": [
       {
-        "input": "s = \"A man, a plan, a canal: Panama\"",
+        "input": "s = \"Was it a car or a cat I saw?\"",
         "output": "true",
-        "explanation": "After cleaning, the phrase is \"amanaplanacanalpanama\", which reads the same in both directions."
+        "explanation": "Cleaned up, it is \"wasitacaroracatisaw\", the same backwards."
       },
       {
-        "input": "s = \"race a car\"",
+        "input": "s = \"Step on no cats\"",
         "output": "false",
-        "explanation": "The cleaned phrase \"raceacar\" is not a palindrome."
+        "explanation": "\"steponnocats\" reversed is \"stacnonopets\"."
       }
     ],
     "functionName": "isPalindrome",
@@ -796,21 +799,21 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": ["A man, a plan, a canal: Panama"],
+        "input": ["Was it a car or a cat I saw?"],
         "expected": true
       },
       {
-        "input": ["race a car"],
+        "input": ["Step on no cats"],
         "expected": false
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [" "],
+        "input": ["!!"],
         "expected": true
       },
       {
-        "input": ["0P"],
+        "input": ["1b"],
         "expected": false
       },
       {
@@ -841,20 +844,20 @@ export const CURATED_PROBLEMS = [
     "slug": "two-sum-ii-input-array-is-sorted",
     "difficulty": "Medium",
     "category": "Two Pointers",
-    "companies": ["Amazon","Google"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a **1-indexed** array of integers `numbers` that is already **sorted in non-decreasing order**, find two numbers that add up to `target`.\n\nReturn the **1-based indices** `[index1, index2]` of the two numbers, with `index1 < index2`. Each input has exactly one solution and you may not use the same element twice. Use only **constant extra space**.",
-    "constraints": ["2 <= numbers.length <= 3 * 10^4","-1000 <= numbers[i] <= 1000","numbers is sorted in non-decreasing order","-1000 <= target <= 1000","Exactly one solution exists"],
+    "description": "`numbers` is already **sorted from smallest to largest**. Find the two entries that add up to `target` and return their positions **counting from 1**, smaller position first.\n\nThere is exactly one such pair, and one entry cannot be used twice. Solve it with **O(1) extra memory**.",
+    "constraints": ["2 <= numbers.length <= 3 * 10^4","-1000 <= numbers[i], target <= 1000","numbers never decreases","Exactly one pair reaches target"],
     "examples": [
       {
-        "input": "numbers = [2,7,11,15], target = 9",
-        "output": "[1,2]",
-        "explanation": "2 + 7 = 9, at positions 1 and 2."
+        "input": "numbers = [1,3,4,8,10], target = 12",
+        "output": "[3,4]",
+        "explanation": "4 + 8 = 12, at positions 3 and 4."
       },
       {
-        "input": "numbers = [2,3,4], target = 6",
-        "output": "[1,3]",
-        "explanation": "2 + 4 = 6, at positions 1 and 3."
+        "input": "numbers = [-5,-2,0,6], target = -2",
+        "output": "[2,3]",
+        "explanation": "-2 + 0 = -2, at positions 2 and 3."
       }
     ],
     "functionName": "twoSum",
@@ -881,17 +884,17 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,7,11,15],9],
-        "expected": [1,2]
+        "input": [[1,3,4,8,10],12],
+        "expected": [3,4]
       },
       {
-        "input": [[2,3,4],6],
-        "expected": [1,3]
+        "input": [[-5,-2,0,6],-2],
+        "expected": [2,3]
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [[-1,0],-1],
+        "input": [[-3,1],-2],
         "expected": [1,2]
       },
       {
@@ -918,20 +921,20 @@ export const CURATED_PROBLEMS = [
     "slug": "3sum",
     "difficulty": "Medium",
     "category": "Two Pointers",
-    "companies": ["Meta","Amazon","Apple"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums`, return **all the unique triplets** `[nums[i], nums[j], nums[k]]` with `i`, `j` and `k` all different and `nums[i] + nums[j] + nums[k] == 0`.\n\nThe answer must not contain duplicate triplets. You may return the triplets in any order, and the numbers inside a triplet in any order.",
+    "description": "Find every way to **pick three entries of `nums` (at three different positions) whose values sum to zero**. Return the distinct value triples: two triples with the same three values count once.\n\nTriples, and the values inside each, can be in any order.",
     "constraints": ["3 <= nums.length <= 3000","-10^5 <= nums[i] <= 10^5"],
     "examples": [
       {
-        "input": "nums = [0,1,1]",
+        "input": "nums = [1,2,3]",
         "output": "[]",
-        "explanation": "No three numbers add up to zero."
+        "explanation": "All values are positive, so nothing sums to zero."
       },
       {
-        "input": "nums = [0,0,0]",
-        "output": "[[0,0,0]]",
-        "explanation": "The only triplet is [0, 0, 0]."
+        "input": "nums = [-3,1,2,0]",
+        "output": "[[-3,1,2]]",
+        "explanation": "-3 + 1 + 2 = 0 is the only zero-sum triple."
       }
     ],
     "functionName": "threeSum",
@@ -955,18 +958,18 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[0,1,1]],
+        "input": [[1,2,3]],
         "expected": []
       },
       {
-        "input": [[0,0,0]],
-        "expected": [[0,0,0]]
+        "input": [[-3,1,2,0]],
+        "expected": [[-3,1,2]]
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [[-1,0,1,2,-1,-4]],
-        "expected": [[-1,-1,2],[-1,0,1]]
+        "input": [[-4,2,2,-1,3,-2]],
+        "expected": [[-4,2,2],[-2,-1,3]]
       },
       {
         "input": [[0,0,0,0]],
@@ -992,24 +995,24 @@ export const CURATED_PROBLEMS = [
   },
   {
     "id": "container-with-most-water",
-    "title": "Container With Most Water",
-    "slug": "container-with-most-water",
+    "title": "Two Fence Posts",
+    "slug": "two-fence-posts",
     "difficulty": "Medium",
     "category": "Two Pointers",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an integer array `height` of length `n`. There are `n` vertical lines, where line `i` goes from `(i, 0)` to `(i, height[i])`.\n\nPick two lines that, together with the x-axis, form a container, and return the **maximum amount of water** a container can store. You may not tilt the container.",
+    "description": "Fence posts stand one metre apart along a ditch; post `i` is `height[i]` metres tall. A tarp stretched between **any two posts** holds water up to the shorter post, so the pair at positions `i < j` holds `min(height[i], height[j]) * (j - i)`.\n\nReturn the **most water any pair of posts can hold**.",
     "constraints": ["n == height.length","2 <= n <= 10^5","0 <= height[i] <= 10^4"],
     "examples": [
       {
-        "input": "height = [1,8,6,2,5,4,8,3,7]",
-        "output": "49",
-        "explanation": "The best pair is the line of height 8 (index 1) and the line of height 7 (index 8): min(8, 7) x 7 = 49."
+        "input": "height = [3,1,6,2,5]",
+        "output": "12",
+        "explanation": "Posts 0 and 4 hold min(3, 5) x 4 = 12."
       },
       {
-        "input": "height = [1,1]",
-        "output": "1",
-        "explanation": "Two lines of height 1 that are 1 apart hold 1."
+        "input": "height = [2,2]",
+        "output": "2",
+        "explanation": "The only pair holds min(2, 2) x 1 = 2."
       }
     ],
     "functionName": "maxArea",
@@ -1032,18 +1035,18 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,8,6,2,5,4,8,3,7]],
-        "expected": 49
+        "input": [[3,1,6,2,5]],
+        "expected": 12
       },
       {
-        "input": [[1,1]],
-        "expected": 1
+        "input": [[2,2]],
+        "expected": 2
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [[4,3,2,1,4]],
-        "expected": 16
+        "input": [[5,2,3,2,5]],
+        "expected": 20
       },
       {
         "input": [[1,2,1]],
@@ -1065,24 +1068,24 @@ export const CURATED_PROBLEMS = [
   },
   {
     "id": "trapping-rain-water",
-    "title": "Trapping Rain Water",
-    "slug": "trapping-rain-water",
+    "title": "Puddles Between Pillars",
+    "slug": "puddles-between-pillars",
     "difficulty": "Hard",
     "category": "Two Pointers",
-    "companies": ["Google","Goldman Sachs","Amazon","Bloomberg"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given `n` non-negative integers representing an elevation map where the width of each bar is `1`, compute **how much water it can trap** after raining.",
+    "description": "A row of stone pillars, each one unit wide, has heights `height`. After a storm, water collects in every dip that has a taller pillar somewhere on **both** sides; water above a pillar rises to the lower of the tallest pillars to its left and right.\n\nReturn the **total units of water** left standing on the pillars.",
     "constraints": ["n == height.length","1 <= n <= 2 * 10^4","0 <= height[i] <= 10^5"],
     "examples": [
       {
-        "input": "height = [0,1,0,2,1,0,1,3,2,1,2,1]",
-        "output": "6",
-        "explanation": "Six units of water are trapped between the bars."
+        "input": "height = [3,0,2,0,4]",
+        "output": "7",
+        "explanation": "3 + 1 + 3 = 7 units sit between the walls of height 3 and 4."
       },
       {
-        "input": "height = [4,2,0,3,2,5]",
-        "output": "9",
-        "explanation": "Nine units are trapped in the wide pit in the middle."
+        "input": "height = [2,1,3,1,2]",
+        "output": "2",
+        "explanation": "Each of the two dips of height 1 holds one unit."
       }
     ],
     "functionName": "trap",
@@ -1105,12 +1108,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[0,1,0,2,1,0,1,3,2,1,2,1]],
-        "expected": 6
+        "input": [[3,0,2,0,4]],
+        "expected": 7
       },
       {
-        "input": [[4,2,0,3,2,5]],
-        "expected": 9
+        "input": [[2,1,3,1,2]],
+        "expected": 2
       }
     ],
     "hiddenTestCases": [
@@ -1142,20 +1145,20 @@ export const CURATED_PROBLEMS = [
     "slug": "move-zeroes",
     "difficulty": "Easy",
     "category": "Two Pointers",
-    "companies": ["Meta","Bloomberg"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums`, **move all the `0`s to the end** while keeping the relative order of the non-zero elements. Return the resulting array.\n\nTry to do it without making a copy of the array.",
+    "description": "Shift **every zero in `nums` to the back** of the array. The other numbers must stay in the order they started in. Return the rearranged array.\n\nTry to do it in place, without building a second array.",
     "constraints": ["1 <= nums.length <= 10^4","-2^31 <= nums[i] <= 2^31 - 1"],
     "examples": [
       {
-        "input": "nums = [0,1,0,3,12]",
-        "output": "[1,3,12,0,0]",
-        "explanation": "The non-zero numbers keep their order and the zeros move to the end."
+        "input": "nums = [5,0,0,7,2]",
+        "output": "[5,7,2,0,0]",
+        "explanation": "5, 7, 2 keep their order; both zeros go to the back."
       },
       {
-        "input": "nums = [0]",
-        "output": "[0]",
-        "explanation": "A single zero stays where it is."
+        "input": "nums = [0,9]",
+        "output": "[9,0]",
+        "explanation": "The zero moves behind the 9."
       }
     ],
     "functionName": "moveZeroes",
@@ -1178,15 +1181,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[0,1,0,3,12]],
-        "expected": [1,3,12,0,0]
+        "input": [[5,0,0,7,2]],
+        "expected": [5,7,2,0,0]
       },
       {
-        "input": [[0]],
-        "expected": [0]
+        "input": [[0,9]],
+        "expected": [9,0]
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[0]],
+        "expected": [0]
+      },
       {
         "input": [[1,2,3]],
         "expected": [1,2,3]
@@ -1215,20 +1222,20 @@ export const CURATED_PROBLEMS = [
     "slug": "best-time-to-buy-and-sell-stock",
     "difficulty": "Easy",
     "category": "Sliding Window",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `prices` where `prices[i]` is the price of a stock on day `i`.\n\nYou may choose **one day to buy** one share and a **later day to sell** it. Return the maximum profit you can make. If no profit is possible, return `0`.",
+    "description": "`prices[i]` is what one share of a stock costs on day `i`. You may **buy one share on some day and sell it on a later day**, at most once.\n\nReturn the largest profit this single trade can make, or `0` if every possible trade loses money.",
     "constraints": ["1 <= prices.length <= 10^5","0 <= prices[i] <= 10^4"],
     "examples": [
       {
-        "input": "prices = [7,1,5,3,6,4]",
-        "output": "5",
-        "explanation": "Buy on day 2 (price 1) and sell on day 5 (price 6): profit = 6 - 1 = 5."
+        "input": "prices = [9,4,6,2,8,3]",
+        "output": "6",
+        "explanation": "Buy at 2 on day 3 and sell at 8 on day 4 for a profit of 6."
       },
       {
-        "input": "prices = [7,6,4,3,1]",
+        "input": "prices = [8,5,5,2]",
         "output": "0",
-        "explanation": "Prices only fall, so no profitable trade exists."
+        "explanation": "The price never rises after a buy, so the best is to not trade."
       }
     ],
     "functionName": "maxProfit",
@@ -1251,11 +1258,11 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[7,1,5,3,6,4]],
-        "expected": 5
+        "input": [[9,4,6,2,8,3]],
+        "expected": 6
       },
       {
-        "input": [[7,6,4,3,1]],
+        "input": [[8,5,5,2]],
         "expected": 0
       }
     ],
@@ -1292,20 +1299,20 @@ export const CURATED_PROBLEMS = [
     "slug": "longest-substring-without-repeating-characters",
     "difficulty": "Medium",
     "category": "Sliding Window",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a string `s`, find the length of the **longest substring** that contains no repeated characters.\n\nA substring is a contiguous run of characters inside the string.",
-    "constraints": ["0 <= s.length <= 5 * 10^4","s consists of English letters, digits, symbols and spaces"],
+    "description": "Return the length of the **longest unbroken stretch of `s` in which no character appears twice**.\n\nThe stretch must be contiguous: you cannot skip characters.",
+    "constraints": ["0 <= s.length <= 5 * 10^4","s may contain letters, digits, symbols and spaces"],
     "examples": [
       {
-        "input": "s = \"abcabcbb\"",
-        "output": "3",
-        "explanation": "The longest such substring is \"abc\", so the answer is 3."
+        "input": "s = \"xyzxyw\"",
+        "output": "4",
+        "explanation": "\"zxyw\" has four different characters; any longer stretch repeats one."
       },
       {
-        "input": "s = \"bbbbb\"",
+        "input": "s = \"qqqq\"",
         "output": "1",
-        "explanation": "Every character is the same, so the longest substring is a single \"b\"."
+        "explanation": "With only one distinct character, the best stretch is one long."
       }
     ],
     "functionName": "lengthOfLongestSubstring",
@@ -1328,17 +1335,17 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": ["abcabcbb"],
-        "expected": 3
+        "input": ["xyzxyw"],
+        "expected": 4
       },
       {
-        "input": ["bbbbb"],
+        "input": ["qqqq"],
         "expected": 1
       }
     ],
     "hiddenTestCases": [
       {
-        "input": ["pwwkew"],
+        "input": ["cdcf"],
         "expected": 3
       },
       {
@@ -1354,15 +1361,11 @@ export const CURATED_PROBLEMS = [
         "expected": 2
       },
       {
-        "input": ["dvdf"],
-        "expected": 3
-      },
-      {
-        "input": ["abba"],
+        "input": ["deed"],
         "expected": 2
       },
       {
-        "input": ["tmmzuxt"],
+        "input": ["kllmnok"],
         "expected": 5
       },
       {
@@ -1377,20 +1380,20 @@ export const CURATED_PROBLEMS = [
     "slug": "longest-repeating-character-replacement",
     "difficulty": "Medium",
     "category": "Sliding Window",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given a string `s` of uppercase English letters and an integer `k`. In one operation you can change any character of `s` into any other uppercase letter. You may perform **at most `k`** operations.\n\nReturn the length of the longest substring made of a single repeated letter that you can obtain.",
-    "constraints": ["1 <= s.length <= 10^5","s consists of uppercase English letters","0 <= k <= s.length"],
+    "description": "`s` is a string of capital letters. You may **repaint at most `k` of its characters**, turning each into any capital letter you like.\n\nAfter repainting, what is the longest stretch of `s` in which every character is the same letter? Return its length.",
+    "constraints": ["1 <= s.length <= 10^5","s uses only capital English letters","0 <= k <= s.length"],
     "examples": [
       {
-        "input": "s = \"ABAB\", k = 2",
-        "output": "4",
-        "explanation": "Replace the two \"A\"s with \"B\"s (or the other way round) to get \"BBBB\"."
+        "input": "s = \"XYYX\", k = 1",
+        "output": "3",
+        "explanation": "Repaint one \"X\" to get \"YYY\" next to the other letter; four in a row would need two repaints."
       },
       {
-        "input": "s = \"AABABBA\", k = 1",
-        "output": "4",
-        "explanation": "Replace the \"B\" in the middle to get \"AAAA\"."
+        "input": "s = \"MMNMM\", k = 1",
+        "output": "5",
+        "explanation": "Repaint the \"N\" and the whole string is \"M\"."
       }
     ],
     "functionName": "characterReplacement",
@@ -1417,12 +1420,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": ["ABAB",2],
-        "expected": 4
+        "input": ["XYYX",1],
+        "expected": 3
       },
       {
-        "input": ["AABABBA",1],
-        "expected": 4
+        "input": ["MMNMM",1],
+        "expected": 5
       }
     ],
     "hiddenTestCases": [
@@ -1462,20 +1465,20 @@ export const CURATED_PROBLEMS = [
     "slug": "permutation-in-string",
     "difficulty": "Medium",
     "category": "Sliding Window",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given two strings `s1` and `s2`, return `true` if `s2` contains a **permutation** of `s1` as a substring, and `false` otherwise.\n\nIn other words, return `true` if some substring of `s2` has exactly the same letters as `s1`, in any order.",
-    "constraints": ["1 <= s1.length, s2.length <= 10^4","s1 and s2 consist of lowercase English letters"],
+    "description": "Return `true` if `s2` has a stretch of exactly `s1.length` characters that **uses the same letters as `s1`, just possibly shuffled**. Otherwise return `false`.",
+    "constraints": ["1 <= s1.length, s2.length <= 10^4","Both strings use only lowercase English letters"],
     "examples": [
       {
-        "input": "s1 = \"ab\", s2 = \"eidbaooo\"",
+        "input": "s1 = \"xy\", s2 = \"abyxc\"",
         "output": "true",
-        "explanation": "\"ba\" is a permutation of \"ab\" and appears in s2."
+        "explanation": "\"yx\" appears in s2 and is \"xy\" reordered."
       },
       {
-        "input": "s1 = \"ab\", s2 = \"eidboaoo\"",
+        "input": "s1 = \"xy\", s2 = \"axcyb\"",
         "output": "false",
-        "explanation": "No substring of s2 contains exactly one \"a\" and one \"b\" side by side."
+        "explanation": "\"x\" and \"y\" never sit next to each other in s2."
       }
     ],
     "functionName": "checkInclusion",
@@ -1502,11 +1505,11 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": ["ab","eidbaooo"],
+        "input": ["xy","abyxc"],
         "expected": true
       },
       {
-        "input": ["ab","eidboaoo"],
+        "input": ["xy","axcyb"],
         "expected": false
       }
     ],
@@ -1520,7 +1523,7 @@ export const CURATED_PROBLEMS = [
         "expected": false
       },
       {
-        "input": ["adc","dcda"],
+        "input": ["tea","xate"],
         "expected": true
       },
       {
@@ -1543,25 +1546,20 @@ export const CURATED_PROBLEMS = [
     "slug": "minimum-window-substring",
     "difficulty": "Hard",
     "category": "Sliding Window",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given two strings `s` and `t`, return the **shortest substring of `s`** that contains every character of `t`, including duplicates. If there is no such substring, return the empty string `\"\"`.\n\nIf several windows share the minimum length, return the one that starts first.",
-    "constraints": ["1 <= s.length, t.length <= 10^5","s and t consist of uppercase and lowercase English letters"],
+    "description": "Find the **shortest stretch of `s` that contains every character of `t`**, counting repeats (if `t` has two `a`s, the stretch needs two `a`s). Return that stretch, or `\"\"` if none exists.\n\nWhen several shortest stretches exist, return the leftmost one.",
+    "constraints": ["1 <= s.length, t.length <= 10^5","Both strings use only English letters (either case)"],
     "examples": [
       {
-        "input": "s = \"ADOBECODEBANC\", t = \"ABC\"",
-        "output": "\"BANC\"",
-        "explanation": "\"BANC\" is the shortest window that contains A, B and C."
+        "input": "s = \"XAYBZAXC\", t = \"ABC\"",
+        "output": "\"BZAXC\"",
+        "explanation": "\"BZAXC\" holds an A, a B and a C, and no shorter stretch does."
       },
       {
-        "input": "s = \"a\", t = \"a\"",
-        "output": "\"a\"",
-        "explanation": "The whole string is the window."
-      },
-      {
-        "input": "s = \"a\", t = \"aa\"",
+        "input": "s = \"q\", t = \"qq\"",
         "output": "\"\"",
-        "explanation": "The single \"a\" cannot cover the two \"a\"s in t, so there is no window."
+        "explanation": "There is only one \"q\" to cover the two in t."
       }
     ],
     "functionName": "minWindow",
@@ -1588,19 +1586,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": ["ADOBECODEBANC","ABC"],
-        "expected": "BANC"
+        "input": ["XAYBZAXC","ABC"],
+        "expected": "BZAXC"
       },
       {
-        "input": ["a","a"],
-        "expected": "a"
-      },
-      {
-        "input": ["a","aa"],
+        "input": ["q","qq"],
         "expected": ""
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": ["q","q"],
+        "expected": "q"
+      },
       {
         "input": ["ab","b"],
         "expected": "b"
@@ -1618,8 +1616,8 @@ export const CURATED_PROBLEMS = [
         "expected": "baa"
       },
       {
-        "input": ["cabwefgewcwaefgcf","cae"],
-        "expected": "cwae"
+        "input": ["wxyzw","ww"],
+        "expected": "wxyzw"
       },
       {
         "input": ["cbbedddibhdbbiidjggcadeheffheagcgbdafeigghdfhbeafjbcjigcgdeahfbhcafgecjghcaihcadibagcdbajhdiidejcedjdgcajdhbhedgfcabegccfibdbgdhcddahgdcceddafegjijhfdefcibidcbaagjecbcgfbjffhgjefehbcgcbbacjfaiiifidcaaedebhjefagabcahcggjficjeaeegijabhbibgfdegbfiifjdcdgggidbhgbcecijejjhhcfhbhdgaffgcebcfjedhdijabjeafggeeihbbaeiibbhgajcbbhjcgifhfachgjdjhjifjfgcedghebababjhjjjbficjhaideigbgggfgdhifehegdabheedeffefiidadgiejcghbfcfajajdeebhbfhggbieieaagbfaiebahgfbgbgfdcbjchaaiijhifibeedgagfbbigheibafdidaceffahdhbfhgjacfdgccbiieghfhhbhaaaedcebfchbegheidehgiadfdcdghjchdcfdbhfacbgcagdhfbhdgdjafbeeaadfeegajijibhjjhhecjbgfgedichgdbdacefhbicihffhejcfbebaajdjfjaifffgeedjggbcddjhffjjebhghafcbhhehddhjjchijiegbcbheiccibbihcedbbgheefgjdagbfdfbfjcajfhhfibjgjdcdijdfefhejjfficgeedgjcbgcfeahgafagifadghbhbhhhgadaacgchhagagjghcjiedffjbefahfhagccchifjafegeahejadiefghdfjeifdfibiehdjcfjgafbhhgdaihehdfifidabhbcgcfgdceehgdbchcdabhgcjajbijicigafjbebehehjdbibgdibfejjdfefiaafbchhgcafgfdjfgicgehcccbahhgbbagbheefegdfbgjhaihjeccgfbeghgieebbfbaacbaeaehfbdcgghbcaafgefgfdfhcdgjadiiebibihjiheidefbdebgdicegjfijcdeffhccjajjjhdgjgghdgegggefhhbfcggegaahifefajffihgjggfdfgcaebbgccjgfceeajjjahbbebghjdbiefggdgcbcbggaefeihcjedgfaajcagafcihjifcgebgejbgaacchiihdddicegejdgacciecbhicfgafafcahgghjhahifajicjcgjfaaefcefjhagjaehdihjeechcedbgabbafhfcchcgfibidbjadhcccdfhibdbbfjhaaajfaeejgjcjjdhhjahhjcjecaaghhahhieijjgchbediihchcihcfejdjiaddhcbidbifgjgdjfihafejdhbjiagjhbbbdadebeejghgcgihaichghefaijjdifebgdhbhdfdbeichdacdgabddjhjiifhjgacjhbbghgfbhggbefhfehjjdhibegbhbhadbejchjacfdiaefbihgfhhjbehibfjceigahghecbceeddfagbigjjefhjgagbgedcfeedeffdefhdedcidgbjbhidjeghjghifcefccejcgdggfcchefcdecgabhefibidijhdjijjdgcbhbigaeeacdbecdbgigecffgbbagjihafebdejjjhahiaagdgebcbhgddbgcacbjjgbebgdcheceadjejdbhaegeffcedbhebjgdjcgdecacaadacggifejiejjgecadefaifgagdcechbaciigdachijhghjhhagibdhgeibchjebjeiahebadcigiebhciebibaejbfahfgidefjbbhbjacajbcjdahjdigedacecicajdbgjiadhiaghfbcbhceiahggfadefdbjjdihbgbidejcejhdbacbeegfiiefgffaadgjeejcjggdjahaaaghbfaaiiiajfabcahhghjjcjdgibjidfchbfagficfiggjjheigjjaeggghdbhgfdbfjhcecfbecgehfcieaiehccjhahcgffgibaeeaihebfahigibbiicchffaacigbdfcdhihiicfcgdjbibacdjcaggdgbfejdcaaicfghgiigeebeicjefjfgbdhhadbegfcbibbcejgibgeajcibaacafgeefafahchbjidcijdecfdeadcjjdhfdfciaaebfgdcddciidhcefffbfffijhcfbabgdhgdidieeiehiadefehcjhfafbbfdhajegbebjciicejfgeidibdcfeaeghiaggifbicdjheedgcjcgiabgjjhjihagcgdfjcfgedcfhacjbhhcadchefechfcecjhghagbiebifhaefcefegegdchifcjdbhiefhjhcdihjgifegihcjhdebhbecbdfeajhhcfgafdfjhgbhfidffffahehjfjbijdecbcehihdhiggggbhhgehidafiagjiffigechdcigfcefideaahbaagabggdghiiicghbfbhdgcbdadjahffijghbabjgcdjcihgbifbefibibdecghjfhicghfhacijhhcefgcaehcihieabbcfggifbfiaecbgbjbecbibdahcbfaeicfcjdiheeifbgfjiiigddhcejeaafgfidhgcgiijefjagffdffgibjbddggjabibhcjfafhbgjcidhdiihibdeedcfcjjgfgjdbjjedbbbigeehgiecgcighdeeibgieedjhdjfecaaeighhddiadffeigaajhhbafgdejagcidhibgciejjhhehhdahcjeebeecjdgbedifbfdidehdeeadcjegidiagcbcggbfehchgaiecebbccgcghijcfbcdfaajdahhbagfabfiaifjhfidjhibbjfceghcdjbjggfdjbjgejhjacjgbjidbfjchfefhfficfacighbcgdfcaiafdcejdiffedajdbacgdcihfbifiibabcfcaijfabehhdfhdggjgjcheahajicfihfjhhjfffiedbgccdgifdiiejcdedhgcdabfdadbgeahibaadegcgfdhdbbeajebiefddfeebdcijihggbjgefcaefajdeaiaacfgbecefjedbdaeaiefcgcaebdeaehbfddgejhaaahbcdgaecgbfgjejeagjfjjcdejieffjbjjchfhddcidbhgigggedfghicefdgiddeeihjjchffibbagjhechfefgjecceeafibfffacjiehgcgjebebejgahjgjdieffgchjdhgahjhcfccijbfccgjdiihahfgfhhecigijhajaaadfcihjehhjfebfjaghjhebjeajjjfeghhidfecgfjbfjhcchegfiehhjggiaefeibeecgghfchbegbcagigfghaaafibbgbcbjdfgihfbhcjafdjifgecahhegjgageefffbidacdfecfdibheagcedjdahheiigibjdcgfeeeibhicgbbdcagfjajefabjfageeebejbbciihfcgjfbdcghajjahgjcebcdcdfjaebabdicbifjcjbghghhgjcicifbifgdidgfabafadcdfcabfajeddhfiehddaddcddggdjffajgbhgfjbfdeehfdedfgadaagihifeeaiajfaideeihaaadbaabdjjiijjjagjhgfaeidhbebjhdidaebfchggbdcecjcjgjgeiabhfecfbiheegbjjaffdeefcebajjcajbijeafbgdbjiafdaceijjjcihhdacdibfhffhcfijidcabhdigegfbacbjaijfiifjdhbffiibjjihhbeiejjhcjejcjhacbcieagjechijbbhiiccdhcghigfjchicbfeceadahebgejbfgbfciaijajiigfgfgjjgahgadbhajaihfjfccdhjahfibejgbjdjbeiffagaffcdcacchihggjgfhjgcdfhhaidfajfegbgefjccggfebeididhdeibcaehdjgdjaaichechjeadjgagdegjfdchfjhcgdgbejfbceigjdebiahjjdgbfebcbbdjjgdghcafcfidibiaaehcgifdefghefgihagiifdbfagdbijbjafgbbjahfejjjajffgiibbgjbhhdddaeaicibdgiadjgajbaeeifhjbbfgaihjjgcjhgbgbahaacgdfddiaeihefjhbdjiiidfaihfbehaaheacgiacgcejdhfafjecbhigffejabbajbdiiahdeafjhcbgcicddffbecgefhhiagefibjbcddigbjhbfjiagfagbibgbebchadajcagdgdgcbiedeeaaeeicgdffgegbihbagijaccfaahibjbdhchfichfchefhiibhggaiecggfghjhgedeafjfjiiadeddfdcaadfcgccjaaadeagibdidjccafgjfdeccjageedebjbfeecfhbbfigfgijicccegbfgadahhchdeadedageebccchjfdjagfaidcdidfbbaadfegjdfgajhjjceijahdfgjcbffigchdgjccbicfacbfeicjcehjighediifhgigebccifjabhgdecjfdhiaffgjcgeacdcbfdcifigidaagjdeeichaijdchjciiedajebhdhiibabejdgiejeecahdfibachcfhjfjighgjhcecahedfcihdfhaijfbdgicajdjdjcfcicjchffagdgjagdbajchedbeeebihdgibaieajgehcajjfafigjiibbhejbiaiijbjggihbdhabdhgjhfiihigcigidacfjbggbhgajgbgiaeejfafecgcffabgadejacjagiiadbacgfbajddbeeafcjebdjccefjabjcghhgcabcibihdggfhi","jjiihhggff"],
@@ -1633,20 +1631,20 @@ export const CURATED_PROBLEMS = [
     "slug": "sliding-window-maximum",
     "difficulty": "Hard",
     "category": "Sliding Window",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an integer array `nums` and a window size `k`. The window starts at the very left of the array and moves one position to the right each step, always covering exactly `k` numbers.\n\nReturn an array containing the **maximum value of the window** at every position.",
+    "description": "A window exactly `k` numbers wide starts at the left end of `nums` and slides right one step at a time until it reaches the right end.\n\nReturn the **largest number inside the window at each of its positions**, in order.",
     "constraints": ["1 <= nums.length <= 10^5","-10^4 <= nums[i] <= 10^4","1 <= k <= nums.length"],
     "examples": [
       {
-        "input": "nums = [1,3,-1,-3,5,3,6,7], k = 3",
-        "output": "[3,3,5,5,6,7]",
-        "explanation": "Window position -> maximum: [1 3 -1] -> 3, [3 -1 -3] -> 3, [-1 -3 5] -> 5, [-3 5 3] -> 5, [5 3 6] -> 6, [3 6 7] -> 7."
+        "input": "nums = [2,7,3,1,8,4], k = 3",
+        "output": "[7,7,8,8]",
+        "explanation": "Windows [2 7 3], [7 3 1], [3 1 8] and [1 8 4] peak at 7, 7, 8 and 8."
       },
       {
-        "input": "nums = [1], k = 1",
-        "output": "[1]",
-        "explanation": "A single window holds the only element."
+        "input": "nums = [5,-2], k = 1",
+        "output": "[5,-2]",
+        "explanation": "With k = 1 every number is its own window."
       }
     ],
     "functionName": "maxSlidingWindow",
@@ -1673,26 +1671,26 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,3,-1,-3,5,3,6,7],3],
-        "expected": [3,3,5,5,6,7]
+        "input": [[2,7,3,1,8,4],3],
+        "expected": [7,7,8,8]
       },
       {
-        "input": [[1],1],
-        "expected": [1]
+        "input": [[5,-2],1],
+        "expected": [5,-2]
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [[1,-1],1],
-        "expected": [1,-1]
+        "input": [[6],1],
+        "expected": [6]
       },
       {
-        "input": [[9,11],2],
-        "expected": [11]
+        "input": [[3,9],2],
+        "expected": [9]
       },
       {
-        "input": [[4,3,2,1],2],
-        "expected": [4,3,2]
+        "input": [[8,6,4,2],2],
+        "expected": [8,6,4]
       },
       {
         "input": [[1,2,3,4,5],5],
@@ -1714,20 +1712,20 @@ export const CURATED_PROBLEMS = [
     "slug": "find-all-anagrams-in-a-string",
     "difficulty": "Medium",
     "category": "Sliding Window",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given two strings `s` and `p`, return the **start index of every substring of `s` that is an anagram of `p`**, in increasing order.\n\nAn anagram uses exactly the same letters as the original, in any order.",
-    "constraints": ["1 <= s.length, p.length <= 3 * 10^4","s and p consist of lowercase English letters"],
+    "description": "Slide over `s` looking at every stretch that is as long as `p`. Return the **starting positions of the stretches that are rearrangements of `p`**, from left to right.",
+    "constraints": ["1 <= s.length, p.length <= 3 * 10^4","Both strings use only lowercase English letters"],
     "examples": [
       {
-        "input": "s = \"cbaebabacd\", p = \"abc\"",
-        "output": "[0,6]",
-        "explanation": "The substring starting at 0 is \"cba\" and the one starting at 6 is \"bac\". Both are anagrams of \"abc\"."
+        "input": "s = \"xyzzyxz\", p = \"xyz\"",
+        "output": "[0,3,4]",
+        "explanation": "\"xyz\" at 0, \"zyx\" at 3 and \"yxz\" at 4 all use x, y and z once."
       },
       {
-        "input": "s = \"abab\", p = \"ab\"",
-        "output": "[0,1,2]",
-        "explanation": "Substrings starting at 0, 1 and 2 are \"ab\", \"ba\" and \"ab\"."
+        "input": "s = \"pqqp\", p = \"pq\"",
+        "output": "[0,2]",
+        "explanation": "\"pq\" at 0 and \"qp\" at 2 match; \"qq\" at 1 does not."
       }
     ],
     "functionName": "findAnagrams",
@@ -1754,12 +1752,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": ["cbaebabacd","abc"],
-        "expected": [0,6]
+        "input": ["xyzzyxz","xyz"],
+        "expected": [0,3,4]
       },
       {
-        "input": ["abab","ab"],
-        "expected": [0,1,2]
+        "input": ["pqqp","pq"],
+        "expected": [0,2]
       }
     ],
     "hiddenTestCases": [
@@ -1791,20 +1789,20 @@ export const CURATED_PROBLEMS = [
     "slug": "minimum-size-subarray-sum",
     "difficulty": "Medium",
     "category": "Sliding Window",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array of **positive** integers `nums` and a positive integer `target`, return the **minimal length of a contiguous subarray** whose sum is greater than or equal to `target`.\n\nIf no such subarray exists, return `0`.",
+    "description": "Every number in `nums` is **positive**. Find the **shortest unbroken run of numbers whose total is at least `target`** and return how many numbers it has.\n\nReturn `0` if even the whole array falls short.",
     "constraints": ["1 <= target <= 10^9","1 <= nums.length <= 10^5","1 <= nums[i] <= 10^4"],
     "examples": [
       {
-        "input": "target = 7, nums = [2,3,1,2,4,3]",
-        "output": "2",
-        "explanation": "The subarray [4, 3] has sum 7 and is the shortest one that reaches the target."
+        "input": "target = 9, nums = [1,4,2,5,3]",
+        "output": "3",
+        "explanation": "4 + 2 + 5 = 11 reaches 9; no two neighbours add up to 9."
       },
       {
-        "input": "target = 4, nums = [1,4,4]",
+        "input": "target = 6, nums = [2,6,1]",
         "output": "1",
-        "explanation": "The single element 4 is enough."
+        "explanation": "The 6 alone is enough."
       }
     ],
     "functionName": "minSubArrayLen",
@@ -1831,17 +1829,17 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [7,[2,3,1,2,4,3]],
-        "expected": 2
+        "input": [9,[1,4,2,5,3]],
+        "expected": 3
       },
       {
-        "input": [4,[1,4,4]],
+        "input": [6,[2,6,1]],
         "expected": 1
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [11,[1,1,1,1,1,1,1,1]],
+        "input": [12,[1,1,1,1,1,1,1,1]],
         "expected": 0
       },
       {
@@ -1872,25 +1870,20 @@ export const CURATED_PROBLEMS = [
     "slug": "valid-parentheses",
     "difficulty": "Easy",
     "category": "Stack",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a string `s` made only of the characters `'('`, `')'`, `'{'`, `'}'`, `'['` and `']'`, decide whether it is **valid**.\n\nA string is valid when:\n\n- every open bracket is closed by a bracket of the same type, and\n- brackets are closed in the correct order, and\n- every close bracket has a matching open bracket.",
-    "constraints": ["1 <= s.length <= 10^4","s consists only of the characters ()[]{}"],
+    "description": "`s` is made only of the bracket characters `( ) [ ] { }`. Return `true` if the brackets are **properly balanced**, and `false` otherwise.\n\nBalanced means each closing bracket closes the most recent bracket that is still open, the two are of the same kind, and nothing is left open at the end.",
+    "constraints": ["1 <= s.length <= 10^4","s uses only the characters ()[]{}"],
     "examples": [
       {
-        "input": "s = \"()\"",
+        "input": "s = \"{[()]}\"",
         "output": "true",
-        "explanation": "Every bracket is closed in the right order."
+        "explanation": "Each bracket closes the innermost one still open."
       },
       {
-        "input": "s = \"()[]{}\"",
-        "output": "true",
-        "explanation": "Each pair is closed before the next one opens."
-      },
-      {
-        "input": "s = \"(]\"",
+        "input": "s = \"[(])\"",
         "output": "false",
-        "explanation": "The \"]\" does not match the \"(\" that is open."
+        "explanation": "The \"]\" arrives while \"(\" is the innermost open bracket."
       }
     ],
     "functionName": "isValid",
@@ -1913,26 +1906,22 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": ["()"],
+        "input": ["{[()]}"],
         "expected": true
       },
       {
-        "input": ["()[]{}"],
-        "expected": true
-      },
-      {
-        "input": ["(]"],
+        "input": ["[(])"],
         "expected": false
       }
     ],
     "hiddenTestCases": [
       {
-        "input": ["([)]"],
-        "expected": false
+        "input": ["[]{}"],
+        "expected": true
       },
       {
-        "input": ["{[]}"],
-        "expected": true
+        "input": ["{)"],
+        "expected": false
       },
       {
         "input": ["("],
@@ -1966,15 +1955,15 @@ export const CURATED_PROBLEMS = [
     "slug": "min-stack",
     "difficulty": "Medium",
     "category": "Stack",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Design a stack that supports `push`, `pop`, `top` and retrieving the **minimum element**, all in **constant time**.\n\nImplement the `MinStack` class:\n\n- `MinStack()` creates an empty stack.\n- `push(val)` pushes `val` onto the stack.\n- `pop()` removes the element on top of the stack.\n- `top()` returns the element on top of the stack.\n- `getMin()` returns the smallest element currently in the stack.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
-    "constraints": ["-2^31 <= val <= 2^31 - 1","pop, top and getMin are always called on a non-empty stack","At most 3 * 10^4 calls are made"],
+    "description": "Build a stack that can also report **the smallest value it currently holds**. Every operation must take **O(1)** time.\n\nImplement the `MinStack` class:\n\n- `MinStack()` starts with an empty stack.\n- `push(val)` places `val` on top.\n- `pop()` discards the top value.\n- `top()` returns the top value without removing it.\n- `getMin()` returns the smallest value anywhere in the stack.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
+    "constraints": ["-2^31 <= val <= 2^31 - 1","pop, top and getMin are only called when the stack is not empty","At most 3 * 10^4 calls in total"],
     "examples": [
       {
-        "input": "operations = [\"MinStack\",\"push\",\"push\",\"push\",\"getMin\",\"pop\",\"top\",\"getMin\"], arguments = [[],[-2],[0],[-3],[],[],[],[]]",
-        "output": "[null,null,null,null,-3,null,0,-2]",
-        "explanation": "After pushing -2, 0 and -3 the minimum is -3. After one pop the top is 0 and the minimum is -2."
+        "input": "operations = [\"MinStack\",\"push\",\"push\",\"getMin\",\"push\",\"getMin\",\"pop\",\"getMin\",\"top\"], arguments = [[],[4],[7],[],[1],[],[],[],[]]",
+        "output": "[null,null,null,4,null,1,null,4,7]",
+        "explanation": "With 4 and 7 inside the minimum is 4. Pushing 1 lowers it to 1, and popping the 1 brings it back to 4, with 7 on top."
       }
     ],
     "functionName": "MinStack",
@@ -2014,8 +2003,8 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [["MinStack","push","push","push","getMin","pop","top","getMin"],[[],[-2],[0],[-3],[],[],[],[]]],
-        "expected": [null,null,null,null,-3,null,0,-2]
+        "input": [["MinStack","push","push","getMin","push","getMin","pop","getMin","top"],[[],[4],[7],[],[1],[],[],[],[]]],
+        "expected": [null,null,null,4,null,1,null,4,7]
       }
     ],
     "hiddenTestCases": [
@@ -2047,25 +2036,20 @@ export const CURATED_PROBLEMS = [
     "slug": "evaluate-reverse-polish-notation",
     "difficulty": "Medium",
     "category": "Stack",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array of strings `tokens` that holds an arithmetic expression in **Reverse Polish Notation** (postfix). Evaluate it and return the result as an integer.\n\n- The valid operators are `+`, `-`, `*` and `/`. Each operand is an integer or another expression.\n- Division between two integers **truncates toward zero**.\n- The expression is always valid, never divides by zero, and every intermediate value fits in a 32-bit integer.",
-    "constraints": ["1 <= tokens.length <= 10^4","tokens[i] is an operator or an integer in the range [-200, 200]"],
+    "description": "`tokens` is an arithmetic expression written in **postfix order**: each operator comes right after its two operands, so `3 4 +` means `3 + 4`. Compute its value.\n\n- Operators are `+`, `-`, `*` and `/`; everything else is an integer.\n- `/` is integer division that **drops the fractional part** (it rounds toward zero).\n- The expression is always well formed, never divides by zero, and stays within 32-bit integers.",
+    "constraints": ["1 <= tokens.length <= 10^4","Each token is an operator or an integer from -200 to 200"],
     "examples": [
       {
-        "input": "tokens = [\"2\",\"1\",\"+\",\"3\",\"*\"]",
-        "output": "9",
-        "explanation": "((2 + 1) * 3) = 9"
+        "input": "tokens = [\"6\",\"2\",\"-\",\"4\",\"*\"]",
+        "output": "16",
+        "explanation": "(6 - 2) * 4 = 16"
       },
       {
-        "input": "tokens = [\"4\",\"13\",\"5\",\"/\",\"+\"]",
-        "output": "6",
-        "explanation": "(4 + (13 / 5)) = 4 + 2 = 6"
-      },
-      {
-        "input": "tokens = [\"10\",\"6\",\"9\",\"3\",\"+\",\"-11\",\"*\",\"/\",\"*\",\"17\",\"+\",\"5\",\"+\"]",
-        "output": "22",
-        "explanation": "The expression reduces step by step to 22."
+        "input": "tokens = [\"20\",\"3\",\"4\",\"+\",\"/\"]",
+        "output": "2",
+        "explanation": "20 / (3 + 4) = 2, since the fraction is dropped."
       }
     ],
     "functionName": "evalRPN",
@@ -2088,19 +2072,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [["2","1","+","3","*"]],
-        "expected": 9
+        "input": [["6","2","-","4","*"]],
+        "expected": 16
       },
       {
-        "input": [["4","13","5","/","+"]],
-        "expected": 6
-      },
-      {
-        "input": [["10","6","9","3","+","-11","*","/","*","17","+","5","+"]],
-        "expected": 22
+        "input": [["20","3","4","+","/"]],
+        "expected": 2
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [["3","4","5","*","-","2","/"]],
+        "expected": -8
+      },
       {
         "input": [["3"]],
         "expected": 3
@@ -2133,20 +2117,20 @@ export const CURATED_PROBLEMS = [
     "slug": "generate-parentheses",
     "difficulty": "Medium",
     "category": "Stack",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given `n` pairs of parentheses, return **every well-formed combination** of exactly `n` pairs.\n\nA combination is well-formed when every opening parenthesis is closed in the right order. You may return the combinations in any order.",
+    "description": "List **every balanced string made of `n` opening and `n` closing parentheses**. Balanced means that, reading left to right, you never close more parentheses than you have opened.\n\nReturn the strings in any order.",
     "constraints": ["1 <= n <= 8"],
     "examples": [
       {
-        "input": "n = 1",
-        "output": "[\"()\"]",
-        "explanation": "Only one arrangement exists for a single pair."
+        "input": "n = 2",
+        "output": "[\"(())\",\"()()\"]",
+        "explanation": "Two pairs can be nested or placed side by side."
       },
       {
-        "input": "n = 3",
-        "output": "[\"((()))\",\"(()())\",\"(())()\",\"()(())\",\"()()()\"]",
-        "explanation": "There are five well-formed arrangements of three pairs."
+        "input": "n = 1",
+        "output": "[\"()\"]",
+        "explanation": "One pair has a single arrangement."
       }
     ],
     "functionName": "generateParenthesis",
@@ -2170,18 +2154,18 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [1],
-        "expected": ["()"]
+        "input": [2],
+        "expected": ["(())","()()"]
       },
       {
-        "input": [3],
-        "expected": ["((()))","(()())","(())()","()(())","()()()"]
+        "input": [1],
+        "expected": ["()"]
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [2],
-        "expected": ["(())","()()"]
+        "input": [3],
+        "expected": ["((()))","(()())","(())()","()(())","()()()"]
       },
       {
         "input": [4],
@@ -2199,24 +2183,24 @@ export const CURATED_PROBLEMS = [
   },
   {
     "id": "daily-temperatures",
-    "title": "Daily Temperatures",
-    "slug": "daily-temperatures",
+    "title": "Wait for a Warmer Day",
+    "slug": "wait-for-a-warmer-day",
     "difficulty": "Medium",
     "category": "Stack",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array `temperatures` of daily temperatures, return an array `answer` where `answer[i]` is the **number of days you have to wait after day `i`** to get a warmer temperature.\n\nIf there is no future day with a warmer temperature, `answer[i]` is `0`.",
+    "description": "`temperatures` is a forecast, one reading per day. For each day, count **how many days pass until a strictly warmer day arrives**, and return these counts as an array.\n\nUse `0` for days that are never followed by a warmer one.",
     "constraints": ["1 <= temperatures.length <= 10^5","30 <= temperatures[i] <= 100"],
     "examples": [
       {
-        "input": "temperatures = [73,74,75,71,69,72,76,73]",
-        "output": "[1,1,4,2,1,1,0,0]",
-        "explanation": "For example, day 0 (73) waits one day for 74, and day 2 (75) waits four days for 76."
+        "input": "temperatures = [60,58,62,61,65]",
+        "output": "[2,1,2,1,0]",
+        "explanation": "Day 0 (60) waits two days for 62; day 2 (62) waits two days for 65."
       },
       {
-        "input": "temperatures = [30,40,50,60]",
-        "output": "[1,1,1,0]",
-        "explanation": "Every day is followed by a warmer one, except the last."
+        "input": "temperatures = [40,45,50]",
+        "output": "[1,1,0]",
+        "explanation": "Each day is beaten by the next, except the last."
       }
     ],
     "functionName": "dailyTemperatures",
@@ -2239,17 +2223,17 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[73,74,75,71,69,72,76,73]],
-        "expected": [1,1,4,2,1,1,0,0]
+        "input": [[60,58,62,61,65]],
+        "expected": [2,1,2,1,0]
       },
       {
-        "input": [[30,40,50,60]],
-        "expected": [1,1,1,0]
+        "input": [[40,45,50]],
+        "expected": [1,1,0]
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [[30,60,90]],
+        "input": [[35,70,95]],
         "expected": [1,1,0]
       },
       {
@@ -2272,24 +2256,24 @@ export const CURATED_PROBLEMS = [
   },
   {
     "id": "car-fleet",
-    "title": "Car Fleet",
-    "slug": "car-fleet",
+    "title": "Convoys on a Narrow Road",
+    "slug": "convoys-on-a-narrow-road",
     "difficulty": "Medium",
     "category": "Stack",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "There are `n` cars driving towards a destination that is `target` miles away along a single-lane road. Car `i` starts at `position[i]` and drives at a constant `speed[i]` miles per hour.\n\nA car cannot pass the car in front of it. If it catches up, it slows down and drives at that car's speed, forming a **fleet** with it. Cars that catch up exactly at the destination also count as one fleet.\n\nReturn the number of car fleets that arrive at the destination.",
-    "constraints": ["1 <= n <= 10^5","0 < target <= 10^6","0 <= position[i] < target, and all positions are different","0 < speed[i] <= 10^6"],
+    "description": "Trucks travel one way along a road with no overtaking, all heading for a depot `target` km away. Truck `i` starts `position[i]` km along the road and drives at `speed[i]` km per hour.\n\nWhen a truck catches up with the one ahead, it slows down and they continue together as a **convoy**. Trucks that catch up exactly at the depot also count as one convoy.\n\nReturn **how many convoys reach the depot**.",
+    "constraints": ["1 <= n <= 10^5","0 < target <= 10^6","0 <= position[i] < target, all different","0 < speed[i] <= 10^6"],
     "examples": [
       {
-        "input": "target = 12, position = [10,8,0,5,3], speed = [2,4,1,1,3]",
-        "output": "3",
-        "explanation": "The cars starting at 10 and 8 become a fleet that meets at 12. The car at 0 never catches anyone. The cars at 5 and 3 become a fleet that meets at 6. That is 3 fleets."
+        "input": "target = 10, position = [6,2,0], speed = [2,4,1]",
+        "output": "2",
+        "explanation": "The trucks at 6 and 2 both need 2 hours, so they arrive together; the truck at 0 needs 10 hours and arrives alone."
       },
       {
-        "input": "target = 10, position = [3], speed = [3]",
+        "input": "target = 15, position = [5], speed = [2]",
         "output": "1",
-        "explanation": "A single car is a single fleet."
+        "explanation": "One truck is one convoy."
       }
     ],
     "functionName": "carFleet",
@@ -2320,17 +2304,17 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [12,[10,8,0,5,3],[2,4,1,1,3]],
-        "expected": 3
+        "input": [10,[6,2,0],[2,4,1]],
+        "expected": 2
       },
       {
-        "input": [10,[3],[3]],
+        "input": [15,[5],[2]],
         "expected": 1
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [100,[0,2,4],[4,2,1]],
+        "input": [50,[0,10,20],[5,3,1]],
         "expected": 1
       },
       {
@@ -2353,20 +2337,20 @@ export const CURATED_PROBLEMS = [
     "slug": "largest-rectangle-in-histogram",
     "difficulty": "Hard",
     "category": "Stack",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `heights` representing the heights of the bars of a histogram. Every bar has width `1`.\n\nReturn the **area of the largest rectangle** that fits entirely inside the histogram.",
+    "description": "A bar chart has bars of width `1` standing side by side, with heights `heights`. Draw an axis-aligned rectangle that **stays inside the bars** (it may span several neighbouring bars, but no higher than the shortest of them).\n\nReturn the **largest area** such a rectangle can have.",
     "constraints": ["1 <= heights.length <= 10^5","0 <= heights[i] <= 10^4"],
     "examples": [
       {
-        "input": "heights = [2,1,5,6,2,3]",
-        "output": "10",
-        "explanation": "The largest rectangle spans the bars of height 5 and 6 and has area 5 x 2 = 10."
+        "input": "heights = [3,1,4,4,2]",
+        "output": "8",
+        "explanation": "The two bars of height 4 give 4 x 2 = 8."
       },
       {
-        "input": "heights = [2,4]",
-        "output": "4",
-        "explanation": "The largest rectangle is a single bar of height 4."
+        "input": "heights = [3,5]",
+        "output": "6",
+        "explanation": "Both bars at height 3 give 6, more than the 5 alone."
       }
     ],
     "functionName": "largestRectangleArea",
@@ -2389,12 +2373,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,1,5,6,2,3]],
-        "expected": 10
+        "input": [[3,1,4,4,2]],
+        "expected": 8
       },
       {
-        "input": [[2,4]],
-        "expected": 4
+        "input": [[3,5]],
+        "expected": 6
       }
     ],
     "hiddenTestCases": [
@@ -2407,8 +2391,8 @@ export const CURATED_PROBLEMS = [
         "expected": 0
       },
       {
-        "input": [[6,2,5,4,5,1,6]],
-        "expected": 12
+        "input": [[4,6,3,6,4,2]],
+        "expected": 15
       },
       {
         "input": [[2,1,2]],
@@ -2430,29 +2414,24 @@ export const CURATED_PROBLEMS = [
   },
   {
     "id": "asteroid-collision",
-    "title": "Asteroid Collision",
-    "slug": "asteroid-collision",
+    "title": "Marbles on a Track",
+    "slug": "marbles-on-a-track",
     "difficulty": "Medium",
     "category": "Stack",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `asteroids` of integers describing asteroids in a row. The **absolute value** is the asteroid's size and the **sign** is its direction: positive moves right, negative moves left. All asteroids move at the same speed.\n\nAsteroids moving in the same direction never meet. When two asteroids meet, the **smaller one explodes**. If they are the same size, **both explode**.\n\nReturn the state of the asteroids after all collisions.",
+    "description": "Marbles roll along a straight track at the same speed. `asteroids[i]` describes marble `i` from left to right: its **absolute value is its weight**, and its **sign is its direction** (positive rolls right, negative rolls left).\n\nWhen a right-rolling marble meets a left-rolling one, the **lighter marble shatters**; if they weigh the same, **both shatter**. Marbles rolling the same way never touch.\n\nReturn the marbles that survive, from left to right.",
     "constraints": ["2 <= asteroids.length <= 10^4","-1000 <= asteroids[i] <= 1000","asteroids[i] != 0"],
     "examples": [
       {
-        "input": "asteroids = [5,10,-5]",
-        "output": "[5,10]",
-        "explanation": "The 10 and -5 meet and the -5 explodes. The 5 and 10 never meet."
+        "input": "asteroids = [4,7,-3]",
+        "output": "[4,7]",
+        "explanation": "The -3 hits the 7 and shatters; the 4 is never reached."
       },
       {
-        "input": "asteroids = [8,-8]",
+        "input": "asteroids = [6,-6]",
         "output": "[]",
-        "explanation": "The 8 and -8 have the same size, so both explode."
-      },
-      {
-        "input": "asteroids = [10,2,-5]",
-        "output": "[10]",
-        "explanation": "The 2 and -5 meet and the 2 explodes, then the 10 and -5 meet and the -5 explodes."
+        "explanation": "Equal weights, so both shatter."
       }
     ],
     "functionName": "asteroidCollision",
@@ -2475,30 +2454,26 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[5,10,-5]],
-        "expected": [5,10]
+        "input": [[4,7,-3]],
+        "expected": [4,7]
       },
       {
-        "input": [[8,-8]],
+        "input": [[6,-6]],
         "expected": []
-      },
-      {
-        "input": [[10,2,-5]],
-        "expected": [10]
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [[-2,-1,1,2]],
-        "expected": [-2,-1,1,2]
+        "input": [[-3,-1,2,5]],
+        "expected": [-3,-1,2,5]
       },
       {
-        "input": [[1,-2,-2,-2]],
-        "expected": [-2,-2,-2]
+        "input": [[2,-4,-4]],
+        "expected": [-4,-4]
       },
       {
-        "input": [[-2,2,1,-2]],
-        "expected": [-2]
+        "input": [[-1,3,2,-3]],
+        "expected": [-1]
       },
       {
         "input": [[3,5,-6,2,-1,4]],
@@ -2516,20 +2491,20 @@ export const CURATED_PROBLEMS = [
     "slug": "binary-search",
     "difficulty": "Easy",
     "category": "Binary Search",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `nums` of integers sorted in **ascending order** and an integer `target`.\n\nReturn the index of `target` in `nums`, or `-1` if it is not present. Your solution must run in **O(log n)** time.",
-    "constraints": ["1 <= nums.length <= 10^4","-10^4 < nums[i], target < 10^4","All values in nums are unique and sorted in ascending order"],
+    "description": "`nums` holds distinct integers in **increasing order**. Return the position of `target` in `nums`, or `-1` if it is missing.\n\nYour solution must take **O(log n)** time.",
+    "constraints": ["1 <= nums.length <= 10^4","-10^4 < nums[i], target < 10^4","Values in nums are distinct and increasing"],
     "examples": [
       {
-        "input": "nums = [-1,0,3,5,9,12], target = 9",
+        "input": "nums = [-6,-2,1,4,7,15], target = 7",
         "output": "4",
-        "explanation": "9 is at index 4."
+        "explanation": "7 sits at position 4."
       },
       {
-        "input": "nums = [-1,0,3,5,9,12], target = 2",
+        "input": "nums = [-6,-2,1,4,7,15], target = 5",
         "output": "-1",
-        "explanation": "2 is not in the array."
+        "explanation": "There is no 5 in the array."
       }
     ],
     "functionName": "search",
@@ -2556,11 +2531,11 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[-1,0,3,5,9,12],9],
+        "input": [[-6,-2,1,4,7,15],7],
         "expected": 4
       },
       {
-        "input": [[-1,0,3,5,9,12],2],
+        "input": [[-6,-2,1,4,7,15],5],
         "expected": -1
       }
     ],
@@ -2597,20 +2572,20 @@ export const CURATED_PROBLEMS = [
     "slug": "search-a-2d-matrix",
     "difficulty": "Medium",
     "category": "Binary Search",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an `m x n` integer matrix with two properties:\n\n- each row is sorted in ascending order, and\n- the first integer of each row is greater than the last integer of the previous row.\n\nReturn `true` if `target` is in the matrix and `false` otherwise. Your solution should run in **O(log(m * n))** time.",
+    "description": "Read the grid `matrix` row by row, left to right, and the numbers **only ever increase**: each row is increasing, and every row starts above where the previous row ended.\n\nReturn `true` if `target` appears in the grid, otherwise `false`. Aim for **O(log(m * n))** time.",
     "constraints": ["m == matrix.length, n == matrix[i].length","1 <= m, n <= 100","-10^4 <= matrix[i][j], target <= 10^4"],
     "examples": [
       {
-        "input": "matrix = [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target = 3",
+        "input": "matrix = [[2,4,8],[12,15,19],[25,31,40]], target = 15",
         "output": "true",
-        "explanation": "3 is in the first row."
+        "explanation": "15 sits in the middle row."
       },
       {
-        "input": "matrix = [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target = 13",
+        "input": "matrix = [[2,4,8],[12,15,19],[25,31,40]], target = 9",
         "output": "false",
-        "explanation": "13 is not in the matrix."
+        "explanation": "9 would fall between 8 and 12, but it is not there."
       }
     ],
     "functionName": "searchMatrix",
@@ -2637,11 +2612,11 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[[1,3,5,7],[10,11,16,20],[23,30,34,60]],3],
+        "input": [[[2,4,8],[12,15,19],[25,31,40]],15],
         "expected": true
       },
       {
-        "input": [[[1,3,5,7],[10,11,16,20],[23,30,34,60]],13],
+        "input": [[[2,4,8],[12,15,19],[25,31,40]],9],
         "expected": false
       }
     ],
@@ -2663,11 +2638,11 @@ export const CURATED_PROBLEMS = [
         "expected": true
       },
       {
-        "input": [[[1,3,5,7],[10,11,16,20],[23,30,34,60]],60],
+        "input": [[[2,4,8],[12,15,19],[25,31,40]],40],
         "expected": true
       },
       {
-        "input": [[[1,3,5,7],[10,11,16,20],[23,30,34,60]],0],
+        "input": [[[2,4,8],[12,15,19],[25,31,40]],1],
         "expected": false
       },
       {
@@ -2678,29 +2653,24 @@ export const CURATED_PROBLEMS = [
   },
   {
     "id": "koko-eating-bananas",
-    "title": "Koko Eating Bananas",
-    "slug": "koko-eating-bananas",
+    "title": "Slowest Reading Pace",
+    "slug": "slowest-reading-pace",
     "difficulty": "Medium",
     "category": "Binary Search",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Koko loves bananas. There are `n` piles, and pile `i` holds `piles[i]` bananas. The guards will be away for `h` hours.\n\nKoko picks an eating speed of `k` bananas per hour. Each hour she chooses one pile and eats up to `k` bananas from it. If the pile has fewer than `k` bananas she eats them all and does nothing else that hour.\n\nReturn the **minimum integer speed `k`** that lets her finish all the bananas within `h` hours.",
+    "description": "A student must read a stack of reports before an exam in `h` hours; report `i` has `piles[i]` pages. They pick a pace of `k` pages per hour. In each hour they read up to `k` pages of **one** report, and if that report ends early they rest for the rest of the hour.\n\nReturn the **smallest whole-number pace `k`** that gets every report read within `h` hours.",
     "constraints": ["1 <= piles.length <= 10^4","piles.length <= h <= 10^9","1 <= piles[i] <= 10^9"],
     "examples": [
       {
-        "input": "piles = [3,6,7,11], h = 8",
-        "output": "4",
-        "explanation": "At speed 4 the piles take 1 + 2 + 2 + 3 = 8 hours."
+        "input": "piles = [5,9,2,12], h = 7",
+        "output": "5",
+        "explanation": "At 5 pages an hour the reports take 1 + 2 + 1 + 3 = 7 hours; at 4 they would take 9."
       },
       {
-        "input": "piles = [30,11,23,4,20], h = 5",
-        "output": "30",
-        "explanation": "Only five hours for five piles means she must finish each pile in one hour."
-      },
-      {
-        "input": "piles = [30,11,23,4,20], h = 6",
-        "output": "23",
-        "explanation": "At speed 23 the piles take 2 + 1 + 1 + 1 + 1 = 6 hours."
+        "input": "piles = [14,6,9], h = 3",
+        "output": "14",
+        "explanation": "Three hours for three reports: each must be read in one hour, so the pace must cover the longest."
       }
     ],
     "functionName": "minEatingSpeed",
@@ -2727,19 +2697,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,6,7,11],8],
-        "expected": 4
+        "input": [[5,9,2,12],7],
+        "expected": 5
       },
       {
-        "input": [[30,11,23,4,20],5],
-        "expected": 30
-      },
-      {
-        "input": [[30,11,23,4,20],6],
-        "expected": 23
+        "input": [[14,6,9],3],
+        "expected": 14
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[14,6,9],4],
+        "expected": 9
+      },
       {
         "input": [[1],1],
         "expected": 1
@@ -2772,25 +2742,20 @@ export const CURATED_PROBLEMS = [
     "slug": "find-minimum-in-rotated-sorted-array",
     "difficulty": "Medium",
     "category": "Binary Search",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "An array of **unique** integers that was sorted in ascending order has been **rotated** between 1 and `n` times. For example, `[0,1,2,4,5,6,7]` may become `[4,5,6,7,0,1,2]`.\n\nReturn the **minimum element** of the rotated array. Your solution must run in **O(log n)** time.",
-    "constraints": ["1 <= nums.length <= 5000","-5000 <= nums[i] <= 5000","All integers of nums are unique","nums is sorted and rotated between 1 and n times"],
+    "description": "`nums` started as distinct integers in increasing order, then some number of elements were **moved from the front to the back** (possibly none, or all of them). For instance `[2,4,6,8,9]` could have become `[6,8,9,2,4]`.\n\nReturn the **smallest value** in `nums` in **O(log n)** time.",
+    "constraints": ["1 <= nums.length <= 5000","-5000 <= nums[i] <= 5000","Values are distinct","nums is an increasing array after such a rotation"],
     "examples": [
       {
-        "input": "nums = [3,4,5,1,2]",
-        "output": "1",
-        "explanation": "The original array was [1,2,3,4,5], rotated 3 times."
+        "input": "nums = [6,8,9,2,4]",
+        "output": "2",
+        "explanation": "The sorted order restarts at 2."
       },
       {
-        "input": "nums = [4,5,6,7,0,1,2]",
-        "output": "0",
-        "explanation": "The original array was [0,1,2,4,5,6,7], rotated 4 times."
-      },
-      {
-        "input": "nums = [11,13,15,17]",
-        "output": "11",
-        "explanation": "The array was rotated 4 times, which leaves it unchanged."
+        "input": "nums = [10,20,30]",
+        "output": "10",
+        "explanation": "Nothing was moved, so the first value is the smallest."
       }
     ],
     "functionName": "findMin",
@@ -2813,19 +2778,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,4,5,1,2]],
-        "expected": 1
+        "input": [[6,8,9,2,4]],
+        "expected": 2
       },
       {
-        "input": [[4,5,6,7,0,1,2]],
-        "expected": 0
-      },
-      {
-        "input": [[11,13,15,17]],
-        "expected": 11
+        "input": [[10,20,30]],
+        "expected": 10
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[7,9,11,13,1,3]],
+        "expected": 1
+      },
       {
         "input": [[1]],
         "expected": 1
@@ -2854,25 +2819,20 @@ export const CURATED_PROBLEMS = [
     "slug": "search-in-rotated-sorted-array",
     "difficulty": "Medium",
     "category": "Binary Search",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "An array of **distinct** integers that was sorted in ascending order has been rotated at an unknown pivot. For example, `[0,1,2,4,5,6,7]` may become `[4,5,6,7,0,1,2]`.\n\nGiven the rotated array `nums` and an integer `target`, return the index of `target`, or `-1` if it is not in the array. Your solution must run in **O(log n)** time.",
-    "constraints": ["1 <= nums.length <= 5000","-10^4 <= nums[i] <= 10^4","All values of nums are unique","-10^4 <= target <= 10^4"],
+    "description": "`nums` is an increasing list of distinct integers that has been **cut at some point and had its two halves swapped**, so `[3,7,9,12,15,19]` might now read `[12,15,19,3,7,9]`.\n\nReturn the position of `target` in `nums`, or `-1` if it is absent, in **O(log n)** time.",
+    "constraints": ["1 <= nums.length <= 5000","-10^4 <= nums[i], target <= 10^4","Values are distinct"],
     "examples": [
       {
-        "input": "nums = [4,5,6,7,0,1,2], target = 0",
+        "input": "nums = [12,15,19,3,7,9], target = 7",
         "output": "4",
-        "explanation": "0 is at index 4."
+        "explanation": "7 is at position 4, in the second half."
       },
       {
-        "input": "nums = [4,5,6,7,0,1,2], target = 3",
+        "input": "nums = [12,15,19,3,7,9], target = 10",
         "output": "-1",
-        "explanation": "3 is not in the array."
-      },
-      {
-        "input": "nums = [1], target = 0",
-        "output": "-1",
-        "explanation": "The array has one element and it is not 0."
+        "explanation": "10 is not in the list."
       }
     ],
     "functionName": "search",
@@ -2899,19 +2859,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[4,5,6,7,0,1,2],0],
+        "input": [[12,15,19,3,7,9],7],
         "expected": 4
       },
       {
-        "input": [[4,5,6,7,0,1,2],3],
-        "expected": -1
-      },
-      {
-        "input": [[1],0],
+        "input": [[12,15,19,3,7,9],10],
         "expected": -1
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[8],2],
+        "expected": -1
+      },
       {
         "input": [[1],1],
         "expected": 0
@@ -2925,8 +2885,8 @@ export const CURATED_PROBLEMS = [
         "expected": 0
       },
       {
-        "input": [[4,5,6,7,0,1,2],7],
-        "expected": 3
+        "input": [[12,15,19,3,7,9],19],
+        "expected": 2
       },
       {
         "input": [[-5949,-5944,-5940,-5931,-5926,-5925,-5918,-5913,-5902,-5901,-5898,-5892,-5882,-5880,-5874,-5866,-5864,-5861,-5859,-5858,-5856,-5847,-5840,-5837,-5835,-5832,-5830,-5827,-5817,-5809,-5808,-5797,-5794,-5793,-5776,-5770,-5761,-5757,-5752,-5749,-5747,-5745,-5737,-5735,-5730,-5729,-5727,-5725,-5711,-5707,-5706,-5704,-5703,-5696,-5695,-5692,-5691,-5673,-5661,-5659,-5655,-5648,-5646,-5644,-5637,-5636,-5631,-5628,-5612,-5611,-5610,-5609,-5605,-5595,-5594,-5593,-5589,-5574,-5569,-5567,-5563,-5560,-5556,-5552,-5532,-5529,-5524,-5517,-5515,-5514,-5513,-5509,-5507,-5503,-5489,-5487,-5474,-5472,-5471,-5468,-5467,-5464,-5462,-5458,-5453,-5452,-5451,-5446,-5441,-5438,-5424,-5419,-5416,-5415,-5414,-5411,-5410,-5404,-5402,-5395,-5393,-5383,-5372,-5370,-5366,-5357,-5355,-5354,-5351,-5346,-5344,-5342,-5340,-5339,-5332,-5330,-5328,-5313,-5312,-5307,-5290,-5276,-5272,-5268,-5263,-5256,-5246,-5227,-5219,-5214,-5212,-5211,-5210,-5205,-5200,-5197,-5194,-5193,-5191,-5182,-5181,-5176,-5173,-5170,-5167,-5166,-5161,-5155,-5148,-5146,-5141,-5140,-5135,-5133,-5132,-5129,-5128,-5123,-5122,-5119,-5118,-5114,-5105,-5085,-5079,-5071,-5060,-5056,-5047,-5044,-5040,-5031,-5023,-5015,-5011,-5004,-4995,-4991,-4987,-4980,-4973,-4927,-4917,-4914,-4913,-4911,-4905,-4904,-4902,-4901,-4899,-4893,-4887,-4880,-4879,-4877,-4874,-4872,-4866,-4858,-4854,-4852,-4847,-4841,-4839,-4835,-4830,-4828,-4825,-4824,-4817,-4810,-4809,-4803,-4802,-4799,-4798,-4794,-4793,-4791,-4787,-4775,-4761,-4758,-4757,-4754,-4753,-4751,-4749,-4747,-4746,-4745,-4731,-4726,-4718,-4712,-4707,-4703,-4699,-4694,-4691,-4681,-4668,-4656,-4654,-4649,-4643,-4639,-4622,-4621,-4617,-4613,-4604,-4591,-4584,-4583,-4580,-4576,-4564,-4563,-4551,-4549,-4540,-4536,-4522,-4519,-4512,-4498,-4494,-4493,-4492,-4491,-4487,-4485,-4484,-4481,-4477,-4470,-4461,-4460,-4458,-4446,-4443,-4437,-4431,-4425,-4420,-4412,-4404,-4398,-4392,-4389,-4386,-4381,-4380,-4378,-4374,-4370,-4368,-4363,-4362,-4353,-4352,-4349,-4342,-4341,-4339,-4338,-4331,-4327,-4323,-4310,-4301,-4295,-4291,-4290,-4288,-4279,-4278,-4263,-4262,-4256,-4247,-4242,-4237,-4233,-4230,-4209,-4205,-4195,-4192,-4189,-4184,-4183,-4177,-4164,-4162,-4159,-4156,-4150,-4141,-4136,-4132,-4123,-4111,-4105,-4104,-4094,-4084,-4075,-4067,-4059,-4051,-4046,-4045,-4044,-4031,-4029,-4028,-4012,-4011,-4010,-4008,-4007,-4001,-3998,-3997,-3993,-3992,-3989,-3988,-3985,-3981,-3978,-3977,-3974,-3972,-3970,-3966,-3962,-3961,-3956,-3938,-3934,-3933,-3925,-3922,-3907,-3905,-3903,-3893,-3891,-3884,-3873,-3865,-3853,-3849,-3847,-3844,-3842,-3838,-3837,-3829,-3825,-3824,-3821,-3818,-3817,-3816,-3812,-3810,-3804,-3802,-3775,-3773,-3770,-3764,-3755,-3740,-3736,-3724,-3720,-3716,-3706,-3692,-3678,-3677,-3674,-3669,-3663,-3661,-3658,-3656,-3653,-3652,-3648,-3647,-3640,-3636,-3632,-3629,-3627,-3612,-3599,-3597,-3581,-3580,-3567,-3563,-3562,-3558,-3556,-3553,-3541,-3539,-3536,-3535,-3524,-3520,-3514,-3513,-3509,-3498,-3496,-3487,-3481,-3470,-3468,-3464,-3459,-3458,-3453,-3451,-3447,-3444,-3442,-3441,-3440,-3431,-3430,-3421,-3413,-3411,-3409,-3407,-3384,-3383,-3381,-3380,-3376,-3371,-3365,-3360,-3354,-3350,-3342,-3340,-3337,-3336,-3330,-3328,-3315,-3312,-3305,-3301,-3294,-3283,-3280,-3276,-3271,-3269,-3268,-3265,-3264,-3262,-3259,-3248,-3243,-3241,-3239,-3233,-3232,-3226,-3224,-3222,-3218,-3217,-3215,-3207,-3198,-3195,-3191,-3189,-3185,-3177,-3170,-3161,-3155,-3151,-3150,-3149,-3142,-3141,-3132,-3128,-3125,-3121,-3117,-3115,-3111,-3109,-3096,-3083,-3075,-3071,-3063,-3055,-3046,-3045,-3034,-3033,-3029,-3024,-3019,-3016,-3011,-3007,-2999,-2997,-2991,-2988,-2986,-2979,-2977,-2976,-2974,-2970,-2966,-2965,-2952,-2948,-2947,-2940,-2934,-2930,-2927,-2926,-2920,-2919,-2914,-2913,-2910,-2907,-2901,-2897,-2895,-2894,-2887,-2883,-2882,-2869,-2866,-2856,-2852,-2848,-2840,-2839,-2834,-2831,-2830,-2824,-2808,-2798,-2796,-2795,-2792,-2756,-2749,-2744,-2739,-2737,-2728,-2726,-2723,-2715,-2709,-2690,-2685,-2670,-2658,-2650,-2648,-2637,-2636,-2630,-2619,-2615,-2613,-2611,-2608,-2605,-2602,-2601,-2596,-2595,-2589,-2584,-2583,-2582,-2581,-2575,-2570,-2566,-2565,-2562,-2560,-2555,-2548,-2546,-2520,-2516,-2515,-2505,-2502,-2493,-2489,-2487,-2483,-2482,-2479,-2462,-2448,-2445,-2443,-2440,-2437,-2424,-2422,-2404,-2402,-2401,-2397,-2396,-2395,-2394,-2391,-2387,-2382,-2378,-2376,-2375,-2374,-2372,-2370,-2364,-2358,-2348,-2340,-2338,-2334,-2326,-2325,-2319,-2312,-2305,-2303,-2298,-2297,-2296,-2288,-2286,-2284,-2281,-2278,-2272,-2250,-2248,-2246,-2243,-2240,-2237,-2234,-2229,-2225,-2221,-2219,-2217,-2215,-2214,-2210,-2209,-2206,-2199,-2195,-2191,-2184,-2183,-2182,-2173,-2160,-2159,-2150,-2146,-2138,-2135,-2134,-2133,-2129,-2126,-2125,-2124,-2123,-2122,-2119,-2118,-2116,-2114,-2110,-2105,-2103,-2099,-2098,-2097,-2095,-2086,-2082,-2076,-2070,-2055,-2054,-2049,-2042,-2040,-2038,-2031,-2029,-2027,-2025,-2015,-2012,-2010,-2009,-2003,-2000,-1990,-1987,-1986,-1979,-1971,-1970,-1967,-1963,-1961,-1958,-1949,-1947,-1944,-1928,-1927,-1917,-1915,-1914,-1911,-1908,-1906,-1904,-1900,-1893,-1891,-1890,-1889,-1887,-1886,-1883,-1875,-1873,-1872,-1864,-1862,-1859,-1858,-1854,-1840,-1836,-1831,-1826,-1820,-1817,-1806,-1799,-1794,-1789,-1788,-1785,-1779,-1763,-1749,-1733,-1732,-1728,-1726,-1723,-1717,-1716,-1712,-1711,-1703,-1694,-1692,-1688,-1686,-1682,-1679,-1677,-1676,-1670,-1666,-1660,-1653,-1649,-1648,-1630,-1626,-1620,-1612,-1610,-1606,-1601,-1588,-1584,-1577,-1558,-1552,-1551,-1547,-1544,-1540,-1531,-1529,-1519,-1517,-1514,-1512,-1510,-1508,-1506,-1504,-1500,-1497,-1493,-1489,-1482,-1477,-1473,-1470,-1456,-1448,-1447,-1444,-1442,-1433,-1418,-1413,-1412,-1411,-1404,-1396,-1394,-1388,-1385,-1377,-1376,-1375,-1371,-1368,-1363,-1358,-1357,-1352,-1347,-1328,-1327,-1323,-1322,-1317,-1311,-1309,-1305,-1299,-1298,-1296,-1254,-1241,-1223,-1221,-1216,-1214,-1212,-1211,-1210,-1198,-1197,-1196,-1195,-1193,-1191,-1189,-1187,-1185,-1184,-1179,-1177,-1170,-1167,-1166,-1165,-1163,-1151,-1150,-1149,-1136,-1133,-1131,-1130,-1128,-1120,-1117,-1103,-1096,-1094,-1092,-1089,-1087,-1080,-1061,-1059,-1057,-1056,-1047,-1042,-1039,-1038,-1037,-1033,-1031,-1023,-1014,-1010,-1005,-1001,-995,-982,-977,-976,-972,-969,-967,-958,-951,-948,-946,-945,-944,-937,-933,-930,-929,-925,-914,-912,-911,-909,-908,-907,-902,-898,-896,-895,-893,-889,-884,-880,-872,-870,-866,-853,-847,-841,-838,-836,-834,-832,-830,-825,-822,-820,-800,-796,-788,-786,-783,-775,-769,-768,-766,-765,-764,-762,-755,-726,-722,-709,-708,-697,-691,-685,-684,-670,-661,-654,-653,-650,-645,-641,-633,-632,-631,-627,-623,-622,-619,-615,-613,-607,-595,-592,-589,-588,-583,-580,-561,-559,-552,-546,-542,-536,-533,-525,-523,-520,-510,-509,-501,-500,-492,-487,-478,-477,-470,-453,-451,-449,-448,-446,-442,-441,-438,-436,-435,-428,-422,-420,-415,-407,-396,-393,-389,-378,-375,-373,-372,-357,-355,-353,-349,-343,-342,-339,-336,-331,-328,-315,-313,-310,-291,-279,-268,-263,-259,-250,-247,-245,-243,-240,-237,-236,-235,-234,-233,-231,-228,-223,-217,-205,-203,-201,-198,-195,-193,-190,-186,-185,-183,-174,-171,-166,-155,-150,-146,-140,-134,-130,-128,-122,-111,-109,-108,-100,-99,-89,-86,-85,-83,-75,-73,-72,-71,-70,-69,-67,-64,-63,-60,-57,-55,-54,-53,-36,-32,-30,-2,0,3,6,12,16,19,20,22,28,31,38,59,61,63,64,76,80,82,88,89,91,92,98,109,125,126,130,131,139,141,146,147,148,154,156,162,179,181,184,187,199,202,212,215,216,222,227,238,241,254,255,259,269,273,274,277,278,280,281,284,289,293,295,296,303,311,314,317,319,334,342,351,359,363,377,379,382,391,395,405,407,408,413,414,418,427,431,432,433,443,448,462,464,477,480,481,487,491,492,498,499,504,513,518,525,527,528,530,535,538,539,542,545,550,558,571,573,579,591,592,595,597,599,600,602,608,612,614,633,635,636,648,649,666,671,673,675,687,688,690,694,695,696,698,701,712,714,721,729,734,738,741,747,749,751,753,761,768,771,773,778,779,784,793,800,802,804,812,818,820,842,847,851,855,860,864,865,866,892,905,906,907,908,914,923,924,925,930,931,935,936,939,943,948,954,960,962,973,975,981,984,987,990,995,998,999,1012,1015,1029,1034,1043,1044,1047,1050,1074,1076,1077,1084,1085,1089,1091,1097,1098,1100,1113,1116,1123,1129,1130,1133,1135,1144,1148,1149,1155,1156,1157,1164,1167,1173,1181,1200,1204,1206,1211,1212,1213,1218,1223,1229,1230,1232,1240,1247,1249,1250,1260,1275,1293,1301,1312,1323,1334,1341,1349,1352,1355,1360,1365,1372,1398,1408,1409,1415,1419,1428,1436,1440,1445,1448,1452,1454,1455,1456,1467,1469,1472,1476,1484,1487,1489,1499,1502,1510,1515,1521,1528,1532,1533,1534,1537,1539,1543,1548,1551,1555,1556,1558,1559,1563,1564,1567,1572,1578,1583,1585,1587,1589,1601,1603,1613,1628,1639,1644,1645,1647,1651,1654,1661,1662,1667,1692,1693,1697,1699,1704,1722,1727,1728,1729,1743,1751,1756,1760,1766,1776,1778,1781,1782,1785,1787,1805,1808,1825,1828,1829,1833,1846,1850,1856,1867,1868,1870,1877,1880,1881,1892,1893,1895,1901,1902,1903,1904,1908,1909,1910,1912,1917,1923,1924,1927,1929,1934,1937,1939,1940,1941,1943,1953,1960,1961,1967,1970,1973,1977,1978,1979,1983,1992,1993,1994,1998,2006,2009,2011,2014,2015,2021,2022,2025,2034,2036,2038,2042,2051,2055,2056,2062,2069,2074,2077,2078,2079,2083,2084,2087,2089,2100,2101,2104,2109,2114,2119,2121,2127,2131,2147,2148,2149,2157,2166,2168,2171,2173,2194,2197,2200,2209,2210,2214,2216,2224,2227,2234,2238,2243,2244,2246,2247,2249,2252,2258,2265,2273,2274,2279,2283,2284,2287,2299,2302,2312,2316,2318,2328,2330,2335,2340,2350,2354,2356,2377,2380,2397,2406,2407,2409,2411,2412,2414,2416,2417,2430,2440,2450,2475,2478,2482,2485,2498,2502,2508,2513,2515,2519,2520,2528,2529,2545,2550,2554,2561,2583,2596,2599,2603,2606,2611,2612,2613,2623,2627,2628,2632,2633,2655,2656,2661,2667,2680,2681,2689,2691,2694,2702,2710,2712,2713,2714,2715,2719,2725,2731,2732,2738,2739,2745,2746,2754,2755,2757,2776,2777,2787,2789,2791,2792,2793,2803,2810,2811,2815,2817,2821,2822,2830,2846,2851,2854,2855,2859,2866,2869,2882,2886,2897,2905,2908,2920,2921,2923,2932,2933,2936,2937,2945,2946,2948,2962,2964,2969,2976,2978,2980,2990,2992,2993,2998,3009,3011,3012,3040,3047,3052,3056,3061,3064,3068,3074,3091,3104,3106,3119,3120,3124,3130,3148,3158,3168,3170,3176,3180,3185,3186,3188,3191,3195,3197,3200,3202,3207,3213,3216,3217,3219,3220,3222,3234,3238,3244,3248,3250,3255,3265,3266,3272,3274,3278,3290,3300,3304,3309,3315,3321,3323,3328,3330,3334,3336,3338,3341,3344,3349,3352,3353,3354,3355,3358,3361,3363,3364,3370,3379,3384,3385,3389,3395,3400,3409,3411,3414,3421,3422,3433,3459,3460,3467,3468,3470,3482,3483,3497,3519,3525,3526,3532,3534,3535,3542,3545,3547,3548,3551,3583,3586,3587,3588,3595,3596,3600,3603,3609,3611,3613,3617,3622,3629,3631,3632,3639,3641,3642,3646,3647,3655,3670,3674,3679,3682,3686,3689,3693,3702,3706,3713,3721,3723,3745,3746,3751,3757,3761,3769,3771,3786,3789,3790,3795,3797,3800,3805,3817,3822,3826,3827,3842,3843,3844,3846,3863,3866,3867,3879,3882,3886,3891,3897,3899,3910,3914,3918,3922,3931,3937,3940,3948,3949,3952,3965,3966,3972,3973,3974,3981,3990,3991,3999,4001,4006,4008,4009,4011,4024,4028,4031,4032,4049,4053,4055,4061,4063,4064,4066,4068,4074,4081,4083,4087,4091,4093,4101,4104,4106,4113,4116,4117,4118,4125,4131,4142,4152,4153,4154,4160,4166,4168,4187,4196,4201,4206,4213,4214,4215,4221,4226,4228,4233,4237,4243,4251,4254,4275,4276,4282,4283,4291,4292,4294,4296,4305,4307,4309,4310,4320,4324,4331,4334,4335,4340,4342,4346,4353,4359,4363,4365,4367,4376,4377,4381,4383,4387,4390,4392,4394,4402,4407,4411,4416,4419,4452,4453,4454,4459,4464,4467,4468,4471,4474,4483,4501,4503,4506,4507,4513,4520,4521,4524,4527,4528,4529,4533,4539,4541,4545,4547,4548,4549,4553,4569,4570,4578,4580,4581,4586,4589,4592,4596,4597,4609,4610,4611,4612,4616,4621,4624,4628,4630,4636,4640,4644,4645,4656,4660,4666,4669,4672,4675,4680,4684,4687,4688,4690,4695,4696,4698,4700,4703,4705,4709,4719,4720,4732,4735,4738,4746,4750,4752,4756,4761,4771,4773,4782,4791,4807,4809,4817,4818,4821,4832,4835,4847,4848,4854,4869,4871,4872,4873,4874,4877,4878,4879,4880,4881,4882,4884,4889,4892,4895,4902,4903,4913,4923,4927,4928,4930,4932,4933,4938,4950,4953,4965,4967,4975,4976,4990,5005,5008,5022,5034,5038,5039,5041,5044,5049,5053,5058,5061,5071,5074,5087,5088,5094,5095,5097,5100,5107,5113,5120,5126,5128,5131,5136,5144,5152,5159,5171,5181,5183,5185,5199,5212,5214,5218,5226,5227,5240,5242,5249,5258,5261,5262,5270,5287,5294,5298,5300,5305,5308,5315,5316,5317,5319,5322,5327,5334,5337,5338,5342,5357,5364,5373,5374,5375,5376,5387,5395,5397,5422,5425,5426,5431,5453,5456,5458,5459,5460,5461,5473,5474,5475,5480,5487,5498,5501,5505,5508,5511,5522,5530,5531,5532,5534,5543,5549,5555,5561,5562,5563,5565,5574,5578,5582,5585,5595,5601,5603,5605,5609,5614,5618,5628,5630,5631,5635,5645,5648,5649,5662,5669,5670,5673,5674,5676,5677,5679,5683,5692,5697,5707,5709,5711,5713,5716,5728,5732,5737,5739,5740,5745,5747,5750,5751,5755,5766,5772,5773,5775,5790,5791,5792,5794,5810,5821,5822,5824,5826,5828,5835,5843,5844,5845,5850,5852,5854,5858,5874,5876,5877,5881,5884,5889,5890,5891,5894,5895,5897,5902,5903,5911,5920,5924,5925,5927,5929,5932,5951,5956,5957,5962,5964,5965,5980,5988,5989,5992,6005,6006,6019,6024,6026,6030,6031,6033,6044,6050,6052,6054,6055,6059,6066,6069,6070,6071,6076,6082,6084,6085,6118,6123,6132,6133,6135,6136,6139,6140,6141,6149,6167,6168,6177,6178,6179,6183,6184,6197,6200,6203,6205,6214,6218,6223,6231,6235,6240,6241,6242,6246,6248,6253,6255,6277,6280,6283,6299,6301,6305,6313,6315,6319,6325,6327,6333,6336,6348,6355,6356,6357,6360,6366,6370,6382,6384,6396,6397,6404,6410,6415,6418,6420,6421,6425,6427,6428,6441,6451,6458,6459,6460,6469,6470,6473,6478,6480,6489,6493,6503,6513,6516,6522,6523,6524,6526,6532,6533,6539,6544,6547,6554,6564,6565,6568,6575,6579,6583,6589,6596,6606,6608,6609,6610,6618,6621,6629,6631,6633,6635,6636,6643,6653,6664,6665,6666,6667,6669,6670,6672,6679,6682,6691,6692,6695,6697,6707,6709,6711,6716,6724,6733,6741,6742,6745,6748,6749,6757,6760,6767,6770,6773,6778,6785,6788,6793,6795,6800,6807,6808,6812,6813,6832,6836,6837,6840,6841,6851,6853,6854,6861,6868,6872,6875,6877,6879,6884,6889,6899,6920,6924,6926,6939,6943,6944,6948,6952,6956,6964,6967,6968,6979,6994,7001,7011,7012,7014,7024,7029,7030,7060,7066,7067,7088,7091,7098,7101,7110,7120,7122,7124,7126,7129,7132,7135,7146,7147,7151,7155,7160,7166,7176,7187,7191,7194,7195,7199,7203,7205,7206,7208,7212,7216,7220,7225,7229,7232,7233,7240,7243,7246,7251,7253,7256,7266,7270,7273,7282,7296,7302,7307,7308,7311,7314,7317,7318,7320,7324,7330,7332,7335,7342,7346,7351,7353,7354,7359,7368,7370,7371,7377,7385,7388,7404,7407,7413,7420,7424,7426,7429,7432,7446,7448,7451,7476,7489,7490,7496,7498,7500,7512,7519,7526,7527,7528,7536,7545,7549,7552,7562,7566,7574,7575,7576,7577,7583,7587,7591,7595,7596,7600,7605,7610,7614,7619,7622,7623,7628,7632,7643,7650,7661,7663,7664,7675,7677,7680,7681,7683,7691,7696,7700,7702,7706,7707,7709,7710,7713,7717,7718,7730,7734,7736,7742,7743,7746,7749,7750,7759,7762,7765,7769,7770,7772,7779,7785,7791,7800,7801,7810,7816,7819,7824,7830,7834,7838,7843,7860,7861,7871,7872,7876,7879,7888,7892,7897,7901,7907,7909,7918,7924,7929,7936,7938,7939,7941,7944,7945,7951,7954,7955,7959,7962,7966,7972,7973,7985,7989,7991,7998,8000,8005,8007,8011,8022,8027,8032,8041,8044,8045,8058,8060,8068,8089,8090,8091,8097,8106,8107,8112,8114,8115,8130,8131,8138,8147,8159,8160,8161,8167,8174,8176,8177,8181,8184,8186,8200,8201,8204,8212,8214,8215,8221,8222,8227,8228,8231,8232,8233,8240,8248,8254,8268,8269,8270,8273,8281,8296,8297,8301,8308,8315,8323,8331,8332,8334,8336,8349,8352,8356,8369,8380,8382,8392,8395,8405,8408,8409,8410,8411,8414,8420,8423,8433,8438,8444,8458,8461,8474,8504,8510,8514,8517,8529,8537,8538,8541,8545,8549,8553,8555,8560,8563,8567,8569,8570,8576,8578,8582,8583,8593,8594,8596,8599,8619,8621,8622,8624,8627,8630,8637,8641,8644,8654,8657,8659,8660,8663,8675,8677,8680,8685,8689,8692,8695,8697,8699,8709,8715,8717,8734,8739,8750,8752,8754,8757,8758,8763,8767,8770,8785,8786,8792,8795,8797,8799,8812,8818,8821,8822,8826,8832,8834,8839,8840,8843,8851,8855,8856,8859,8869,8870,8876,8888,8903,8904,8905,8909,8911,8930,8946,8956,8958,8961,8973,8976,8990,8991,9003,9012,9013,9015,9018,9035,9043,9045,9051,9057,9059,9062,9063,9065,9067,9074,9076,9087,9094,9095,9096,9097,9099,9100,9109,9111,9112,9117,9123,9127,9128,9135,9138,9140,9143,9147,9157,9161,9163,9164,9165,9172,9175,9183,9186,9187,9191,9198,9200,9207,9223,9227,9230,9232,9244,9249,9253,9254,9257,9261,9265,9273,9275,9279,9281,9293,9297,9305,9332,9344,9349,9359,9364,9367,9368,9371,9372,9375,9384,9386,9388,9390,9403,9404,9405,9421,9430,9434,9438,9446,9449,9452,9458,9460,9471,9479,9480,9482,9483,9484,9491,9497,9509,9514,9517,9520,9533,9536,9543,9547,9548,9550,9552,9556,9564,9565,9572,9575,9586,9587,9588,9589,9593,9596,9599,9608,9610,9615,9626,9632,9638,9641,9642,9643,9646,9649,9659,9664,9671,9677,9679,9680,9682,9683,9685,9694,9704,9708,9710,9716,9718,9732,9736,9740,9755,9762,9764,9771,9773,9774,9787,9790,9798,9804,9810,9812,9813,9819,9821,9845,9847,9849,9858,9859,9864,9869,9875,9884,9886,9896,9905,9907,9924,9934,9935,9945,9946,9950,9955,9959,9965,9967,9971,9984,9985,9987,9989,10000,-10000,-9999,-9992,-9989,-9985,-9974,-9957,-9952,-9948,-9947,-9944,-9943,-9941,-9939,-9938,-9931,-9930,-9921,-9905,-9896,-9887,-9886,-9882,-9874,-9869,-9867,-9866,-9865,-9853,-9846,-9840,-9830,-9828,-9823,-9821,-9819,-9814,-9810,-9809,-9808,-9805,-9802,-9797,-9796,-9795,-9794,-9791,-9790,-9789,-9781,-9772,-9749,-9748,-9743,-9731,-9722,-9709,-9701,-9700,-9685,-9670,-9669,-9664,-9662,-9652,-9649,-9647,-9643,-9635,-9633,-9620,-9617,-9610,-9607,-9601,-9598,-9597,-9595,-9584,-9582,-9580,-9579,-9576,-9573,-9571,-9569,-9568,-9567,-9553,-9551,-9547,-9541,-9538,-9537,-9522,-9509,-9508,-9492,-9486,-9478,-9471,-9469,-9467,-9457,-9455,-9453,-9450,-9445,-9442,-9434,-9432,-9406,-9403,-9392,-9390,-9388,-9377,-9366,-9356,-9355,-9348,-9329,-9324,-9321,-9314,-9313,-9310,-9296,-9286,-9284,-9281,-9278,-9261,-9251,-9250,-9244,-9235,-9234,-9226,-9216,-9209,-9204,-9203,-9192,-9190,-9187,-9186,-9184,-9175,-9173,-9170,-9164,-9161,-9152,-9151,-9144,-9143,-9136,-9115,-9110,-9108,-9100,-9096,-9093,-9080,-9078,-9074,-9072,-9068,-9067,-9055,-9050,-9046,-9043,-9035,-9031,-9024,-9021,-9017,-9014,-9008,-9002,-9000,-8999,-8997,-8988,-8975,-8969,-8959,-8957,-8953,-8943,-8938,-8933,-8932,-8931,-8929,-8919,-8916,-8915,-8914,-8913,-8907,-8905,-8904,-8886,-8881,-8874,-8871,-8865,-8861,-8859,-8855,-8839,-8834,-8833,-8829,-8819,-8813,-8800,-8798,-8796,-8795,-8793,-8792,-8790,-8789,-8780,-8777,-8775,-8771,-8770,-8767,-8763,-8751,-8748,-8744,-8743,-8731,-8722,-8717,-8708,-8707,-8701,-8698,-8697,-8678,-8676,-8675,-8671,-8663,-8654,-8652,-8649,-8641,-8640,-8638,-8628,-8626,-8624,-8623,-8620,-8615,-8601,-8599,-8596,-8589,-8585,-8582,-8576,-8573,-8570,-8565,-8546,-8545,-8540,-8536,-8529,-8527,-8521,-8518,-8516,-8515,-8505,-8491,-8489,-8488,-8487,-8486,-8481,-8468,-8464,-8462,-8432,-8429,-8426,-8418,-8412,-8409,-8407,-8406,-8403,-8401,-8397,-8394,-8392,-8390,-8383,-8380,-8352,-8342,-8335,-8302,-8299,-8295,-8287,-8259,-8254,-8250,-8244,-8240,-8239,-8238,-8236,-8234,-8227,-8211,-8205,-8202,-8201,-8198,-8197,-8182,-8181,-8175,-8172,-8170,-8169,-8158,-8157,-8155,-8153,-8151,-8146,-8136,-8134,-8132,-8130,-8119,-8117,-8111,-8105,-8093,-8088,-8087,-8083,-8080,-8078,-8066,-8062,-8054,-8040,-8025,-8020,-8019,-8014,-8001,-7996,-7993,-7986,-7984,-7983,-7981,-7980,-7975,-7973,-7968,-7967,-7953,-7946,-7942,-7937,-7932,-7927,-7926,-7923,-7920,-7919,-7913,-7911,-7909,-7899,-7898,-7895,-7889,-7884,-7872,-7870,-7867,-7864,-7861,-7860,-7858,-7853,-7851,-7838,-7833,-7827,-7810,-7802,-7799,-7798,-7793,-7792,-7778,-7776,-7766,-7758,-7756,-7750,-7747,-7742,-7738,-7736,-7733,-7728,-7725,-7724,-7723,-7722,-7717,-7716,-7708,-7704,-7702,-7700,-7683,-7679,-7672,-7666,-7665,-7661,-7654,-7652,-7643,-7639,-7638,-7629,-7623,-7622,-7590,-7586,-7584,-7581,-7577,-7576,-7574,-7569,-7568,-7566,-7564,-7548,-7520,-7517,-7510,-7500,-7497,-7496,-7490,-7488,-7477,-7476,-7475,-7473,-7466,-7460,-7457,-7451,-7445,-7439,-7432,-7422,-7415,-7414,-7409,-7398,-7391,-7390,-7386,-7382,-7381,-7377,-7371,-7368,-7362,-7353,-7348,-7336,-7332,-7329,-7319,-7303,-7300,-7298,-7295,-7293,-7286,-7275,-7273,-7271,-7268,-7266,-7262,-7261,-7259,-7251,-7247,-7244,-7241,-7237,-7217,-7216,-7209,-7206,-7204,-7198,-7195,-7190,-7185,-7170,-7168,-7165,-7161,-7157,-7148,-7131,-7130,-7129,-7115,-7111,-7101,-7100,-7095,-7074,-7064,-7063,-7062,-7057,-7056,-7029,-7019,-7012,-7011,-7005,-7004,-6997,-6995,-6994,-6986,-6982,-6969,-6964,-6963,-6952,-6950,-6949,-6945,-6938,-6935,-6929,-6922,-6919,-6912,-6904,-6899,-6887,-6886,-6881,-6879,-6877,-6873,-6869,-6857,-6856,-6855,-6854,-6849,-6848,-6844,-6841,-6836,-6832,-6825,-6823,-6820,-6819,-6818,-6814,-6809,-6800,-6797,-6795,-6792,-6790,-6787,-6785,-6784,-6783,-6780,-6775,-6773,-6766,-6765,-6761,-6760,-6755,-6753,-6738,-6735,-6732,-6728,-6716,-6712,-6709,-6692,-6689,-6674,-6666,-6665,-6664,-6663,-6662,-6655,-6652,-6644,-6642,-6639,-6633,-6631,-6619,-6612,-6607,-6605,-6591,-6575,-6570,-6562,-6560,-6550,-6545,-6530,-6526,-6518,-6517,-6515,-6511,-6510,-6508,-6505,-6500,-6499,-6498,-6495,-6494,-6488,-6468,-6466,-6464,-6459,-6458,-6451,-6450,-6444,-6443,-6437,-6434,-6433,-6429,-6424,-6421,-6410,-6409,-6408,-6403,-6397,-6393,-6384,-6376,-6374,-6371,-6363,-6361,-6356,-6351,-6350,-6348,-6346,-6343,-6337,-6332,-6331,-6326,-6324,-6319,-6317,-6314,-6309,-6300,-6293,-6290,-6287,-6285,-6272,-6265,-6260,-6246,-6242,-6236,-6225,-6217,-6215,-6214,-6209,-6208,-6201,-6192,-6188,-6180,-6177,-6175,-6169,-6167,-6166,-6155,-6152,-6150,-6148,-6145,-6144,-6140,-6139,-6136,-6128,-6118,-6116,-6115,-6110,-6106,-6104,-6103,-6094,-6083,-6081,-6074,-6062,-6058,-6057,-6056,-6051,-6044,-6038,-6037,-6034,-6026,-6025,-6014,-6012,-6006,-6005,-6004,-5983,-5972,-5971,-5970,-5969,-5965,-5952],-8763],
@@ -2940,31 +2900,31 @@ export const CURATED_PROBLEMS = [
   },
   {
     "id": "time-based-key-value-store",
-    "title": "Time Based Key-Value Store",
-    "slug": "time-based-key-value-store",
+    "title": "Settings History",
+    "slug": "settings-history",
     "difficulty": "Medium",
     "category": "Binary Search",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Design a key-value store that keeps **multiple values for the same key at different timestamps** and can return the value a key had at a given time.\n\nImplement the `TimeMap` class:\n\n- `TimeMap()` creates the store.\n- `set(key, value, timestamp)` stores `value` for `key` at the given `timestamp`.\n- `get(key, timestamp)` returns the value that was set with the **largest timestamp that is less than or equal to** the requested one. If there is no such value, it returns `\"\"`.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
-    "constraints": ["1 <= key.length, value.length <= 100","key and value consist of lowercase letters and digits","1 <= timestamp <= 10^7","All timestamps passed to set for the same key are strictly increasing","At most 2 * 10^5 calls are made"],
+    "description": "An app saves every change to its settings, so you can later ask **what a setting was at any moment in the past**.\n\nImplement the `SettingsHistory` class:\n\n- `SettingsHistory()` starts with no saved changes.\n- `set(key, value, timestamp)` records that setting `key` changed to `value` at time `timestamp`.\n- `get(key, timestamp)` returns the value `key` held at time `timestamp`: the value from its **latest change at or before that time**, or `\"\"` if it had not been set yet.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
+    "constraints": ["1 <= key.length, value.length <= 100","Keys and values use lowercase letters and digits","1 <= timestamp <= 10^7","Each key is set with strictly increasing timestamps","At most 2 * 10^5 calls in total"],
     "examples": [
       {
-        "input": "operations = [\"TimeMap\",\"set\",\"get\",\"get\",\"set\",\"get\",\"get\"], arguments = [[],[\"foo\",\"bar\",1],[\"foo\",1],[\"foo\",3],[\"foo\",\"bar2\",4],[\"foo\",4],[\"foo\",5]]",
-        "output": "[null,null,\"bar\",\"bar\",null,\"bar2\",\"bar2\"]",
-        "explanation": "The value set at time 1 is returned for times 1 and 3. After \"bar2\" is set at time 4, it is returned for times 4 and 5."
+        "input": "operations = [\"SettingsHistory\",\"set\",\"get\",\"get\",\"set\",\"get\"], arguments = [[],[\"theme\",\"dark\",2],[\"theme\",1],[\"theme\",6],[\"theme\",\"light\",7],[\"theme\",8]]",
+        "output": "[null,null,\"\",\"dark\",null,\"light\"]",
+        "explanation": "\"theme\" was unset at time 1 and \"dark\" at time 6. After it changes to \"light\" at time 7, time 8 sees \"light\"."
       }
     ],
-    "functionName": "TimeMap",
+    "functionName": "SettingsHistory",
     "kind": "design",
     "starterCode": {
-      "javascript": "class TimeMap {\n  constructor() {\n  }\n\n  set(key, value, timestamp) {\n  }\n\n  get(key, timestamp) {\n  }\n}",
-      "python": "class TimeMap:\n    def __init__(self):\n        pass\n\n    def set(self, key, value, timestamp):\n        pass\n\n    def get(self, key, timestamp):\n        pass",
-      "cpp": "class TimeMap {\npublic:\n    TimeMap() {\n    }\n\n    void set(string key, string value, int timestamp) {\n    }\n\n    string get(string key, int timestamp) {\n    }\n};"
+      "javascript": "class SettingsHistory {\n  constructor() {\n  }\n\n  set(key, value, timestamp) {\n  }\n\n  get(key, timestamp) {\n  }\n}",
+      "python": "class SettingsHistory:\n    def __init__(self):\n        pass\n\n    def set(self, key, value, timestamp):\n        pass\n\n    def get(self, key, timestamp):\n        pass",
+      "cpp": "class SettingsHistory {\npublic:\n    SettingsHistory() {\n    }\n\n    void set(string key, string value, int timestamp) {\n    }\n\n    string get(string key, int timestamp) {\n    }\n};"
     },
     "cppSpec": {
       "kind": "design",
-      "className": "TimeMap",
+      "className": "SettingsHistory",
       "ctor": [],
       "methods": [
         {
@@ -2983,25 +2943,25 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [["TimeMap","set","get","get","set","get","get"],[[],["foo","bar",1],["foo",1],["foo",3],["foo","bar2",4],["foo",4],["foo",5]]],
-        "expected": [null,null,"bar","bar",null,"bar2","bar2"]
+        "input": [["SettingsHistory","set","get","get","set","get"],[[],["theme","dark",2],["theme",1],["theme",6],["theme","light",7],["theme",8]]],
+        "expected": [null,null,"","dark",null,"light"]
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [["TimeMap","get","set","get"],[[],["a",5],["a","x",10],["a",9]]],
+        "input": [["SettingsHistory","get","set","get"],[[],["a",5],["a","x",10],["a",9]]],
         "expected": [null,"",null,""]
       },
       {
-        "input": [["TimeMap","set","set","get","get","get"],[[],["k1","v1",1],["k2","w1",2],["k1",2],["k2",1],["k2",2]]],
+        "input": [["SettingsHistory","set","set","get","get","get"],[[],["k1","v1",1],["k2","w1",2],["k1",2],["k2",1],["k2",2]]],
         "expected": [null,null,null,"v1","","w1"]
       },
       {
-        "input": [["TimeMap","set","set","set","get","get","get","get"],[[],["love","high",10],["love","low",20],["love","mid",30],["love",5],["love",10],["love",15],["love",25]]],
-        "expected": [null,null,null,null,"","high","high","low"]
+        "input": [["SettingsHistory","set","set","set","get","get","get","get"],[[],["mode","eco",10],["mode","sport",20],["mode","normal",30],["mode",5],["mode",10],["mode",15],["mode",25]]],
+        "expected": [null,null,null,null,"","eco","eco","sport"]
       },
       {
-        "input": [["TimeMap","set","set","set","get","set","set","set","set","set","set","set","get","get","set","set","set","get","set","set","set","set","set","set","get","set","get","set","set","set","set","set","get","get","set","set","set","set","set","set","set","get","set","set","get","get","set","get","set","set","set","get","get","get","set","set","set","set","set","get","set","set","set","set","set","set","set","get","get","set","set","get","set","get","set","get","set","set","set","get","set","set","set","get","get","get","get","set","set","set","set","set","set","set","get","get","set","set","set","set","get","set","get","set","set","set","get","get","set","set","set","get","get","set","set","get","set","get","set","set","get","set","set","set","get","get","get","get","get","get","set","get","set","get","set","set","set","get","set","set","set","get","get","set","get","set","set","set","get","set","get","set","get","get","get","get","set","set","set","set","get","set","set","set","set","get","get","set","set","set","get","set","get","set","get","set","get","set","get","get","set","set","set","set","get","set","set","get","get","get","set","set","set","set","get","set","get","get","set","get","set","get","set","get","get","set","get","set","get","set","set","set","set","get","set","get","set","set","get","set","set","set","set","get","set","set","get","set","set","get","set","set","get","set","get","set","set","set","get","set","get","get","get","set","get","get","set","set","get","set","set","set","set","set","set","get","set","get","get","set","get","get","set","get","get","set","set","set","get","set","set","set","set","set","set","get","get","get","set","set","set","set","set","get","set","get","set","set","get","get","set","set","set","set","set","set","get","get","set","get","set"],[[],["key3","v0",1],["key3","v1",2],["key1","v2",3],["key2",5],["key2","v4",8],["key2","v5",12],["key2","v6",15],["key2","v7",16],["key2","v8",20],["key3","v9",25],["key3","v10",30],["key2",6],["key3",2],["key3","v13",31],["key2","v14",33],["key2","v15",37],["key1",32],["key1","v17",42],["key3","v18",45],["key3","v19",50],["key1","v20",53],["key3","v21",57],["key3","v22",58],["key2",41],["key2","v24",63],["key3",36],["key2","v26",67],["key2","v27",72],["key2","v28",75],["key2","v29",79],["key3","v30",83],["key1",5],["key1",60],["key2","v33",87],["key1","v34",90],["key2","v35",91],["key1","v36",95],["key2","v37",98],["key1","v38",102],["key3","v39",105],["key1",61],["key3","v41",110],["key3","v42",114],["key3",73],["key1",25],["key2","v45",115],["key1",39],["key3","v47",120],["key2","v48",122],["key1","v49",127],["key3",114],["key2",49],["key3",34],["key1","v53",129],["key1","v54",130],["key3","v55",133],["key3","v56",137],["key1","v57",139],["key3",15],["key3","v59",141],["key3","v60",143],["key2","v61",145],["key2","v62",149],["key3","v63",150],["key3","v64",155],["key3","v65",156],["key3",93],["key3",14],["key1","v68",161],["key1","v69",166],["key1",26],["key3","v71",171],["key1",123],["key1","v73",173],["key1",134],["key3","v75",174],["key1","v76",179],["key1","v77",180],["key1",147],["key3","v79",183],["key3","v80",185],["key1","v81",190],["key3",123],["key2",35],["key2",14],["key1",70],["key1","v86",195],["key1","v87",198],["key3","v88",199],["key3","v89",203],["key1","v90",208],["key3","v91",211],["key3","v92",212],["key3",35],["key3",22],["key1","v95",216],["key1","v96",218],["key1","v97",223],["key3","v98",225],["key2",129],["key1","v100",228],["key2",8],["key1","v102",229],["key2","v103",231],["key1","v104",235],["key3",135],["key2",176],["key1","v107",238],["key1","v108",240],["key2","v109",242],["key3",121],["key3",205],["key2","v112",246],["key3","v113",251],["key1",146],["key3","v115",252],["key2",28],["key3","v117",256],["key2","v118",259],["key2",184],["key3","v120",261],["key1","v121",264],["key3","v122",265],["key3",11],["key2",8],["key3",58],["key1",266],["key3",2],["key1",213],["key3","v129",266],["key1",33],["key2","v131",269],["key2",268],["key2","v133",273],["key2","v134",274],["key1","v135",276],["key2",5],["key2","v137",281],["key2","v138",282],["key2","v139",285],["key1",103],["key1",198],["key1","v142",287],["key1",98],["key2","v144",288],["key3","v145",290],["key1","v146",291],["key3",34],["key1","v148",292],["key1",62],["key1","v150",296],["key2",180],["key2",163],["key3",57],["key2",165],["key1","v155",298],["key3","v156",303],["key2","v157",306],["key2","v158",311],["key2",210],["key3","v160",315],["key1","v161",316],["key3","v162",320],["key2","v163",325],["key2",30],["key3",148],["key2","v166",328],["key2","v167",331],["key2","v168",332],["key1",169],["key1","v170",337],["key1",265],["key3","v172",342],["key1",309],["key3","v174",346],["key3",38],["key1","v176",349],["key2",2],["key3",321],["key3","v179",350],["key2","v180",351],["key3","v181",353],["key3","v182",354],["key3",97],["key1","v184",357],["key2","v185",360],["key3",119],["key3",26],["key2",192],["key2","v189",362],["key2","v190",366],["key1","v191",370],["key2","v192",372],["key2",227],["key3","v194",376],["key1",292],["key3",261],["key2","v197",377],["key1",263],["key1","v199",378],["key2",146],["key2","v201",379],["key1",16],["key3",259],["key2","v204",381],["key2",141],["key1","v206",382],["key2",72],["key3","v208",387],["key1","v209",391],["key1","v210",396],["key1","v211",399],["key2",327],["key2","v213",404],["key3",229],["key3","v215",406],["key2","v216",409],["key2",77],["key1","v218",413],["key1","v219",417],["key3","v220",418],["key1","v221",423],["key2",58],["key1","v223",425],["key3","v224",430],["key2",132],["key2","v226",434],["key1","v227",437],["key3",88],["key2","v229",438],["key3","v230",439],["key1",441],["key2","v232",444],["key2",210],["key2","v234",449],["key1","v235",450],["key3","v236",454],["key2",369],["key1","v238",459],["key1",408],["key3",286],["key2",188],["key1","v242",461],["key1",370],["key1",290],["key3","v245",466],["key3","v246",470],["key3",410],["key3","v248",474],["key1","v249",478],["key2","v250",480],["key1","v251",485],["key2","v252",490],["key1","v253",493],["key1",313],["key3","v255",495],["key3",77],["key3",323],["key2","v258",498],["key2",400],["key2",192],["key2","v261",503],["key1",242],["key3",146],["key1","v264",506],["key2","v265",511],["key1","v266",512],["key2",162],["key2","v268",515],["key1","v269",519],["key3","v270",524],["key3","v271",526],["key3","v272",530],["key1","v273",531],["key1",267],["key1",459],["key1",125],["key2","v277",536],["key1","v278",539],["key1","v279",541],["key3","v280",544],["key2","v281",547],["key2",296],["key1","v283",551],["key3",22],["key2","v285",552],["key1","v286",556],["key3",387],["key3",94],["key1","v289",561],["key2","v290",565],["key2","v291",570],["key1","v292",571],["key1","v293",576],["key1","v294",578],["key3",352],["key2",476],["key3","v297",583],["key1",388],["key2","v299",584]]],
+        "input": [["SettingsHistory","set","set","set","get","set","set","set","set","set","set","set","get","get","set","set","set","get","set","set","set","set","set","set","get","set","get","set","set","set","set","set","get","get","set","set","set","set","set","set","set","get","set","set","get","get","set","get","set","set","set","get","get","get","set","set","set","set","set","get","set","set","set","set","set","set","set","get","get","set","set","get","set","get","set","get","set","set","set","get","set","set","set","get","get","get","get","set","set","set","set","set","set","set","get","get","set","set","set","set","get","set","get","set","set","set","get","get","set","set","set","get","get","set","set","get","set","get","set","set","get","set","set","set","get","get","get","get","get","get","set","get","set","get","set","set","set","get","set","set","set","get","get","set","get","set","set","set","get","set","get","set","get","get","get","get","set","set","set","set","get","set","set","set","set","get","get","set","set","set","get","set","get","set","get","set","get","set","get","get","set","set","set","set","get","set","set","get","get","get","set","set","set","set","get","set","get","get","set","get","set","get","set","get","get","set","get","set","get","set","set","set","set","get","set","get","set","set","get","set","set","set","set","get","set","set","get","set","set","get","set","set","get","set","get","set","set","set","get","set","get","get","get","set","get","get","set","set","get","set","set","set","set","set","set","get","set","get","get","set","get","get","set","get","get","set","set","set","get","set","set","set","set","set","set","get","get","get","set","set","set","set","set","get","set","get","set","set","get","get","set","set","set","set","set","set","get","get","set","get","set"],[[],["key3","v0",1],["key3","v1",2],["key1","v2",3],["key2",5],["key2","v4",8],["key2","v5",12],["key2","v6",15],["key2","v7",16],["key2","v8",20],["key3","v9",25],["key3","v10",30],["key2",6],["key3",2],["key3","v13",31],["key2","v14",33],["key2","v15",37],["key1",32],["key1","v17",42],["key3","v18",45],["key3","v19",50],["key1","v20",53],["key3","v21",57],["key3","v22",58],["key2",41],["key2","v24",63],["key3",36],["key2","v26",67],["key2","v27",72],["key2","v28",75],["key2","v29",79],["key3","v30",83],["key1",5],["key1",60],["key2","v33",87],["key1","v34",90],["key2","v35",91],["key1","v36",95],["key2","v37",98],["key1","v38",102],["key3","v39",105],["key1",61],["key3","v41",110],["key3","v42",114],["key3",73],["key1",25],["key2","v45",115],["key1",39],["key3","v47",120],["key2","v48",122],["key1","v49",127],["key3",114],["key2",49],["key3",34],["key1","v53",129],["key1","v54",130],["key3","v55",133],["key3","v56",137],["key1","v57",139],["key3",15],["key3","v59",141],["key3","v60",143],["key2","v61",145],["key2","v62",149],["key3","v63",150],["key3","v64",155],["key3","v65",156],["key3",93],["key3",14],["key1","v68",161],["key1","v69",166],["key1",26],["key3","v71",171],["key1",123],["key1","v73",173],["key1",134],["key3","v75",174],["key1","v76",179],["key1","v77",180],["key1",147],["key3","v79",183],["key3","v80",185],["key1","v81",190],["key3",123],["key2",35],["key2",14],["key1",70],["key1","v86",195],["key1","v87",198],["key3","v88",199],["key3","v89",203],["key1","v90",208],["key3","v91",211],["key3","v92",212],["key3",35],["key3",22],["key1","v95",216],["key1","v96",218],["key1","v97",223],["key3","v98",225],["key2",129],["key1","v100",228],["key2",8],["key1","v102",229],["key2","v103",231],["key1","v104",235],["key3",135],["key2",176],["key1","v107",238],["key1","v108",240],["key2","v109",242],["key3",121],["key3",205],["key2","v112",246],["key3","v113",251],["key1",146],["key3","v115",252],["key2",28],["key3","v117",256],["key2","v118",259],["key2",184],["key3","v120",261],["key1","v121",264],["key3","v122",265],["key3",11],["key2",8],["key3",58],["key1",266],["key3",2],["key1",213],["key3","v129",266],["key1",33],["key2","v131",269],["key2",268],["key2","v133",273],["key2","v134",274],["key1","v135",276],["key2",5],["key2","v137",281],["key2","v138",282],["key2","v139",285],["key1",103],["key1",198],["key1","v142",287],["key1",98],["key2","v144",288],["key3","v145",290],["key1","v146",291],["key3",34],["key1","v148",292],["key1",62],["key1","v150",296],["key2",180],["key2",163],["key3",57],["key2",165],["key1","v155",298],["key3","v156",303],["key2","v157",306],["key2","v158",311],["key2",210],["key3","v160",315],["key1","v161",316],["key3","v162",320],["key2","v163",325],["key2",30],["key3",148],["key2","v166",328],["key2","v167",331],["key2","v168",332],["key1",169],["key1","v170",337],["key1",265],["key3","v172",342],["key1",309],["key3","v174",346],["key3",38],["key1","v176",349],["key2",2],["key3",321],["key3","v179",350],["key2","v180",351],["key3","v181",353],["key3","v182",354],["key3",97],["key1","v184",357],["key2","v185",360],["key3",119],["key3",26],["key2",192],["key2","v189",362],["key2","v190",366],["key1","v191",370],["key2","v192",372],["key2",227],["key3","v194",376],["key1",292],["key3",261],["key2","v197",377],["key1",263],["key1","v199",378],["key2",146],["key2","v201",379],["key1",16],["key3",259],["key2","v204",381],["key2",141],["key1","v206",382],["key2",72],["key3","v208",387],["key1","v209",391],["key1","v210",396],["key1","v211",399],["key2",327],["key2","v213",404],["key3",229],["key3","v215",406],["key2","v216",409],["key2",77],["key1","v218",413],["key1","v219",417],["key3","v220",418],["key1","v221",423],["key2",58],["key1","v223",425],["key3","v224",430],["key2",132],["key2","v226",434],["key1","v227",437],["key3",88],["key2","v229",438],["key3","v230",439],["key1",441],["key2","v232",444],["key2",210],["key2","v234",449],["key1","v235",450],["key3","v236",454],["key2",369],["key1","v238",459],["key1",408],["key3",286],["key2",188],["key1","v242",461],["key1",370],["key1",290],["key3","v245",466],["key3","v246",470],["key3",410],["key3","v248",474],["key1","v249",478],["key2","v250",480],["key1","v251",485],["key2","v252",490],["key1","v253",493],["key1",313],["key3","v255",495],["key3",77],["key3",323],["key2","v258",498],["key2",400],["key2",192],["key2","v261",503],["key1",242],["key3",146],["key1","v264",506],["key2","v265",511],["key1","v266",512],["key2",162],["key2","v268",515],["key1","v269",519],["key3","v270",524],["key3","v271",526],["key3","v272",530],["key1","v273",531],["key1",267],["key1",459],["key1",125],["key2","v277",536],["key1","v278",539],["key1","v279",541],["key3","v280",544],["key2","v281",547],["key2",296],["key1","v283",551],["key3",22],["key2","v285",552],["key1","v286",556],["key3",387],["key3",94],["key1","v289",561],["key2","v290",565],["key2","v291",570],["key1","v292",571],["key1","v293",576],["key1","v294",578],["key3",352],["key2",476],["key3","v297",583],["key1",388],["key2","v299",584]]],
         "expected": [null,null,null,null,"",null,null,null,null,null,null,null,"","v1",null,null,null,"v2",null,null,null,null,null,null,"v15",null,"v13",null,null,null,null,null,"v2","v20",null,null,null,null,null,null,null,"v20",null,null,"v22","v2",null,"v2",null,null,null,"v42","v15","v13",null,null,null,null,null,"v1",null,null,null,null,null,null,null,"v30","v1",null,null,"v2",null,"v38",null,"v54",null,null,null,"v57",null,null,null,"v47","v14","v5","v20",null,null,null,null,null,null,null,"v13","v1",null,null,null,null,"v48",null,"v4",null,null,null,"v55","v62",null,null,null,"v47","v89",null,null,"v57",null,"v8",null,null,"v62",null,null,null,"v1","v4","v22","v121","v1","v90",null,"v2",null,"v118",null,null,null,"",null,null,null,"v38","v87",null,"v36",null,null,null,"v13",null,"v20",null,"v62","v62","v21","v62",null,null,null,null,"v62",null,null,null,null,"v8","v60",null,null,null,"v69",null,"v121",null,"v155",null,"v13",null,"","v162",null,null,null,null,"v30",null,null,"v42","v9","v62",null,null,null,null,"v62",null,"v148","v120",null,"v108",null,"v61",null,"v2","v117",null,"v48",null,"v27",null,null,null,null,"v163",null,"v98",null,null,"v28",null,null,null,null,"v15",null,null,"v48",null,null,"v30",null,null,"v227",null,"v62",null,null,null,"v190",null,"v211","v129","v62",null,"v191","v142",null,null,"v215",null,null,null,null,null,null,"v155",null,"v22","v162",null,"v204","v62",null,"v108","v60",null,null,null,"v62",null,null,null,null,null,null,"v121","v238","v38",null,null,null,null,null,"v144",null,"v1",null,null,"v208","v30",null,null,null,null,null,null,"v179","v234",null,"v206",null]
       }
     ]
@@ -3012,20 +2972,20 @@ export const CURATED_PROBLEMS = [
     "slug": "median-of-two-sorted-arrays",
     "difficulty": "Hard",
     "category": "Binary Search",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given two sorted arrays `nums1` and `nums2` of sizes `m` and `n`. Return the **median** of the two arrays combined.\n\nThe median is the middle value of the sorted combined values, or the average of the two middle values when the total count is even. The overall run time should be **O(log(m + n))**.",
+    "description": "Two sorted lists of exam scores, `nums1` and `nums2`, come from two classrooms. Return the **median score across both classrooms together**: the middle score once everything is pooled and sorted, or the mean of the two middle scores if the pooled count is even.\n\nAim for **O(log(m + n))** time, where `m` and `n` are the two lengths.",
     "constraints": ["0 <= m, n <= 1000","1 <= m + n <= 2000","-10^6 <= nums1[i], nums2[i] <= 10^6"],
     "examples": [
       {
-        "input": "nums1 = [1,3], nums2 = [2]",
-        "output": "2",
-        "explanation": "Merged array = [1,2,3] and the median is 2."
+        "input": "nums1 = [2,6], nums2 = [4]",
+        "output": "4",
+        "explanation": "Pooled: [2, 4, 6], so the median is 4."
       },
       {
-        "input": "nums1 = [1,2], nums2 = [3,4]",
-        "output": "2.5",
-        "explanation": "Merged array = [1,2,3,4] and the median is (2 + 3) / 2 = 2.5."
+        "input": "nums1 = [1,7], nums2 = [3,9]",
+        "output": "5",
+        "explanation": "Pooled: [1, 3, 7, 9], so the median is (3 + 7) / 2 = 5."
       }
     ],
     "functionName": "findMedianSortedArrays",
@@ -3053,18 +3013,18 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,3],[2]],
-        "expected": 2
+        "input": [[2,6],[4]],
+        "expected": 4
       },
       {
-        "input": [[1,2],[3,4]],
-        "expected": 2.5
+        "input": [[1,7],[3,9]],
+        "expected": 5
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [[0,0],[0,0]],
-        "expected": 0
+        "input": [[5,5],[5,5]],
+        "expected": 5
       },
       {
         "input": [[],[1]],
@@ -3094,20 +3054,20 @@ export const CURATED_PROBLEMS = [
     "slug": "peak-index-in-a-mountain-array",
     "difficulty": "Medium",
     "category": "Binary Search",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "An array `arr` is a **mountain** if its length is at least 3 and there is an index `i` with `0 < i < arr.length - 1` such that\n\n- `arr[0] < arr[1] < ... < arr[i]`, and\n- `arr[i] > arr[i + 1] > ... > arr[arr.length - 1]`.\n\nGiven a mountain array, return the index `i` of its peak. Your solution must run in **O(log n)** time.",
-    "constraints": ["3 <= arr.length <= 10^5","0 <= arr[i] <= 10^6","arr is guaranteed to be a mountain array"],
+    "description": "A hiking trail's altitude readings `arr` **climb strictly to a single summit and then descend strictly** to the end; the summit is never the first or last reading.\n\nReturn the position of the summit in **O(log n)** time.",
+    "constraints": ["3 <= arr.length <= 10^5","0 <= arr[i] <= 10^6","arr always rises then falls as described"],
     "examples": [
       {
-        "input": "arr = [0,1,0]",
-        "output": "1",
-        "explanation": "The peak is 1 at index 1."
+        "input": "arr = [1,4,9,6,2]",
+        "output": "2",
+        "explanation": "The trail tops out at 9, position 2."
       },
       {
-        "input": "arr = [0,2,1,0]",
+        "input": "arr = [3,8,5]",
         "output": "1",
-        "explanation": "The peak is 2 at index 1."
+        "explanation": "The summit 8 is at position 1."
       }
     ],
     "functionName": "peakIndexInMountainArray",
@@ -3130,26 +3090,26 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[0,1,0]],
-        "expected": 1
+        "input": [[1,4,9,6,2]],
+        "expected": 2
       },
       {
-        "input": [[0,2,1,0]],
+        "input": [[3,8,5]],
         "expected": 1
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [[0,10,5,2]],
+        "input": [[2,9,7,4]],
         "expected": 1
       },
       {
-        "input": [[3,4,5,1]],
-        "expected": 2
+        "input": [[1,3,6,10,2]],
+        "expected": 3
       },
       {
-        "input": [[24,69,100,99,79,78,67,36,26,19]],
-        "expected": 2
+        "input": [[15,40,72,88,61,50,33,20,11,5]],
+        "expected": 3
       },
       {
         "input": [[1,2,3,4,5,4]],
@@ -3171,25 +3131,20 @@ export const CURATED_PROBLEMS = [
     "slug": "reverse-linked-list",
     "difficulty": "Easy",
     "category": "Linked List",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the head of a singly linked list, **reverse the list** and return the new head.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
-    "constraints": ["The number of nodes is in the range [0, 5000]","-5000 <= Node.val <= 5000"],
+    "description": "**Flip the direction of every link** in a singly linked list, so the last node becomes the first, and return the new first node.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
+    "constraints": ["0 to 5000 nodes","-5000 <= Node.val <= 5000"],
     "examples": [
       {
-        "input": "head = [1,2,3,4,5]",
-        "output": "[5,4,3,2,1]",
-        "explanation": "The list 1 -> 2 -> 3 -> 4 -> 5 becomes 5 -> 4 -> 3 -> 2 -> 1."
-      },
-      {
-        "input": "head = [1,2]",
-        "output": "[2,1]",
-        "explanation": "Two nodes swap places."
+        "input": "head = [8,3,6]",
+        "output": "[6,3,8]",
+        "explanation": "8 -> 3 -> 6 turns into 6 -> 3 -> 8."
       },
       {
         "input": "head = []",
         "output": "[]",
-        "explanation": "An empty list stays empty."
+        "explanation": "An empty list has nothing to flip."
       }
     ],
     "functionName": "reverseList",
@@ -3214,12 +3169,8 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,4,5]],
-        "expected": [5,4,3,2,1]
-      },
-      {
-        "input": [[1,2]],
-        "expected": [2,1]
+        "input": [[8,3,6]],
+        "expected": [6,3,8]
       },
       {
         "input": [[]],
@@ -3230,6 +3181,10 @@ export const CURATED_PROBLEMS = [
       {
         "input": [[7]],
         "expected": [7]
+      },
+      {
+        "input": [[4,9]],
+        "expected": [9,4]
       },
       {
         "input": [[-1,0,1]],
@@ -3247,25 +3202,20 @@ export const CURATED_PROBLEMS = [
     "slug": "merge-two-sorted-lists",
     "difficulty": "Easy",
     "category": "Linked List",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given the heads of two **sorted** linked lists, `list1` and `list2`. Merge them into one sorted list by splicing together the nodes of the two lists, and return the head of the merged list.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
-    "constraints": ["The number of nodes in each list is in the range [0, 50]","-100 <= Node.val <= 100","Both lists are sorted in non-decreasing order"],
+    "description": "`list1` and `list2` are linked lists whose values never decrease. **Weave their nodes into a single list that also never decreases**, reusing the existing nodes, and return its first node.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
+    "constraints": ["Each list has 0 to 50 nodes","-100 <= Node.val <= 100","Both lists are in non-decreasing order"],
     "examples": [
       {
-        "input": "list1 = [1,2,4], list2 = [1,3,4]",
-        "output": "[1,1,2,3,4,4]",
-        "explanation": "Merging the two lists gives 1 -> 1 -> 2 -> 3 -> 4 -> 4."
+        "input": "list1 = [2,5,9], list2 = [3,5]",
+        "output": "[2,3,5,5,9]",
+        "explanation": "The nodes interleave as 2 -> 3 -> 5 -> 5 -> 9."
       },
       {
-        "input": "list1 = [], list2 = []",
-        "output": "[]",
-        "explanation": "Both lists are empty."
-      },
-      {
-        "input": "list1 = [], list2 = [0]",
-        "output": "[0]",
-        "explanation": "One list is empty, so the result is the other one."
+        "input": "list1 = [], list2 = [7]",
+        "output": "[7]",
+        "explanation": "With one list empty, the other is the answer."
       }
     ],
     "functionName": "mergeTwoLists",
@@ -3294,19 +3244,23 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,4],[1,3,4]],
-        "expected": [1,1,2,3,4,4]
+        "input": [[2,5,9],[3,5]],
+        "expected": [2,3,5,5,9]
+      },
+      {
+        "input": [[],[7]],
+        "expected": [7]
+      }
+    ],
+    "hiddenTestCases": [
+      {
+        "input": [[4],[1]],
+        "expected": [1,4]
       },
       {
         "input": [[],[]],
         "expected": []
       },
-      {
-        "input": [[],[0]],
-        "expected": [0]
-      }
-    ],
-    "hiddenTestCases": [
       {
         "input": [[5],[]],
         "expected": [5]
@@ -3331,20 +3285,20 @@ export const CURATED_PROBLEMS = [
     "slug": "reorder-list",
     "difficulty": "Medium",
     "category": "Linked List",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given the head of a singly linked list `L0 -> L1 -> ... -> Ln-1 -> Ln`. **Reorder** it into the form\n\n`L0 -> Ln -> L1 -> Ln-1 -> L2 -> Ln-2 -> ...`\n\nYou may not change the values in the nodes; only the nodes themselves may be rearranged. Return the head of the reordered list.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
-    "constraints": ["The number of nodes is in the range [1, 5 * 10^4]","1 <= Node.val <= 1000"],
+    "description": "Rearrange a linked list so it **alternates between the front and the back**: first node, last node, second node, second-to-last node, and so on until the two ends meet. Return the first node.\n\nMove the nodes themselves; do not rewrite their values.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
+    "constraints": ["1 to 5 * 10^4 nodes","1 <= Node.val <= 1000"],
     "examples": [
       {
-        "input": "head = [1,2,3,4]",
-        "output": "[1,4,2,3]",
-        "explanation": "The last node goes after the first, the second to last after the second."
+        "input": "head = [10,20,30,40,50,60]",
+        "output": "[10,60,20,50,30,40]",
+        "explanation": "Front and back alternate: 10, 60, 20, 50, 30, 40."
       },
       {
-        "input": "head = [1,2,3,4,5]",
-        "output": "[1,5,2,4,3]",
-        "explanation": "The middle node stays in the middle."
+        "input": "head = [7,8,9]",
+        "output": "[7,9,8]",
+        "explanation": "With three nodes the middle one ends up last."
       }
     ],
     "functionName": "reorderList",
@@ -3369,12 +3323,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,4]],
-        "expected": [1,4,2,3]
+        "input": [[10,20,30,40,50,60]],
+        "expected": [10,60,20,50,30,40]
       },
       {
-        "input": [[1,2,3,4,5]],
-        "expected": [1,5,2,4,3]
+        "input": [[7,8,9]],
+        "expected": [7,9,8]
       }
     ],
     "hiddenTestCases": [
@@ -3387,8 +3341,8 @@ export const CURATED_PROBLEMS = [
         "expected": [1,2]
       },
       {
-        "input": [[1,2,3]],
-        "expected": [1,3,2]
+        "input": [[4,3,2,1,5]],
+        "expected": [4,5,3,1,2]
       },
       {
         "input": [[250,363,100,927,44,44,999,790,805,536,224,22,828,247,770,362,915,829,536,796,22,678,189,686,4,288,361,693,989,123,322,297,124,995,502,999,734,121,524,547,131,333,622,740,616,135,593,659,422,557,678,394,616,25,993,594,235,677,428,422,161,845,133,738,507,656,993,599,523,941,721,389,299,921,484,170,769,368,164,71,786,185,691,808,284,624,43,647,799,581,838,395,846,682,644,255,942,107,393,604,270,352,556,48,264,393,948,304,617,942,327,757,495,763,157,769,955,236,188,53,845,631,739,707,694,791,830,732,364,187,542,97,476,532,258,710,870,417,670,837,632,675,691,828,431,418,671,209,199,953,540,473,414,36,793,155,497,156,435,7,99,812,293,362,279,984,324,12,853,244,819,167,426,218,632,348,863,356,845,265,225,193,479,23,436,585,177,237,190,590,966,870,863,977,515,888,460,542,516,46,839,700,80,396,753,48,290,335,453,860,305,276,884,702,650,271,733,642,585,157,843,735,696,66,762,755,93,364,439,366,862,356,345,189,656,327,506,470,572,758,253,293,695,785,668,556,962,237,18,153,227,820,673,60,666,290,292,296,928,686,280,944,654,940,777,695,263,468,720,616,149,541,706,94,673,538,709,158,592,396,892,639,826,835,32,863,679,194,343,831,935,951,683,95,451,250,435,780,133,30,568,450,459,560,643,782,912,483,779,237,982,676,848,200,623,515,418,269,306,381,193,665,47,458,992,962,78,188,506,581,16,926,368,760,706,646,290,953,102,773,291,855,837,456,272,515,375,875,464,231,883,406,510,185,211,713,190,20,624,113,69,818,174,773,574,165,859,581,261,281,949,762,300,398,131,571,437,841,353,633,949,533,513,778,354,854,390,420,901,70,445,833,96,784,386,891,785,110,651,101,560,520,173,9,499,581,103,306,509,11,343,211,789,783,61,962,176,214,563,491,390,241,163,613,445,355,949,303,737,869,583,895,584,499,511,276,224,448,257,403,543,438,650,733,41,420,162,371,816,884,723,37,564,991,663,169,869,981,673,736,308,544,921,606,118,128,715,525,450,371,362,54,485,114,91,28,905,710,214,376,507,562,881,376,966,106,99,670,8,693,884,618,517,66,695,828,339,394,553,927,795,49,453,905,173,607,1000,625,718,748,380,297,870,25,62,26,785,699,889,739,396,98,423,83,524,194,704,111,815,361,807,850,514,511,831,55,335,65,228,759,962,456,591,410,918,126,308,709,847,213,717,453,455,383,649,965,628,513,510,956,505,173,277,868,505,113,63,58,588,212,139,367,255,584,542,943,54,797,675,352,621,417,531,339,499,312,435,803,270,439,441,817,756,51,777,760,307,538,982,917,443,352,615,90,359,711,694,78,73,50,235,81,215,411,546,380,732,228,169,840,30,213,590,102,308,294,138,505,98,800,684,92,297,367,52,271,175,245,275,948,160,972,77,230,377,619,244,11,248,50,756,20,632,908,818,172,291,280,205,285,698,238,533,495,441,716,363,956,746,420,275,641,889,731,304,333,499,798,371,120,35,278,615,991,937,422,749,342,226,466,840,488,567,522,159,490,57,437,975,894,254,299,454,199,226,570,35,128,609,29,938,50,966,989,684,104,948,483,775,879,24,383,920,703,806,647,455,896,215,145,831,540,23,773,334,613,529,813,406,555,380,724,223,593,810,837,412,415,809,645,51,3,987,646,338,723,156,940,583,983,877,34,392,48,516,562,205,833,544,861,566,759,123,621,768,999,223,55,767,679,804,292,499,887,808,943,2,543,998,52,967,476,897,878,630,278,338,214,121,757,410,193,682,88,790,787,384,968,754,455,231,358,358,636,808,658,569,42,835,362,357,964,301,553,18,25,38,791,235,104,904,238,653,366,937,92,974,617,143,653,841,426,803,616,37,716,430,395,744,791,778,582,893,987,540,843,872,405,621,853,92,435,139,84,195,15,526,523,908,835,386,662,813,935,996,318,547,400,584,132,198,113,786,808,913,757,907,430,986,523,901,433,936,240,178,53,344,855,663,340,467,492,719,55,891,527,840,36,735,384,256,855,186,12,829,849,359,239,892,851,774,465,914,201,933,378,138,858,800,676,578,701,166,968,12,346,184,327,879,43,588,192,194,502,352,567,894,715,818,728,247,97,541,892,213,533,392,538,902,164,656,348,513,970,160,969,403,500,694,36,175,313,234,177,915,966,735,938,983,622,514,846,993,609,485,47,868,506,761,235,119,591,391,820,729,713,244,533,294,938,312,935,304,528,942,518,700,93,760,361,114,987,314,540,415,284,692,747,462,902,629,815,203,710,879,117,501,699,856,22,354,532,822,880,357,69,121,223,596,679,245,152,320,430,726,91,64,471,141,390,95,203,726,450,333,46,381,344,122,899,73,130,515,607,895,309,942,21,321,131,415,478,398,703,649,776,896,104,756,973,698,952,383,598,921,140,455,78,553,682,896,491,612,875,977,944,95,235,183,175,233,904,737,194,818,487,168,51,613,513,573,46,124,985,455,976,226,714,280,236,437,392,147,851,833,607,205,773,877,251,718,20,688,37,904,485,494,52,955,485,306,580,864,396,67,621,960,931,792,829,286,906,469,813,213,562,734,1,930,780,586,528,701,753,657,849,27,961,806,27,107,513,44,896,241,188,68,569,58,760,911,970,713,424,473,361,447,409,955,62,149,103,456,814,803,271,254,491,980,187,525,116,735,769,537,380,584,35,558,118,429,462,17,450,571,81,666,531,219,379,777,123,122,334,615,436,210,176,730,938,404,680,812,103,965,94,136,277,38,5,858,133,265,739,682,410,632,121,654,896,914,663,120,845,377,517,78,298,621,771,480,997,705,911,220,852,942,531,833,164,12,619,181,58,275,998,620,820,436,741,435,106,931,656,546,216,707,150,754,885,256,65,39,301,57,302,689,301,823,324,259,943,182,853,628,915,685,348,686,477,287,92,396,892,688,955,258,554,172,184,439,257,845,768,80,311,395,231,555,468,782,923,686,845,491,132,193,305,235,601,875,6,257,275,316,60,615,361,99,503,95,23,823,52,637,293,420,317,423,26,540,451,9,980,29,429,145,338,760,405,180,272,323,862,181,347,363,495,161,876,551,38,67,524,486,490,397,758,15,437,611,972,758,423,708,349,841,582,617,804,103,972,292,579,307,326,660,319,97,161,788,708,739,458,942,996,895,365,403,982,961,617,193,304,715,638,101,90,315,521,645,317,888,342,859,444,244,509,63,152,470,100,975,267,428,394,843,203,414,51,450,488,496,630,169,210,307,425,425,463,289,788,233,117,671,426,683,492,691,348,521,761,821,431,217,164,23,804,155,363,291,499,850,503,998,80,304,834,819,193,930,933,236,255,652,897,897,715,83,51,347,609,935,16,883,353,22,217,571,973,533,143,670,241,427,957,986,396,130,270,929,431,886,167,274,123,436,802,905,279,893,150,50,888,967,739,776,141,917,445,757,515,892,667,582,382,525,480,119,836,944,567,704,702,575,37,159,919,386,433,921,764,463,525,781,606,47,705,15,149,443,69,910,372,418,511,950,611,2,409,197,488,809,727,602,649,296,616,290,499,569,842,64,396,657,613,660,14,372,641,503,810,157,515,996,815,560,704,588,191,229,783,160,266,553,704,472,995,363,181,703,47,317,533,342,978,858,552,947,191,902,230,534,634,630,413,625,441,32,727,201,964,95,344,90,913,769,406,553,538,108,212,79,76,228,466,656,891,961,189,44,44,363,105,792,210,451,592,46,177,816,517,382,351,7,536,208,999,818,695,476,157,876,392,736,426,164,52,796,95,379,67,493,307,249,854,353,204,224,89,148,277,157,460,618,351,882,507,878,924,824,383,260,806,27,608,634,266,256,157,441,129,40,438,977,544,817,17,683,361,568,141,462,324,567,399,285,540,157,109,601,914,678,239,318,520,940,950,375,92,898,97,165,106,386,254,319,146,90,89,637,503,117,188,159,229,824,628,649,74,784,897,22,26,36,982,450,410,8,709,200,730,750,646,428,723,378,170,483,332,858,517,465,533,523,877,50,231,971,895,868,685,229,126,924,143,321,287,851,667,637,382,990,331,737,25,583,250,490,547,574,151,676,699,803,428,451,53,589,897,316,401,990,684,475,759,234,975,720,780,102,559,253,667,268,378,53,914,874,538,713,445,837,476,863,990,679,247,583,766,867,122,434,799,952,962,19,458,16,64,187,40,177,432,294,467,198,680,153,442,434,16,552,631,658,13,507,696,513,124,617,272,618,128,165,197,586,984,876,591,476,776,439,600,441,711,217,886,583,373,760,193,289,689,28,572,564,293,459,76,115,273,265,25,216,468,615,154,609,798,575,227,962,308,963,947,650,897,492,232,867,924,863,205,353,142,680,441,221,676,335,343,685,986,256,687,677,22,154,685,633,26,162,140,961,683,7,519,947,573,605,18,137,126,716,965,432,539,560,111,437,351,520,662,813,633,335,119,655,996,419,255,160,870,196,806,100,754,588,708,870,396,58,958,117,100,838,419,222,619,236,161,161,332,161,152,482,660,261,389,447,926,314,785,580,110,754,404,149,201,486,861,346,103,369,968,173,296,16,961,311,702,793,871,481,466,173,885,63,595,810,764,989,677,5,646,176,104,429,816,17,533,250,275,692,511,72,171,313,493,299,441,176,686,831,226,628,423,235,887,320,42,773,718,858,440,928,665,121,789,327,629,754,85,191,201,617,511,716,889,185,797,4,162,186,44,464,912,971,706,793,134,405,682,956,926,273,736,780,120,478,678,71,130,550,23,388,846,218,75,864,650,76,641,714,879,598,831,323,320,21,642,59,559,863,276,183,266,91,413,528,744,202,865,801,312,736,340,685,366,986,252,98,183,916,788,275,800,564,678,556,543,430,388,8,45,629,663,291,821,813,646,401,722,138,19,171,869,785,856,691,872,800,171,12,423,273,328,803,587,123,795,825,378,990,930,383,432,28,759,134,874,577,942,896,691,21,389,352,200,308,221,781,430,931,37,219,505,359,680,675,356,205,969,307,324,634,80,692,508,775,559,581,913,165,132,775,744,477,802,27,406,60,911,96,54,40,133,345,769,22,591,536,674,633,566,696,584,435,481,209,18,978,136,516,631,997,376,65,426,23,663,400,291,932,232,543,717,179,822,34,758,756,136,297,562,118,530,200,64,607,600,972,658,134,640,841,921,135,165,59,733,67,954,187,362,960,318,793,342,792,543,943,216,692,717,133,494,263,383,546,374,504,736,787,80,129,302,472,879,280,315,316,116,905,238,620,831,319,130,284,805,709,816,747,94,602,66,486,398,561,226,972,824,622,14,224,885,244,428,340,808,777,971,660,480,728,653,448,611,325,457,220,935,157,235,135,543,900,241,63,655,397,737,236,431,597,388,619,630,146,403,393,209,609,607,182,182,614,917,934,318,432,917,568,516,748,476,812,918,640,631,837,98,44,172,608,912,206,640,74,825,897,691,593,791,399,23,237,31,532,326,858,273,239,957,65,284,488,291,499,777,516,950,46,13,667,366,876,690,364,380,455,932,945,835,920,462,412,350,446,291,344,752,514,499,483,850,209,928,773,511,933,882,862,242,195,141,324,731,343,889,131,46,397,367,132,452,367,335,554,44,695,679,800,648,714,721,41,699,266,90,389,45,865,197,656,879,53,674,959,259,827,336,704,904,297,498,689,242,945,728,372,892,139,363,543,43,785,370,932,433,269,365,512,879,64,890,512,561,654,259,411,518,662,563,422,48,320,648,239,981,679,158,50,8,193,968,104,547,566,577,316,812,13,302,711,79,312,331,689,315,302,996,406,656,698,804,766,402,395,91,794,521,611,348,418,834,543,567,907,344,417,179,493,421,62,402,942,787,409,95,83,498,560,435,563,397,301,995,355,715,219,55,758,797,796,223,942,139,137,692,265,199,211,714,903,676,744,120,556,226,170,958,233,794,263,583,392,45,351,777,949,566,251,723,925,817,307,913,732,23,191,322,382,455,336,423,127,820,152,864,292,694,423,900,318,216,507,899,290,482,246,494,452,363,719,228,480,672,233,748,536,911,185,895,353,31,696,252,887,922,146,995,278,570,16,106,157,103,656,294,550,167,896,191,904,339,615,657,998,526,677,263,743,557,866,297,164,428,712,849,46,883,352,827,37,308,809,960,210,124,339,133,350,138,730,619,489,560,697,52,444,625,758,197,386,46,244,870,691,721,320,565,606,429,160,627,479,443,680,53,578,276,451,233,764,11,693,230,530,914,488,406,176,292,611,491,134,787,598,410,701,565,970,454,712,116,726,616,907,586,522,177,3,884,152,867,752,979,241,180,490,123,278,666,941,929,387,288,299,519,471,163,850,194,629,274,647,327,972,966,12,428,242,327,865,600,868,759,168,815,351,329,975,733,122,733,876,13,251,936,834,309,671,831,687,418,781,485,837,273,587,805,878,737,765,704,189,407,290,85,755,869,513,237,730,120,839,458,510,102,386,985,331,553,274,567,650,628,423,251,847,995,23,213,979,359,30,708,636,612,376,476,146,69,733,172,640,487,17,649,762,832,989,189,23,973,617,978,69,789,70,439,383,360,498,221,178,219,993,945,512,854,348,17,867,922,532,100,732,868,6,65,942,916,273,504,786,622,309,125,164,448,749,619,292,64,999,817,732,319,624,223,760,98,695,242,332,512,947,693,174,120,924,419,750,145,467,91,134,878,218,521,45,729,8,63,561,632,274,938,285,740,910,553,965,637,170,144,847,502,532,327,272,934,654,376,276,390,814,312,222,449,483,132,712,333,905,749,319,414,840,478,874,640,853,150,353,93,794,163,609,134,355,78,475,824,844,554,3,599,575,733,846,371,506,379,59,540,18,355,834,592,977,282,926,257,470,431,791,417,852,198,704,225,1000,728,373,136,909,527,803,797,26,124,443,9,955,132,867,209,439,264,516,175,733,148,258,906,795,18,785,885,894,596,111,173,567,761,695,42,29,818,939,88,456,456,90,53,764,719,808,775,774,561,914,997,921,828,79,979,877,734,483,104,738,160,697,954,670,363,311,541,148,906,63,655,174,906,505,524,131,919,448,252,148,35,719,725,119,26,986,949,780,605,673,8,465,146,222,120,442,426,231,464,979,222,220,758,502,851,46,771,523,962,239,233,198,178,762,851,670,400,971,364,585,863,784,860,422,263,335,803,529,542,609,467,997,151,845,736,777,873,713,469,669,536,527,889,80,185,15,696,684,562,411,852,387,940,886,249,225,671,576,713,92,8,734,35,445,30,763,5,353,758,146,623,566,777,548,968,463,954,591,409,37,75,79,119,298,473,689,95,750,987,376,137,811,824,42,481,330,150,190,60,599,492,625,567,476,277,427,797,534,86,741,967,368,457,136,949,445,300,542,645,144,277,57,941,877,692,103,947,428,755,732,474,901,268,70,960,925,81,181,282,993,886,861,176,85,177,132,203,971,466,439,472,817,63,830,569,1,18,634,401,276,41,388,898,659,479,44,791,708,687,717,904,57,360,485,668,359,660,12,822,33,215,9,481,443,320,798,44,407,912,488,641,179,158,543,60,289,722,749,378,883,45,834,725,458,220,286,906,128,282,107,824,807,997,527,902,966,474,954,965,836,185,660,293,208,211,978,769,222,798,27,366,774,559,219,384,446,879,82,179,95,372,142,305,481,462,906,293,591,406,183,511,543,353,286,810,199,254,861,910,907,711,362,727,971,87,453,100,784,454,828,605,729,214,231,440,261,467,698,544,793,450,258,439,300,634,644,475,754,297,751,446,805,667,879,764,330,938,6,666,751,764,620,130,265,44,880,481,367,70,99,869,308,393,846,82,394,949,149,397,240,304,600,418,397,76,342,106,972,876,236,458,142,334,697,528,703,49,983,759,36,532,944,811,142,474,501,353,628,924,361,515,789,188,748,947,175,550,157,711,283,117,396,426,268,389,436,401,808,374,827,682,520,317,709,243,564,386,671,745,321,885,976,594,301,820,926,230,651,907,369,863,917,331,628,101,955,859,356,179,112,113,88,738,87,93,509,363,108,276,691,324,307,864,834,229,440,22,257,544,349,164,665,178,792,640,963,591,546,375,116,121,911,314,835,492,20,731,102,701,577,743,791,739,935,595,915,843,635,567,253,242,810,545,373,597,90,620,325,581,897,274,517,313,269,980,526,586,618,305,885,113,37,838,88,215,71,516,339,686,82,185,819,757,592,475,460,390,263,301,528,337,382,594,498,670,14,64,9,743,195,92,897,781,819,68,590,555,96,765,367,837,742,557,247,599,267,582,535,156,23,164,275,701,889,77,142,935,739,475,523,761,83,571,816,220,522,392,199,141,906,187,400,202,341,316,224,357,422,697,847,821,352,145,161,92,824,169,669,679,804,74,699,518,626,426,962,268,8,220,703,931,914,328,981,518,372,51,823,696,662,857,285,640,497,631,672,510,106,16,442,300,335,674,557,971,186,543,294,96,408,418,784,465,47,438,792,346,93,302,512,363,605,298,381,194,969,464,184,532,170,470,965,26,221,43,509,152,140,12,415,199,115,304,12,857,750,469,656,78,528,564,146,180,887,462,305,395,545,939,964,312,969,86,880,913,120,902,356,173,881,126,564,402,790,649,851,802,980,78,537,934,465,282,973,48,158,993,869,483,269,804,168,583,968,121,973,843,453,923,291,225,817,379,624,859,359,677,652,572,213,623,541,960,459,857,631,945,84,738,525,23,450,258,846,657,151,536,168,529,408,734,897,577,372,472,118,50,13,65,660,16,440,167,912,33,831,642,147,930,347,748,366,911,661,957,935,423,16,994,530,509,938,914,148,573,986,306,209,784,209,945,7,564,165,475,37,857,668,943,942,138,644,275,126,370,742,7,265,349,577,862,267,152,761,996,408,639,114,985,699,200,671,899,719,222,411,15,441,962,819,20,825,782,689,778,178,952,800,968,556,479,362,210,724,654,364,465,432,277,227,819,35,761,387,965,710,574,716,958,791,710,904,86,995,153,210,915,537,535,206,854,418,438,417,811,389,38,995,761,366,68,810,319,301,263,610,632,786,784,131,180,897,288,304,305,45,622,951,549,860,329,595,132,352,426,303,142,891,158,671,277,746,670,367,198,223,826,860,843,645,591,225,258,705,712,169,797,956,636,672,747,441,868,872,719,750,226,96,381,997,692,172,357,499,822,415,376,167,901,924,994,872,315,83,473,305,827,412,633,99,722,149,778,218,17,203,990,894,193,387,411,617,150,46,300,942,337,487,972,140,265,850,935,945,853,304,808,927,306,714,840,238,483,172,113,768,967,23,771,958,265,285,818,802,868,606,357,784,108,133,310,789,25,957,968,234,681,3,952,941,648,520,393,526,602,549,429,308,239,31,339,5,955,413,891,741,10,929,734,123,108,916,917,404,614,826,849,996,851,812,295,857,183,40,226,507,839,102,604,697,680,191,428,988,357,909,620,766,570,859,588,449,386,417,524,912,796,305,785,381,995,877,929,327,67,252,223,117,33,669,720,435,468,735,222,754,140,427,702,348,369,7,30,641,69,232,63,883,660,507,440,429,323,861,651,144,286,898,220,679,100,104,61,661,106,159,359,37,553,139,534,100,55,746,124,971,363,972,671,527,625,811,927,72,622,941,962,239,653,485,9,910,35,275,115,155,428,224,932,463,423,729,217,776,106,219,887,100,551,265,688,696,438,863,815,130,259,810,63,687,808,288,333,917,911,68,574,339,594,959,484,550,155,398,556,268,827,331,290,78,996,752,656,879,173,572,124,316,176,678,860,701,222,346,889,197,879,384,331,275,93,655,13,704,733,865,58,612,352,754,256,350,138,93,320,210,234,114,330,232,897,270,963,636,191,462,328,638,168,137,484,663,743,872,971,224,716,360,934,981,641,926,662,748,494,961,630,461,351,931,359,372,522,825,684,987,842,209,252,518,85,261,333,848,687,435,260,298,245,633,97,692,485,50,338,496,662,47,738,45,585,730,592,119,728,100,37,390,127,921,218,506,16,703,382,813,400,432,239,5,37,948,164,200,502,95,65,208,315,54,999,15,321,484,863,748,773,367,742,622,830,701,735,662,423,425,337,181,683,220,717,316,387,82,456,103,136,795,581,889,207,704,970,67,276,430,458,424,490,413,220,600,559,416,266,436,850,406,108,219,665,420,957,90,169,333,995,138,664,651,574,935,167,733,413,535,494,74,117,203,293,540,596,381,754,698,226,669,915,641,809,831,804,919,677,79,834,510,507,183,185,928,687,132,105,894,294,396,345,185,33,31,173,567,696,163,679,947,984,593,317,139,755,562,886,869,45,925,414,939,423,257,632,658,514,658,8,955,779,265,530,798,852,746,698,828,53,286,430,327,862,830,831,925,465,601,25,688,684,160,515,463,873,519,762,638,605,78,941,697,238,399,77,213,674,75,16,173,900,230,930,766,135,393,311,42,661,774,662,61,670,206,324,439,694,268,162,430,461,353,46,921,247,696,341,998,51,636,851,967,174,614,928,962,31,685,691,546,270,549,568,936,533,378,605,741,425,946,246,363,537,829,546,441,582,694,7,985,988,938,508,91,515,200,3,374,731,500,979,508,419,34,842,528,253,879,701,756,307,134,258,530,239,248,739,87,222,573,88,271,944,382,867,943,268,889,562,230,370,23,265,18,441,979,909,318,267,806,532,390,285,553,268,791,931,738,3,705,352,150,924,220,831,256,388,433,478,722,841,521,36,829,716,179,870,773,524,52,462,142,597,63,8,66,175,772,925,821,795,157,358,888,182,461,13,741,109,990,895,884,903,6,769,885,575,110,443,448,769,742,180,764,972,709,826,675,707,862,488,407,647,319,828,885,861,889,309,910,646,558,971,697,637,209,562,546,166,945,103,673,56,665,215,439,313,781,794,526,419,218,842,799,171,85,556,885,285,663,990,724,193,595,864,624,765,418,363,561,891,836,992,760,123,365,816,824,852,246,669,901,693,762,159,689,59,362,538,267,106,210,779,36,521,76,431,272,833,688,72,66,227,949,459,663,38,651,683,467,401,585,912,226,743,182,566,160,77,74,972,56,307,221,855,589,981,492,235,385,218,840,541,590,733,465,54,973,195,596,969,807,349,798,687,66,607,932,143,686,72,162,260,914,195,653,848,18,502,848,541,848,122,460,578,52,43,582,530,924,318,540,283,173,663,397,860,128,153,229,923,131,970,580,7,146,409,730,841,845,590,667,317,689,578,900,941,763,871,512,845,390,458,90,683]],
@@ -3406,25 +3360,20 @@ export const CURATED_PROBLEMS = [
     "slug": "remove-nth-node-from-end-of-list",
     "difficulty": "Medium",
     "category": "Linked List",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the head of a linked list and an integer `n`, **remove the `n`th node from the end** of the list and return the head.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
-    "constraints": ["The number of nodes is sz, with 1 <= sz <= 30","0 <= Node.val <= 100","1 <= n <= sz"],
+    "description": "Counting backwards from the tail (the tail is number 1), **unlink node number `n`** from the list and return the list's first node.\n\nTry to do it in a single pass.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
+    "constraints": ["The list has sz nodes, 1 <= sz <= 30","0 <= Node.val <= 100","1 <= n <= sz"],
     "examples": [
       {
-        "input": "head = [1,2,3,4,5], n = 2",
-        "output": "[1,2,3,5]",
-        "explanation": "The second node from the end is 4, so it is removed."
+        "input": "head = [6,7,8,9], n = 3",
+        "output": "[6,8,9]",
+        "explanation": "Third from the tail is 7."
       },
       {
-        "input": "head = [1], n = 1",
-        "output": "[]",
-        "explanation": "The only node is removed and the list becomes empty."
-      },
-      {
-        "input": "head = [1,2], n = 1",
-        "output": "[1]",
-        "explanation": "The last node is removed."
+        "input": "head = [5,1], n = 1",
+        "output": "[5]",
+        "explanation": "n = 1 removes the tail."
       }
     ],
     "functionName": "removeNthFromEnd",
@@ -3453,19 +3402,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,4,5],2],
-        "expected": [1,2,3,5]
+        "input": [[6,7,8,9],3],
+        "expected": [6,8,9]
       },
       {
-        "input": [[1],1],
-        "expected": []
-      },
-      {
-        "input": [[1,2],1],
-        "expected": [1]
+        "input": [[5,1],1],
+        "expected": [5]
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[4],1],
+        "expected": []
+      },
       {
         "input": [[1,2],2],
         "expected": [2]
@@ -3486,29 +3435,24 @@ export const CURATED_PROBLEMS = [
   },
   {
     "id": "add-two-numbers",
-    "title": "Add Two Numbers",
-    "slug": "add-two-numbers",
+    "title": "Add Digit Lists",
+    "slug": "add-digit-lists",
     "difficulty": "Medium",
     "category": "Linked List",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given two non-empty linked lists representing two non-negative integers. The digits are stored in **reverse order**, so the head holds the ones digit, and each node holds a single digit.\n\nAdd the two numbers and return the sum as a linked list in the same format. The numbers have no leading zeros, except for the number 0 itself.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
-    "constraints": ["The number of nodes in each list is in the range [1, 100]","0 <= Node.val <= 9","The lists represent numbers without leading zeros"],
+    "description": "Big numbers are stored as linked lists of single digits, **ones digit first**: `3 -> 1 -> 5` stands for 513. Given two such numbers `l1` and `l2`, return their **sum** in the same format.\n\nNeither input has extra zeros at its high end (except the number 0, which is a single `0` node).\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
+    "constraints": ["Each list has 1 to 100 nodes","0 <= Node.val <= 9","No extra zeros at the high end"],
     "examples": [
       {
-        "input": "l1 = [2,4,3], l2 = [5,6,4]",
-        "output": "[7,0,8]",
-        "explanation": "342 + 465 = 807."
+        "input": "l1 = [3,1,5], l2 = [8,2]",
+        "output": "[1,4,5]",
+        "explanation": "513 + 28 = 541, stored as 1 -> 4 -> 5."
       },
       {
-        "input": "l1 = [0], l2 = [0]",
-        "output": "[0]",
-        "explanation": "0 + 0 = 0."
-      },
-      {
-        "input": "l1 = [9,9,9,9,9,9,9], l2 = [9,9,9,9]",
-        "output": "[8,9,9,9,0,0,0,1]",
-        "explanation": "9999999 + 9999 = 10009998."
+        "input": "l1 = [9,9], l2 = [1]",
+        "output": "[0,0,1]",
+        "explanation": "99 + 1 = 100: the carry adds a new digit."
       }
     ],
     "functionName": "addTwoNumbers",
@@ -3537,19 +3481,23 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,4,3],[5,6,4]],
-        "expected": [7,0,8]
+        "input": [[3,1,5],[8,2]],
+        "expected": [1,4,5]
       },
       {
-        "input": [[0],[0]],
-        "expected": [0]
-      },
-      {
-        "input": [[9,9,9,9,9,9,9],[9,9,9,9]],
-        "expected": [8,9,9,9,0,0,0,1]
+        "input": [[9,9],[1]],
+        "expected": [0,0,1]
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[0],[7]],
+        "expected": [7]
+      },
+      {
+        "input": [[8,9,9,9,9],[2,9]],
+        "expected": [0,9,0,0,0,1]
+      },
       {
         "input": [[1],[9,9]],
         "expected": [0,0,1]
@@ -3570,25 +3518,20 @@ export const CURATED_PROBLEMS = [
     "slug": "linked-list-cycle",
     "difficulty": "Easy",
     "category": "Linked List",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given `head`, the head of a linked list, determine whether the list has a **cycle**: a node that can be reached again by following `next` pointers.\n\nThe judge builds the list from the `head` array and connects the tail to the node at index `pos`, or leaves it unconnected when `pos` is `-1`. Your function only receives the head node and must not depend on `pos`. Return `true` if there is a cycle, otherwise `false`.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
-    "constraints": ["The number of nodes is in the range [0, 10^4]","-10^5 <= Node.val <= 10^5","pos is -1 or a valid index of the list"],
+    "description": "Return `true` if following `next` pointers from `head` **eventually loops back to a node you already visited**, and `false` if it reaches the end.\n\nTo build the test, the judge takes the values in `head` and, if `pos` is not `-1`, points the last node back at the node in position `pos`. Your function sees only the head node, not `pos`. Can you do it with O(1) extra memory?\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
+    "constraints": ["0 to 10^4 nodes","-10^5 <= Node.val <= 10^5","pos is -1 or a valid position in the list"],
     "examples": [
       {
-        "input": "head = [3,2,0,-4], pos = 1",
+        "input": "head = [4,8,15,16], pos = 2",
         "output": "true",
-        "explanation": "The tail connects back to the node at index 1."
+        "explanation": "The last node points back at 15, so walking never ends."
       },
       {
-        "input": "head = [1,2], pos = 0",
-        "output": "true",
-        "explanation": "The tail connects back to the node at index 0."
-      },
-      {
-        "input": "head = [1], pos = -1",
+        "input": "head = [6,1,9], pos = -1",
         "output": "false",
-        "explanation": "There is a single node and it points to nothing."
+        "explanation": "The last node points nowhere."
       }
     ],
     "functionName": "hasCycle",
@@ -3612,19 +3555,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,2,0,-4],1],
+        "input": [[4,8,15,16],2],
         "expected": true
       },
       {
-        "input": [[1,2],0],
-        "expected": true
-      },
-      {
-        "input": [[1],-1],
+        "input": [[6,1,9],-1],
         "expected": false
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[5],0],
+        "expected": true
+      },
       {
         "input": [[],-1],
         "expected": false
@@ -3653,25 +3596,20 @@ export const CURATED_PROBLEMS = [
     "slug": "find-the-duplicate-number",
     "difficulty": "Medium",
     "category": "Linked List",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `nums` of `n + 1` integers where every integer is in the range `[1, n]`. There is **exactly one repeated number**, although it may appear more than twice.\n\nReturn the repeated number. Try to solve it **without modifying `nums`** and using only constant extra space.",
-    "constraints": ["1 <= n <= 10^5","nums.length == n + 1","1 <= nums[i] <= n","Exactly one integer appears two or more times; every other integer appears once"],
+    "description": "`nums` has `n + 1` entries, each between `1` and `n`, so some value must repeat. **Exactly one value repeats** (possibly more than twice). Return it.\n\nFor the full challenge, leave `nums` unchanged and use only O(1) extra memory.",
+    "constraints": ["1 <= n <= 10^5","nums.length == n + 1","1 <= nums[i] <= n","One value appears two or more times; no other value repeats"],
     "examples": [
       {
-        "input": "nums = [1,3,4,2,2]",
-        "output": "2",
-        "explanation": "2 appears twice."
+        "input": "nums = [2,5,1,3,4,5]",
+        "output": "5",
+        "explanation": "Six entries, values 1 to 5: the 5 shows up twice."
       },
       {
-        "input": "nums = [3,1,3,4,2]",
-        "output": "3",
-        "explanation": "3 appears twice."
-      },
-      {
-        "input": "nums = [3,3,3,3,3]",
-        "output": "3",
-        "explanation": "3 fills the whole array."
+        "input": "nums = [4,2,1,4,3,4]",
+        "output": "4",
+        "explanation": "4 shows up three times."
       }
     ],
     "functionName": "findDuplicate",
@@ -3694,19 +3632,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,3,4,2,2]],
-        "expected": 2
+        "input": [[2,5,1,3,4,5]],
+        "expected": 5
       },
       {
-        "input": [[3,1,3,4,2]],
-        "expected": 3
-      },
-      {
-        "input": [[3,3,3,3,3]],
-        "expected": 3
+        "input": [[4,2,1,4,3,4]],
+        "expected": 4
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[2,2,2]],
+        "expected": 2
+      },
       {
         "input": [[1,1]],
         "expected": 1
@@ -3731,15 +3669,15 @@ export const CURATED_PROBLEMS = [
     "slug": "lru-cache",
     "difficulty": "Medium",
     "category": "Linked List",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Design a data structure that follows the rules of a **Least Recently Used (LRU) cache**.\n\nImplement the `LRUCache` class:\n\n- `LRUCache(capacity)` creates a cache that holds at most `capacity` entries.\n- `get(key)` returns the value of `key` if it is in the cache, otherwise `-1`. A successful `get` makes the key the most recently used one.\n- `put(key, value)` inserts or updates the value. If the cache is already full, it first evicts the **least recently used** key. An update also makes the key the most recently used one.\n\nBoth `get` and `put` must run in **O(1)** average time.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
-    "constraints": ["1 <= capacity <= 3000","0 <= key <= 10^4","0 <= value <= 10^5","At most 2 * 10^5 calls are made"],
+    "description": "Build a fixed-size cache that, when full, **throws out the entry that has gone unused the longest** (an LRU cache).\n\nImplement the `LRUCache` class:\n\n- `LRUCache(capacity)` makes an empty cache with room for `capacity` entries.\n- `get(key)` returns the stored value for `key`, or `-1` if it is not cached. Reading a key counts as using it.\n- `put(key, value)` stores or overwrites `key`, which also counts as using it. If this adds a new key to a full cache, first drop the least recently used key.\n\nMake both operations **O(1)** on average.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
+    "constraints": ["1 <= capacity <= 3000","0 <= key <= 10^4","0 <= value <= 10^5","At most 2 * 10^5 calls in total"],
     "examples": [
       {
-        "input": "operations = [\"LRUCache\",\"put\",\"put\",\"get\",\"put\",\"get\",\"put\",\"get\",\"get\",\"get\"], arguments = [[2],[1,1],[2,2],[1],[3,3],[2],[4,4],[1],[3],[4]]",
-        "output": "[null,null,null,1,null,-1,null,-1,3,4]",
-        "explanation": "After put(1), put(2) and get(1), key 2 is least recently used. Adding key 3 evicts 2, so get(2) is -1. Adding key 4 then evicts 1."
+        "input": "operations = [\"LRUCache\",\"put\",\"put\",\"get\",\"put\",\"get\",\"get\",\"put\",\"put\",\"get\",\"get\"], arguments = [[2],[5,50],[6,60],[6],[7,70],[5],[7],[6,61],[8,80],[7],[6]]",
+        "output": "[null,null,null,60,null,-1,70,null,null,-1,61]",
+        "explanation": "Reading 6 leaves 5 as the stalest key, so adding 7 drops 5. Rewriting 6 then makes 7 the stalest, so adding 8 drops 7."
       }
     ],
     "functionName": "LRUCache",
@@ -3770,21 +3708,21 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [["LRUCache","put","put","get","put","get","put","get","get","get"],[[2],[1,1],[2,2],[1],[3,3],[2],[4,4],[1],[3],[4]]],
-        "expected": [null,null,null,1,null,-1,null,-1,3,4]
+        "input": [["LRUCache","put","put","get","put","get","get","put","put","get","get"],[[2],[5,50],[6,60],[6],[7,70],[5],[7],[6,61],[8,80],[7],[6]]],
+        "expected": [null,null,null,60,null,-1,70,null,null,-1,61]
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [["LRUCache","put","get","put","get","get"],[[1],[2,1],[2],[3,2],[2],[3]]],
-        "expected": [null,null,1,null,-1,2]
+        "input": [["LRUCache","put","get","put","get","get"],[[1],[4,9],[4],[5,3],[4],[5]]],
+        "expected": [null,null,9,null,-1,3]
       },
       {
-        "input": [["LRUCache","put","put","put","get","get"],[[2],[2,1],[2,2],[1,1],[2],[1]]],
+        "input": [["LRUCache","put","put","put","get","get"],[[2],[3,1],[3,2],[1,1],[3],[1]]],
         "expected": [null,null,null,null,2,1]
       },
       {
-        "input": [["LRUCache","put","put","get","put","put","get"],[[2],[2,1],[1,1],[2],[4,1],[1,2],[2]]],
+        "input": [["LRUCache","put","put","get","put","put","get"],[[2],[3,1],[1,1],[3],[6,1],[1,2],[3]]],
         "expected": [null,null,null,1,null,null,-1]
       },
       {
@@ -3799,25 +3737,20 @@ export const CURATED_PROBLEMS = [
     "slug": "merge-k-sorted-lists",
     "difficulty": "Hard",
     "category": "Linked List",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array of `k` linked lists `lists`, each sorted in ascending order. **Merge all the lists into one sorted linked list** and return its head.\n\nEvery list in `lists` is given as an array of node values; your function receives an array of head nodes (an empty list is `null`).\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
-    "constraints": ["k == lists.length","0 <= k <= 10^4","0 <= lists[i].length <= 500","-10^4 <= lists[i][j] <= 10^4","Each lists[i] is sorted in ascending order","The total number of nodes does not exceed 10^4"],
+    "description": "`lists` holds `k` linked lists, each already in increasing order. **Combine all of their nodes into one list in increasing order** and return its first node.\n\nIn the tests each list is written as an array of values; your function receives an array of first nodes, with `null` for an empty list.\n\nThe linked list is given as an array of node values in order (an empty array is an empty list). Your function receives the head node, which has `val` and `next`, and must return the head of the resulting list.",
+    "constraints": ["k == lists.length","0 <= k <= 10^4","0 <= lists[i].length <= 500","-10^4 <= lists[i][j] <= 10^4","Each list is in increasing order","At most 10^4 nodes in total"],
     "examples": [
       {
-        "input": "lists = [[1,4,5],[1,3,4],[2,6]]",
-        "output": "[1,1,2,3,4,4,5,6]",
-        "explanation": "Merging the three lists gives 1 -> 1 -> 2 -> 3 -> 4 -> 4 -> 5 -> 6."
+        "input": "lists = [[3,8],[1,9,10],[4]]",
+        "output": "[1,3,4,8,9,10]",
+        "explanation": "All six values end up in one sorted chain."
       },
       {
-        "input": "lists = []",
-        "output": "[]",
-        "explanation": "There are no lists."
-      },
-      {
-        "input": "lists = [[]]",
-        "output": "[]",
-        "explanation": "The only list is empty."
+        "input": "lists = [[],[2,2]]",
+        "output": "[2,2]",
+        "explanation": "An empty list contributes nothing."
       }
     ],
     "functionName": "mergeKLists",
@@ -3842,9 +3775,15 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[[1,4,5],[1,3,4],[2,6]]],
-        "expected": [1,1,2,3,4,4,5,6]
+        "input": [[[3,8],[1,9,10],[4]]],
+        "expected": [1,3,4,8,9,10]
       },
+      {
+        "input": [[[],[2,2]]],
+        "expected": [2,2]
+      }
+    ],
+    "hiddenTestCases": [
       {
         "input": [[]],
         "expected": []
@@ -3852,9 +3791,7 @@ export const CURATED_PROBLEMS = [
       {
         "input": [[[]]],
         "expected": []
-      }
-    ],
-    "hiddenTestCases": [
+      },
       {
         "input": [[[1],[0]]],
         "expected": [0,1]
@@ -3879,25 +3816,20 @@ export const CURATED_PROBLEMS = [
     "slug": "invert-binary-tree",
     "difficulty": "Easy",
     "category": "Trees & Graphs",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the root of a binary tree, **invert the tree** (swap the left and right child of every node) and return its root.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [0, 100]","-100 <= Node.val <= 100"],
+    "description": "Turn a binary tree into its **mirror image**: at every node, the left child and the right child trade places. Return the root.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["0 to 100 nodes","-100 <= Node.val <= 100"],
     "examples": [
       {
-        "input": "root = [4,2,7,1,3,6,9]",
-        "output": "[4,7,2,9,6,3,1]",
-        "explanation": "Every node swaps its children."
-      },
-      {
-        "input": "root = [2,1,3]",
-        "output": "[2,3,1]",
-        "explanation": "The two children of the root swap."
+        "input": "root = [5,3,8,1,4]",
+        "output": "[5,8,3,null,null,4,1]",
+        "explanation": "8 moves to the left of 5, and below 3 the children 1 and 4 trade places."
       },
       {
         "input": "root = []",
         "output": "[]",
-        "explanation": "An empty tree stays empty."
+        "explanation": "An empty tree is its own mirror."
       }
     ],
     "functionName": "invertTree",
@@ -3922,12 +3854,8 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[4,2,7,1,3,6,9]],
-        "expected": [4,7,2,9,6,3,1]
-      },
-      {
-        "input": [[2,1,3]],
-        "expected": [2,3,1]
+        "input": [[5,3,8,1,4]],
+        "expected": [5,8,3,null,null,4,1]
       },
       {
         "input": [[]],
@@ -3935,6 +3863,10 @@ export const CURATED_PROBLEMS = [
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[6,2,9]],
+        "expected": [6,9,2]
+      },
       {
         "input": [[1]],
         "expected": [1]
@@ -3959,20 +3891,20 @@ export const CURATED_PROBLEMS = [
     "slug": "maximum-depth-of-binary-tree",
     "difficulty": "Easy",
     "category": "Trees & Graphs",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the root of a binary tree, return its **maximum depth**: the number of nodes along the longest path from the root down to the farthest leaf.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [0, 10^4]","-100 <= Node.val <= 100"],
+    "description": "How many levels does a binary tree have? Return the **number of nodes on the longest downward path** from the root to any leaf (an empty tree has depth 0).\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["0 to 10^4 nodes","-100 <= Node.val <= 100"],
     "examples": [
       {
-        "input": "root = [3,9,20,null,null,15,7]",
-        "output": "3",
-        "explanation": "The longest path is 3 -> 20 -> 15 (or 7), which has 3 nodes."
+        "input": "root = [8,4,null,2,null,7]",
+        "output": "4",
+        "explanation": "The path 8 -> 4 -> 2 -> 7 has four nodes."
       },
       {
-        "input": "root = [1,null,2]",
+        "input": "root = [5,1,9]",
         "output": "2",
-        "explanation": "The longest path is 1 -> 2, which has 2 nodes."
+        "explanation": "Root plus one level of children."
       }
     ],
     "functionName": "maxDepth",
@@ -3996,11 +3928,11 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,9,20,null,null,15,7]],
-        "expected": 3
+        "input": [[8,4,null,2,null,7]],
+        "expected": 4
       },
       {
-        "input": [[1,null,2]],
+        "input": [[5,1,9]],
         "expected": 2
       }
     ],
@@ -4014,7 +3946,7 @@ export const CURATED_PROBLEMS = [
         "expected": 1
       },
       {
-        "input": [[1,2,3,4,5]],
+        "input": [[6,2,7,1,3]],
         "expected": 3
       },
       {
@@ -4033,20 +3965,20 @@ export const CURATED_PROBLEMS = [
     "slug": "diameter-of-binary-tree",
     "difficulty": "Easy",
     "category": "Trees & Graphs",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the root of a binary tree, return the length of its **diameter**: the number of **edges** on the longest path between any two nodes. The path may or may not pass through the root.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [1, 10^4]","-100 <= Node.val <= 100"],
+    "description": "Treat a binary tree as a network of cables, one per parent-child link. Return the **most cables you would pass through travelling between any two nodes** without backtracking. The route does not have to go through the root.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["1 to 10^4 nodes","-100 <= Node.val <= 100"],
     "examples": [
       {
-        "input": "root = [1,2,3,4,5]",
-        "output": "3",
-        "explanation": "The longest path is 4 -> 2 -> 1 -> 3 (or 5 -> 2 -> 1 -> 3), which has 3 edges."
+        "input": "root = [1,2,3,null,4,null,null,5,6]",
+        "output": "4",
+        "explanation": "5 -> 4 -> 2 -> 1 -> 3 crosses four links."
       },
       {
-        "input": "root = [1,2]",
+        "input": "root = [7,null,3]",
         "output": "1",
-        "explanation": "The two nodes are joined by a single edge."
+        "explanation": "Two nodes, one link."
       }
     ],
     "functionName": "diameterOfBinaryTree",
@@ -4070,11 +4002,11 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,4,5]],
-        "expected": 3
+        "input": [[1,2,3,null,4,null,null,5,6]],
+        "expected": 4
       },
       {
-        "input": [[1,2]],
+        "input": [[7,null,3]],
         "expected": 1
       }
     ],
@@ -4107,25 +4039,20 @@ export const CURATED_PROBLEMS = [
     "slug": "balanced-binary-tree",
     "difficulty": "Easy",
     "category": "Trees & Graphs",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the root of a binary tree, determine whether it is **height-balanced**: for every node, the heights of its left and right subtrees differ by **at most one**.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [0, 5000]","-10^4 <= Node.val <= 10^4"],
+    "description": "Return `true` if, **at every node** of the binary tree, the depths of the left branch and the right branch **differ by no more than 1**. Otherwise return `false`.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["0 to 5000 nodes","-10^4 <= Node.val <= 10^4"],
     "examples": [
       {
-        "input": "root = [3,9,20,null,null,15,7]",
+        "input": "root = [4,2,6,1]",
         "output": "true",
-        "explanation": "Every node is balanced."
+        "explanation": "The deepest gap anywhere is one level."
       },
       {
-        "input": "root = [1,2,2,3,3,null,null,4,4]",
+        "input": "root = [4,2,null,1]",
         "output": "false",
-        "explanation": "At the root, the left subtree is two levels taller than the right subtree, so the tree is not balanced."
-      },
-      {
-        "input": "root = []",
-        "output": "true",
-        "explanation": "An empty tree is balanced."
+        "explanation": "At the root the left branch is two levels deep and the right branch is empty."
       }
     ],
     "functionName": "isBalanced",
@@ -4149,19 +4076,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,9,20,null,null,15,7]],
+        "input": [[4,2,6,1]],
         "expected": true
       },
       {
-        "input": [[1,2,2,3,3,null,null,4,4]],
+        "input": [[4,2,null,1]],
         "expected": false
-      },
-      {
-        "input": [[]],
-        "expected": true
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[]],
+        "expected": true
+      },
       {
         "input": [[1]],
         "expected": true
@@ -4190,25 +4117,20 @@ export const CURATED_PROBLEMS = [
     "slug": "same-tree",
     "difficulty": "Easy",
     "category": "Trees & Graphs",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the roots of two binary trees `p` and `q`, return `true` if they are the **same tree**: they have the same structure and every pair of corresponding nodes holds the same value.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes in both trees is in the range [0, 100]","-10^4 <= Node.val <= 10^4"],
+    "description": "Return `true` if the binary trees `p` and `q` are **exact copies**: the same shape, with equal values in matching positions. Otherwise return `false`.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["Each tree has 0 to 100 nodes","-10^4 <= Node.val <= 10^4"],
     "examples": [
       {
-        "input": "p = [1,2,3], q = [1,2,3]",
+        "input": "p = [4,7,1], q = [4,7,1]",
         "output": "true",
-        "explanation": "Both trees are identical."
+        "explanation": "Same shape, same values."
       },
       {
-        "input": "p = [1,2], q = [1,null,2]",
+        "input": "p = [4,7,1], q = [4,1,7]",
         "output": "false",
-        "explanation": "The second tree has its child on the other side, so the structures differ."
-      },
-      {
-        "input": "p = [1,2,1], q = [1,1,2]",
-        "output": "false",
-        "explanation": "The values of the two leaves are swapped."
+        "explanation": "Same shape, but 7 and 1 sit on opposite sides."
       }
     ],
     "functionName": "isSameTree",
@@ -4236,19 +4158,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3],[1,2,3]],
+        "input": [[4,7,1],[4,7,1]],
         "expected": true
       },
       {
-        "input": [[1,2],[1,null,2]],
-        "expected": false
-      },
-      {
-        "input": [[1,2,1],[1,1,2]],
+        "input": [[4,7,1],[4,1,7]],
         "expected": false
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[3,5],[3,null,5]],
+        "expected": false
+      },
       {
         "input": [[],[]],
         "expected": true
@@ -4277,20 +4199,20 @@ export const CURATED_PROBLEMS = [
     "slug": "subtree-of-another-tree",
     "difficulty": "Easy",
     "category": "Trees & Graphs",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the roots of two binary trees `root` and `subRoot`, return `true` if there is a node in `root` whose subtree has **exactly the same structure and node values** as `subRoot`, and `false` otherwise.\n\nA subtree of a tree is a node together with all of its descendants.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes in root is in the range [1, 2000]","The number of nodes in subRoot is in the range [1, 1000]","-10^4 <= root.val, subRoot.val <= 10^4"],
+    "description": "Pick any node of `root` and take it **together with everything below it**. Return `true` if some such piece is an exact copy of the tree `subRoot` (same shape, same values), otherwise `false`.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["root has 1 to 2000 nodes","subRoot has 1 to 1000 nodes","-10^4 <= Node.val <= 10^4"],
     "examples": [
       {
-        "input": "root = [3,4,5,1,2], subRoot = [4,1,2]",
+        "input": "root = [8,5,9,2,6], subRoot = [5,2,6]",
         "output": "true",
-        "explanation": "The subtree rooted at 4 matches subRoot."
+        "explanation": "The piece hanging from 5 is exactly 5 -> (2, 6)."
       },
       {
-        "input": "root = [3,4,5,1,2,null,null,null,null,0], subRoot = [4,1,2]",
+        "input": "root = [8,5,9,2,6,null,null,1], subRoot = [5,2,6]",
         "output": "false",
-        "explanation": "The subtree rooted at 4 has an extra node 0, so it does not match."
+        "explanation": "Below 5 the 2 now has a child 1, so it no longer matches."
       }
     ],
     "functionName": "isSubtree",
@@ -4318,11 +4240,11 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,4,5,1,2],[4,1,2]],
+        "input": [[8,5,9,2,6],[5,2,6]],
         "expected": true
       },
       {
-        "input": [[3,4,5,1,2,null,null,null,null,0],[4,1,2]],
+        "input": [[8,5,9,2,6,null,null,1],[5,2,6]],
         "expected": false
       }
     ],
@@ -4359,25 +4281,20 @@ export const CURATED_PROBLEMS = [
     "slug": "lowest-common-ancestor-of-a-bst",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a **binary search tree** and two values `p` and `q` that are present in it, return the **value of their lowest common ancestor** (LCA).\n\nThe LCA of two nodes is the lowest node that has both of them as descendants, where a node may be a descendant of itself.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [2, 10^5]","-10^9 <= Node.val <= 10^9","All Node.val are unique","p != q, and both p and q exist in the BST"],
+    "description": "`root` is a **binary search tree** (smaller values to the left, larger to the right) that contains the values `p` and `q`. Return the value of the **deepest node that has both `p` and `q` beneath it**, counting a node as being beneath itself.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["2 to 10^5 nodes","-10^9 <= Node.val <= 10^9","Values are distinct","p != q, and both are in the tree"],
     "examples": [
       {
-        "input": "root = [6,2,8,0,4,7,9,null,null,3,5], p = 2, q = 8",
-        "output": "6",
-        "explanation": "The LCA of 2 and 8 is 6."
+        "input": "root = [10,5,15,2,7,12,20,null,null,6,8], p = 2, q = 20",
+        "output": "10",
+        "explanation": "2 lies left of 10 and 20 lies right of it, so they split at 10."
       },
       {
-        "input": "root = [6,2,8,0,4,7,9,null,null,3,5], p = 2, q = 4",
-        "output": "2",
-        "explanation": "The LCA of 2 and 4 is 2, because a node can be its own descendant."
-      },
-      {
-        "input": "root = [2,1], p = 2, q = 1",
-        "output": "2",
-        "explanation": "The LCA of 2 and 1 is 2."
+        "input": "root = [10,5,15,2,7,12,20,null,null,6,8], p = 5, q = 8",
+        "output": "5",
+        "explanation": "8 is beneath 5, and 5 counts as beneath itself."
       }
     ],
     "functionName": "lowestCommonAncestor",
@@ -4409,26 +4326,26 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[6,2,8,0,4,7,9,null,null,3,5],2,8],
-        "expected": 6
+        "input": [[10,5,15,2,7,12,20,null,null,6,8],2,20],
+        "expected": 10
       },
       {
-        "input": [[6,2,8,0,4,7,9,null,null,3,5],2,4],
-        "expected": 2
-      },
-      {
-        "input": [[2,1],2,1],
-        "expected": 2
+        "input": [[10,5,15,2,7,12,20,null,null,6,8],5,8],
+        "expected": 5
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [[6,2,8,0,4,7,9,null,null,3,5],3,5],
+        "input": [[4,3],4,3],
         "expected": 4
       },
       {
-        "input": [[6,2,8,0,4,7,9,null,null,3,5],0,9],
-        "expected": 6
+        "input": [[10,5,15,2,7,12,20,null,null,6,8],6,8],
+        "expected": 7
+      },
+      {
+        "input": [[10,5,15,2,7,12,20,null,null,6,8],12,20],
+        "expected": 15
       },
       {
         "input": [[5,3,8,1,4,7,9],1,4],
@@ -4446,25 +4363,20 @@ export const CURATED_PROBLEMS = [
     "slug": "binary-tree-level-order-traversal",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the root of a binary tree, return the **level-order traversal** of its nodes' values: from left to right, level by level, as an array of arrays.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [0, 2000]","-1000 <= Node.val <= 1000"],
+    "description": "Group the values of a binary tree **by depth**: one array for the root's level, one for its children, one for its grandchildren, and so on. Within a level, list values from left to right.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["0 to 2000 nodes","-1000 <= Node.val <= 1000"],
     "examples": [
       {
-        "input": "root = [3,9,20,null,null,15,7]",
-        "output": "[[3],[9,20],[15,7]]",
-        "explanation": "Level 0 is [3], level 1 is [9, 20] and level 2 is [15, 7]."
+        "input": "root = [8,4,11,null,5,9]",
+        "output": "[[8],[4,11],[5,9]]",
+        "explanation": "Depth 0 holds 8, depth 1 holds 4 and 11, depth 2 holds 5 and 9."
       },
       {
-        "input": "root = [1]",
-        "output": "[[1]]",
-        "explanation": "A single node gives a single level."
-      },
-      {
-        "input": "root = []",
-        "output": "[]",
-        "explanation": "An empty tree has no levels."
+        "input": "root = [6]",
+        "output": "[[6]]",
+        "explanation": "One node, one level."
       }
     ],
     "functionName": "levelOrder",
@@ -4488,19 +4400,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,9,20,null,null,15,7]],
-        "expected": [[3],[9,20],[15,7]]
+        "input": [[8,4,11,null,5,9]],
+        "expected": [[8],[4,11],[5,9]]
       },
       {
-        "input": [[1]],
-        "expected": [[1]]
-      },
-      {
-        "input": [[]],
-        "expected": []
+        "input": [[6]],
+        "expected": [[6]]
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[]],
+        "expected": []
+      },
       {
         "input": [[1,2,3,4,5,6,7]],
         "expected": [[1],[2,3],[4,5,6,7]]
@@ -4521,20 +4433,20 @@ export const CURATED_PROBLEMS = [
     "slug": "binary-tree-right-side-view",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Imagine standing on the **right side** of a binary tree. Return the values of the nodes you can see, ordered from top to bottom.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [0, 100]","-100 <= Node.val <= 100"],
+    "description": "For each level of a binary tree, take the **rightmost node on that level**. Return those values from the top level down.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["0 to 100 nodes","-100 <= Node.val <= 100"],
     "examples": [
       {
-        "input": "root = [1,2,3,null,5,null,4]",
-        "output": "[1,3,4]",
-        "explanation": "From the right you see 1, then 3, then 4."
+        "input": "root = [6,3,9,2]",
+        "output": "[6,9,2]",
+        "explanation": "The rightmost nodes are 6, then 9, then 2."
       },
       {
-        "input": "root = [1,null,3]",
-        "output": "[1,3]",
-        "explanation": "You see 1 and 3."
+        "input": "root = [1,2,null,3]",
+        "output": "[1,2,3]",
+        "explanation": "Each level has a single node, even though they lean left."
       }
     ],
     "functionName": "rightSideView",
@@ -4558,12 +4470,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,null,5,null,4]],
-        "expected": [1,3,4]
+        "input": [[6,3,9,2]],
+        "expected": [6,9,2]
       },
       {
-        "input": [[1,null,3]],
-        "expected": [1,3]
+        "input": [[1,2,null,3]],
+        "expected": [1,2,3]
       }
     ],
     "hiddenTestCases": [
@@ -4591,29 +4503,24 @@ export const CURATED_PROBLEMS = [
   },
   {
     "id": "count-good-nodes-in-binary-tree",
-    "title": "Count Good Nodes in Binary Tree",
-    "slug": "count-good-nodes-in-binary-tree",
+    "title": "Nodes Without a Bigger Ancestor",
+    "slug": "nodes-without-a-bigger-ancestor",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "In a binary tree, a node `X` is **good** if no node on the path from the root to `X` has a value greater than `X`'s value.\n\nGiven the root of a binary tree, return the number of good nodes.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [1, 10^5]","-10^4 <= Node.val <= 10^4"],
+    "description": "Walk down a binary tree from the root. Count the nodes whose value is **at least as large as every value above them** on their path from the root. The root always counts.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["1 to 10^5 nodes","-10^4 <= Node.val <= 10^4"],
     "examples": [
       {
-        "input": "root = [3,1,4,3,null,1,5]",
+        "input": "root = [5,3,8,6,null,7,9]",
         "output": "4",
-        "explanation": "The good nodes are 3 (the root), 4, 5 and the 3 below the 1."
+        "explanation": "5, 6, 8 and 9 qualify; 3 sits below 5 and 7 sits below 8."
       },
       {
-        "input": "root = [3,3,null,4,2]",
-        "output": "3",
-        "explanation": "The good nodes are 3 (the root), 3 and 4."
-      },
-      {
-        "input": "root = [1]",
-        "output": "1",
-        "explanation": "The root is always good."
+        "input": "root = [2,2,1]",
+        "output": "2",
+        "explanation": "A tie with an ancestor still counts, so both 2s qualify."
       }
     ],
     "functionName": "goodNodes",
@@ -4637,19 +4544,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,1,4,3,null,1,5]],
+        "input": [[5,3,8,6,null,7,9]],
         "expected": 4
       },
       {
-        "input": [[3,3,null,4,2]],
-        "expected": 3
-      },
-      {
-        "input": [[1]],
-        "expected": 1
+        "input": [[2,2,1]],
+        "expected": 2
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[1]],
+        "expected": 1
+      },
       {
         "input": [[9,null,3,6]],
         "expected": 1
@@ -4670,20 +4577,20 @@ export const CURATED_PROBLEMS = [
     "slug": "validate-binary-search-tree",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the root of a binary tree, determine whether it is a **valid binary search tree** (BST).\n\nIn a valid BST, for every node:\n\n- all values in its **left** subtree are **strictly less** than the node's value,\n- all values in its **right** subtree are **strictly greater** than the node's value, and\n- both subtrees are themselves valid BSTs.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is in the range [1, 10^4]","-2^31 <= Node.val <= 2^31 - 1"],
+    "description": "Check whether a binary tree is a **binary search tree**: for every node, **everything** in its left branch must be strictly smaller than it and **everything** in its right branch strictly larger. Return `true` or `false`.\n\nComparing a node only with its direct children is not enough.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["1 to 10^4 nodes","-2^31 <= Node.val <= 2^31 - 1"],
     "examples": [
       {
-        "input": "root = [2,1,3]",
+        "input": "root = [8,3,10]",
         "output": "true",
-        "explanation": "Every node respects the ordering."
+        "explanation": "3 < 8 < 10."
       },
       {
-        "input": "root = [5,1,4,null,null,3,6]",
+        "input": "root = [8,3,10,null,null,6,12]",
         "output": "false",
-        "explanation": "The root is 5, but its right child 4 is smaller than 5, so the tree is not a BST."
+        "explanation": "6 is in the right branch of 8 but smaller than 8."
       }
     ],
     "functionName": "isValidBST",
@@ -4707,11 +4614,11 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,1,3]],
+        "input": [[8,3,10]],
         "expected": true
       },
       {
-        "input": [[5,1,4,null,null,3,6]],
+        "input": [[8,3,10,null,null,6,12]],
         "expected": false
       }
     ],
@@ -4725,7 +4632,7 @@ export const CURATED_PROBLEMS = [
         "expected": false
       },
       {
-        "input": [[5,4,6,null,null,3,7]],
+        "input": [[10,5,15,null,null,6,20]],
         "expected": false
       },
       {
@@ -4752,20 +4659,20 @@ export const CURATED_PROBLEMS = [
     "slug": "kth-smallest-element-in-a-bst",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given the root of a **binary search tree** and an integer `k`, return the **`k`th smallest value** (1-indexed) among all node values in the tree.\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
-    "constraints": ["The number of nodes is n, with 1 <= k <= n <= 10^4","0 <= Node.val <= 10^4"],
+    "description": "`root` is a binary search tree. If you listed all its values from smallest to largest, **which value would be in position `k`** (counting from 1)?\n\nThe binary tree is given in level-order as an array, where `null` marks a missing child. Your function receives the root node, which has `val`, `left` and `right`.",
+    "constraints": ["n nodes, with 1 <= k <= n <= 10^4","0 <= Node.val <= 10^4"],
     "examples": [
       {
-        "input": "root = [3,1,4,null,2], k = 1",
-        "output": "1",
-        "explanation": "The smallest value is 1."
+        "input": "root = [6,2,8,null,4], k = 2",
+        "output": "4",
+        "explanation": "Sorted: 2, 4, 6, 8. Position 2 holds 4."
       },
       {
-        "input": "root = [5,3,6,2,4,null,null,1], k = 3",
-        "output": "3",
-        "explanation": "The values in order are 1, 2, 3, 4, 5, 6, so the third smallest is 3."
+        "input": "root = [7,4,9,3,5], k = 4",
+        "output": "7",
+        "explanation": "Sorted: 3, 4, 5, 7, 9. Position 4 holds 7."
       }
     ],
     "functionName": "kthSmallest",
@@ -4793,12 +4700,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,1,4,null,2],1],
-        "expected": 1
+        "input": [[6,2,8,null,4],2],
+        "expected": 4
       },
       {
-        "input": [[5,3,6,2,4,null,null,1],3],
-        "expected": 3
+        "input": [[7,4,9,3,5],4],
+        "expected": 7
       }
     ],
     "hiddenTestCases": [
@@ -4811,8 +4718,8 @@ export const CURATED_PROBLEMS = [
         "expected": 2
       },
       {
-        "input": [[5,3,6,2,4,null,null,1],6],
-        "expected": 6
+        "input": [[7,4,9,3,5],5],
+        "expected": 9
       },
       {
         "input": [[2670,2050,5349,1776,2413,4387,5962,947,2005,2090,2556,2729,5225,5871,6292,305,1354,1963,2024,2071,2125,2484,2598,2707,4042,5186,5277,5680,5958,6103,7014,189,931,1235,1472,1853,1974,null,null,2052,2072,2091,2202,2418,2547,2566,2603,2699,2712,3514,4319,4452,5219,5239,5287,5447,5779,5927,null,6004,6267,6324,8267,143,247,818,944,980,1339,1383,1699,1851,1940,1965,1977,null,null,null,2087,null,2096,2159,2391,2415,2479,2517,null,null,2573,null,2622,2695,null,2708,2726,2863,3621,4202,4358,4395,4582,5189,null,5230,5258,5284,5333,5426,5586,5718,5815,5909,5944,5996,6010,6262,6272,6321,6451,7628,9323,91,176,239,253,616,906,null,null,952,1127,1298,1350,1373,1456,1576,1740,1819,null,1929,1953,null,1972,null,2004,null,null,null,2115,2134,2188,2282,2408,null,null,2469,2483,2492,2520,null,2596,2604,2658,2684,2698,null,2711,2716,2727,2730,3412,3544,3968,4046,4207,4329,4379,4390,4424,4482,5064,null,5196,null,5237,5242,5270,5281,null,5312,null,5398,5433,5535,5589,5715,5754,5791,5837,5893,5911,5932,5954,5993,6001,6008,6014,6110,null,null,6285,6319,null,6407,6792,7577,8024,9298,9601,88,119,173,180,233,241,null,277,508,706,833,920,null,960,1021,1144,1243,1337,1345,1351,1368,1382,1392,1458,1564,1682,1727,1761,1786,1843,1894,1933,null,null,null,null,1979,null,2113,null,null,2143,2181,2193,2213,2285,null,null,2430,null,null,null,2486,null,null,2525,2594,null,null,2607,2642,2669,null,null,null,null,null,null,null,null,null,null,null,2819,2939,3499,3516,3549,3784,4037,null,4149,null,4227,4328,4342,4362,4383,null,null,4407,4447,4460,4487,4806,5163,null,5216,null,null,null,5243,5262,null,null,null,5298,5329,5377,5419,5428,5437,5515,5546,null,5606,5683,null,5752,5755,5789,5801,5822,5860,5877,5894,null,5914,null,5939,5951,null,5973,null,null,null,null,null,6013,6032,6107,6129,6275,6286,null,null,6380,6434,6736,6944,7077,7613,7812,8118,8883,9316,9325,9840,59,null,104,127,155,null,null,181,207,null,null,null,259,290,404,585,619,744,824,860,919,927,null,969,1002,1067,1134,1233,null,1293,1314,null,null,null,null,null,null,1370,1381,null,1388,1443,null,1462,1511,1571,1666,1698,1714,1737,1757,null,null,1810,1827,null,1881,1925,null,null,null,1988,null,null,2136,2147,2180,2185,null,null,2210,2216,null,2342,2419,null,null,null,null,null,2582,null,null,null,2628,null,2659,null,2784,2851,2881,3351,3435,3502,null,3531,null,3571,3723,3942,4000,null,4094,4188,4208,4250,null,null,4331,4355,null,4368,null,4384,null,4409,null,null,null,4467,null,4552,4779,5060,5084,5179,null,null,null,5254,null,null,5294,null,5319,null,5358,5383,5411,5420,null,null,null,5445,5476,5534,null,5557,5592,5618,null,5703,5738,null,null,5774,5788,null,5798,5812,null,null,5846,null,null,null,null,null,null,5921,null,null,5948,null,5964,5988,null,null,6015,6038,null,null,6123,6240,null,null,null,null,6325,null,null,6439,6649,6741,6879,6952,7061,7399,7580,7618,7767,7877,8089,8254,8524,9228,9303,9322,9324,9455,9783,9978,55,62,null,null,null,null,null,null,null,null,194,null,256,null,281,300,362,480,539,586,null,690,728,748,819,825,846,875,null,null,922,null,967,970,1001,1015,1040,1096,null,null,1147,null,1251,null,1304,1321,null,null,null,null,null,null,1428,1447,null,null,1476,1543,1570,1575,1655,1670,1696,null,null,1721,null,null,1755,1759,1794,1818,1824,null,1868,null,1920,null,null,2003,null,null,null,null,2162,null,null,null,null,null,null,2223,2310,2380,null,null,null,null,null,null,null,null,2741,2804,2835,2855,2866,2926,3098,3368,3434,3463,null,3509,3521,3539,3553,3603,3644,3737,3863,3950,3998,4006,4079,4109,4166,4199,null,null,4244,4261,null,4340,4350,null,null,4372,null,null,null,4415,null,null,4508,4579,4698,4790,4898,null,null,5110,5166,5183,5250,null,null,null,5318,5325,5352,5370,null,5393,5401,null,null,null,5443,null,null,5478,5518,null,5556,null,null,5595,5609,5658,null,null,null,5749,null,null,5781,null,null,null,null,null,null,null,null,null,null,null,null,5965,5978,null,null,6019,null,6074,null,null,6199,6256,null,6333,null,null,6548,6684,null,6784,6833,6898,6946,6969,7048,7070,7241,7547,null,7601,null,7626,7663,7784,7864,7971,8035,8111,8188,8263,8448,8544,9194,9242,null,9307,null,null,null,null,9358,9488,9619,9802,9930,9991,45,null,null,76,192,206,null,257,null,null,294,null,347,387,423,488,528,548,null,613,689,696,707,736,null,794,null,null,null,null,null,null,null,887,null,926,null,null,null,971,997,null,null,null,1033,1066,1088,1110,null,1171,null,null,null,1312,null,1335,1399,1433,null,null,1475,1484,null,1551,null,null,1573,null,1644,1661,null,1679,1689,1697,null,null,1742,null,null,null,null,null,null,null,null,null,1860,null,1906,null,null,null,null,2168,2218,2243,2309,2332,2359,2388,null,2767,2793,null,null,null,null,null,null,2867,2920,2927,3025,3331,3366,3392,3421,null,3454,3493,null,null,null,null,null,null,3550,3557,3578,3607,3628,3692,3733,3753,3817,3902,3949,3965,3993,null,4004,4035,4064,4089,4101,4114,4159,4179,4194,null,4242,null,null,4275,null,null,null,4352,null,null,null,null,4497,4522,null,null,4610,4777,null,4804,4880,4922,5100,5158,null,5175,null,null,5249,null,5313,null,null,null,5351,5356,null,null,null,null,null,5409,null,null,5477,null,5516,5531,5549,null,5593,null,null,5616,5633,null,null,null,null,null,null,null,null,5985,null,null,6067,6090,6130,6213,6253,6259,6329,6369,6468,6567,6683,6700,6770,null,6808,6875,null,6922,null,null,6965,6978,7026,null,7063,null,7187,7345,7421,7563,7587,7611,null,null,7661,7669,7782,7811,7819,7874,7911,8008,8030,8040,8101,null,8153,8250,8256,null,8411,8502,8536,8830,9061,9200,9237,9245,null,9308,9350,9370,9473,9507,9609,9675,9798,9803,9902,9955,9987,10000,14,48,74,null,null,null,null,null,null,null,null,null,333,null,379,400,null,436,null,499,525,null,null,557,null,615,686,null,null,null,null,710,null,740,783,797,880,894,null,null,null,978,985,null,null,null,1048,null,null,null,1097,1114,1162,1178,1308,null,null,null,1398,1410,null,null,null,null,null,null,1546,null,null,null,1610,null,null,null,1674,null,1683,1691,null,null,null,null,null,null,1904,1918,null,null,null,2219,2227,2269,2302,null,2318,2335,2356,2360,null,null,2757,null,null,2798,null,null,2893,null,null,2929,2943,3046,3158,3348,3360,null,3380,null,null,null,null,3456,3492,null,null,3551,null,null,null,3593,3605,null,null,3639,3671,3722,null,null,3742,3773,3809,3829,3894,3925,null,null,3954,3967,3992,null,4001,null,4009,null,null,null,4085,null,4099,4108,null,4122,4156,null,null,null,4190,null,null,null,4267,4310,null,null,4494,null,null,4549,4587,4640,4755,null,null,null,4851,4896,4917,4991,5097,null,5125,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,5615,null,null,5647,null,null,6056,null,6080,6096,null,6192,null,6216,null,null,null,null,null,null,6357,null,6461,6471,null,6578,6658,null,null,6729,6751,6778,6800,6817,6851,6876,6901,6929,6956,null,null,7009,7021,7035,null,null,7138,7204,7273,7375,7400,7453,7555,7574,null,null,7607,7612,7646,null,null,7702,null,null,null,null,null,7845,7866,null,7887,7969,7997,8014,null,null,8038,8080,null,null,8143,8168,8211,8253,null,null,8341,8416,8498,8513,8534,null,8791,8863,8929,9190,9195,9218,null,null,null,9280,null,null,9340,null,null,9373,9468,9474,9494,9509,9608,9614,9660,9717,null,null,null,9836,9868,9925,9948,9959,null,null,9995,null,null,27,null,null,null,null,332,335,365,385,399,null,434,454,null,null,517,null,null,570,null,null,653,null,null,714,null,741,773,null,null,804,null,null,null,896,null,null,null,993,1042,1063,null,null,1113,1124,null,1169,null,1186,null,null,null,null,1406,null,null,null,1584,1626,null,null,null,null,null,null,null,null,null,null,null,null,null,2233,null,2279,null,null,2312,2324,null,null,2354,null,null,null,2747,null,null,null,2891,2911,null,2930,2940,2983,3029,3078,3134,3247,null,null,null,null,3376,null,null,null,3465,null,null,null,null,null,null,null,3635,3642,3650,3678,3704,null,null,null,3772,3777,3786,3813,3822,3855,3873,null,3908,3928,3953,null,null,null,null,null,null,null,null,4026,4081,null,4098,null,null,null,4120,4125,null,null,null,4191,null,null,4283,null,null,null,null,null,null,4597,4634,4692,4723,4771,4831,4868,4885,null,4912,null,4939,5028,null,null,5116,5135,5614,null,5644,null,null,null,null,null,null,null,6163,6197,null,null,6335,null,null,null,6470,6493,null,6603,6655,6681,6716,null,6742,6769,null,null,6799,6807,null,null,null,6860,null,null,null,null,6926,null,6953,null,6989,null,null,null,null,null,7107,7186,7197,7221,7252,7339,7368,7397,null,7410,7450,7476,7554,null,7567,7575,null,null,null,null,7645,7649,7675,7710,null,null,null,null,7881,7899,7957,null,7973,8005,null,8018,null,null,8073,8086,null,null,8159,8182,null,8240,null,null,8269,8373,null,8435,8489,null,null,null,null,null,8615,8801,8846,8874,8890,8936,9151,9191,null,null,9213,9221,9253,9288,null,9349,null,9426,null,9470,null,9478,null,null,null,9524,null,null,null,9618,9644,null,9702,9722,9828,null,9845,9890,null,null,null,9949,null,9963,null,null,null,null,308,null,null,346,null,null,null,null,398,null,null,435,444,468,null,null,null,575,624,664,713,725,null,null,null,null,null,null,null,null,null,null,null,null,1062,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,2236,null,null,null,null,null,null,null,null,null,2755,2884,null,2899,2917,null,null,null,null,2972,2991,null,3036,3070,3084,3109,3154,3233,3264,3369,3378,null,null,3632,null,null,null,null,3667,null,3686,null,3709,3765,null,null,3780,null,3801,3812,null,null,null,3845,null,3870,3874,null,3920,null,null,null,null,null,null,null,null,4095,null,null,4121,null,4132,null,null,null,4297,4591,4607,4623,null,4681,null,4714,4728,null,null,4822,4845,4854,null,null,4891,null,null,4929,4953,5019,5045,null,null,5129,5142,null,null,null,null,null,6168,6193,null,null,6353,null,null,6475,6497,6582,6613,null,null,null,null,6704,null,null,6744,6752,null,6796,null,6802,null,6856,6871,null,null,null,null,null,null,7088,7121,7153,null,7189,7201,7207,null,7247,7257,7279,7344,7349,7374,7385,null,null,null,7444,null,7459,7519,null,null,null,null,null,null,7637,null,null,7656,7674,7676,7709,7747,null,7884,7891,null,7951,7965,null,7994,null,8006,null,null,8042,null,null,null,null,8162,8180,null,8231,8249,8268,8283,8370,8376,8429,8440,8485,8492,8601,8721,null,8828,8845,null,null,null,8885,8919,null,8966,9123,9167,null,null,9203,null,null,null,9250,9267,9281,null,null,null,9416,9444,null,null,null,9483,9511,9577,null,null,9632,9646,null,9706,null,9727,9815,9830,null,9866,9889,9891,null,null,null,null,null,319,null,null,null,null,null,null,441,448,457,479,null,582,null,630,null,null,711,null,null,null,null,null,null,null,null,null,null,null,2894,2909,null,null,2946,null,null,2996,null,null,3049,3073,3082,3086,3105,3117,3143,3156,3159,3242,3254,3330,null,3375,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,3803,null,null,3836,null,null,null,null,null,3916,3924,null,null,null,null,4126,4136,4287,4305,null,null,null,4609,4615,4632,4678,4687,4712,null,null,4740,null,4825,null,4846,4853,null,4886,null,null,4932,4945,4968,4999,5026,5033,5059,5128,null,5140,null,null,6185,null,null,6346,null,null,6478,null,6500,6580,6595,null,6648,null,null,null,null,null,null,null,null,null,null,null,null,null,null,7080,7101,7117,7124,7144,7158,null,null,null,null,null,7217,null,null,null,7264,7275,7313,null,null,7348,null,7369,null,null,7392,7442,null,7455,7475,7490,7524,null,null,null,null,null,null,null,7701,7703,null,7717,null,null,null,null,null,7927,null,7961,null,7980,null,null,null,null,null,null,null,8177,null,8219,null,8242,null,null,null,8276,8316,8355,null,null,8403,null,null,null,null,8450,null,null,8496,8580,8614,8707,8744,8812,null,null,null,null,8889,8902,8922,8954,9053,9068,9134,9163,9179,null,null,null,null,9264,null,null,null,9377,null,9443,null,null,null,null,null,9572,9591,null,null,null,9647,null,9711,null,9756,null,9822,null,null,9865,null,9877,null,null,null,316,null,null,null,null,null,null,null,null,null,null,null,null,634,null,null,null,null,null,null,null,2957,null,3009,null,null,null,null,3080,null,null,null,null,3106,3115,3130,null,3145,null,null,null,3221,3234,null,3253,3263,3285,null,3373,null,null,null,3831,3840,3909,null,null,null,null,null,null,null,null,null,null,null,null,null,4613,4621,4624,null,4663,null,null,4690,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,4946,null,null,4997,null,null,null,null,5039,null,null,null,null,null,null,6182,6189,6339,null,null,null,null,6506,null,null,6589,null,6642,null,null,null,7093,null,null,null,null,null,null,null,null,7159,7212,7220,null,7270,null,7277,7309,7322,null,null,null,null,null,null,7426,null,null,null,null,null,7479,7501,null,7532,7684,null,null,null,7715,7744,7920,7932,null,null,null,null,null,null,null,null,null,null,null,null,8314,8324,8343,null,8392,null,null,8472,null,null,8560,8582,8613,null,8660,8718,8722,8759,8805,8821,null,null,8892,8910,null,null,null,8963,8972,null,null,9078,9124,9138,9161,null,null,9184,null,null,null,9400,9441,null,9537,null,9584,9595,null,9659,null,null,null,9774,null,null,9851,null,null,null,null,null,null,null,2948,null,null,null,null,null,null,null,3110,null,3129,3131,null,3149,3194,null,null,3236,null,null,null,null,3270,3322,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,4688,null,null,null,null,null,null,null,null,null,null,null,null,null,null,6533,null,null,6623,null,null,null,null,null,7208,null,null,null,null,null,null,7278,7280,null,7321,null,null,7428,null,7482,7495,7506,7528,7542,null,7700,null,null,null,7746,7914,null,null,null,8293,null,8318,null,null,null,8385,8396,null,null,8556,8573,null,null,null,null,8653,8690,null,null,null,null,8750,8776,null,null,null,8824,null,null,null,null,null,null,8971,9020,9069,9119,null,null,null,9148,null,null,null,null,9395,9413,9437,null,9530,9567,null,null,null,null,9654,null,9769,null,null,null,null,null,null,null,3123,null,null,null,null,null,3172,3197,null,null,null,3282,3305,3323,null,null,null,null,null,6629,null,null,null,null,null,7287,null,null,null,null,null,null,7493,null,null,null,null,null,7535,null,7692,null,null,null,null,7917,8290,8295,null,null,8379,8386,null,8397,null,null,8571,8574,8648,null,8681,8702,null,null,8767,8786,null,null,8969,null,9001,9032,null,null,9091,null,null,null,9383,null,null,null,null,null,null,null,null,9571,null,null,9766,null,null,null,3165,null,null,null,null,null,3292,null,null,null,6625,6636,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,8389,null,8402,8570,null,null,null,null,null,null,8689,null,null,null,null,8778,null,null,null,8989,9019,9023,9048,null,null,null,null,null,null,null,null,null,null,3287,3298,null,null,null,null,8388,null,null,null,null,null,null,null,null,null,8977,null,9011,null,null,9031,null,null,null,null,null,3303,null,null,null,null,null,9013],700],
@@ -4826,20 +4733,20 @@ export const CURATED_PROBLEMS = [
     "slug": "number-of-islands",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an `m x n` grid of the characters `\"1\"` (land) and `\"0\"` (water). Return the **number of islands**.\n\nAn island is a group of land cells connected **horizontally or vertically**. You may assume all four edges of the grid are surrounded by water.",
-    "constraints": ["m == grid.length, n == grid[i].length","1 <= m, n <= 300","grid[i][j] is \"0\" or \"1\""],
+    "description": "A satellite map `grid` marks land as `\"1\"` and water as `\"0\"`. Land cells that touch **side by side (not diagonally)** belong to the same island, and everything outside the map is water.\n\nCount the **islands** on the map.",
+    "constraints": ["m == grid.length, n == grid[i].length","1 <= m, n <= 300","Every cell is \"0\" or \"1\""],
     "examples": [
       {
-        "input": "grid = [[\"1\",\"1\",\"1\",\"1\",\"0\"],[\"1\",\"1\",\"0\",\"1\",\"0\"],[\"1\",\"1\",\"0\",\"0\",\"0\"],[\"0\",\"0\",\"0\",\"0\",\"0\"]]",
-        "output": "1",
-        "explanation": "All the land cells are connected, so there is one island."
+        "input": "grid = [[\"1\",\"0\",\"1\"],[\"1\",\"0\",\"0\"],[\"0\",\"1\",\"1\"]]",
+        "output": "3",
+        "explanation": "The left column pair, the top-right cell and the bottom-right pair are separate."
       },
       {
-        "input": "grid = [[\"1\",\"1\",\"0\",\"0\",\"0\"],[\"1\",\"1\",\"0\",\"0\",\"0\"],[\"0\",\"0\",\"1\",\"0\",\"0\"],[\"0\",\"0\",\"0\",\"1\",\"1\"]]",
-        "output": "3",
-        "explanation": "There are three separate groups of land."
+        "input": "grid = [[\"1\",\"1\",\"0\"],[\"0\",\"1\",\"1\"],[\"0\",\"0\",\"1\"]]",
+        "output": "1",
+        "explanation": "The land snakes from the top-left to the bottom-right without a break."
       }
     ],
     "functionName": "numIslands",
@@ -4862,12 +4769,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[["1","1","1","1","0"],["1","1","0","1","0"],["1","1","0","0","0"],["0","0","0","0","0"]]],
-        "expected": 1
+        "input": [[["1","0","1"],["1","0","0"],["0","1","1"]]],
+        "expected": 3
       },
       {
-        "input": [[["1","1","0","0","0"],["1","1","0","0","0"],["0","0","1","0","0"],["0","0","0","1","1"]]],
-        "expected": 3
+        "input": [[["1","1","0"],["0","1","1"],["0","0","1"]]],
+        "expected": 1
       }
     ],
     "hiddenTestCases": [
@@ -4903,20 +4810,20 @@ export const CURATED_PROBLEMS = [
     "slug": "max-area-of-island",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an `m x n` binary matrix `grid`. An island is a group of `1`s (land) connected **horizontally or vertically**. The area of an island is the number of cells in it.\n\nReturn the **maximum area** of an island in the grid, or `0` if there is no island.",
-    "constraints": ["m == grid.length, n == grid[i].length","1 <= m, n <= 50","grid[i][j] is 0 or 1"],
+    "description": "In the map `grid`, `1` is land and `0` is water. Land cells that share a side form one island, and an island's size is how many cells it covers.\n\nReturn the **size of the biggest island**, or `0` if the map has no land.",
+    "constraints": ["m == grid.length, n == grid[i].length","1 <= m, n <= 50","Every cell is 0 or 1"],
     "examples": [
       {
-        "input": "grid = [[0,0,1,0,0,0,0,1,0,0,0,0,0],[0,0,0,0,0,0,0,1,1,1,0,0,0],[0,1,1,0,1,0,0,0,0,0,0,0,0],[0,1,0,0,1,1,0,0,1,0,1,0,0],[0,1,0,0,1,1,0,0,1,1,1,0,0],[0,0,0,0,0,0,0,0,0,0,1,0,0],[0,0,0,0,0,0,0,1,1,1,0,0,0],[0,0,0,0,0,0,0,1,1,0,0,0,0]]",
-        "output": "6",
-        "explanation": "The largest island has 6 connected cells."
+        "input": "grid = [[1,1,0,0],[0,1,0,1],[1,0,1,1],[0,0,0,1]]",
+        "output": "4",
+        "explanation": "The island on the right covers four cells; the top-left one covers three."
       },
       {
-        "input": "grid = [[0,0,0,0,0,0,0,0]]",
+        "input": "grid = [[0,0],[0,0]]",
         "output": "0",
-        "explanation": "There is no land."
+        "explanation": "All water."
       }
     ],
     "functionName": "maxAreaOfIsland",
@@ -4939,11 +4846,11 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[[0,0,1,0,0,0,0,1,0,0,0,0,0],[0,0,0,0,0,0,0,1,1,1,0,0,0],[0,1,1,0,1,0,0,0,0,0,0,0,0],[0,1,0,0,1,1,0,0,1,0,1,0,0],[0,1,0,0,1,1,0,0,1,1,1,0,0],[0,0,0,0,0,0,0,0,0,0,1,0,0],[0,0,0,0,0,0,0,1,1,1,0,0,0],[0,0,0,0,0,0,0,1,1,0,0,0,0]]],
-        "expected": 6
+        "input": [[[1,1,0,0],[0,1,0,1],[1,0,1,1],[0,0,0,1]]],
+        "expected": 4
       },
       {
-        "input": [[[0,0,0,0,0,0,0,0]]],
+        "input": [[[0,0],[0,0]]],
         "expected": 0
       }
     ],
@@ -4972,24 +4879,24 @@ export const CURATED_PROBLEMS = [
   },
   {
     "id": "pacific-atlantic-water-flow",
-    "title": "Pacific Atlantic Water Flow",
-    "slug": "pacific-atlantic-water-flow",
+    "title": "Rainfall to Both Seas",
+    "slug": "rainfall-to-both-seas",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "An `m x n` grid `heights` gives the height above sea level of each cell of an island. The **Pacific Ocean** touches the island's left and top edges, and the **Atlantic Ocean** touches its right and bottom edges.\n\nRain water flows from a cell to a neighbouring cell (up, down, left or right) whose height is **less than or equal** to its own. Water can flow into an ocean from any cell next to that ocean.\n\nReturn every cell `[row, col]` from which rain water can reach **both** oceans. You may return the cells in any order.",
+    "description": "`heights` is an elevation map of a rectangular valley. The **North Sea** lies along the top and left edges, and the **South Sea** along the bottom and right edges.\n\nRain on a cell can run to a side neighbour that is **no higher** than the cell itself, and drains into a sea from any cell on that sea's edges.\n\nReturn every cell `[row, col]` whose rain can end up in **both** seas, in any order.",
     "constraints": ["m == heights.length, n == heights[r].length","1 <= m, n <= 200","0 <= heights[r][c] <= 10^5"],
     "examples": [
       {
-        "input": "heights = [[1,2,2,3,5],[3,2,3,4,4],[2,4,5,3,1],[6,7,1,4,5],[5,1,1,2,4]]",
-        "output": "[[0,4],[1,3],[1,4],[2,2],[3,0],[3,1],[4,0]]",
-        "explanation": "Water from these seven cells can flow to both oceans."
+        "input": "heights = [[3,2,1],[4,5,2],[6,3,1]]",
+        "output": "[[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0]]",
+        "explanation": "Only the two bottom-right cells are cut off from the North Sea."
       },
       {
-        "input": "heights = [[1]]",
-        "output": "[[0,0]]",
-        "explanation": "The only cell touches both oceans."
+        "input": "heights = [[2,1]]",
+        "output": "[[0,0],[0,1]]",
+        "explanation": "Both cells sit on edges of both seas."
       }
     ],
     "functionName": "pacificAtlantic",
@@ -5013,15 +4920,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[[1,2,2,3,5],[3,2,3,4,4],[2,4,5,3,1],[6,7,1,4,5],[5,1,1,2,4]]],
-        "expected": [[0,4],[1,3],[1,4],[2,2],[3,0],[3,1],[4,0]]
+        "input": [[[3,2,1],[4,5,2],[6,3,1]]],
+        "expected": [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0]]
       },
       {
-        "input": [[[1]]],
-        "expected": [[0,0]]
+        "input": [[[2,1]]],
+        "expected": [[0,0],[0,1]]
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[[1]]],
+        "expected": [[0,0]]
+      },
       {
         "input": [[[1,1],[1,1]]],
         "expected": [[0,0],[0,1],[1,0],[1,1]]
@@ -5046,20 +4957,20 @@ export const CURATED_PROBLEMS = [
     "slug": "surrounded-regions",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an `m x n` matrix `board` containing the letters `\"X\"` and `\"O\"`. **Capture every region of `\"O\"`s that is fully surrounded by `\"X\"`s** by flipping all the `\"O\"`s in it to `\"X\"`.\n\nA region is a group of `\"O\"` cells connected horizontally or vertically. A region is surrounded only if none of its cells lies on the border of the board, so any region that touches the border is left unchanged.\n\nReturn the board after the capture.",
-    "constraints": ["m == board.length, n == board[i].length","1 <= m, n <= 200","board[i][j] is \"X\" or \"O\""],
+    "description": "On the board, `\"O\"` cells that share a side form a group. A group that **cannot reach the edge of the board** through other `\"O\"` cells is enclosed, and every cell in it turns into `\"X\"`. Groups with at least one cell on the edge are untouched.\n\nReturn the board after all enclosed groups have been filled in.",
+    "constraints": ["m == board.length, n == board[i].length","1 <= m, n <= 200","Every cell is \"X\" or \"O\""],
     "examples": [
       {
-        "input": "board = [[\"X\",\"X\",\"X\",\"X\"],[\"X\",\"O\",\"O\",\"X\"],[\"X\",\"X\",\"O\",\"X\"],[\"X\",\"O\",\"X\",\"X\"]]",
-        "output": "[[\"X\",\"X\",\"X\",\"X\"],[\"X\",\"X\",\"X\",\"X\"],[\"X\",\"X\",\"X\",\"X\"],[\"X\",\"O\",\"X\",\"X\"]]",
-        "explanation": "The three O cells in the middle are surrounded, so they flip. The O in the bottom row touches the border and stays."
+        "input": "board = [[\"X\",\"X\",\"X\",\"X\",\"X\"],[\"X\",\"O\",\"X\",\"O\",\"X\"],[\"X\",\"O\",\"X\",\"X\",\"O\"],[\"X\",\"X\",\"X\",\"X\",\"X\"]]",
+        "output": "[[\"X\",\"X\",\"X\",\"X\",\"X\"],[\"X\",\"X\",\"X\",\"X\",\"X\"],[\"X\",\"X\",\"X\",\"X\",\"O\"],[\"X\",\"X\",\"X\",\"X\",\"X\"]]",
+        "explanation": "The two inner groups are enclosed and fill in; the O on the right edge survives."
       },
       {
-        "input": "board = [[\"X\"]]",
-        "output": "[[\"X\"]]",
-        "explanation": "Nothing to capture."
+        "input": "board = [[\"O\",\"X\"]]",
+        "output": "[[\"O\",\"X\"]]",
+        "explanation": "Both cells are on the edge, so nothing changes."
       }
     ],
     "functionName": "solve",
@@ -5082,15 +4993,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[["X","X","X","X"],["X","O","O","X"],["X","X","O","X"],["X","O","X","X"]]],
-        "expected": [["X","X","X","X"],["X","X","X","X"],["X","X","X","X"],["X","O","X","X"]]
+        "input": [[["X","X","X","X","X"],["X","O","X","O","X"],["X","O","X","X","O"],["X","X","X","X","X"]]],
+        "expected": [["X","X","X","X","X"],["X","X","X","X","X"],["X","X","X","X","O"],["X","X","X","X","X"]]
       },
       {
-        "input": [[["X"]]],
-        "expected": [["X"]]
+        "input": [[["O","X"]]],
+        "expected": [["O","X"]]
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[["X"]]],
+        "expected": [["X"]]
+      },
       {
         "input": [[["O"]]],
         "expected": [["O"]]
@@ -5115,29 +5030,24 @@ export const CURATED_PROBLEMS = [
   },
   {
     "id": "rotting-oranges",
-    "title": "Rotting Oranges",
-    "slug": "rotting-oranges",
+    "title": "Mold on the Bread Shelf",
+    "slug": "mold-on-the-bread-shelf",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an `m x n` grid where each cell is\n\n- `0`: empty,\n- `1`: a fresh orange, or\n- `2`: a rotten orange.\n\nEvery minute, each fresh orange that is **4-directionally adjacent** to a rotten orange becomes rotten.\n\nReturn the **minimum number of minutes** until no fresh orange is left. If that is impossible, return `-1`.",
-    "constraints": ["m == grid.length, n == grid[i].length","1 <= m, n <= 10","grid[i][j] is 0, 1 or 2"],
+    "description": "A bakery shelf is a grid where `0` is an empty spot, `1` is a fresh loaf and `2` is a moldy loaf. Each hour, mold spreads from every moldy loaf to the fresh loaves directly **above, below, left or right** of it.\n\nReturn how many **hours pass before no fresh loaf is left**, or `-1` if some loaf can never be reached.",
+    "constraints": ["m == grid.length, n == grid[i].length","1 <= m, n <= 10","Every cell is 0, 1 or 2"],
     "examples": [
       {
-        "input": "grid = [[2,1,1],[1,1,0],[0,1,1]]",
+        "input": "grid = [[1,1,2],[0,1,1],[1,1,0]]",
         "output": "4",
-        "explanation": "All the oranges are rotten after 4 minutes."
+        "explanation": "Mold starts top-right and reaches the last loaf, bottom-left, in hour 4."
       },
       {
-        "input": "grid = [[2,1,1],[0,1,1],[1,0,1]]",
+        "input": "grid = [[2,0,1]]",
         "output": "-1",
-        "explanation": "The orange in the bottom-left corner is never reached."
-      },
-      {
-        "input": "grid = [[0,2]]",
-        "output": "0",
-        "explanation": "There are no fresh oranges, so no time is needed."
+        "explanation": "The empty spot shields the fresh loaf forever."
       }
     ],
     "functionName": "orangesRotting",
@@ -5160,19 +5070,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[[2,1,1],[1,1,0],[0,1,1]]],
+        "input": [[[1,1,2],[0,1,1],[1,1,0]]],
         "expected": 4
       },
       {
-        "input": [[[2,1,1],[0,1,1],[1,0,1]]],
+        "input": [[[2,0,1]]],
         "expected": -1
-      },
-      {
-        "input": [[[0,2]]],
-        "expected": 0
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[[2,0]]],
+        "expected": 0
+      },
       {
         "input": [[[0]]],
         "expected": 0
@@ -5201,20 +5111,20 @@ export const CURATED_PROBLEMS = [
     "slug": "course-schedule",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "There are `numCourses` courses labelled `0` to `numCourses - 1`. The array `prerequisites` holds pairs `[a, b]`, meaning you **must take course `b` before course `a`**.\n\nReturn `true` if it is possible to finish all the courses, and `false` otherwise.",
-    "constraints": ["1 <= numCourses <= 2000","0 <= prerequisites.length <= 5000","prerequisites[i].length == 2","0 <= a, b < numCourses","All the pairs are unique"],
+    "description": "A degree has courses numbered `0` to `numCourses - 1`. Each pair `[a, b]` in `prerequisites` says course `b` **must be completed before** course `a` can start.\n\nReturn `true` if a student can complete every course, or `false` if the requirements make that impossible.",
+    "constraints": ["1 <= numCourses <= 2000","0 <= prerequisites.length <= 5000","Each pair has two course numbers","0 <= a, b < numCourses","No pair is repeated"],
     "examples": [
       {
-        "input": "numCourses = 2, prerequisites = [[1,0]]",
+        "input": "numCourses = 3, prerequisites = [[2,0],[1,2]]",
         "output": "true",
-        "explanation": "Take course 0, then course 1."
+        "explanation": "Course 0, then 2, then 1."
       },
       {
-        "input": "numCourses = 2, prerequisites = [[1,0],[0,1]]",
+        "input": "numCourses = 3, prerequisites = [[0,1],[1,2],[2,0]]",
         "output": "false",
-        "explanation": "Each course requires the other, so it is impossible."
+        "explanation": "The three requirements form a loop, so none can start."
       }
     ],
     "functionName": "canFinish",
@@ -5241,11 +5151,11 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [2,[[1,0]]],
+        "input": [3,[[2,0],[1,2]]],
         "expected": true
       },
       {
-        "input": [2,[[1,0],[0,1]]],
+        "input": [3,[[0,1],[1,2],[2,0]]],
         "expected": false
       }
     ],
@@ -5259,11 +5169,11 @@ export const CURATED_PROBLEMS = [
         "expected": true
       },
       {
-        "input": [3,[[1,0],[2,1],[0,2]]],
+        "input": [2,[[0,1],[1,0]]],
         "expected": false
       },
       {
-        "input": [4,[[1,0],[2,0],[3,1],[3,2]]],
+        "input": [4,[[1,0],[2,0],[3,2]]],
         "expected": true
       },
       {
@@ -5286,25 +5196,20 @@ export const CURATED_PROBLEMS = [
     "slug": "course-schedule-ii",
     "difficulty": "Medium",
     "category": "Trees & Graphs",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "There are `numCourses` courses labelled `0` to `numCourses - 1`. The array `prerequisites` holds pairs `[a, b]`, meaning you **must take course `b` before course `a`**.\n\nReturn an order in which you can take **all** the courses. If it is impossible to finish them all, return an empty array.\n\nMany valid orders can exist, so to make the answer unique, return the **lexicographically smallest** one: at every step take the smallest-numbered course whose prerequisites are already done.",
-    "constraints": ["1 <= numCourses <= 2000","0 <= prerequisites.length <= numCourses * (numCourses - 1)","prerequisites[i].length == 2","0 <= a, b < numCourses","a != b, and all the pairs are unique"],
+    "description": "Courses are numbered `0` to `numCourses - 1`, and each pair `[a, b]` in `prerequisites` means course `b` comes **before** course `a`. Plan a timetable that takes **every course exactly once** and respects all the requirements. Return `[]` if no such timetable exists.\n\nTo keep the answer unique: whenever several courses are available, take the **lowest-numbered** one next.",
+    "constraints": ["1 <= numCourses <= 2000","0 <= prerequisites.length <= numCourses * (numCourses - 1)","Each pair has two course numbers","0 <= a, b < numCourses","a != b, and no pair is repeated"],
     "examples": [
       {
-        "input": "numCourses = 2, prerequisites = [[1,0]]",
-        "output": "[0,1]",
-        "explanation": "Course 0 comes first, then course 1."
+        "input": "numCourses = 3, prerequisites = [[2,0],[1,2]]",
+        "output": "[0,2,1]",
+        "explanation": "0 has no requirement, 2 needs 0, and 1 needs 2."
       },
       {
-        "input": "numCourses = 4, prerequisites = [[1,0],[2,0],[3,1],[3,2]]",
-        "output": "[0,1,2,3]",
-        "explanation": "After course 0, courses 1 and 2 are both available; the smaller number goes first."
-      },
-      {
-        "input": "numCourses = 1, prerequisites = []",
-        "output": "[0]",
-        "explanation": "A single course with no prerequisites."
+        "input": "numCourses = 4, prerequisites = [[2,1],[3,1],[0,3]]",
+        "output": "[1,2,3,0]",
+        "explanation": "Only 1 is free at first; it unlocks 2 and 3 (2 goes first), and 3 unlocks 0."
       }
     ],
     "functionName": "findOrder",
@@ -5331,19 +5236,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [2,[[1,0]]],
-        "expected": [0,1]
+        "input": [3,[[2,0],[1,2]]],
+        "expected": [0,2,1]
       },
       {
-        "input": [4,[[1,0],[2,0],[3,1],[3,2]]],
-        "expected": [0,1,2,3]
-      },
-      {
-        "input": [1,[]],
-        "expected": [0]
+        "input": [4,[[2,1],[3,1],[0,3]]],
+        "expected": [1,2,3,0]
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [1,[]],
+        "expected": [0]
+      },
       {
         "input": [2,[[1,0],[0,1]]],
         "expected": []
@@ -5372,20 +5277,20 @@ export const CURATED_PROBLEMS = [
     "slug": "climbing-stairs",
     "difficulty": "Easy",
     "category": "Dynamic Programming",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are climbing a staircase with `n` steps. Each time you can climb either **1 or 2** steps.\n\nReturn the number of distinct ways you can climb to the top.",
+    "description": "A staircase has `n` steps, and with each stride you go up **either 1 step or 2 steps**.\n\nCount the different sequences of strides that take you from the bottom exactly to the top step.",
     "constraints": ["1 <= n <= 45"],
     "examples": [
       {
-        "input": "n = 2",
-        "output": "2",
-        "explanation": "Two ways: 1 + 1 or 2."
+        "input": "n = 4",
+        "output": "5",
+        "explanation": "Five sequences: 1+1+1+1, 1+1+2, 1+2+1, 2+1+1 and 2+2."
       },
       {
-        "input": "n = 3",
-        "output": "3",
-        "explanation": "Three ways: 1 + 1 + 1, 1 + 2 or 2 + 1."
+        "input": "n = 5",
+        "output": "8",
+        "explanation": "Eight sequences reach step 5."
       }
     ],
     "functionName": "climbStairs",
@@ -5408,12 +5313,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [2],
-        "expected": 2
+        "input": [4],
+        "expected": 5
       },
       {
-        "input": [3],
-        "expected": 3
+        "input": [5],
+        "expected": 8
       }
     ],
     "hiddenTestCases": [
@@ -5422,12 +5327,12 @@ export const CURATED_PROBLEMS = [
         "expected": 1
       },
       {
-        "input": [4],
-        "expected": 5
+        "input": [2],
+        "expected": 2
       },
       {
-        "input": [5],
-        "expected": 8
+        "input": [3],
+        "expected": 3
       },
       {
         "input": [10],
@@ -5449,24 +5354,24 @@ export const CURATED_PROBLEMS = [
   },
   {
     "id": "min-cost-climbing-stairs",
-    "title": "Min Cost Climbing Stairs",
-    "slug": "min-cost-climbing-stairs",
+    "title": "Cheapest Way Up the Stairs",
+    "slug": "cheapest-way-up-the-stairs",
     "difficulty": "Easy",
     "category": "Dynamic Programming",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `cost` where `cost[i]` is the price of stepping **off** stair `i`. After paying the cost you can climb **one or two** stairs.\n\nYou may start from stair `0` or stair `1`. Return the **minimum total cost** to reach the top of the floor, which is one step past the last stair.",
+    "description": "Each step of a staircase has a toll: `cost[i]` is paid when you **leave step `i`**, and from there you may move up **one or two** steps.\n\nYou can begin on step `0` or step `1` for free. Return the **least total toll** to get past the last step.",
     "constraints": ["2 <= cost.length <= 1000","0 <= cost[i] <= 999"],
     "examples": [
       {
-        "input": "cost = [10,15,20]",
-        "output": "15",
-        "explanation": "Start at index 1, pay 15 and climb two steps to the top."
+        "input": "cost = [4,9,3]",
+        "output": "7",
+        "explanation": "Start on step 0 (pay 4, jump two), then pay 3 and step off the top: 7."
       },
       {
-        "input": "cost = [1,100,1,1,1,100,1,1,100,1]",
-        "output": "6",
-        "explanation": "Start at index 0 and step on the stairs of cost 1 only, paying 6 in total."
+        "input": "cost = [2,6,1,8,1]",
+        "output": "4",
+        "explanation": "Start on step 0 (pay 2), then hop over to steps 2 and 4 paying 1 each: 4."
       }
     ],
     "functionName": "minCostClimbingStairs",
@@ -5489,12 +5394,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[10,15,20]],
-        "expected": 15
+        "input": [[4,9,3]],
+        "expected": 7
       },
       {
-        "input": [[1,100,1,1,1,100,1,1,100,1]],
-        "expected": 6
+        "input": [[2,6,1,8,1]],
+        "expected": 4
       }
     ],
     "hiddenTestCases": [
@@ -5518,24 +5423,24 @@ export const CURATED_PROBLEMS = [
   },
   {
     "id": "house-robber",
-    "title": "House Robber",
-    "slug": "house-robber",
+    "title": "Booking Festival Booths",
+    "slug": "booking-festival-booths",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are a robber planning to rob houses along a street. Each house `i` holds `nums[i]` dollars, but **adjacent houses have linked alarms**: robbing two neighbouring houses sets off the alarm.\n\nReturn the **maximum amount** you can rob without triggering the alarm.",
+    "description": "A festival rents out booths in a single row, and booth `i` would earn you `nums[i]`. Noise rules forbid you from renting **two booths that are next to each other**.\n\nReturn the **most you can earn** with the booths you choose.",
     "constraints": ["1 <= nums.length <= 100","0 <= nums[i] <= 400"],
     "examples": [
       {
-        "input": "nums = [1,2,3,1]",
-        "output": "4",
-        "explanation": "Rob houses 0 and 2 for 1 + 3 = 4."
+        "input": "nums = [3,8,4]",
+        "output": "8",
+        "explanation": "The middle booth alone (8) beats the two ends together (3 + 4)."
       },
       {
-        "input": "nums = [2,7,9,3,1]",
-        "output": "12",
-        "explanation": "Rob houses 0, 2 and 4 for 2 + 9 + 1 = 12."
+        "input": "nums = [6,1,2,7]",
+        "output": "13",
+        "explanation": "Booths 0 and 3 are not neighbours: 6 + 7 = 13."
       }
     ],
     "functionName": "rob",
@@ -5558,12 +5463,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,1]],
-        "expected": 4
+        "input": [[3,8,4]],
+        "expected": 8
       },
       {
-        "input": [[2,7,9,3,1]],
-        "expected": 12
+        "input": [[6,1,2,7]],
+        "expected": 13
       }
     ],
     "hiddenTestCases": [
@@ -5591,29 +5496,24 @@ export const CURATED_PROBLEMS = [
   },
   {
     "id": "house-robber-ii",
-    "title": "House Robber II",
-    "slug": "house-robber-ii",
+    "title": "Booking Festival Booths II",
+    "slug": "booking-festival-booths-ii",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "The houses are now arranged in a **circle**, so the first and the last house are neighbours. As before, robbing two adjacent houses sets off the alarm.\n\nGiven `nums`, where `nums[i]` is the money in house `i`, return the **maximum amount** you can rob without triggering the alarm.",
+    "description": "This time the booths stand in a **ring** around a fountain, so the first and last booths are also neighbours. Booth `i` earns `nums[i]`, and you still may not rent two neighbouring booths.\n\nReturn the **most you can earn**.",
     "constraints": ["1 <= nums.length <= 100","0 <= nums[i] <= 1000"],
     "examples": [
       {
-        "input": "nums = [2,3,2]",
-        "output": "3",
-        "explanation": "Houses 0 and 2 are neighbours in the circle, so you cannot rob both. The best is the middle house: 3."
-      },
-      {
-        "input": "nums = [1,2,3,1]",
+        "input": "nums = [4,1,4]",
         "output": "4",
-        "explanation": "Rob house 0 and house 2 for 1 + 3 = 4."
+        "explanation": "In a ring of three every pair is adjacent, so only one booth: 4."
       },
       {
-        "input": "nums = [1,2,3]",
-        "output": "3",
-        "explanation": "Houses 0 and 2 are neighbours in the circle, so the best is to rob house 2 alone: 3."
+        "input": "nums = [2,5,1,6]",
+        "output": "11",
+        "explanation": "Booths 1 and 3 are not neighbours: 5 + 6 = 11."
       }
     ],
     "functionName": "rob",
@@ -5636,19 +5536,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,3,2]],
-        "expected": 3
-      },
-      {
-        "input": [[1,2,3,1]],
+        "input": [[4,1,4]],
         "expected": 4
       },
       {
-        "input": [[1,2,3]],
-        "expected": 3
+        "input": [[2,5,1,6]],
+        "expected": 11
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[3,1,2]],
+        "expected": 3
+      },
       {
         "input": [[5]],
         "expected": 5
@@ -5677,25 +5577,20 @@ export const CURATED_PROBLEMS = [
     "slug": "longest-palindromic-substring",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a string `s`, return its **longest palindromic substring**.\n\nIf several palindromic substrings share the maximum length, return the one that **starts first** in `s`.",
-    "constraints": ["1 <= s.length <= 1000","s consists of digits and English letters"],
+    "description": "Find the **longest unbroken stretch of `s` that reads the same backwards** and return it.\n\nIf there is a tie for the longest, return the one that begins earliest.",
+    "constraints": ["1 <= s.length <= 1000","s contains only English letters and digits"],
     "examples": [
       {
-        "input": "s = \"babad\"",
-        "output": "\"bab\"",
-        "explanation": "\"aba\" is also valid, but \"bab\" starts first."
+        "input": "s = \"xabay\"",
+        "output": "\"aba\"",
+        "explanation": "\"aba\" is the only palindrome longer than one character."
       },
       {
-        "input": "s = \"cbbd\"",
-        "output": "\"bb\"",
-        "explanation": "The longest palindrome is \"bb\"."
-      },
-      {
-        "input": "s = \"a\"",
-        "output": "\"a\"",
-        "explanation": "A single character is a palindrome."
+        "input": "s = \"ppqq\"",
+        "output": "\"pp\"",
+        "explanation": "\"pp\" and \"qq\" tie; \"pp\" comes first."
       }
     ],
     "functionName": "longestPalindrome",
@@ -5718,26 +5613,26 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": ["babad"],
-        "expected": "bab"
+        "input": ["xabay"],
+        "expected": "aba"
       },
       {
-        "input": ["cbbd"],
-        "expected": "bb"
-      },
-      {
-        "input": ["a"],
-        "expected": "a"
+        "input": ["ppqq"],
+        "expected": "pp"
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": ["a"],
+        "expected": "a"
+      },
       {
         "input": ["ac"],
         "expected": "a"
       },
       {
-        "input": ["forgeeksskeegfor"],
-        "expected": "geeksskeeg"
+        "input": ["xyrotorzz"],
+        "expected": "rotor"
       },
       {
         "input": ["aaaa"],
@@ -5763,20 +5658,20 @@ export const CURATED_PROBLEMS = [
     "slug": "palindromic-substrings",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a string `s`, return the **number of palindromic substrings** in it.\n\nA substring is a contiguous sequence of characters. Substrings at different positions count separately, even if they contain the same characters.",
-    "constraints": ["1 <= s.length <= 1000","s consists of lowercase English letters"],
+    "description": "Count the **stretches of `s` that read the same backwards**. Every start and end position counts separately, so identical text at two different places is counted twice.",
+    "constraints": ["1 <= s.length <= 1000","s uses only lowercase English letters"],
     "examples": [
       {
-        "input": "s = \"abc\"",
+        "input": "s = \"xyz\"",
         "output": "3",
-        "explanation": "Three palindromes: \"a\", \"b\" and \"c\"."
+        "explanation": "Only the three single letters."
       },
       {
-        "input": "s = \"aaa\"",
-        "output": "6",
-        "explanation": "Six palindromes: \"a\", \"a\", \"a\", \"aa\", \"aa\" and \"aaa\"."
+        "input": "s = \"aba\"",
+        "output": "4",
+        "explanation": "\"a\", \"b\", \"a\" and \"aba\"."
       }
     ],
     "functionName": "countSubstrings",
@@ -5799,12 +5694,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": ["abc"],
+        "input": ["xyz"],
         "expected": 3
       },
       {
-        "input": ["aaa"],
-        "expected": 6
+        "input": ["aba"],
+        "expected": 4
       }
     ],
     "hiddenTestCases": [
@@ -5817,8 +5712,8 @@ export const CURATED_PROBLEMS = [
         "expected": 6
       },
       {
-        "input": ["racecar"],
-        "expected": 10
+        "input": ["bbb"],
+        "expected": 6
       },
       {
         "input": ["abababababbaababbbabbaabaabbabbaabaaaaaababbaaaababaaaaabaabbaabbaaaaaaabbbbabbbbbbaaabbaaababbaaaabababbbabbbaaaaaaabbaaaababbaaaabaaaaabaaaaabbaaabbabaaabbbabbbabaaaababbbbbbbaaabbabbbbaabaabbaabbbbaaaabbbbbbabababaababaabaabbbbababababaabbabaaaaabaaabbbabbbbbbbbbbbabbbabbbbababbabbbaabbbbbaaabbbababaaabbabbaaaabaabbbabbbbbabababbabaabbbbabaaabbabbabbbabaabaaabbbabbbaabaaaababaabaaabababaaaaababbaaaabaabbbaababaaabbbbaabaaaabbbbabaabbaaaabbabaabbabaaaabbaaababbbbabbabbabbabaabbbaabbaaaabbbaababbaaabbbbabababbaaabbabbabaaaabbabababbaababbbbaaaababbabbabbbabbbbbaabaabbaaaabababbbbabaabbbbaaababbbababbabaaabababaaababbabababaaaabbbbaabbbbbaaaabbbbbaaabbbbbaababaaaaababbabaabbabbababaabbbbbabbabbabbaabbababaababababaaabbaaabbaaababaaabaaaaaaabbaababbbabbababaaaaaabaababaabbbbbbbbbabaabbbabbbaaabaabbabaaabaaaababbbabbbabbbbbbababbabbabbbabbabbbbabbaaabbbbabaabbbbbbbbbaabbbbbaaaabbaabbbaabaaaabaababaabbabbbbbbbaaabaaabbbabababaababbaaababaabbbaababbbabbababbaabababaabbabbabbabbaaaabbbabbab"],
@@ -5836,25 +5731,25 @@ export const CURATED_PROBLEMS = [
     "slug": "decode-ways",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "A message made of capital letters is encoded as digits using the mapping `\"A\" -> \"1\"`, `\"B\" -> \"2\"`, ..., `\"Z\" -> \"26\"`.\n\nGiven a string `s` of digits, return the **number of ways to decode it**. A way is valid only if every group maps to a letter; for example `\"06\"` cannot be decoded because `\"0\"` and `\"06\"` do not map to any letter.\n\nThe answer is guaranteed to fit in a 32-bit integer.",
-    "constraints": ["1 <= s.length <= 100","s contains only digits and may contain leading zeros"],
+    "description": "A secret message was written with `A = 1`, `B = 2`, ..., `Z = 26`, and the numbers were then run together, so the spaces are lost. Given the digit string `s`, count **how many letter messages could have produced it**.\n\nEvery chunk must be a number from `1` to `26` with no leading zero: `\"0\"` and `\"05\"` are not letters. The count fits in a 32-bit integer.",
+    "constraints": ["1 <= s.length <= 100","s contains only digits, possibly starting with 0"],
     "examples": [
       {
-        "input": "s = \"12\"",
+        "input": "s = \"17\"",
         "output": "2",
-        "explanation": "\"12\" can be decoded as \"AB\" (1 2) or \"L\" (12)."
+        "explanation": "\"17\" is either \"AG\" (1, 7) or \"Q\" (17)."
       },
       {
-        "input": "s = \"226\"",
-        "output": "3",
-        "explanation": "\"226\" can be \"BZ\" (2 26), \"VF\" (22 6) or \"BBF\" (2 2 6)."
+        "input": "s = \"1201\"",
+        "output": "1",
+        "explanation": "The 0 must pair with the 2 as 20, leaving 1, 20, 1 = \"ATA\"."
       },
       {
-        "input": "s = \"06\"",
+        "input": "s = \"30\"",
         "output": "0",
-        "explanation": "\"06\" has no valid decoding."
+        "explanation": "\"30\" and a lone \"0\" are not letters."
       }
     ],
     "functionName": "numDecodings",
@@ -5877,15 +5772,15 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": ["12"],
+        "input": ["17"],
         "expected": 2
       },
       {
-        "input": ["226"],
-        "expected": 3
+        "input": ["1201"],
+        "expected": 1
       },
       {
-        "input": ["06"],
+        "input": ["30"],
         "expected": 0
       }
     ],
@@ -5907,7 +5802,7 @@ export const CURATED_PROBLEMS = [
         "expected": 1
       },
       {
-        "input": ["11106"],
+        "input": ["21206"],
         "expected": 2
       },
       {
@@ -5930,25 +5825,25 @@ export const CURATED_PROBLEMS = [
     "slug": "coin-change",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an integer array `coins` of coin denominations and an integer `amount`. You have an unlimited supply of each coin.\n\nReturn the **fewest coins** needed to make up `amount`. If it cannot be made up by any combination of the coins, return `-1`.",
+    "description": "A vending machine must return exactly `amount` in change, and it has an endless supply of coins with the values in `coins`. Return the **smallest number of coins** that adds up to `amount`, or `-1` if no combination works.",
     "constraints": ["1 <= coins.length <= 12","1 <= coins[i] <= 2^31 - 1","0 <= amount <= 10^4"],
     "examples": [
       {
-        "input": "coins = [1,2,5], amount = 11",
+        "input": "coins = [3,7], amount = 13",
         "output": "3",
-        "explanation": "11 = 5 + 5 + 1, which uses three coins."
+        "explanation": "7 + 3 + 3 = 13 uses three coins."
       },
       {
-        "input": "coins = [2], amount = 3",
+        "input": "coins = [4], amount = 6",
         "output": "-1",
-        "explanation": "The amount 3 cannot be made with coins of 2."
+        "explanation": "Coins of 4 can only make multiples of 4."
       },
       {
-        "input": "coins = [1], amount = 0",
+        "input": "coins = [2], amount = 0",
         "output": "0",
-        "explanation": "The amount 0 needs no coins."
+        "explanation": "No change needed, no coins."
       }
     ],
     "functionName": "coinChange",
@@ -5975,15 +5870,15 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,5],11],
+        "input": [[3,7],13],
         "expected": 3
       },
       {
-        "input": [[2],3],
+        "input": [[4],6],
         "expected": -1
       },
       {
-        "input": [[1],0],
+        "input": [[2],0],
         "expected": 0
       }
     ],
@@ -5993,8 +5888,8 @@ export const CURATED_PROBLEMS = [
         "expected": 2
       },
       {
-        "input": [[186,419,83,408],6249],
-        "expected": 20
+        "input": [[9,4,7],100],
+        "expected": 12
       },
       {
         "input": [[2,5,10,1],27],
@@ -6016,20 +5911,20 @@ export const CURATED_PROBLEMS = [
     "slug": "maximum-product-subarray",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums`, find a **contiguous non-empty subarray** whose product is the largest, and return that product.\n\nThe answer is guaranteed to fit in a 32-bit integer.",
-    "constraints": ["1 <= nums.length <= 2 * 10^4","-10 <= nums[i] <= 10","The product of any prefix or suffix of nums fits in a 32-bit integer"],
+    "description": "Choose **one unbroken, non-empty run of numbers** in `nums` and multiply them together. Return the **largest product** any such run can give.\n\nThe answer fits in a 32-bit integer.",
+    "constraints": ["1 <= nums.length <= 2 * 10^4","-10 <= nums[i] <= 10","Every prefix and suffix product fits in a 32-bit integer"],
     "examples": [
       {
-        "input": "nums = [2,3,-2,4]",
-        "output": "6",
-        "explanation": "The subarray [2, 3] has the largest product, 6."
+        "input": "nums = [3,-1,4,2]",
+        "output": "8",
+        "explanation": "4 x 2 = 8; including the -1 would make it negative."
       },
       {
-        "input": "nums = [-2,0,-1]",
+        "input": "nums = [-3,0,-2]",
         "output": "0",
-        "explanation": "The result cannot be 2 because [-2, -1] is not contiguous; the best is 0."
+        "explanation": "The two negatives are separated by 0, so 0 is the best."
       }
     ],
     "functionName": "maxProduct",
@@ -6052,11 +5947,11 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,3,-2,4]],
-        "expected": 6
+        "input": [[3,-1,4,2]],
+        "expected": 8
       },
       {
-        "input": [[-2,0,-1]],
+        "input": [[-3,0,-2]],
         "expected": 0
       }
     ],
@@ -6093,25 +5988,25 @@ export const CURATED_PROBLEMS = [
     "slug": "word-break",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a string `s` and a dictionary of strings `wordDict`, return `true` if `s` can be split into a sequence of **one or more dictionary words**.\n\nA dictionary word may be reused as many times as you like.",
-    "constraints": ["1 <= s.length <= 300","1 <= wordDict.length <= 1000","1 <= wordDict[i].length <= 20","s and wordDict[i] consist of lowercase English letters","All strings in wordDict are unique"],
+    "description": "Can the text `s` be **chopped into pieces that are all words from `wordDict`**, with nothing left over? Words may be used any number of times. Return `true` or `false`.",
+    "constraints": ["1 <= s.length <= 300","1 <= wordDict.length <= 1000","1 <= wordDict[i].length <= 20","All strings use only lowercase English letters","Dictionary words are distinct"],
     "examples": [
       {
-        "input": "s = \"leetcode\", wordDict = [\"leet\",\"code\"]",
+        "input": "s = \"sunflower\", wordDict = [\"sun\",\"flow\",\"flower\",\"er\"]",
         "output": "true",
-        "explanation": "\"leetcode\" can be split as \"leet code\"."
+        "explanation": "\"sun\" + \"flower\"."
       },
       {
-        "input": "s = \"applepenapple\", wordDict = [\"apple\",\"pen\"]",
+        "input": "s = \"nightmare\", wordDict = [\"night\",\"mare\",\"ma\"]",
         "output": "true",
-        "explanation": "\"applepenapple\" can be split as \"apple pen apple\"."
+        "explanation": "\"night\" + \"mare\"; \"ma\" alone would leave \"re\"."
       },
       {
-        "input": "s = \"catsandog\", wordDict = [\"cats\",\"dog\",\"sand\",\"and\",\"cat\"]",
+        "input": "s = \"pineapples\", wordDict = [\"pine\",\"apple\",\"pen\"]",
         "output": "false",
-        "explanation": "No split uses only dictionary words."
+        "explanation": "\"pine\" + \"apple\" leaves an \"s\" that is not a word."
       }
     ],
     "functionName": "wordBreak",
@@ -6138,15 +6033,15 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": ["leetcode",["leet","code"]],
+        "input": ["sunflower",["sun","flow","flower","er"]],
         "expected": true
       },
       {
-        "input": ["applepenapple",["apple","pen"]],
+        "input": ["nightmare",["night","mare","ma"]],
         "expected": true
       },
       {
-        "input": ["catsandog",["cats","dog","sand","and","cat"]],
+        "input": ["pineapples",["pine","apple","pen"]],
         "expected": false
       }
     ],
@@ -6164,7 +6059,7 @@ export const CURATED_PROBLEMS = [
         "expected": true
       },
       {
-        "input": ["cars",["car","ca","rs"]],
+        "input": ["bird",["bi","b","ird"]],
         "expected": true
       },
       {
@@ -6183,25 +6078,25 @@ export const CURATED_PROBLEMS = [
     "slug": "longest-increasing-subsequence",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums`, return the **length of the longest strictly increasing subsequence**.\n\nA subsequence keeps the original order of elements but may skip some of them.",
+    "description": "Cross out as few numbers of `nums` as you like (keeping the rest in order) so that what remains is **strictly increasing**. Return the **most numbers you can keep**.",
     "constraints": ["1 <= nums.length <= 2500","-10^4 <= nums[i] <= 10^4"],
     "examples": [
       {
-        "input": "nums = [10,9,2,5,3,7,101,18]",
+        "input": "nums = [5,1,6,2,7,3,8]",
         "output": "4",
-        "explanation": "One longest subsequence is [2, 3, 7, 101]."
+        "explanation": "Keep 5, 6, 7, 8 (or 1, 2, 3, 8)."
       },
       {
-        "input": "nums = [0,1,0,3,2,3]",
-        "output": "4",
-        "explanation": "One longest subsequence is [0, 1, 2, 3]."
-      },
-      {
-        "input": "nums = [7,7,7,7,7,7,7]",
+        "input": "nums = [9,9,9]",
         "output": "1",
-        "explanation": "Strictly increasing means equal values cannot be repeated."
+        "explanation": "Equal values never count as increasing."
+      },
+      {
+        "input": "nums = [2,8,3,4,1]",
+        "output": "3",
+        "explanation": "Keep 2, 3, 4."
       }
     ],
     "functionName": "lengthOfLIS",
@@ -6224,16 +6119,16 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[10,9,2,5,3,7,101,18]],
+        "input": [[5,1,6,2,7,3,8]],
         "expected": 4
       },
       {
-        "input": [[0,1,0,3,2,3]],
-        "expected": 4
-      },
-      {
-        "input": [[7,7,7,7,7,7,7]],
+        "input": [[9,9,9]],
         "expected": 1
+      },
+      {
+        "input": [[2,8,3,4,1]],
+        "expected": 3
       }
     ],
     "hiddenTestCases": [
@@ -6250,7 +6145,7 @@ export const CURATED_PROBLEMS = [
         "expected": 5
       },
       {
-        "input": [[4,10,4,3,8,9]],
+        "input": [[6,12,6,5,10,11]],
         "expected": 3
       },
       {
@@ -6265,20 +6160,20 @@ export const CURATED_PROBLEMS = [
     "slug": "unique-paths",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "A robot stands in the top-left corner of an `m x n` grid and wants to reach the bottom-right corner. At each step it can move only **down or right**.\n\nReturn the number of **unique paths** the robot can take.",
-    "constraints": ["1 <= m, n <= 100","The answer is guaranteed to be less than or equal to 2 * 10^9"],
+    "description": "A city is a grid of `m` rows by `n` columns of blocks. A courier starts at the top-left block and must reach the bottom-right block, moving only **down or right** one block at a time.\n\nCount the **different routes** the courier can take.",
+    "constraints": ["1 <= m, n <= 100","The answer is at most 2 * 10^9"],
     "examples": [
       {
-        "input": "m = 3, n = 7",
-        "output": "28",
-        "explanation": "There are 28 paths through a 3 x 7 grid."
+        "input": "m = 4, n = 5",
+        "output": "35",
+        "explanation": "Any route is 3 downs and 4 rights in some order: 35 routes."
       },
       {
-        "input": "m = 3, n = 2",
+        "input": "m = 2, n = 3",
         "output": "3",
-        "explanation": "There are 3 paths through a 3 x 2 grid: right-down-down, down-down-right and down-right-down."
+        "explanation": "One down and two rights: right-right-down, right-down-right or down-right-right."
       }
     ],
     "functionName": "uniquePaths",
@@ -6305,18 +6200,18 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [3,7],
-        "expected": 28
+        "input": [4,5],
+        "expected": 35
       },
       {
-        "input": [3,2],
+        "input": [2,3],
         "expected": 3
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [7,3],
-        "expected": 28
+        "input": [5,4],
+        "expected": 35
       },
       {
         "input": [1,1],
@@ -6350,20 +6245,20 @@ export const CURATED_PROBLEMS = [
     "slug": "jump-game",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an integer array `nums`. You start at the first index and each element `nums[i]` is your **maximum jump length** from position `i`.\n\nReturn `true` if you can reach the **last index**, and `false` otherwise.",
+    "description": "You stand on the first square of a row. The number on square `i`, `nums[i]`, is **the farthest you may jump forward from it** (any shorter jump is allowed too).\n\nReturn `true` if you can land on the last square, otherwise `false`.",
     "constraints": ["1 <= nums.length <= 10^4","0 <= nums[i] <= 10^5"],
     "examples": [
       {
-        "input": "nums = [2,3,1,1,4]",
+        "input": "nums = [1,2,0,1]",
         "output": "true",
-        "explanation": "Jump 1 step from index 0 to 1, then 3 steps to the last index."
+        "explanation": "Jump to square 1, and from there two squares to the end."
       },
       {
-        "input": "nums = [3,2,1,0,4]",
+        "input": "nums = [2,1,0,3]",
         "output": "false",
-        "explanation": "You always arrive at index 3, whose jump length is 0, so you can never reach the last index."
+        "explanation": "Every route gets stuck on the 0 at square 2."
       }
     ],
     "functionName": "canJump",
@@ -6386,11 +6281,11 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,3,1,1,4]],
+        "input": [[1,2,0,1]],
         "expected": true
       },
       {
-        "input": [[3,2,1,0,4]],
+        "input": [[2,1,0,3]],
         "expected": false
       }
     ],
@@ -6427,20 +6322,20 @@ export const CURATED_PROBLEMS = [
     "slug": "jump-game-ii",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an integer array `nums` and start at index `0`. Each `nums[i]` is your **maximum jump length** from index `i`.\n\nReturn the **minimum number of jumps** needed to reach the last index. You can assume the last index is always reachable.",
-    "constraints": ["1 <= nums.length <= 10^4","0 <= nums[i] <= 1000","The last index is always reachable"],
+    "description": "As before, square `i` lets you jump forward **up to `nums[i]` squares**. The last square can always be reached.\n\nReturn the **fewest jumps** needed to get from the first square to the last.",
+    "constraints": ["1 <= nums.length <= 10^4","0 <= nums[i] <= 1000","The last square is always reachable"],
     "examples": [
       {
-        "input": "nums = [2,3,1,1,4]",
+        "input": "nums = [1,4,1,1,1]",
         "output": "2",
-        "explanation": "Jump 1 step to index 1, then 3 steps to the last index: 2 jumps."
+        "explanation": "Hop to square 1, then the 4 carries you to the end."
       },
       {
-        "input": "nums = [2,3,0,1,4]",
-        "output": "2",
-        "explanation": "Jump to index 1, then to the end: 2 jumps."
+        "input": "nums = [3,1,1,1]",
+        "output": "1",
+        "explanation": "One jump of three reaches the end."
       }
     ],
     "functionName": "jump",
@@ -6463,12 +6358,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,3,1,1,4]],
+        "input": [[1,4,1,1,1]],
         "expected": 2
       },
       {
-        "input": [[2,3,0,1,4]],
-        "expected": 2
+        "input": [[3,1,1,1]],
+        "expected": 1
       }
     ],
     "hiddenTestCases": [
@@ -6500,24 +6395,24 @@ export const CURATED_PROBLEMS = [
   },
   {
     "id": "gas-station",
-    "title": "Gas Station",
-    "slug": "gas-station",
+    "title": "Fuel Stops on a Ring Road",
+    "slug": "fuel-stops-on-a-ring-road",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "There are `n` gas stations on a circular route. Station `i` has `gas[i]` units of fuel, and driving from station `i` to the next one costs `cost[i]` units. Your tank starts empty and has unlimited capacity.\n\nReturn the **index of the station where you should start** to complete the full circuit clockwise, or `-1` if that is impossible. If a solution exists it is guaranteed to be unique.",
-    "constraints": ["n == gas.length == cost.length","1 <= n <= 10^5","0 <= gas[i], cost[i] <= 10^4","If a solution exists, it is unique"],
+    "description": "A ring road has `n` fuel stops. At stop `i` you can take on `gas[i]` litres, and the drive from stop `i` to stop `i + 1` (wrapping around after the last) burns `cost[i]` litres. Your tank starts empty and never overflows.\n\nReturn the stop to **start from so you can drive one full lap**, or `-1` if no start works. When an answer exists, it is the only one.",
+    "constraints": ["n == gas.length == cost.length","1 <= n <= 10^5","0 <= gas[i], cost[i] <= 10^4","At most one start works"],
     "examples": [
       {
-        "input": "gas = [1,2,3,4,5], cost = [3,4,5,1,2]",
-        "output": "3",
-        "explanation": "Start at station 3 with 4 units, and every later stop leaves you with enough fuel."
+        "input": "gas = [2,5,1,4], cost = [3,2,4,1]",
+        "output": "1",
+        "explanation": "From stop 1 the tank reads 3, 0, 3 and 2 after each leg, never below zero."
       },
       {
-        "input": "gas = [2,3,4], cost = [3,4,3]",
+        "input": "gas = [1,2,3], cost = [2,2,3]",
         "output": "-1",
-        "explanation": "Whichever station you start at, you run out of fuel before finishing the circuit."
+        "explanation": "The road burns 7 litres but only 6 are available."
       }
     ],
     "functionName": "canCompleteCircuit",
@@ -6544,11 +6439,11 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3,4,5],[3,4,5,1,2]],
-        "expected": 3
+        "input": [[2,5,1,4],[3,2,4,1]],
+        "expected": 1
       },
       {
-        "input": [[2,3,4],[3,4,3]],
+        "input": [[1,2,3],[2,2,3]],
         "expected": -1
       }
     ],
@@ -6562,8 +6457,8 @@ export const CURATED_PROBLEMS = [
         "expected": 0
       },
       {
-        "input": [[5,1,2,3,4],[4,4,1,5,1]],
-        "expected": 4
+        "input": [[4,1,6],[5,2,1]],
+        "expected": 2
       },
       {
         "input": [[3,1,1],[1,2,2]],
@@ -6581,20 +6476,20 @@ export const CURATED_PROBLEMS = [
     "slug": "insert-interval",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `intervals` of **non-overlapping** intervals `[start, end]`, **sorted by start**, and another interval `newInterval`.\n\nInsert `newInterval` so that the result is still sorted and has no overlapping intervals, **merging** any intervals that overlap with it. Return the resulting array.",
-    "constraints": ["0 <= intervals.length <= 10^4","intervals[i].length == 2","0 <= start <= end <= 10^5","intervals is sorted by start in ascending order","newInterval.length == 2"],
+    "description": "`intervals` is a list of **non-overlapping** `[start, end]` bookings, ordered by start. Add the booking `newInterval`, **joining it with any bookings it overlaps** so the list stays ordered and free of overlaps, and return the new list.",
+    "constraints": ["0 <= intervals.length <= 10^4","Each interval has two numbers","0 <= start <= end <= 10^5","intervals is ordered by start","newInterval has two numbers"],
     "examples": [
       {
-        "input": "intervals = [[1,3],[6,9]], newInterval = [2,5]",
-        "output": "[[1,5],[6,9]]",
-        "explanation": "The new interval overlaps [1, 3], so they merge into [1, 5]."
+        "input": "intervals = [[2,4],[7,9],[12,14]], newInterval = [8,13]",
+        "output": "[[2,4],[7,14]]",
+        "explanation": "[8, 13] overlaps both [7, 9] and [12, 14], so the three join into [7, 14]."
       },
       {
-        "input": "intervals = [[1,2],[3,5],[6,7],[8,10],[12,16]], newInterval = [4,8]",
-        "output": "[[1,2],[3,10],[12,16]]",
-        "explanation": "The new interval [4, 8] overlaps [3, 5], [6, 7] and [8, 10], which merge into [3, 10]."
+        "input": "intervals = [[1,3]], newInterval = [5,6]",
+        "output": "[[1,3],[5,6]]",
+        "explanation": "No overlap, so the booking is simply added at the end."
       }
     ],
     "functionName": "insert",
@@ -6621,12 +6516,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[[1,3],[6,9]],[2,5]],
-        "expected": [[1,5],[6,9]]
+        "input": [[[2,4],[7,9],[12,14]],[8,13]],
+        "expected": [[2,4],[7,14]]
       },
       {
-        "input": [[[1,2],[3,5],[6,7],[8,10],[12,16]],[4,8]],
-        "expected": [[1,2],[3,10],[12,16]]
+        "input": [[[1,3]],[5,6]],
+        "expected": [[1,3],[5,6]]
       }
     ],
     "hiddenTestCases": [
@@ -6662,20 +6557,20 @@ export const CURATED_PROBLEMS = [
     "slug": "merge-intervals",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array of `intervals` where `intervals[i] = [start, end]`, **merge all overlapping intervals** and return an array of the non-overlapping intervals that cover all the input intervals, sorted by start.\n\nTwo intervals that share only an endpoint, such as `[1, 4]` and `[4, 5]`, are considered overlapping.",
-    "constraints": ["1 <= intervals.length <= 10^4","intervals[i].length == 2","0 <= start <= end <= 10^4"],
+    "description": "`intervals` lists time ranges `[start, end]` in no particular order. **Combine every group of overlapping ranges into one range** and return the result ordered by start.\n\nRanges that just touch, like `[3, 7]` and `[7, 9]`, count as overlapping.",
+    "constraints": ["1 <= intervals.length <= 10^4","Each interval has two numbers","0 <= start <= end <= 10^4"],
     "examples": [
       {
-        "input": "intervals = [[1,3],[2,6],[8,10],[15,18]]",
-        "output": "[[1,6],[8,10],[15,18]]",
-        "explanation": "[1, 3] and [2, 6] overlap and merge into [1, 6]."
+        "input": "intervals = [[5,8],[1,2],[6,10],[12,13]]",
+        "output": "[[1,2],[5,10],[12,13]]",
+        "explanation": "[5, 8] and [6, 10] overlap and become [5, 10]."
       },
       {
-        "input": "intervals = [[1,4],[4,5]]",
-        "output": "[[1,5]]",
-        "explanation": "The two intervals touch at 4, so they merge."
+        "input": "intervals = [[3,7],[7,9]]",
+        "output": "[[3,9]]",
+        "explanation": "The ranges meet at 7, so they join."
       }
     ],
     "functionName": "merge",
@@ -6698,18 +6593,18 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[[1,3],[2,6],[8,10],[15,18]]],
-        "expected": [[1,6],[8,10],[15,18]]
+        "input": [[[5,8],[1,2],[6,10],[12,13]]],
+        "expected": [[1,2],[5,10],[12,13]]
       },
       {
-        "input": [[[1,4],[4,5]]],
-        "expected": [[1,5]]
+        "input": [[[3,7],[7,9]]],
+        "expected": [[3,9]]
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [[[1,4],[0,4]]],
-        "expected": [[0,4]]
+        "input": [[[2,5],[0,5]]],
+        "expected": [[0,5]]
       },
       {
         "input": [[[1,4],[2,3]]],
@@ -6735,25 +6630,25 @@ export const CURATED_PROBLEMS = [
     "slug": "non-overlapping-intervals",
     "difficulty": "Medium",
     "category": "Dynamic Programming",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array of `intervals` where `intervals[i] = [start, end]`, return the **minimum number of intervals you must remove** so that the rest are non-overlapping.\n\nIntervals that only touch at an endpoint, such as `[1, 2]` and `[2, 3]`, do **not** overlap.",
-    "constraints": ["1 <= intervals.length <= 10^5","intervals[i].length == 2","-5 * 10^4 <= start < end <= 5 * 10^4"],
+    "description": "A meeting room has requests `intervals`, each `[start, end]`. Return the **fewest requests you must cancel** so that no two remaining meetings overlap.\n\nA meeting may start at the exact moment another ends; that is not an overlap.",
+    "constraints": ["1 <= intervals.length <= 10^5","Each interval has two numbers","-5 * 10^4 <= start < end <= 5 * 10^4"],
     "examples": [
       {
-        "input": "intervals = [[1,2],[2,3],[3,4],[1,3]]",
+        "input": "intervals = [[1,4],[2,3],[3,6]]",
         "output": "1",
-        "explanation": "Removing [1, 3] leaves three non-overlapping intervals."
+        "explanation": "Cancel [1, 4]; [2, 3] and [3, 6] fit back to back."
       },
       {
-        "input": "intervals = [[1,2],[1,2],[1,2]]",
-        "output": "2",
-        "explanation": "The three intervals are identical, so two must go."
+        "input": "intervals = [[0,5],[0,5]]",
+        "output": "1",
+        "explanation": "Two identical requests: one must go."
       },
       {
-        "input": "intervals = [[1,2],[2,3]]",
+        "input": "intervals = [[4,6],[6,8]]",
         "output": "0",
-        "explanation": "The intervals only touch, so nothing needs to be removed."
+        "explanation": "The meetings only touch at 6."
       }
     ],
     "functionName": "eraseOverlapIntervals",
@@ -6776,21 +6671,21 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[[1,2],[2,3],[3,4],[1,3]]],
+        "input": [[[1,4],[2,3],[3,6]]],
         "expected": 1
       },
       {
-        "input": [[[1,2],[1,2],[1,2]]],
-        "expected": 2
+        "input": [[[0,5],[0,5]]],
+        "expected": 1
       },
       {
-        "input": [[[1,2],[2,3]]],
+        "input": [[[4,6],[6,8]]],
         "expected": 0
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [[[1,100],[11,22],[1,11],[2,12]]],
+        "input": [[[1,50],[5,15],[1,5],[2,6]]],
         "expected": 2
       },
       {
@@ -6813,20 +6708,20 @@ export const CURATED_PROBLEMS = [
     "slug": "subsets",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums` of **unique** elements, return **all possible subsets** (the power set).\n\nThe solution must not contain duplicate subsets. You may return the subsets and the numbers inside each subset in any order.",
-    "constraints": ["1 <= nums.length <= 10","-10 <= nums[i] <= 10","All the numbers of nums are unique"],
+    "description": "The values in `nums` are all different. List **every possible selection** of them, from picking nothing to picking everything.\n\nEach selection should appear once. Selections, and the values inside them, can be in any order.",
+    "constraints": ["1 <= nums.length <= 10","-10 <= nums[i] <= 10","Values in nums are distinct"],
     "examples": [
       {
-        "input": "nums = [1,2,3]",
-        "output": "[[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]",
-        "explanation": "There are 2^3 = 8 subsets, from the empty one to the whole array."
+        "input": "nums = [4,6]",
+        "output": "[[],[4],[6],[4,6]]",
+        "explanation": "Two values give four selections: none, either one, or both."
       },
       {
-        "input": "nums = [0]",
-        "output": "[[],[0]]",
-        "explanation": "The empty subset and the subset with the single element."
+        "input": "nums = [-1]",
+        "output": "[[],[-1]]",
+        "explanation": "One value: take it or leave it."
       }
     ],
     "functionName": "subsets",
@@ -6850,18 +6745,18 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3]],
-        "expected": [[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]
+        "input": [[4,6]],
+        "expected": [[],[4],[6],[4,6]]
       },
       {
-        "input": [[0]],
-        "expected": [[],[0]]
+        "input": [[-1]],
+        "expected": [[],[-1]]
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [[5,-5]],
-        "expected": [[],[5],[-5],[5,-5]]
+        "input": [[5,-5,1]],
+        "expected": [[],[5],[-5],[5,-5],[1],[5,1],[-5,1],[5,-5,1]]
       },
       {
         "input": [[1,2,3,4]],
@@ -6883,25 +6778,25 @@ export const CURATED_PROBLEMS = [
     "slug": "combination-sum",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array of **distinct** integers `candidates` and a target integer `target`, return **every unique combination** of candidates that sums to `target`. You may return the combinations in any order.\n\nThe same number may be used **an unlimited number of times**. Two combinations are different if the frequency of at least one chosen number differs.",
-    "constraints": ["1 <= candidates.length <= 30","2 <= candidates[i] <= 40","All the elements of candidates are distinct","1 <= target <= 40"],
+    "description": "Each value in `candidates` is different, and **any value may be used as many times as you like**. Find every multiset of values that **adds up to `target`** and return them all.\n\nTwo answers are the same if they use the same values the same number of times, so list each one once. Order does not matter.",
+    "constraints": ["1 <= candidates.length <= 30","2 <= candidates[i] <= 40","Values in candidates are distinct","1 <= target <= 40"],
     "examples": [
       {
-        "input": "candidates = [2,3,6,7], target = 7",
-        "output": "[[2,2,3],[7]]",
-        "explanation": "2 + 2 + 3 = 7 and 7 = 7 are the only combinations."
+        "input": "candidates = [3,4,5], target = 9",
+        "output": "[[3,3,3],[4,5]]",
+        "explanation": "3 + 3 + 3 and 4 + 5 both make 9."
       },
       {
-        "input": "candidates = [2,3,5], target = 8",
-        "output": "[[2,2,2,2],[2,3,3],[3,5]]",
-        "explanation": "Three combinations reach 8."
+        "input": "candidates = [2,6], target = 10",
+        "output": "[[2,2,2,2,2],[2,2,6]]",
+        "explanation": "Five 2s, or 2 + 2 + 6."
       },
       {
-        "input": "candidates = [2], target = 1",
+        "input": "candidates = [4], target = 3",
         "output": "[]",
-        "explanation": "No combination of 2s makes 1."
+        "explanation": "Only multiples of 4 can be built."
       }
     ],
     "functionName": "combinationSum",
@@ -6929,15 +6824,15 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,3,6,7],7],
-        "expected": [[2,2,3],[7]]
+        "input": [[3,4,5],9],
+        "expected": [[3,3,3],[4,5]]
       },
       {
-        "input": [[2,3,5],8],
-        "expected": [[2,2,2,2],[2,3,3],[3,5]]
+        "input": [[2,6],10],
+        "expected": [[2,2,2,2,2],[2,2,6]]
       },
       {
-        "input": [[2],1],
+        "input": [[4],3],
         "expected": []
       }
     ],
@@ -6970,25 +6865,20 @@ export const CURATED_PROBLEMS = [
     "slug": "permutations",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array `nums` of **distinct** integers, return **all the possible permutations**. You may return the answer in any order.",
-    "constraints": ["1 <= nums.length <= 6","-10 <= nums[i] <= 10","All the integers of nums are unique"],
+    "description": "`nums` holds distinct integers. Return **every ordering** of all of them, in any order.",
+    "constraints": ["1 <= nums.length <= 6","-10 <= nums[i] <= 10","Values in nums are distinct"],
     "examples": [
       {
-        "input": "nums = [1,2,3]",
-        "output": "[[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]",
-        "explanation": "Six arrangements of three numbers."
+        "input": "nums = [5,6,8]",
+        "output": "[[5,6,8],[5,8,6],[6,5,8],[6,8,5],[8,5,6],[8,6,5]]",
+        "explanation": "Three values can be lined up in 3 x 2 x 1 = 6 ways."
       },
       {
-        "input": "nums = [0,1]",
-        "output": "[[0,1],[1,0]]",
-        "explanation": "Two arrangements."
-      },
-      {
-        "input": "nums = [1]",
-        "output": "[[1]]",
-        "explanation": "One number has one arrangement."
+        "input": "nums = [4,7]",
+        "output": "[[4,7],[7,4]]",
+        "explanation": "Two values, two orderings."
       }
     ],
     "functionName": "permute",
@@ -7012,19 +6902,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3]],
-        "expected": [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
+        "input": [[5,6,8]],
+        "expected": [[5,6,8],[5,8,6],[6,5,8],[6,8,5],[8,5,6],[8,6,5]]
       },
       {
-        "input": [[0,1]],
-        "expected": [[0,1],[1,0]]
-      },
-      {
-        "input": [[1]],
-        "expected": [[1]]
+        "input": [[4,7]],
+        "expected": [[4,7],[7,4]]
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[9]],
+        "expected": [[9]]
+      },
       {
         "input": [[-1,4,2,9]],
         "expected": [[-1,4,2,9],[-1,4,9,2],[-1,2,4,9],[-1,2,9,4],[-1,9,4,2],[-1,9,2,4],[4,-1,2,9],[4,-1,9,2],[4,2,-1,9],[4,2,9,-1],[4,9,-1,2],[4,9,2,-1],[2,-1,4,9],[2,-1,9,4],[2,4,-1,9],[2,4,9,-1],[2,9,-1,4],[2,9,4,-1],[9,-1,4,2],[9,-1,2,4],[9,4,-1,2],[9,4,2,-1],[9,2,-1,4],[9,2,4,-1]]
@@ -7045,20 +6935,20 @@ export const CURATED_PROBLEMS = [
     "slug": "subsets-ii",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums` that **may contain duplicates**, return **all possible subsets** (the power set).\n\nThe solution must not contain duplicate subsets. You may return the subsets and the numbers inside each subset in any order.",
+    "description": "`nums` **may contain repeated values**. List every distinct selection of its elements (including picking none), where selections that contain the same values the same number of times count as one.\n\nReturn them in any order.",
     "constraints": ["1 <= nums.length <= 10","-10 <= nums[i] <= 10"],
     "examples": [
       {
-        "input": "nums = [1,2,2]",
-        "output": "[[],[1],[1,2],[1,2,2],[2],[2,2]]",
-        "explanation": "Only six distinct subsets exist, because the two 2s are interchangeable."
+        "input": "nums = [3,3,1]",
+        "output": "[[],[1],[1,3],[1,3,3],[3],[3,3]]",
+        "explanation": "The two 3s are interchangeable, so there are six distinct selections, not eight."
       },
       {
-        "input": "nums = [0]",
-        "output": "[[],[0]]",
-        "explanation": "The empty subset and the subset with the single element."
+        "input": "nums = [7]",
+        "output": "[[],[7]]",
+        "explanation": "Take the 7 or leave it."
       }
     ],
     "functionName": "subsetsWithDup",
@@ -7082,12 +6972,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,2]],
-        "expected": [[],[1],[1,2],[1,2,2],[2],[2,2]]
+        "input": [[3,3,1]],
+        "expected": [[],[1],[1,3],[1,3,3],[3],[3,3]]
       },
       {
-        "input": [[0]],
-        "expected": [[],[0]]
+        "input": [[7]],
+        "expected": [[],[7]]
       }
     ],
     "hiddenTestCases": [
@@ -7115,20 +7005,20 @@ export const CURATED_PROBLEMS = [
     "slug": "combination-sum-ii",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a collection of candidate numbers `candidates` (which may contain duplicates) and a `target`, return **every unique combination** that sums to `target`.\n\nEach number in `candidates` may be used **at most once**. The answer must not contain duplicate combinations, and you may return them in any order.",
+    "description": "`candidates` may contain repeated values, and **each entry can be used at most once**. Return every distinct group of entries that **adds up to `target`**.\n\nGroups with the same values count as one, so list each only once. Order does not matter.",
     "constraints": ["1 <= candidates.length <= 100","1 <= candidates[i] <= 50","1 <= target <= 30"],
     "examples": [
       {
-        "input": "candidates = [10,1,2,7,6,1,5], target = 8",
-        "output": "[[1,1,6],[1,2,5],[1,7],[2,6]]",
-        "explanation": "Four unique combinations reach 8."
+        "input": "candidates = [4,1,3,1,2], target = 5",
+        "output": "[[1,1,3],[1,4],[2,3]]",
+        "explanation": "1 + 1 + 3, 1 + 4 and 2 + 3 all make 5."
       },
       {
-        "input": "candidates = [2,5,2,1,2], target = 5",
-        "output": "[[1,2,2],[5]]",
-        "explanation": "The two combinations that reach 5."
+        "input": "candidates = [6,3,3], target = 6",
+        "output": "[[3,3],[6]]",
+        "explanation": "3 + 3 uses both 3s once each; 6 stands alone."
       }
     ],
     "functionName": "combinationSum2",
@@ -7156,12 +7046,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[10,1,2,7,6,1,5],8],
-        "expected": [[1,1,6],[1,2,5],[1,7],[2,6]]
+        "input": [[4,1,3,1,2],5],
+        "expected": [[1,1,3],[1,4],[2,3]]
       },
       {
-        "input": [[2,5,2,1,2],5],
-        "expected": [[1,2,2],[5]]
+        "input": [[6,3,3],6],
+        "expected": [[3,3],[6]]
       }
     ],
     "hiddenTestCases": [
@@ -7193,25 +7083,25 @@ export const CURATED_PROBLEMS = [
     "slug": "word-search",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an `m x n` grid of characters `board` and a string `word`, return `true` if `word` exists in the grid.\n\nThe word is built from letters of **sequentially adjacent** cells (horizontally or vertically neighbouring). The same cell may **not be used more than once** in a word.",
-    "constraints": ["m == board.length, n == board[i].length","1 <= m, n <= 6","1 <= word.length <= 15","board and word consist of only lowercase and uppercase English letters"],
+    "description": "Can `word` be traced on the letter grid `board`? A trace starts on any cell and moves to a **side neighbour** (up, down, left or right) for each next letter, and **may not revisit a cell**.\n\nReturn `true` if such a trace spells `word`, otherwise `false`.",
+    "constraints": ["m == board.length, n == board[i].length","1 <= m, n <= 6","1 <= word.length <= 15","board and word use only English letters"],
     "examples": [
       {
-        "input": "board = [[\"A\",\"B\",\"C\",\"E\"],[\"S\",\"F\",\"C\",\"S\"],[\"A\",\"D\",\"E\",\"E\"]], word = \"ABCCED\"",
+        "input": "board = [[\"C\",\"A\",\"T\"],[\"O\",\"R\",\"E\"],[\"D\",\"O\",\"G\"]], word = \"CORE\"",
         "output": "true",
-        "explanation": "The path A-B-C-C-E-D exists."
+        "explanation": "C down to O, right to R, right to E."
       },
       {
-        "input": "board = [[\"A\",\"B\",\"C\",\"E\"],[\"S\",\"F\",\"C\",\"S\"],[\"A\",\"D\",\"E\",\"E\"]], word = \"SEE\"",
+        "input": "board = [[\"C\",\"A\",\"T\"],[\"O\",\"R\",\"E\"],[\"D\",\"O\",\"G\"]], word = \"TEG\"",
         "output": "true",
-        "explanation": "The path S-E-E exists."
+        "explanation": "T down to E, down to G."
       },
       {
-        "input": "board = [[\"A\",\"B\",\"C\",\"E\"],[\"S\",\"F\",\"C\",\"S\"],[\"A\",\"D\",\"E\",\"E\"]], word = \"ABCB\"",
+        "input": "board = [[\"C\",\"A\",\"T\"],[\"O\",\"R\",\"E\"],[\"D\",\"O\",\"G\"]], word = \"CARC\"",
         "output": "false",
-        "explanation": "The second B would need a cell that is already used."
+        "explanation": "No C touches the R."
       }
     ],
     "functionName": "exist",
@@ -7238,15 +7128,15 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]],"ABCCED"],
+        "input": [[["C","A","T"],["O","R","E"],["D","O","G"]],"CORE"],
         "expected": true
       },
       {
-        "input": [[["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]],"SEE"],
+        "input": [[["C","A","T"],["O","R","E"],["D","O","G"]],"TEG"],
         "expected": true
       },
       {
-        "input": [[["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]],"ABCB"],
+        "input": [[["C","A","T"],["O","R","E"],["D","O","G"]],"CARC"],
         "expected": false
       }
     ],
@@ -7264,7 +7154,7 @@ export const CURATED_PROBLEMS = [
         "expected": false
       },
       {
-        "input": [[["C","A","A"],["A","A","A"],["B","C","D"]],"AAB"],
+        "input": [[["X","Y","Y"],["Y","Y","Y"],["Z","X","W"]],"YYZ"],
         "expected": true
       },
       {
@@ -7279,20 +7169,20 @@ export const CURATED_PROBLEMS = [
     "slug": "n-queens",
     "difficulty": "Hard",
     "category": "Backtracking & Heaps",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "The **n-queens puzzle** asks you to place `n` chess queens on an `n x n` board so that **no two queens attack each other**: no two share a row, a column or a diagonal.\n\nGiven `n`, return **every distinct solution**. Each solution is a board written as an array of `n` strings, where `\"Q\"` is a queen and `\".\"` is an empty square. You may return the solutions in any order.",
+    "description": "Place `n` queens on an `n x n` chessboard so that **none of them can capture another**: no two share a row, a column or a diagonal.\n\nReturn **all such placements**. Write each placement as `n` strings, one per row, using `\"Q\"` for a queen and `\".\"` for an empty square. Placements may be listed in any order.",
     "constraints": ["1 <= n <= 8"],
     "examples": [
       {
         "input": "n = 4",
         "output": "[[\".Q..\",\"...Q\",\"Q...\",\"..Q.\"],[\"..Q.\",\"Q...\",\"...Q\",\".Q..\"]]",
-        "explanation": "There are two distinct solutions for a 4 x 4 board."
+        "explanation": "A 4 x 4 board has exactly two placements, mirror images of each other."
       },
       {
         "input": "n = 1",
         "output": "[[\"Q\"]]",
-        "explanation": "A single queen on a 1 x 1 board."
+        "explanation": "One queen on one square."
       }
     ],
     "functionName": "solveNQueens",
@@ -7353,15 +7243,15 @@ export const CURATED_PROBLEMS = [
     "slug": "kth-largest-element-in-a-stream",
     "difficulty": "Easy",
     "category": "Backtracking & Heaps",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Design a class that finds the **`k`th largest element in a stream** of numbers. It is the `k`th largest in sorted order, not the `k`th distinct element.\n\nImplement the `KthLargest` class:\n\n- `KthLargest(k, nums)` creates the object with the integer `k` and the initial stream `nums`.\n- `add(val)` adds `val` to the stream and returns the current `k`th largest element.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
-    "constraints": ["1 <= k <= 10^4","0 <= nums.length <= 10^4","-10^4 <= nums[i], val <= 10^4","At most 10^4 calls are made to add","There are at least k elements when add is called"],
+    "description": "A leaderboard receives scores one at a time and must always report the score in **position `k`** when sorted from highest to lowest (duplicates each take a position).\n\nImplement the `KthLargest` class:\n\n- `KthLargest(k, nums)` sets up the board with `k` and the scores already in `nums`.\n- `add(val)` records a new score and returns the current `k`th highest score.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
+    "constraints": ["1 <= k <= 10^4","0 <= nums.length <= 10^4","-10^4 <= nums[i], val <= 10^4","At most 10^4 calls to add","At least k scores exist whenever add returns"],
     "examples": [
       {
-        "input": "operations = [\"KthLargest\",\"add\",\"add\",\"add\",\"add\",\"add\"], arguments = [[3,[4,5,8,2]],[3],[5],[10],[9],[4]]",
-        "output": "[null,4,5,5,8,8]",
-        "explanation": "With k = 3, the stream 4, 5, 8, 2 and then adds 3, 5, 10, 9, 4 give the third largest after each add: 4, 5, 5, 8, 8."
+        "input": "operations = [\"KthLargest\",\"add\",\"add\",\"add\",\"add\"], arguments = [[2,[6,1,9]],[4],[7],[10],[2]]",
+        "output": "[null,6,7,9,9]",
+        "explanation": "With k = 2 and scores 6, 1, 9, the 2nd highest is 6. Adding 4 changes nothing; 7 lifts it to 7; 10 lifts it to 9; 2 changes nothing."
       }
     ],
     "functionName": "KthLargest",
@@ -7386,14 +7276,14 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [["KthLargest","add","add","add","add","add"],[[3,[4,5,8,2]],[3],[5],[10],[9],[4]]],
-        "expected": [null,4,5,5,8,8]
+        "input": [["KthLargest","add","add","add","add"],[[2,[6,1,9]],[4],[7],[10],[2]]],
+        "expected": [null,6,7,9,9]
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [["KthLargest","add","add","add","add","add"],[[1,[]],[-3],[-2],[-4],[0],[4]]],
-        "expected": [null,-3,-2,-2,0,4]
+        "input": [["KthLargest","add","add","add","add","add"],[[1,[]],[5],[-2],[8],[0],[3]]],
+        "expected": [null,5,5,8,8,8]
       },
       {
         "input": [["KthLargest","add","add","add"],[[2,[0]],[-1],[1],[-2]]],
@@ -7407,24 +7297,24 @@ export const CURATED_PROBLEMS = [
   },
   {
     "id": "last-stone-weight",
-    "title": "Last Stone Weight",
-    "slug": "last-stone-weight",
+    "title": "Crushing Rocks",
+    "slug": "crushing-rocks",
     "difficulty": "Easy",
     "category": "Backtracking & Heaps",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `stones` where `stones[i]` is the weight of the `i`th stone.\n\nEach turn, take the **two heaviest stones** and smash them together. If their weights are `x <= y`:\n\n- if `x == y`, both stones are destroyed;\n- otherwise the stone of weight `x` is destroyed and the stone of weight `y` becomes `y - x`.\n\nReturn the weight of the last remaining stone, or `0` if no stones are left.",
+    "description": "A rock crusher repeatedly takes the **two heaviest rocks** from the pile `stones` and crushes them together. With weights `x <= y`, equal rocks both turn to dust; otherwise only a rock of weight `y - x` goes back on the pile.\n\nWhen at most one rock is left, return its weight, or `0` if the pile is empty.",
     "constraints": ["1 <= stones.length <= 30","1 <= stones[i] <= 1000"],
     "examples": [
       {
-        "input": "stones = [2,7,4,1,8,1]",
+        "input": "stones = [6,3,4,2]",
         "output": "1",
-        "explanation": "Smashing 8 and 7 leaves 1, then the stones become [2,4,1,1,1], and so on until a single stone of weight 1 remains."
+        "explanation": "6 and 4 leave 2; then 3 and 2 leave 1; then 2 and 1 leave 1."
       },
       {
-        "input": "stones = [1]",
-        "output": "1",
-        "explanation": "A single stone stays as it is."
+        "input": "stones = [5,5,3,3]",
+        "output": "0",
+        "explanation": "The two 5s cancel, then the two 3s cancel."
       }
     ],
     "functionName": "lastStoneWeight",
@@ -7447,15 +7337,19 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,7,4,1,8,1]],
+        "input": [[6,3,4,2]],
         "expected": 1
       },
       {
-        "input": [[1]],
-        "expected": 1
+        "input": [[5,5,3,3]],
+        "expected": 0
       }
     ],
     "hiddenTestCases": [
+      {
+        "input": [[9]],
+        "expected": 9
+      },
       {
         "input": [[2,2]],
         "expected": 0
@@ -7480,20 +7374,20 @@ export const CURATED_PROBLEMS = [
     "slug": "k-closest-points-to-origin",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array `points` where `points[i] = [x, y]` is a point on the plane, and an integer `k`, return the **`k` closest points to the origin** `(0, 0)`.\n\nDistance is the usual Euclidean distance. You may return the points in any order. The answer is guaranteed to be unique, apart from its order.",
-    "constraints": ["1 <= k <= points.length <= 10^4","-10^4 <= x, y <= 10^4","The k closest points are uniquely defined"],
+    "description": "`points` lists map locations as `[x, y]`. Return the **`k` locations nearest to `(0, 0)`** by straight-line distance, in any order.\n\nThe inputs guarantee there is no tie at the cut-off.",
+    "constraints": ["1 <= k <= points.length <= 10^4","-10^4 <= x, y <= 10^4","The k nearest points are uniquely determined"],
     "examples": [
       {
-        "input": "points = [[1,3],[-2,2]], k = 1",
-        "output": "[[-2,2]]",
-        "explanation": "The distance of [1,3] is sqrt(10) and of [-2,2] is sqrt(8), so [-2,2] is closer."
+        "input": "points = [[2,-1],[0,3]], k = 1",
+        "output": "[[2,-1]]",
+        "explanation": "[2, -1] is sqrt(5) away and [0, 3] is 3 away."
       },
       {
-        "input": "points = [[3,3],[5,-1],[-2,4]], k = 2",
-        "output": "[[3,3],[-2,4]]",
-        "explanation": "The two closest points are [3,3] and [-2,4]."
+        "input": "points = [[4,4],[1,-2],[-3,1]], k = 2",
+        "output": "[[1,-2],[-3,1]]",
+        "explanation": "Squared distances are 32, 5 and 10, so the last two win."
       }
     ],
     "functionName": "kClosest",
@@ -7521,12 +7415,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[[1,3],[-2,2]],1],
-        "expected": [[-2,2]]
+        "input": [[[2,-1],[0,3]],1],
+        "expected": [[2,-1]]
       },
       {
-        "input": [[[3,3],[5,-1],[-2,4]],2],
-        "expected": [[3,3],[-2,4]]
+        "input": [[[4,4],[1,-2],[-3,1]],2],
+        "expected": [[1,-2],[-3,1]]
       }
     ],
     "hiddenTestCases": [
@@ -7554,20 +7448,20 @@ export const CURATED_PROBLEMS = [
     "slug": "kth-largest-element-in-an-array",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer array `nums` and an integer `k`, return the **`k`th largest element** in the array.\n\nIt is the `k`th largest in sorted order, not the `k`th distinct element. Can you solve it without sorting the whole array?",
+    "description": "Return the value that would be in **position `k` if `nums` were sorted from largest to smallest** (repeated values each take a position).\n\nTry to beat a full sort.",
     "constraints": ["1 <= k <= nums.length <= 10^5","-10^4 <= nums[i] <= 10^4"],
     "examples": [
       {
-        "input": "nums = [3,2,1,5,6,4], k = 2",
-        "output": "5",
-        "explanation": "The sorted array is [1,2,3,4,5,6]; the second largest is 5."
+        "input": "nums = [7,2,9,4], k = 2",
+        "output": "7",
+        "explanation": "Largest first: 9, 7, 4, 2. Position 2 is 7."
       },
       {
-        "input": "nums = [3,2,3,1,2,4,5,5,6], k = 4",
-        "output": "4",
-        "explanation": "The sorted array is [1,2,2,3,3,4,5,5,6]; the fourth largest is 4."
+        "input": "nums = [5,8,8,1,3], k = 2",
+        "output": "8",
+        "explanation": "Largest first: 8, 8, 5, 3, 1. Both 8s count."
       }
     ],
     "functionName": "findKthLargest",
@@ -7594,12 +7488,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,2,1,5,6,4],2],
-        "expected": 5
+        "input": [[7,2,9,4],2],
+        "expected": 7
       },
       {
-        "input": [[3,2,3,1,2,4,5,5,6],4],
-        "expected": 4
+        "input": [[5,8,8,1,3],2],
+        "expected": 8
       }
     ],
     "hiddenTestCases": [
@@ -7627,29 +7521,29 @@ export const CURATED_PROBLEMS = [
   },
   {
     "id": "task-scheduler",
-    "title": "Task Scheduler",
-    "slug": "task-scheduler",
+    "title": "Jobs With a Cooldown",
+    "slug": "jobs-with-a-cooldown",
     "difficulty": "Medium",
     "category": "Backtracking & Heaps",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given an array `tasks` of capital letters, where each letter is a type of task, and a non-negative integer `n`. Every task takes **one unit of time**, and each unit you either run a task or stay idle.\n\nTwo tasks of the **same type** must be separated by at least `n` units of time. Tasks can be run in any order.\n\nReturn the **minimum number of time units** needed to finish all the tasks.",
-    "constraints": ["1 <= tasks.length <= 10^4","tasks[i] is an uppercase English letter","0 <= n <= 100"],
+    "description": "A machine runs jobs one per time slot. `tasks` lists the jobs, each a capital letter naming its type, and jobs may run in any order. After running a job, the machine must wait **at least `n` slots before running another job of the same type**; it can run other jobs or sit idle meanwhile.\n\nReturn the **fewest slots** needed to finish every job.",
+    "constraints": ["1 <= tasks.length <= 10^4","Each task is a capital English letter","0 <= n <= 100"],
     "examples": [
       {
-        "input": "tasks = [\"A\",\"A\",\"A\",\"B\",\"B\",\"B\"], n = 2",
-        "output": "8",
-        "explanation": "One possible schedule is A B idle A B idle A B, which takes 8 units."
+        "input": "tasks = [\"X\",\"X\",\"Y\"], n = 2",
+        "output": "4",
+        "explanation": "X Y idle X: the second X waits two slots."
       },
       {
-        "input": "tasks = [\"A\",\"C\",\"A\",\"B\",\"D\",\"B\"], n = 1",
-        "output": "6",
-        "explanation": "A C A B D B takes 6 units with one unit between equal tasks."
+        "input": "tasks = [\"P\",\"Q\",\"P\",\"Q\",\"R\"], n = 1",
+        "output": "5",
+        "explanation": "P Q P Q R fits with no idle slot."
       },
       {
-        "input": "tasks = [\"A\",\"A\",\"A\",\"B\",\"B\",\"B\"], n = 3",
-        "output": "10",
-        "explanation": "A B idle idle A B idle idle A B takes 10 units."
+        "input": "tasks = [\"M\",\"M\",\"M\",\"N\"], n = 1",
+        "output": "5",
+        "explanation": "M N M idle M."
       }
     ],
     "functionName": "leastInterval",
@@ -7676,16 +7570,16 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [["A","A","A","B","B","B"],2],
-        "expected": 8
+        "input": [["X","X","Y"],2],
+        "expected": 4
       },
       {
-        "input": [["A","C","A","B","D","B"],1],
-        "expected": 6
+        "input": [["P","Q","P","Q","R"],1],
+        "expected": 5
       },
       {
-        "input": [["A","A","A","B","B","B"],3],
-        "expected": 10
+        "input": [["M","M","M","N"],1],
+        "expected": 5
       }
     ],
     "hiddenTestCases": [
@@ -7694,8 +7588,8 @@ export const CURATED_PROBLEMS = [
         "expected": 1
       },
       {
-        "input": [["A","A","A","A","A","A","B","C","D","E","F","G"],2],
-        "expected": 16
+        "input": [["K","K","K","K","L","M","N","O"],3],
+        "expected": 13
       },
       {
         "input": [["A","B","C"],0],
@@ -7713,15 +7607,15 @@ export const CURATED_PROBLEMS = [
     "slug": "find-median-from-data-stream",
     "difficulty": "Hard",
     "category": "Backtracking & Heaps",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "The **median** is the middle value of an ordered list of numbers. If the list has an even length, it is the average of the two middle values.\n\nDesign a data structure that supports a stream of numbers. Implement the `MedianFinder` class:\n\n- `MedianFinder()` creates the object.\n- `addNum(num)` adds an integer to the data structure.\n- `findMedian()` returns the median of all the numbers added so far. Answers within `10^-5` of the real value are accepted.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
-    "constraints": ["-10^5 <= num <= 10^5","findMedian is only called after at least one element has been added","At most 5 * 10^4 calls are made"],
+    "description": "Numbers arrive one at a time, and at any moment you may be asked for the **median** of everything received so far: the middle value once sorted, or the mean of the two middle values when the count is even.\n\nImplement the `MedianFinder` class:\n\n- `MedianFinder()` starts empty.\n- `addNum(num)` receives another integer.\n- `findMedian()` returns the current median. Answers within `10^-5` are accepted.\n\nThe judge creates your class and calls its methods in order. `operations` holds the class name followed by the method names, and `arguments` holds the arguments of each call (the first entry is for the constructor). The output lists what each call returned, with `null` for calls that return nothing.",
+    "constraints": ["-10^5 <= num <= 10^5","findMedian is only called after at least one number arrived","At most 5 * 10^4 calls in total"],
     "examples": [
       {
-        "input": "operations = [\"MedianFinder\",\"addNum\",\"addNum\",\"findMedian\",\"addNum\",\"findMedian\"], arguments = [[],[1],[2],[],[3],[]]",
-        "output": "[null,null,null,1.5,null,2]",
-        "explanation": "After adding 1 and 2 the median is 1.5. After adding 3 the median is 2."
+        "input": "operations = [\"MedianFinder\",\"addNum\",\"addNum\",\"findMedian\",\"addNum\",\"findMedian\",\"addNum\",\"findMedian\"], arguments = [[],[4],[10],[],[6],[],[1],[]]",
+        "output": "[null,null,null,7,null,6,null,5]",
+        "explanation": "After 4 and 10 the median is 7. Adding 6 makes it 6, and adding 1 makes it (4 + 6) / 2 = 5."
       }
     ],
     "functionName": "MedianFinder",
@@ -7751,8 +7645,8 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [["MedianFinder","addNum","addNum","findMedian","addNum","findMedian"],[[],[1],[2],[],[3],[]]],
-        "expected": [null,null,null,1.5,null,2]
+        "input": [["MedianFinder","addNum","addNum","findMedian","addNum","findMedian","addNum","findMedian"],[[],[4],[10],[],[6],[],[1],[]]],
+        "expected": [null,null,null,7,null,6,null,5]
       }
     ],
     "hiddenTestCases": [
@@ -7776,20 +7670,20 @@ export const CURATED_PROBLEMS = [
     "slug": "single-number",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Every element of the integer array `nums` appears **twice** except for one element, which appears exactly once. Find that single element.\n\nYour solution should run in linear time and use only constant extra space.",
-    "constraints": ["1 <= nums.length <= 3 * 10^4","-3 * 10^4 <= nums[i] <= 3 * 10^4","Each element appears twice except for one that appears once"],
+    "description": "In `nums`, **every value shows up exactly twice except one**, which shows up only once. Return that lonely value.\n\nAim for linear time and constant extra memory.",
+    "constraints": ["1 <= nums.length <= 3 * 10^4","-3 * 10^4 <= nums[i] <= 3 * 10^4","Exactly one value appears once; all others appear twice"],
     "examples": [
       {
-        "input": "nums = [2,2,1]",
-        "output": "1",
-        "explanation": "Only 1 appears once."
+        "input": "nums = [6,3,6]",
+        "output": "3",
+        "explanation": "6 appears twice, 3 only once."
       },
       {
-        "input": "nums = [4,1,2,1,2]",
-        "output": "4",
-        "explanation": "Only 4 appears once."
+        "input": "nums = [8,2,9,2,8]",
+        "output": "9",
+        "explanation": "8 and 2 come in pairs, 9 does not."
       }
     ],
     "functionName": "singleNumber",
@@ -7812,18 +7706,18 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[2,2,1]],
-        "expected": 1
+        "input": [[6,3,6]],
+        "expected": 3
       },
       {
-        "input": [[4,1,2,1,2]],
-        "expected": 4
+        "input": [[8,2,9,2,8]],
+        "expected": 9
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [[1]],
-        "expected": 1
+        "input": [[11]],
+        "expected": 11
       },
       {
         "input": [[-1,-1,-2]],
@@ -7849,25 +7743,25 @@ export const CURATED_PROBLEMS = [
     "slug": "number-of-1-bits",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a positive integer `n`, treated as a **32-bit unsigned integer**, return the number of `1` bits in its binary representation (its **Hamming weight**).",
+    "description": "Write the positive integer `n` in binary as a **32-bit unsigned value** and count **how many of its bits are 1**.",
     "constraints": ["1 <= n <= 2^32 - 1"],
     "examples": [
       {
-        "input": "n = 11",
+        "input": "n = 13",
         "output": "3",
-        "explanation": "11 is 1011 in binary, which has three 1 bits."
+        "explanation": "13 is 1101 in binary: three 1s."
       },
       {
-        "input": "n = 128",
+        "input": "n = 256",
         "output": "1",
-        "explanation": "128 is 10000000 in binary, which has one 1 bit."
+        "explanation": "256 is a single 1 followed by eight 0s."
       },
       {
-        "input": "n = 2147483645",
-        "output": "30",
-        "explanation": "2147483645 is 1111111111111111111111111111101 in binary, which has thirty 1 bits."
+        "input": "n = 4294967294",
+        "output": "31",
+        "explanation": "4294967294 is thirty-one 1s and a final 0."
       }
     ],
     "functionName": "hammingWeight",
@@ -7890,16 +7784,16 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [11],
+        "input": [13],
         "expected": 3
       },
       {
-        "input": [128],
+        "input": [256],
         "expected": 1
       },
       {
-        "input": [2147483645],
-        "expected": 30
+        "input": [4294967294],
+        "expected": 31
       }
     ],
     "hiddenTestCases": [
@@ -7931,20 +7825,20 @@ export const CURATED_PROBLEMS = [
     "slug": "counting-bits",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer `n`, return an array `ans` of length `n + 1` where `ans[i]` is the **number of `1` bits** in the binary representation of `i`, for every `0 <= i <= n`.\n\nCan you do it in a single pass, without counting the bits of each number separately?",
+    "description": "For every whole number `i` from `0` up to `n`, count the **1s in the binary form of `i`**. Return the `n + 1` counts as an array, with the count for `i` at position `i`.\n\nTry to reuse earlier counts instead of examining each number from scratch.",
     "constraints": ["0 <= n <= 10^5"],
     "examples": [
       {
-        "input": "n = 2",
-        "output": "[0,1,1]",
-        "explanation": "0, 1 and 2 have 0, 1 and 1 set bits."
+        "input": "n = 3",
+        "output": "[0,1,1,2]",
+        "explanation": "0, 1, 10 and 11 in binary contain 0, 1, 1 and 2 ones."
       },
       {
-        "input": "n = 5",
-        "output": "[0,1,1,2,1,2]",
-        "explanation": "0 to 5 are 0, 1, 10, 11, 100 and 101 in binary, which have 0, 1, 1, 2, 1 and 2 set bits."
+        "input": "n = 6",
+        "output": "[0,1,1,2,1,2,2]",
+        "explanation": "4, 5 and 6 are 100, 101 and 110: 1, 2 and 2 ones."
       }
     ],
     "functionName": "countBits",
@@ -7967,12 +7861,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [2],
-        "expected": [0,1,1]
+        "input": [3],
+        "expected": [0,1,1,2]
       },
       {
-        "input": [5],
-        "expected": [0,1,1,2,1,2]
+        "input": [6],
+        "expected": [0,1,1,2,1,2,2]
       }
     ],
     "hiddenTestCases": [
@@ -8008,20 +7902,20 @@ export const CURATED_PROBLEMS = [
     "slug": "reverse-bits",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Reverse the bits of a **32-bit unsigned integer** `n` and return the result as an unsigned integer.\n\nFor example, the 32-bit input `00000010100101000001111010011100` becomes `00111001011110000010100101000000`.",
+    "description": "Write `n` as exactly **32 binary digits** (with leading zeros), **read those digits backwards**, and return the unsigned integer they form.\n\nFor instance `00000000000000000000000000000110` (6) turns into `01100000000000000000000000000000`.",
     "constraints": ["0 <= n <= 2^32 - 1"],
     "examples": [
       {
-        "input": "n = 43261596",
-        "output": "964176192",
-        "explanation": "43261596 reversed bit by bit is 964176192."
+        "input": "n = 1",
+        "output": "2147483648",
+        "explanation": "The lowest bit moves to the highest position: 2^31."
       },
       {
-        "input": "n = 4294967293",
-        "output": "3221225471",
-        "explanation": "4294967293 reversed bit by bit is 3221225471."
+        "input": "n = 6",
+        "output": "1610612736",
+        "explanation": "6 becomes 2^30 + 2^29."
       }
     ],
     "functionName": "reverseBits",
@@ -8044,22 +7938,18 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [43261596],
-        "expected": 964176192
+        "input": [1],
+        "expected": 2147483648
       },
       {
-        "input": [4294967293],
-        "expected": 3221225471
+        "input": [6],
+        "expected": 1610612736
       }
     ],
     "hiddenTestCases": [
       {
         "input": [0],
         "expected": 0
-      },
-      {
-        "input": [1],
-        "expected": 2147483648
       },
       {
         "input": [2147483648],
@@ -8076,6 +7966,10 @@ export const CURATED_PROBLEMS = [
       {
         "input": [3141592653],
         "expected": 2993095389
+      },
+      {
+        "input": [12345678],
+        "expected": 1921400064
       }
     ]
   },
@@ -8085,25 +7979,25 @@ export const CURATED_PROBLEMS = [
     "slug": "missing-number",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an array `nums` containing `n` **distinct** numbers taken from the range `[0, n]`, return the **one number in that range that is missing** from the array.",
-    "constraints": ["n == nums.length","1 <= n <= 10^4","0 <= nums[i] <= n","All the numbers of nums are unique"],
+    "description": "`nums` has `n` different numbers, all chosen from `0, 1, ..., n`. Exactly **one number from that range was left out**. Return it.",
+    "constraints": ["n == nums.length","1 <= n <= 10^4","0 <= nums[i] <= n","Values in nums are distinct"],
     "examples": [
       {
-        "input": "nums = [3,0,1]",
-        "output": "2",
-        "explanation": "n = 3, so the range is [0, 3]. The number 2 is missing."
+        "input": "nums = [4,0,1,2]",
+        "output": "3",
+        "explanation": "With four numbers the range is 0 to 4, and 3 is absent."
       },
       {
-        "input": "nums = [0,1]",
-        "output": "2",
-        "explanation": "n = 2, so the range is [0, 2]. The number 2 is missing."
+        "input": "nums = [1]",
+        "output": "0",
+        "explanation": "The range is 0 to 1, and 0 is absent."
       },
       {
-        "input": "nums = [9,6,4,2,3,5,7,0,1]",
-        "output": "8",
-        "explanation": "n = 9, so the range is [0, 9]. The number 8 is missing."
+        "input": "nums = [2,0,1]",
+        "output": "3",
+        "explanation": "The range is 0 to 3, and 3 is absent."
       }
     ],
     "functionName": "missingNumber",
@@ -8126,26 +8020,22 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[3,0,1]],
-        "expected": 2
+        "input": [[4,0,1,2]],
+        "expected": 3
       },
       {
-        "input": [[0,1]],
-        "expected": 2
+        "input": [[1]],
+        "expected": 0
       },
       {
-        "input": [[9,6,4,2,3,5,7,0,1]],
-        "expected": 8
+        "input": [[2,0,1]],
+        "expected": 3
       }
     ],
     "hiddenTestCases": [
       {
         "input": [[0]],
         "expected": 1
-      },
-      {
-        "input": [[1]],
-        "expected": 0
       },
       {
         "input": [[1,2]],
@@ -8163,20 +8053,20 @@ export const CURATED_PROBLEMS = [
     "slug": "sum-of-two-integers",
     "difficulty": "Medium",
     "category": "Math & Bit Manipulation",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given two integers `a` and `b`, return their **sum** without using the operators `+` and `-`.\n\nHint: think about how a computer adds binary numbers with XOR and carry.",
+    "description": "Add the integers `a` and `b` and return the result, **without using the `+` or `-` operators** anywhere in your code.\n\nHint: binary addition can be split into a sum without carries (XOR) and the carries themselves (AND, shifted left).",
     "constraints": ["-1000 <= a, b <= 1000"],
     "examples": [
       {
-        "input": "a = 1, b = 2",
-        "output": "3",
-        "explanation": "1 + 2 = 3."
+        "input": "a = 4, b = 9",
+        "output": "13",
+        "explanation": "4 + 9 = 13."
       },
       {
-        "input": "a = 2, b = 3",
-        "output": "5",
-        "explanation": "2 + 3 = 5."
+        "input": "a = -6, b = 2",
+        "output": "-4",
+        "explanation": "-6 + 2 = -4."
       }
     ],
     "functionName": "getSum",
@@ -8203,12 +8093,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [1,2],
-        "expected": 3
+        "input": [4,9],
+        "expected": 13
       },
       {
-        "input": [2,3],
-        "expected": 5
+        "input": [-6,2],
+        "expected": -4
       }
     ],
     "hiddenTestCases": [
@@ -8244,25 +8134,25 @@ export const CURATED_PROBLEMS = [
     "slug": "reverse-integer",
     "difficulty": "Medium",
     "category": "Math & Bit Manipulation",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a signed 32-bit integer `x`, return `x` with its **digits reversed**. If reversing makes the value go outside the signed 32-bit range `[-2^31, 2^31 - 1]`, return `0`.\n\nAssume the environment does not let you store 64-bit integers.",
+    "description": "Return the 32-bit signed integer `x` with its **decimal digits in reverse order**, keeping its sign. If the reversed number does not fit in `[-2^31, 2^31 - 1]`, return `0` instead.\n\nPretend you cannot use 64-bit integers.",
     "constraints": ["-2^31 <= x <= 2^31 - 1"],
     "examples": [
       {
-        "input": "x = 123",
-        "output": "321",
-        "explanation": "Reversing 123 gives 321."
+        "input": "x = 456",
+        "output": "654",
+        "explanation": "456 backwards is 654."
       },
       {
-        "input": "x = -123",
-        "output": "-321",
-        "explanation": "The sign is kept: -123 becomes -321."
+        "input": "x = -890",
+        "output": "-98",
+        "explanation": "The minus sign stays in front: -890 becomes -98 (the leading zero drops)."
       },
       {
-        "input": "x = 120",
-        "output": "21",
-        "explanation": "Trailing zeros disappear: 120 becomes 21."
+        "input": "x = 1000",
+        "output": "1",
+        "explanation": "1000 backwards is 0001, which is 1."
       }
     ],
     "functionName": "reverse",
@@ -8285,16 +8175,16 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [123],
-        "expected": 321
+        "input": [456],
+        "expected": 654
       },
       {
-        "input": [-123],
-        "expected": -321
+        "input": [-890],
+        "expected": -98
       },
       {
-        "input": [120],
-        "expected": 21
+        "input": [1000],
+        "expected": 1
       }
     ],
     "hiddenTestCases": [
@@ -8303,7 +8193,7 @@ export const CURATED_PROBLEMS = [
         "expected": 0
       },
       {
-        "input": [1534236469],
+        "input": [1999999999],
         "expected": 0
       },
       {
@@ -8334,20 +8224,20 @@ export const CURATED_PROBLEMS = [
     "slug": "palindrome-number",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Amazon","Bloomberg","Adobe"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given an integer `x`, return `true` if `x` is a **palindrome** (it reads the same forwards and backwards), and `false` otherwise.\n\nTry to solve it without converting the integer to a string.",
+    "description": "Return `true` if the decimal digits of the integer `x` **read the same left to right as right to left**, and `false` otherwise. A minus sign counts as a character, so negative numbers never qualify.\n\nAs a challenge, solve it with arithmetic only, without turning `x` into a string.",
     "constraints": ["-2^31 <= x <= 2^31 - 1"],
     "examples": [
       {
-        "input": "x = 121",
+        "input": "x = 4554",
         "output": "true",
-        "explanation": "121 reads the same in both directions."
+        "explanation": "4554 is the same in both directions."
       },
       {
-        "input": "x = -121",
+        "input": "x = -707",
         "output": "false",
-        "explanation": "Read backwards it becomes 121-, so it is not a palindrome."
+        "explanation": "Backwards it would read 707-."
       }
     ],
     "functionName": "isPalindrome",
@@ -8370,17 +8260,17 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [121],
+        "input": [4554],
         "expected": true
       },
       {
-        "input": [-121],
+        "input": [-707],
         "expected": false
       }
     ],
     "hiddenTestCases": [
       {
-        "input": [10],
+        "input": [30],
         "expected": false
       },
       {
@@ -8423,25 +8313,25 @@ export const CURATED_PROBLEMS = [
     "slug": "roman-to-integer",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Meta","Netflix","ByteDance"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Roman numerals use the symbols `I` (1), `V` (5), `X` (10), `L` (50), `C` (100), `D` (500) and `M` (1000). Symbols are normally written from largest to smallest and added together, except that a smaller symbol **before** a larger one is subtracted:\n\n- `I` before `V` or `X` makes 4 and 9,\n- `X` before `L` or `C` makes 40 and 90,\n- `C` before `D` or `M` makes 400 and 900.\n\nGiven a Roman numeral `s`, convert it to an integer.",
-    "constraints": ["1 <= s.length <= 15","s contains only the characters I, V, X, L, C, D and M","s is a valid Roman numeral in the range [1, 3999]"],
+    "description": "Turn the Roman numeral `s` into an ordinary integer. The letters are worth `I = 1`, `V = 5`, `X = 10`, `L = 50`, `C = 100`, `D = 500` and `M = 1000`.\n\nValues are usually added from left to right. The exception: when a letter is **worth less than the letter right after it**, it is subtracted instead (`IV = 4`, `XC = 90`, `CM = 900`, and so on).",
+    "constraints": ["1 <= s.length <= 15","s uses only I, V, X, L, C, D and M","s is a valid numeral between 1 and 3999"],
     "examples": [
       {
-        "input": "s = \"III\"",
-        "output": "3",
-        "explanation": "III = 3."
+        "input": "s = \"XIV\"",
+        "output": "14",
+        "explanation": "X + IV = 10 + 4."
       },
       {
-        "input": "s = \"LVIII\"",
-        "output": "58",
-        "explanation": "L = 50, V = 5 and III = 3."
+        "input": "s = \"LXXX\"",
+        "output": "80",
+        "explanation": "L + XXX = 50 + 30."
       },
       {
-        "input": "s = \"MCMXCIV\"",
-        "output": "1994",
-        "explanation": "M = 1000, CM = 900, XC = 90 and IV = 4."
+        "input": "s = \"CDXCVII\"",
+        "output": "497",
+        "explanation": "CD + XC + VII = 400 + 90 + 7."
       }
     ],
     "functionName": "romanToInt",
@@ -8464,16 +8354,16 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": ["III"],
-        "expected": 3
+        "input": ["XIV"],
+        "expected": 14
       },
       {
-        "input": ["LVIII"],
-        "expected": 58
+        "input": ["LXXX"],
+        "expected": 80
       },
       {
-        "input": ["MCMXCIV"],
-        "expected": 1994
+        "input": ["CDXCVII"],
+        "expected": 497
       }
     ],
     "hiddenTestCases": [
@@ -8509,25 +8399,25 @@ export const CURATED_PROBLEMS = [
     "slug": "integer-to-roman",
     "difficulty": "Medium",
     "category": "Math & Bit Manipulation",
-    "companies": ["Google","Apple","Microsoft","Amazon"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Convert the integer `num` to a **Roman numeral**.\n\nRoman numerals use the symbols `I` (1), `V` (5), `X` (10), `L` (50), `C` (100), `D` (500) and `M` (1000). Write the value from the largest symbol down, using the subtractive forms `IV` (4), `IX` (9), `XL` (40), `XC` (90), `CD` (400) and `CM` (900) where they apply. A symbol is never repeated more than three times in a row.",
+    "description": "Write `num` as a **Roman numeral** using `I = 1`, `V = 5`, `X = 10`, `L = 50`, `C = 100`, `D = 500` and `M = 1000`.\n\nBuild it from the largest value downwards. Where a digit is 4 or 9, use the subtractive pairs `IV`, `IX`, `XL`, `XC`, `CD` or `CM`, so no letter ever appears more than three times in a row.",
     "constraints": ["1 <= num <= 3999"],
     "examples": [
       {
-        "input": "num = 3",
-        "output": "\"III\"",
-        "explanation": "3 is three ones."
+        "input": "num = 14",
+        "output": "\"XIV\"",
+        "explanation": "10 + 4 is X + IV."
       },
       {
-        "input": "num = 58",
-        "output": "\"LVIII\"",
-        "explanation": "58 is L + V + III."
+        "input": "num = 80",
+        "output": "\"LXXX\"",
+        "explanation": "50 + 30 is L + XXX."
       },
       {
-        "input": "num = 1994",
-        "output": "\"MCMXCIV\"",
-        "explanation": "1994 is M + CM + XC + IV."
+        "input": "num = 497",
+        "output": "\"CDXCVII\"",
+        "explanation": "400 + 90 + 7 is CD + XC + VII."
       }
     ],
     "functionName": "intToRoman",
@@ -8550,16 +8440,16 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [3],
-        "expected": "III"
+        "input": [14],
+        "expected": "XIV"
       },
       {
-        "input": [58],
-        "expected": "LVIII"
+        "input": [80],
+        "expected": "LXXX"
       },
       {
-        "input": [1994],
-        "expected": "MCMXCIV"
+        "input": [497],
+        "expected": "CDXCVII"
       }
     ],
     "hiddenTestCases": [
@@ -8599,25 +8489,25 @@ export const CURATED_PROBLEMS = [
     "slug": "powx-n",
     "difficulty": "Medium",
     "category": "Math & Bit Manipulation",
-    "companies": ["Stripe","Airbnb","Salesforce"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Implement `pow(x, n)`, which raises the number `x` to the integer power `n` and returns `x^n`.\n\nAnswers within `10^-5` of the exact value are accepted. Try to use **fast exponentiation** so that large exponents finish quickly.",
-    "constraints": ["-100.0 < x < 100.0","-2^31 <= n <= 2^31 - 1","n is an integer","Either x is not zero or n > 0","-10^4 <= x^n <= 10^4"],
+    "description": "Compute `x` raised to the whole-number power `n` (which may be negative or zero) and return it.\n\nAnswers within `10^-5` are accepted. With exponents up to two billion, multiplying one step at a time is too slow, so use **repeated squaring**.",
+    "constraints": ["-100.0 < x < 100.0","-2^31 <= n <= 2^31 - 1","n is a whole number","x is not zero, or n > 0","-10^4 <= x^n <= 10^4"],
     "examples": [
       {
-        "input": "x = 2, n = 10",
-        "output": "1024",
-        "explanation": "2 to the 10th power is 1024."
+        "input": "x = 3, n = 4",
+        "output": "81",
+        "explanation": "3 x 3 x 3 x 3 = 81."
       },
       {
-        "input": "x = 2.1, n = 3",
-        "output": "9.261000000000001",
-        "explanation": "2.1 cubed is 9.261."
+        "input": "x = 1.5, n = 2",
+        "output": "2.25",
+        "explanation": "1.5 squared is 2.25."
       },
       {
-        "input": "x = 2, n = -2",
+        "input": "x = 4, n = -1",
         "output": "0.25",
-        "explanation": "A negative exponent means a reciprocal: 2^-2 = 1 / 4 = 0.25."
+        "explanation": "A negative power flips the result: 4^-1 = 1 / 4."
       }
     ],
     "functionName": "myPow",
@@ -8645,15 +8535,15 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [2,10],
-        "expected": 1024
+        "input": [3,4],
+        "expected": 81
       },
       {
-        "input": [2.1,3],
-        "expected": 9.261000000000001
+        "input": [1.5,2],
+        "expected": 2.25
       },
       {
-        "input": [2,-2],
+        "input": [4,-1],
         "expected": 0.25
       }
     ],
@@ -8694,20 +8584,20 @@ export const CURATED_PROBLEMS = [
     "slug": "sqrtx",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Oracle","Cisco","PayPal"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given a non-negative integer `x`, return the **square root of `x` rounded down** to the nearest integer. The result must be non-negative.\n\nYou must not use any built-in exponent function or operator such as `pow(x, 0.5)` or `x ** 0.5`.",
+    "description": "Return the **largest whole number whose square is at most `x`**, that is, the square root of `x` rounded down.\n\nBuilt-in power or square-root helpers (`Math.sqrt`, `x ** 0.5` and friends) are off limits.",
     "constraints": ["0 <= x <= 2^31 - 1"],
     "examples": [
       {
-        "input": "x = 4",
-        "output": "2",
-        "explanation": "The square root of 4 is exactly 2."
+        "input": "x = 9",
+        "output": "3",
+        "explanation": "3 x 3 = 9 exactly."
       },
       {
-        "input": "x = 8",
-        "output": "2",
-        "explanation": "The square root of 8 is about 2.83, which rounds down to 2."
+        "input": "x = 15",
+        "output": "3",
+        "explanation": "3 x 3 = 9 fits under 15, but 4 x 4 = 16 does not."
       }
     ],
     "functionName": "mySqrt",
@@ -8730,12 +8620,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [4],
-        "expected": 2
+        "input": [9],
+        "expected": 3
       },
       {
-        "input": [8],
-        "expected": 2
+        "input": [15],
+        "expected": 3
       }
     ],
     "hiddenTestCases": [
@@ -8775,25 +8665,25 @@ export const CURATED_PROBLEMS = [
     "slug": "plus-one",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Google","Amazon","Meta"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "You are given a **large integer** as an array `digits`, where `digits[i]` is the `i`th digit and the digits are ordered from most significant to least significant. The number has no leading zeros.\n\nAdd **one** to the integer and return the resulting array of digits.",
-    "constraints": ["1 <= digits.length <= 100","0 <= digits[i] <= 9","digits does not contain leading zeros"],
+    "description": "A very long number is stored digit by digit in `digits`, **most significant digit first**, with no leading zeros. Add `1` to it and return the new digit array.",
+    "constraints": ["1 <= digits.length <= 100","0 <= digits[i] <= 9","No leading zeros"],
     "examples": [
       {
-        "input": "digits = [1,2,3]",
-        "output": "[1,2,4]",
-        "explanation": "The array represents 123, and 123 + 1 = 124."
+        "input": "digits = [2,7,9]",
+        "output": "[2,8,0]",
+        "explanation": "279 + 1 = 280: the 9 rolls over and carries."
       },
       {
-        "input": "digits = [4,3,2,1]",
-        "output": "[4,3,2,2]",
-        "explanation": "The array represents 4321, and 4321 + 1 = 4322."
+        "input": "digits = [5]",
+        "output": "[6]",
+        "explanation": "5 + 1 = 6."
       },
       {
-        "input": "digits = [9]",
-        "output": "[1,0]",
-        "explanation": "The array represents 9, and 9 + 1 = 10."
+        "input": "digits = [9,9]",
+        "output": "[1,0,0]",
+        "explanation": "99 + 1 = 100 needs an extra digit."
       }
     ],
     "functionName": "plusOne",
@@ -8816,16 +8706,16 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": [[1,2,3]],
-        "expected": [1,2,4]
+        "input": [[2,7,9]],
+        "expected": [2,8,0]
       },
       {
-        "input": [[4,3,2,1]],
-        "expected": [4,3,2,2]
+        "input": [[5]],
+        "expected": [6]
       },
       {
-        "input": [[9]],
-        "expected": [1,0]
+        "input": [[9,9]],
+        "expected": [1,0,0]
       }
     ],
     "hiddenTestCases": [
@@ -8857,20 +8747,20 @@ export const CURATED_PROBLEMS = [
     "slug": "add-binary",
     "difficulty": "Easy",
     "category": "Math & Bit Manipulation",
-    "companies": ["Microsoft","Apple","Uber"],
+    "companies": [],
     "acceptanceRate": "",
-    "description": "Given two binary strings `a` and `b`, return their **sum as a binary string**.",
-    "constraints": ["1 <= a.length, b.length <= 10^4","a and b consist only of the characters \"0\" and \"1\"","Each string contains no leading zeros, except for the string \"0\" itself"],
+    "description": "`a` and `b` are numbers written in binary as strings of `0`s and `1`s. Return **their sum, also written in binary**.",
+    "constraints": ["1 <= a.length, b.length <= 10^4","Both strings contain only \"0\" and \"1\"","No leading zeros, except the string \"0\" itself"],
     "examples": [
       {
-        "input": "a = \"11\", b = \"1\"",
-        "output": "\"100\"",
-        "explanation": "1 + 1 carries into a new digit: 11 + 1 = 100."
+        "input": "a = \"101\", b = \"11\"",
+        "output": "\"1000\"",
+        "explanation": "5 + 3 = 8, which is 1000 in binary."
       },
       {
-        "input": "a = \"1010\", b = \"1011\"",
-        "output": "\"10101\"",
-        "explanation": "1010 + 1011 = 10101."
+        "input": "a = \"1001\", b = \"110\"",
+        "output": "\"1111\"",
+        "explanation": "9 + 6 = 15, which is 1111."
       }
     ],
     "functionName": "addBinary",
@@ -8897,12 +8787,12 @@ export const CURATED_PROBLEMS = [
     },
     "sampleTestCases": [
       {
-        "input": ["11","1"],
-        "expected": "100"
+        "input": ["101","11"],
+        "expected": "1000"
       },
       {
-        "input": ["1010","1011"],
-        "expected": "10101"
+        "input": ["1001","110"],
+        "expected": "1111"
       }
     ],
     "hiddenTestCases": [

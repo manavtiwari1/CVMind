@@ -4,13 +4,13 @@ import { problem } from './_lib.mjs';
 export default [
   problem('best-time-to-buy-and-sell-stock', {
     statement: `
-You are given an array \`prices\` where \`prices[i]\` is the price of a stock on day \`i\`.
+\`prices[i]\` is what one share of a stock costs on day \`i\`. You may **buy one share on some day and sell it on a later day**, at most once.
 
-You may choose **one day to buy** one share and a **later day to sell** it. Return the maximum profit you can make. If no profit is possible, return \`0\`.
+Return the largest profit this single trade can make, or \`0\` if every possible trade loses money.
 `,
     params: ['prices'],
     constraints: ['1 <= prices.length <= 10^5', '0 <= prices[i] <= 10^4'],
-    explain: ['Buy on day 2 (price 1) and sell on day 5 (price 6): profit = 6 - 1 = 5.', 'Prices only fall, so no profitable trade exists.'],
+    explain: ['Buy at 2 on day 3 and sell at 8 on day 4 for a profit of 6.', 'The price never rises after a buy, so the best is to not trade.'],
     ref: function maxProfit(prices) {
       let best = 0;
       let low = Infinity;
@@ -21,8 +21,8 @@ You may choose **one day to buy** one share and a **later day to sell** it. Retu
       return best;
     },
     tests: [
-      [[7, 1, 5, 3, 6, 4]],
-      [[7, 6, 4, 3, 1]],
+      [[9, 4, 6, 2, 8, 3]],
+      [[8, 5, 5, 2]],
       [[5]],
       [[1, 2]],
       [[2, 4, 1]],
@@ -34,18 +34,13 @@ You may choose **one day to buy** one share and a **later day to sell** it. Retu
 
   problem('valid-parentheses', {
     statement: `
-Given a string \`s\` made only of the characters \`'('\`, \`')'\`, \`'{'\`, \`'}'\`, \`'['\` and \`']'\`, decide whether it is **valid**.
+\`s\` is made only of the bracket characters \`( ) [ ] { }\`. Return \`true\` if the brackets are **properly balanced**, and \`false\` otherwise.
 
-A string is valid when:
-
-- every open bracket is closed by a bracket of the same type, and
-- brackets are closed in the correct order, and
-- every close bracket has a matching open bracket.
+Balanced means each closing bracket closes the most recent bracket that is still open, the two are of the same kind, and nothing is left open at the end.
 `,
     params: ['s'],
-    constraints: ['1 <= s.length <= 10^4', 's consists only of the characters ()[]{}'],
-    explain: ['Every bracket is closed in the right order.', 'Each pair is closed before the next one opens.', 'The "]" does not match the "(" that is open.'],
-    samples: 3,
+    constraints: ['1 <= s.length <= 10^4', 's uses only the characters ()[]{}'],
+    explain: ['Each bracket closes the innermost one still open.', 'The "]" arrives while "(" is the innermost open bracket.'],
     ref: function isValid(s) {
       const stack = [];
       const pairs = { ')': '(', ']': '[', '}': '{' };
@@ -55,18 +50,18 @@ A string is valid when:
       }
       return stack.length === 0;
     },
-    tests: [['()'], ['()[]{}'], ['(]'], ['([)]'], ['{[]}'], ['('], [')'], ['(('], ['((()))[{}]'], ['(())]'], ['{'.repeat(2000) + '}'.repeat(2000)]],
+    tests: [['{[()]}'], ['[(])'], ['[]{}'], ['{)'], ['('], [')'], ['(('], ['((()))[{}]'], ['(())]'], ['{'.repeat(2000) + '}'.repeat(2000)]],
   }),
 
   problem('binary-search', {
     statement: `
-You are given an array \`nums\` of integers sorted in **ascending order** and an integer \`target\`.
+\`nums\` holds distinct integers in **increasing order**. Return the position of \`target\` in \`nums\`, or \`-1\` if it is missing.
 
-Return the index of \`target\` in \`nums\`, or \`-1\` if it is not present. Your solution must run in **O(log n)** time.
+Your solution must take **O(log n)** time.
 `,
     params: ['nums', 'target'],
-    constraints: ['1 <= nums.length <= 10^4', '-10^4 < nums[i], target < 10^4', 'All values in nums are unique and sorted in ascending order'],
-    explain: ['9 is at index 4.', '2 is not in the array.'],
+    constraints: ['1 <= nums.length <= 10^4', '-10^4 < nums[i], target < 10^4', 'Values in nums are distinct and increasing'],
+    explain: ['7 sits at position 4.', 'There is no 5 in the array.'],
     ref: function search(nums, target) {
       let lo = 0;
       let hi = nums.length - 1;
@@ -79,8 +74,8 @@ Return the index of \`target\` in \`nums\`, or \`-1\` if it is not present. Your
       return -1;
     },
     tests: [
-      [[-1, 0, 3, 5, 9, 12], 9],
-      [[-1, 0, 3, 5, 9, 12], 2],
+      [[-6, -2, 1, 4, 7, 15], 7],
+      [[-6, -2, 1, 4, 7, 15], 5],
       [[5], 5],
       [[5], 4],
       [[1, 3], 3],
@@ -92,48 +87,48 @@ Return the index of \`target\` in \`nums\`, or \`-1\` if it is not present. Your
 
   problem('climbing-stairs', {
     statement: `
-You are climbing a staircase with \`n\` steps. Each time you can climb either **1 or 2** steps.
+A staircase has \`n\` steps, and with each stride you go up **either 1 step or 2 steps**.
 
-Return the number of distinct ways you can climb to the top.
+Count the different sequences of strides that take you from the bottom exactly to the top step.
 `,
     params: ['n'],
     constraints: ['1 <= n <= 45'],
-    explain: ['Two ways: 1 + 1 or 2.', 'Three ways: 1 + 1 + 1, 1 + 2 or 2 + 1.'],
+    explain: ['Five sequences: 1+1+1+1, 1+1+2, 1+2+1, 2+1+1 and 2+2.', 'Eight sequences reach step 5.'],
     ref: function climbStairs(n) {
       let a = 1;
       let b = 1;
       for (let i = 2; i <= n; i++) [a, b] = [b, a + b];
       return b;
     },
-    tests: [[2], [3], [1], [4], [5], [10], [20], [35], [45]],
+    tests: [[4], [5], [1], [2], [3], [10], [20], [35], [45]],
   }),
 
   problem('single-number', {
     statement: `
-Every element of the integer array \`nums\` appears **twice** except for one element, which appears exactly once. Find that single element.
+In \`nums\`, **every value shows up exactly twice except one**, which shows up only once. Return that lonely value.
 
-Your solution should run in linear time and use only constant extra space.
+Aim for linear time and constant extra memory.
 `,
     params: ['nums'],
-    constraints: ['1 <= nums.length <= 3 * 10^4', '-3 * 10^4 <= nums[i] <= 3 * 10^4', 'Each element appears twice except for one that appears once'],
-    explain: ['Only 1 appears once.', 'Only 4 appears once.'],
+    constraints: ['1 <= nums.length <= 3 * 10^4', '-3 * 10^4 <= nums[i] <= 3 * 10^4', 'Exactly one value appears once; all others appear twice'],
+    explain: ['6 appears twice, 3 only once.', '8 and 2 come in pairs, 9 does not.'],
     ref: function singleNumber(nums) {
       let x = 0;
       for (const n of nums) x ^= n;
       return x;
     },
-    tests: [[[2, 2, 1]], [[4, 1, 2, 1, 2]], [[1]], [[-1, -1, -2]], [[0, 7, 0]], [[30000, -30000, 30000]], [[5, 3, 5, 9, 3, 7, 9]]],
+    tests: [[[6, 3, 6]], [[8, 2, 9, 2, 8]], [[11]], [[-1, -1, -2]], [[0, 7, 0]], [[30000, -30000, 30000]], [[5, 3, 5, 9, 3, 7, 9]]],
   }),
 
   problem('palindrome-number', {
     statement: `
-Given an integer \`x\`, return \`true\` if \`x\` is a **palindrome** (it reads the same forwards and backwards), and \`false\` otherwise.
+Return \`true\` if the decimal digits of the integer \`x\` **read the same left to right as right to left**, and \`false\` otherwise. A minus sign counts as a character, so negative numbers never qualify.
 
-Try to solve it without converting the integer to a string.
+As a challenge, solve it with arithmetic only, without turning \`x\` into a string.
 `,
     params: ['x'],
     constraints: ['-2^31 <= x <= 2^31 - 1'],
-    explain: ['121 reads the same in both directions.', 'Read backwards it becomes 121-, so it is not a palindrome.'],
+    explain: ['4554 is the same in both directions.', 'Backwards it would read 707-.'],
     ref: function isPalindrome(x) {
       if (x < 0 || (x % 10 === 0 && x !== 0)) return false;
       let reversed = 0;
@@ -143,6 +138,6 @@ Try to solve it without converting the integer to a string.
       }
       return x === reversed || x === Math.floor(reversed / 10);
     },
-    tests: [[121], [-121], [10], [0], [7], [1221], [123321], [12321], [1000021], [2147447412], [2147483647]],
+    tests: [[4554], [-707], [30], [0], [7], [1221], [123321], [12321], [1000021], [2147447412], [2147483647]],
   }),
 ];

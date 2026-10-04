@@ -28,15 +28,15 @@ const uniquePair = (seed, n, { sorted = false } = {}) => {
 export default [
   problem('two-sum', {
     statement: `
-Given an array of integers \`nums\` and an integer \`target\`, return the **indices of the two numbers** that add up to \`target\`.
+A shop lists its item prices in \`nums\`, and you hold a gift card worth exactly \`target\`. Pick **two different items whose prices add up to \`target\`** and return their positions (0-based) as a two-element array.
 
-You may assume that each input has **exactly one solution**, and you may not use the same element twice. You can return the two indices in any order.
+Every input has exactly one such pair, and an item cannot be picked twice. The two positions may come back in either order.
 `,
     params: ['nums', 'target'],
     meta: { compare: 'unordered' },
-    constraints: ['2 <= nums.length <= 10^4', '-10^9 <= nums[i] <= 10^9', '-10^9 <= target <= 10^9', 'Exactly one valid answer exists'],
-    explain: ['nums[0] + nums[1] = 2 + 7 = 9, so the answer is [0, 1].', 'nums[1] + nums[2] = 2 + 4 = 6.'],
-    known: [[0, 1], [1, 2]],
+    constraints: ['2 <= nums.length <= 10^4', '-10^9 <= nums[i], target <= 10^9', 'Exactly one pair reaches target'],
+    explain: ['9 + 1 = 10, and those prices sit at positions 1 and 2.', '-3 + 12 = 9, at positions 1 and 3.'],
+    known: [[1, 2], [1, 3]],
     ref: function twoSum(nums, target) {
       const seen = new Map();
       for (let i = 0; i < nums.length; i++) {
@@ -45,18 +45,18 @@ You may assume that each input has **exactly one solution**, and you may not use
       }
       return [];
     },
-    tests: [[[2, 7, 11, 15], 9], [[3, 2, 4], 6], [[3, 3], 6], [[-1, -2, -3, -4, -5], -8], [[0, 4, 3, 0], 0], [[1, 5, 9, 14], 23], uniquePair(11, 400), uniquePair(12, 2000)],
+    tests: [[[4, 9, 1, 7], 10], [[5, -3, 8, 12], 9], [[6, 6], 12], [[-1, -2, -3, -4, -5], -8], [[0, 4, 3, 0], 0], [[1, 5, 9, 14], 23], uniquePair(11, 400), uniquePair(12, 2000)],
   }),
 
   problem('valid-anagram', {
     statement: `
-Given two strings \`s\` and \`t\`, return \`true\` if \`t\` is an **anagram** of \`s\`, and \`false\` otherwise.
+Two words are **anagrams** when one can be turned into the other just by reordering its letters, with every letter used exactly as many times as it appears.
 
-An anagram is a word formed by rearranging the letters of another word, using every original letter exactly once.
+Return \`true\` if \`s\` and \`t\` are anagrams of each other, and \`false\` otherwise.
 `,
     params: ['s', 't'],
-    constraints: ['1 <= s.length, t.length <= 5 * 10^4', 's and t consist of lowercase English letters'],
-    explain: ['Both words use the same letters the same number of times.', '"rat" has no letter "c".'],
+    constraints: ['1 <= s.length, t.length <= 5 * 10^4', 'Both strings use only lowercase English letters'],
+    explain: ['Both words use g, h, i, n and t exactly once.', '"apple" has an "l" that "paper" does not.'],
     known: [true, false],
     ref: function isAnagram(s, t) {
       if (s.length !== t.length) return false;
@@ -64,30 +64,31 @@ An anagram is a word formed by rearranging the letters of another word, using ev
       for (let i = 0; i < s.length; i++) { count[s.charCodeAt(i) - 97]++; count[t.charCodeAt(i) - 97]--; }
       return count.every((c) => c === 0);
     },
-    tests: [['anagram', 'nagaram'], ['rat', 'car'], ['a', 'a'], ['ab', 'a'], ['aacc', 'ccac'], ['listen', 'silent'], ['abc'.repeat(5000), 'cba'.repeat(5000)], ['abc'.repeat(5000), 'cba'.repeat(4999) + 'cbb']],
+    tests: [['night', 'thing'], ['apple', 'paper'],['a', 'a'], ['ab', 'a'], ['aacc', 'ccac'], ['listen', 'silent'], ['abc'.repeat(5000), 'cba'.repeat(5000)], ['abc'.repeat(5000), 'cba'.repeat(4999) + 'cbb']],
   }),
 
   problem('contains-duplicate', {
     statement: `
-Given an integer array \`nums\`, return \`true\` if **any value appears at least twice**, and \`false\` if every element is distinct.
+A ticket scanner records the ticket numbers it sees in \`nums\`. Return \`true\` if **some ticket number was scanned more than once**, and \`false\` if all of them are different.
 `,
     params: ['nums'],
     constraints: ['1 <= nums.length <= 10^5', '-10^9 <= nums[i] <= 10^9'],
-    explain: ['The value 1 appears twice.', 'Every element is distinct.'],
+    explain: ['Ticket 3 was scanned twice.', 'All three tickets are different.'],
     known: [true, false],
     ref: function containsDuplicate(nums) { return new Set(nums).size !== nums.length; },
-    tests: [[[1, 2, 3, 1]], [[1, 2, 3, 4]], [[1]], [[1, 1, 1, 3, 3, 4, 3, 2, 4, 2]], [[0, 0]], [[-5, 5, -5]], [Array.from({ length: 8000 }, (_, i) => i * 3 - 4000)], [[...Array.from({ length: 8000 }, (_, i) => i * 3 - 4000), 2999]]],
+    tests: [[[7, 3, 9, 3]], [[10, 20, 30]], [[1]], [[2, 8, 8, 5, 2, 9]], [[0, 0]], [[-5, 5, -5]], [Array.from({ length: 8000 }, (_, i) => i * 3 - 4000)], [[...Array.from({ length: 8000 }, (_, i) => i * 3 - 4000), 2999]]],
   }),
 
   problem('group-anagrams', {
     statement: `
-Given an array of strings \`strs\`, **group the anagrams together**. You may return the groups in any order, and the words inside a group in any order.
+Sort the words in \`strs\` into groups so that **two words share a group exactly when they are anagrams** (made of the same letters, the same number of times). Return the list of groups.
+
+The groups, and the words inside each group, may be returned in any order.
 `,
     params: ['strs'],
     meta: { compare: 'unordered-deep' },
-    constraints: ['1 <= strs.length <= 10^4', '0 <= strs[i].length <= 100', 'strs[i] consists of lowercase English letters'],
-    explain: ['A single word forms a single group.', 'The empty string forms its own group.', '"eat", "tea" and "ate" are anagrams of each other, and so are "tan" and "nat".'],
-    samples: 3,
+    constraints: ['1 <= strs.length <= 10^4', '0 <= strs[i].length <= 100', 'Words use only lowercase English letters'],
+    explain: ['"dusty"/"study", "night"/"thing" and "act"/"cat" each form a pair.', 'Words with different letters stay in separate groups.'],
     ref: function groupAnagrams(strs) {
       const groups = new Map();
       for (const s of strs) {
@@ -97,28 +98,29 @@ Given an array of strings \`strs\`, **group the anagrams together**. You may ret
       }
       return [...groups.values()];
     },
-    tests: [[['a']], [['']], [['eat', 'tea', 'tan', 'ate', 'nat', 'bat']], [['', '']], [['abc', 'bca', 'cab', 'xyz']], [['ab', 'ba', 'ab', 'ba']], [(() => { const r = rng(21); return Array.from({ length: 1500 }, () => Array.from({ length: randInt(r, 1, 6) }, () => 'abcd'[randInt(r, 0, 3)]).join('')); })()]],
+    tests: [[['dusty', 'night', 'act', 'study', 'thing', 'cat']], [['abc', 'x']], [['z']], [['']], [['', '']], [['abc', 'bca', 'cab', 'xyz']], [['ab', 'ba', 'ab', 'ba']], [(() => { const r = rng(21); return Array.from({ length: 1500 }, () => Array.from({ length: randInt(r, 1, 6) }, () => 'abcd'[randInt(r, 0, 3)]).join('')); })()]],
   }),
 
   problem('top-k-frequent-elements', {
     statement: `
-Given an integer array \`nums\` and an integer \`k\`, return the **\`k\` most frequent elements**. You may return the answer in any order.
+\`nums\` is a log of product ids, one per sale. Return the **\`k\` ids that were sold most often**, in any order.
 
-The answer is guaranteed to be unique: no other element ties with the \`k\`th most frequent one.
+The inputs are chosen so the answer is unambiguous: nothing outside the answer ties with the \`k\`th best seller.
 `,
     params: ['nums', 'k'],
     meta: { compare: 'unordered' },
-    constraints: ['1 <= nums.length <= 10^5', '-10^4 <= nums[i] <= 10^4', '1 <= k <= the number of distinct elements in nums', 'The answer is unique'],
-    explain: ['1 appears three times and 2 appears twice.', 'Only one element exists.'],
-    known: [[1, 2], [1]],
+    constraints: ['1 <= nums.length <= 10^5', '-10^4 <= nums[i] <= 10^4', 'k is between 1 and the number of distinct ids', 'The answer is unique'],
+    explain: ['8 was sold three times, more than any other id.', '6 sold four times and 5 sold three times.'],
+    known: [[8], [6, 5]],
     ref: function topKFrequent(nums, k) {
       const count = new Map();
       for (const n of nums) count.set(n, (count.get(n) || 0) + 1);
       return [...count.entries()].sort((a, b) => b[1] - a[1]).slice(0, k).map((e) => e[0]);
     },
     tests: [
-      [[1, 1, 1, 2, 2, 3], 2],
-      [[1], 1],
+      [[7, 7, 8, 8, 8, 9], 1],
+      [[4, 4, 5, 5, 5, 6, 6, 6, 6], 2],
+      [[3], 1],
       [[4, 1, -1, 2, -1, 2, 3, -1, 2, 2], 2],
       [[5, 5, 5, 6, 6, 7], 1],
       [[1, 2, 2, 3, 3, 3], 3],
@@ -128,14 +130,14 @@ The answer is guaranteed to be unique: no other element ties with the \`k\`th mo
 
   problem('product-of-array-except-self', {
     statement: `
-Given an integer array \`nums\`, return an array \`answer\` where \`answer[i]\` is the **product of all the elements of \`nums\` except \`nums[i]\`**.
+For each position \`i\` of \`nums\`, work out what you get by **multiplying every other number together**, leaving \`nums[i]\` out. Return these results as an array of the same length.
 
-Your algorithm must run in **O(n)** time and must not use division.
+Aim for **O(n)** time, and do not use division.
 `,
     params: ['nums'],
-    constraints: ['2 <= nums.length <= 10^5', '-30 <= nums[i] <= 30', 'The product of any prefix or suffix of nums fits in a 32-bit integer'],
-    explain: ['Each output is the product of the other three numbers.', 'A zero makes every product zero except the one that skips it.'],
-    known: [[24, 12, 8, 6], [0, 0, 9, 0, 0]],
+    constraints: ['2 <= nums.length <= 10^5', '-30 <= nums[i] <= 30', 'Every prefix and suffix product fits in a 32-bit integer'],
+    explain: ['5 x 3 = 15, 2 x 3 = 6 and 2 x 5 = 10.', 'Only the position holding the zero avoids multiplying by zero: 3 x 4 x 2 = 24.'],
+    known: [[15, 6, 10], [0, 24, 0, 0]],
     ref: function productExceptSelf(nums) {
       const out = new Array(nums.length).fill(1);
       let left = 1;
@@ -144,19 +146,19 @@ Your algorithm must run in **O(n)** time and must not use division.
       for (let i = nums.length - 1; i >= 0; i--) { out[i] *= right; right *= nums[i]; }
       return out.map((v) => (v === 0 ? 0 : v));
     },
-    tests: [[[1, 2, 3, 4]], [[-1, 1, 0, -3, 3]], [[2, 3]], [[0, 0]], [[1, 1, 1]], [[-2, 5, 0, 4]], [(() => { const r = rng(22); return Array.from({ length: 3000 }, () => (r() < 0.5 ? -1 : 1)); })()]],
+    tests: [[[2, 5, 3]], [[3, 0, 4, 2]], [[2, 3]], [[0, 0]], [[1, 1, 1]], [[-2, 5, 0, 4]], [(() => { const r = rng(22); return Array.from({ length: 3000 }, () => (r() < 0.5 ? -1 : 1)); })()]],
   }),
 
   problem('longest-consecutive-sequence', {
     statement: `
-Given an unsorted array of integers \`nums\`, return the **length of the longest run of consecutive integers** that can be formed from its elements.
+Pages fell out of a book and were picked up in random order; \`nums\` holds their page numbers. Find the **longest stretch of back-to-back page numbers** (like 7, 8, 9) you can assemble and return how many pages it has.
 
-For example, the elements \`4, 2, 3, 1\` form the run \`1, 2, 3, 4\`. The elements need not be next to each other in the array. Your algorithm must run in **O(n)** time.
+The numbers can be anywhere in the array, and repeats count once. Aim for **O(n)** time.
 `,
     params: ['nums'],
     constraints: ['0 <= nums.length <= 10^5', '-10^9 <= nums[i] <= 10^9'],
-    explain: ['The longest run is 1, 2, 3, 4.', 'The longest run is 0 through 8.'],
-    known: [4, 9],
+    explain: ['10, 11, 12, 13 is the longest stretch.', '-1, 0, 1 beats 8, 9.'],
+    known: [4, 3],
     ref: function longestConsecutive(nums) {
       const set = new Set(nums);
       let best = 0;
@@ -168,17 +170,17 @@ For example, the elements \`4, 2, 3, 1\` form the run \`1, 2, 3, 4\`. The elemen
       }
       return best;
     },
-    tests: [[[100, 4, 200, 1, 3, 2]], [[0, 3, 7, 2, 5, 8, 4, 6, 0, 1]], [[]], [[1, 2, 0, 1]], [[5]], [[-3, -2, -1, 10, 11]], [ints(23, 6000, -5000, 5000)]],
+    tests: [[[10, 5, 12, 3, 11, 4, 13]], [[9, 1, -1, 0, 8]], [[]], [[2, 3, 1, 3]], [[5]], [[-3, -2, -1, 10, 11]], [ints(23, 6000, -5000, 5000)]],
   }),
 
   problem('maximum-subarray', {
     statement: `
-Given an integer array \`nums\`, find the **contiguous non-empty subarray** with the largest sum and return that sum.
+\`nums\` holds a trader's profit (or loss, when negative) for each day. Choose **one unbroken run of at least one day** and return the biggest total profit such a run can have.
 `,
     params: ['nums'],
     constraints: ['1 <= nums.length <= 10^5', '-10^4 <= nums[i] <= 10^4'],
-    explain: ['The subarray [4, -1, 2, 1] has the largest sum, 6.', 'A single element is the whole array.'],
-    known: [6, 1],
+    explain: ['Days 3 to 5 give 5 - 1 + 2 = 6.', 'With one day, its value is the answer, even when negative.'],
+    known: [6, -7],
     ref: function maxSubArray(nums) {
       let best = nums[0];
       let cur = nums[0];
@@ -188,19 +190,17 @@ Given an integer array \`nums\`, find the **contiguous non-empty subarray** with
       }
       return best;
     },
-    tests: [[[-2, 1, -3, 4, -1, 2, 1, -5, 4]], [[1]], [[5, 4, -1, 7, 8]], [[-1]], [[-2, -1]], [[0, 0, 0]], [ints(24, 9000, -10000, 10000)]],
+    tests: [[[3, -4, 5, -1, 2, -6, 4]], [[-7]], [[2, 2, -1, 3]], [[1]], [[-2, -1]], [[0, 0, 0]], [ints(24, 9000, -10000, 10000)]],
   }),
 
   problem('majority-element', {
     statement: `
-Given an array \`nums\` of size \`n\`, return the **majority element**: the element that appears **more than \`floor(n / 2)\` times**.
-
-You may assume the majority element always exists in the array.
+An election's ballots are listed in \`nums\`, one candidate id per ballot. One candidate won **more than half of all the ballots**. Return that candidate's id.
 `,
     params: ['nums'],
-    constraints: ['n == nums.length', '1 <= n <= 5 * 10^4', '-10^9 <= nums[i] <= 10^9', 'A majority element always exists'],
-    explain: ['3 appears twice out of three.', '2 appears four times out of seven.'],
-    known: [3, 2],
+    constraints: ['n == nums.length', '1 <= n <= 5 * 10^4', '-10^9 <= nums[i] <= 10^9', 'Some value fills more than half the array'],
+    explain: ['4 got two of the three ballots.', '8 got three of the five ballots.'],
+    known: [4, 8],
     ref: function majorityElement(nums) {
       let candidate = 0;
       let votes = 0;
@@ -210,50 +210,48 @@ You may assume the majority element always exists in the array.
       }
       return candidate;
     },
-    tests: [[[3, 2, 3]], [[2, 2, 1, 1, 1, 2, 2]], [[1]], [[6, 6, 6, 7, 7]], [[-1, -1, 2, 3, -1]], (() => { const r = rng(25); const a = Array.from({ length: 4001 }, () => 42); for (let i = 0; i < 3999; i++) a.push(randInt(r, -100, 100)); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return [a]; })()],
+    tests: [[[4, 9, 4]], [[1, 8, 8, 2, 8]], [[1]], [[6, 6, 6, 7, 7]], [[-1, -1, 2, 3, -1]], (() => { const r = rng(25); const a = Array.from({ length: 4001 }, () => 42); for (let i = 0; i < 3999; i++) a.push(randInt(r, -100, 100)); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return [a]; })()],
   }),
 
   problem('sort-colors', {
     statement: `
-You are given an array \`nums\` of \`n\` objects colored red, white or blue, written as the numbers \`0\`, \`1\` and \`2\`.
+A conveyor carries parcels tagged \`0\` (express), \`1\` (standard) or \`2\` (economy), listed in \`nums\`. Rearrange them so **all 0s come first, then all 1s, then all 2s**, and return the result.
 
-Sort them so that objects of the same color are adjacent, in the order red (0), white (1), blue (2), **without using a library sort function**. Return the sorted array.
+Do it **without a library sort**; one pass over the array is enough.
 `,
     params: ['nums'],
-    constraints: ['n == nums.length', '1 <= n <= 300', 'nums[i] is 0, 1 or 2'],
-    explain: ['The zeros come first, then the ones, then the twos.', 'Each color appears once.'],
-    known: [[0, 0, 1, 1, 2, 2], [0, 1, 2]],
+    constraints: ['n == nums.length', '1 <= n <= 300', 'Every value is 0, 1 or 2'],
+    explain: ['Both 0s move to the front and both 2s to the back.', 'The 1 moves ahead of the 2.'],
+    known: [[0, 0, 1, 2, 2], [1, 2]],
     ref: function sortColors(nums) { return [...nums].sort((a, b) => a - b); },
-    tests: [[[2, 0, 2, 1, 1, 0]], [[2, 0, 1]], [[0]], [[2, 2, 2]], [[1, 0]], [[2, 1, 0, 2, 1, 0, 2, 1, 0]], [ints(26, 300, 0, 2)]],
+    tests: [[[1, 2, 0, 0, 2]], [[2, 1]], [[0]], [[2, 2, 2]], [[1, 0]], [[2, 1, 0, 2, 1, 0, 2, 1, 0]], [ints(26, 300, 0, 2)]],
   }),
 
   problem('valid-palindrome', {
     statement: `
-A phrase is a **palindrome** if, after converting all uppercase letters to lowercase and removing every character that is not a letter or a digit, it reads the same forwards and backwards.
-
-Given a string \`s\`, return \`true\` if it is a palindrome, and \`false\` otherwise.
+Ignore case, and throw away everything in \`s\` that is not a letter or a digit. Return \`true\` if **what is left reads the same from both ends**, and \`false\` otherwise.
 `,
     params: ['s'],
-    constraints: ['1 <= s.length <= 2 * 10^5', 's consists only of printable ASCII characters'],
-    explain: ['After cleaning, the phrase is "amanaplanacanalpanama", which reads the same in both directions.', 'The cleaned phrase "raceacar" is not a palindrome.'],
+    constraints: ['1 <= s.length <= 2 * 10^5', 's contains printable ASCII characters only'],
+    explain: ['Cleaned up, it is "wasitacaroracatisaw", the same backwards.', '"steponnocats" reversed is "stacnonopets".'],
     known: [true, false],
     ref: function isPalindrome(s) {
       const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
       return cleaned === cleaned.split('').reverse().join('');
     },
-    tests: [['A man, a plan, a canal: Panama'], ['race a car'], [' '], ['0P'], ['.,'], ['ab_a'], ['No lemon, no melon'], ['a'.repeat(50000) + 'b' + 'a'.repeat(50000)], ['a'.repeat(50000) + 'bc' + 'a'.repeat(50000)]],
+    tests: [['Was it a car or a cat I saw?'], ['Step on no cats'], ['!!'], ['1b'], ['.,'], ['ab_a'], ['No lemon, no melon'], ['a'.repeat(50000) + 'b' + 'a'.repeat(50000)], ['a'.repeat(50000) + 'bc' + 'a'.repeat(50000)]],
   }),
 
   problem('two-sum-ii-input-array-is-sorted', {
     statement: `
-Given a **1-indexed** array of integers \`numbers\` that is already **sorted in non-decreasing order**, find two numbers that add up to \`target\`.
+\`numbers\` is already **sorted from smallest to largest**. Find the two entries that add up to \`target\` and return their positions **counting from 1**, smaller position first.
 
-Return the **1-based indices** \`[index1, index2]\` of the two numbers, with \`index1 < index2\`. Each input has exactly one solution and you may not use the same element twice. Use only **constant extra space**.
+There is exactly one such pair, and one entry cannot be used twice. Solve it with **O(1) extra memory**.
 `,
     params: ['numbers', 'target'],
-    constraints: ['2 <= numbers.length <= 3 * 10^4', '-1000 <= numbers[i] <= 1000', 'numbers is sorted in non-decreasing order', '-1000 <= target <= 1000', 'Exactly one solution exists'],
-    explain: ['2 + 7 = 9, at positions 1 and 2.', '2 + 4 = 6, at positions 1 and 3.'],
-    known: [[1, 2], [1, 3]],
+    constraints: ['2 <= numbers.length <= 3 * 10^4', '-1000 <= numbers[i], target <= 1000', 'numbers never decreases', 'Exactly one pair reaches target'],
+    explain: ['4 + 8 = 12, at positions 3 and 4.', '-2 + 0 = -2, at positions 2 and 3.'],
+    known: [[3, 4], [2, 3]],
     ref: function twoSum(numbers, target) {
       let lo = 0;
       let hi = numbers.length - 1;
@@ -265,20 +263,20 @@ Return the **1-based indices** \`[index1, index2]\` of the two numbers, with \`i
       }
       return [];
     },
-    tests: [[[2, 7, 11, 15], 9], [[2, 3, 4], 6], [[-1, 0], -1], [[1, 2, 3, 4, 4, 9, 56, 90], 8], [[5, 25, 75], 100], (() => { const a = Array.from({ length: 1500 }, (_, i) => i - 700); return [a, a[1498] + a[1499]]; })(), (() => { const a = Array.from({ length: 1500 }, (_, i) => i - 700); return [a, a[0] + a[1]]; })()],
+    tests: [[[1, 3, 4, 8, 10], 12], [[-5, -2, 0, 6], -2], [[-3, 1], -2], [[1, 2, 3, 4, 4, 9, 56, 90], 8], [[5, 25, 75], 100], (() => { const a = Array.from({ length: 1500 }, (_, i) => i - 700); return [a, a[1498] + a[1499]]; })(), (() => { const a = Array.from({ length: 1500 }, (_, i) => i - 700); return [a, a[0] + a[1]]; })()],
   }),
 
   problem('3sum', {
     statement: `
-Given an integer array \`nums\`, return **all the unique triplets** \`[nums[i], nums[j], nums[k]]\` with \`i\`, \`j\` and \`k\` all different and \`nums[i] + nums[j] + nums[k] == 0\`.
+Find every way to **pick three entries of \`nums\` (at three different positions) whose values sum to zero**. Return the distinct value triples: two triples with the same three values count once.
 
-The answer must not contain duplicate triplets. You may return the triplets in any order, and the numbers inside a triplet in any order.
+Triples, and the values inside each, can be in any order.
 `,
     params: ['nums'],
     meta: { compare: 'unordered-deep' },
     constraints: ['3 <= nums.length <= 3000', '-10^5 <= nums[i] <= 10^5'],
-    explain: ['No three numbers add up to zero.', 'The only triplet is [0, 0, 0].'],
-    known: [[], [[0, 0, 0]]],
+    explain: ['All values are positive, so nothing sums to zero.', '-3 + 1 + 2 = 0 is the only zero-sum triple.'],
+    known: [[], [[-3, 1, 2]]],
     ref: function threeSum(nums) {
       const a = [...nums].sort((x, y) => x - y);
       const out = [];
@@ -300,19 +298,21 @@ The answer must not contain duplicate triplets. You may return the triplets in a
       }
       return out;
     },
-    tests: [[[0, 1, 1]], [[0, 0, 0]], [[-1, 0, 1, 2, -1, -4]], [[0, 0, 0, 0]], [[-2, 0, 1, 1, 2]], [[3, -2, 1, 0]], [ints(32, 300, -100, 100)], [ints(33, 600, -1000, 1000)]],
+    tests: [[[1, 2, 3]], [[-3, 1, 2, 0]], [[-4, 2, 2, -1, 3, -2]], [[0, 0, 0, 0]], [[-2, 0, 1, 1, 2]], [[3, -2, 1, 0]], [ints(32, 300, -100, 100)], [ints(33, 600, -1000, 1000)]],
   }),
 
   problem('container-with-most-water', {
+    title: 'Two Fence Posts',
+    slug: 'two-fence-posts',
     statement: `
-You are given an integer array \`height\` of length \`n\`. There are \`n\` vertical lines, where line \`i\` goes from \`(i, 0)\` to \`(i, height[i])\`.
+Fence posts stand one metre apart along a ditch; post \`i\` is \`height[i]\` metres tall. A tarp stretched between **any two posts** holds water up to the shorter post, so the pair at positions \`i < j\` holds \`min(height[i], height[j]) * (j - i)\`.
 
-Pick two lines that, together with the x-axis, form a container, and return the **maximum amount of water** a container can store. You may not tilt the container.
+Return the **most water any pair of posts can hold**.
 `,
     params: ['height'],
     constraints: ['n == height.length', '2 <= n <= 10^5', '0 <= height[i] <= 10^4'],
-    explain: ['The best pair is the line of height 8 (index 1) and the line of height 7 (index 8): min(8, 7) x 7 = 49.', 'Two lines of height 1 that are 1 apart hold 1.'],
-    known: [49, 1],
+    explain: ['Posts 0 and 4 hold min(3, 5) x 4 = 12.', 'The only pair holds min(2, 2) x 1 = 2.'],
+    known: [12, 2],
     ref: function maxArea(height) {
       let lo = 0;
       let hi = height.length - 1;
@@ -324,17 +324,21 @@ Pick two lines that, together with the x-axis, form a container, and return the 
       }
       return best;
     },
-    tests: [[[1, 8, 6, 2, 5, 4, 8, 3, 7]], [[1, 1]], [[4, 3, 2, 1, 4]], [[1, 2, 1]], [[0, 0]], [[10000, 1, 1, 1, 10000]], [ints(34, 9000, 0, 10000)]],
+    tests: [[[3, 1, 6, 2, 5]], [[2, 2]], [[5, 2, 3, 2, 5]], [[1, 2, 1]], [[0, 0]], [[10000, 1, 1, 1, 10000]], [ints(34, 9000, 0, 10000)]],
   }),
 
   problem('trapping-rain-water', {
+    title: 'Puddles Between Pillars',
+    slug: 'puddles-between-pillars',
     statement: `
-Given \`n\` non-negative integers representing an elevation map where the width of each bar is \`1\`, compute **how much water it can trap** after raining.
+A row of stone pillars, each one unit wide, has heights \`height\`. After a storm, water collects in every dip that has a taller pillar somewhere on **both** sides; water above a pillar rises to the lower of the tallest pillars to its left and right.
+
+Return the **total units of water** left standing on the pillars.
 `,
     params: ['height'],
     constraints: ['n == height.length', '1 <= n <= 2 * 10^4', '0 <= height[i] <= 10^5'],
-    explain: ['Six units of water are trapped between the bars.', 'Nine units are trapped in the wide pit in the middle.'],
-    known: [6, 9],
+    explain: ['3 + 1 + 3 = 7 units sit between the walls of height 3 and 4.', 'Each of the two dips of height 1 holds one unit.'],
+    known: [7, 2],
     ref: function trap(height) {
       let lo = 0;
       let hi = height.length - 1;
@@ -352,20 +356,20 @@ Given \`n\` non-negative integers representing an elevation map where the width 
       }
       return water;
     },
-    tests: [[[0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]], [[4, 2, 0, 3, 2, 5]], [[1]], [[3, 0, 3]], [[5, 4, 3, 2, 1]], [[2, 0, 2, 0, 2]], [ints(35, 9000, 0, 100000)]],
+    tests: [[[3, 0, 2, 0, 4]], [[2, 1, 3, 1, 2]], [[1]], [[3, 0, 3]], [[5, 4, 3, 2, 1]], [[2, 0, 2, 0, 2]], [ints(35, 9000, 0, 100000)]],
   }),
 
   problem('move-zeroes', {
     statement: `
-Given an integer array \`nums\`, **move all the \`0\`s to the end** while keeping the relative order of the non-zero elements. Return the resulting array.
+Shift **every zero in \`nums\` to the back** of the array. The other numbers must stay in the order they started in. Return the rearranged array.
 
-Try to do it without making a copy of the array.
+Try to do it in place, without building a second array.
 `,
     params: ['nums'],
     constraints: ['1 <= nums.length <= 10^4', '-2^31 <= nums[i] <= 2^31 - 1'],
-    explain: ['The non-zero numbers keep their order and the zeros move to the end.', 'A single zero stays where it is.'],
-    known: [[1, 3, 12, 0, 0], [0]],
+    explain: ['5, 7, 2 keep their order; both zeros go to the back.', 'The zero moves behind the 9.'],
+    known: [[5, 7, 2, 0, 0], [9, 0]],
     ref: function moveZeroes(nums) { return [...nums.filter((n) => n !== 0), ...nums.filter((n) => n === 0)]; },
-    tests: [[[0, 1, 0, 3, 12]], [[0]], [[1, 2, 3]], [[0, 0, 1]], [[4, 0, 0, 5, 0, 6]], [[-1, 0, -2, 0]], [(() => { const r = rng(36); return Array.from({ length: 8000 }, () => (r() < 0.4 ? 0 : randInt(r, -1000, 1000))); })()]],
+    tests: [[[5, 0, 0, 7, 2]], [[0, 9]], [[0]], [[1, 2, 3]], [[0, 0, 1]], [[4, 0, 0, 5, 0, 6]], [[-1, 0, -2, 0]], [(() => { const r = rng(36); return Array.from({ length: 8000 }, () => (r() < 0.4 ? 0 : randInt(r, -1000, 1000))); })()]],
   }),
 ];
