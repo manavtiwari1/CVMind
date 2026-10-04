@@ -60,12 +60,14 @@ import { APP_PAGES, PUBLIC_APP_PAGES, isAppHost, isCrossHost, isSplitHost, siteO
 import { clearSession, setSession } from './lib/session';
 import { peekPickedTemplate } from './lib/templatePick';
 import { letterDraftHash } from './lib/coverLetter';
+import { takeWorkFromHash } from './lib/workHandoff';
 import { authFetch, AUTH_REQUIRED_EVENT, VERIFY_REQUIRED_EVENT } from './lib/authFetch';
 import { readUser, saveUser, USER_CHANGE_EVENT } from './lib/currentUser';
 import type { LoadedWork, ResumeAnalysis } from './types/api';
 import './styles/theme.css';
 import './styles/3d-effects.css';
 import './styles/skeleton.css';
+import './styles/shared-legacy.css';
 
 // How long the loading screen shows when moving to another page
 const ROUTE_LOADER_MS = 450;
@@ -148,7 +150,8 @@ export default function App() {
     // AuthModal reads and clears ?authError itself to show the message
     return Boolean(searchParams.get('authError'));
   });
-  const [loadedWork, setLoadedWork] = useState<LoadedWork | null>(null);
+  // A resume handed over from the other host (the resume report on www) arrives in the URL hash
+  const [loadedWork, setLoadedWork] = useState<LoadedWork | null>(() => takeWorkFromHash());
   // false only once the server has said this account's email isn't verified
   const [emailVerified, setEmailVerified] = useState<boolean | undefined>(() => readUser()?.emailVerified);
   const [verifyGateOpen, setVerifyGateOpen] = useState(false);
@@ -446,6 +449,8 @@ export default function App() {
             resumeText={resumeText}
             resetAnalysis={resetAnalysis}
             customApiKey={customApiKey}
+            isLoggedIn={isLoggedIn}
+            setLoadedWork={setLoadedWork}
           />
         );
       case 'admin':
@@ -651,7 +656,9 @@ export default function App() {
   // The Portfolio Generator is a full-screen chat with its own top bar and Back button
   const isPortfolioStudio = currentPage === 'portfolio-gen';
   const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && !isFocusFlow && !isPortfolioStudio;
-  const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || currentPage === 'verify-email' || isCodePage || isFocusFlow || isAppPage || isPortfolioStudio;
+  const isMinimalPage = currentPage === 'dashboard' || currentPage === 'admin' || currentPage === 'portfolio' || currentPage === 'verify-email' || isCodePage || isFocusFlow || isAppPage || isPortfolioStudio;
+  // The resume report has its own top bar instead of the site header and footer
+  const isReportPage = currentPage === 'dashboard';
   // The Help Center (and its Contact form) is full-width with its own top bar and footer instead of the site ones
   const isHelpPage = currentPage === 'help-center' || currentPage === 'contact';
   // Landing pages that run edge to edge under the site navbar
@@ -668,7 +675,7 @@ export default function App() {
   }, [isFocusFlow]);
 
   return (
-    <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''} ${isFocusFlow ? 'focus-shell' : ''} ${isHelpPage ? 'help-shell' : ''} ${isAppPage ? 'app-shell' : ''} ${isNotFound ? 'notfound-shell' : ''} ${isProductPage ? 'product-shell' : ''} ${isPortfolioStudio ? 'pgx-shell' : ''} ${isWidePage ? 'wide-shell' : ''}`}>
+    <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''} ${isFocusFlow ? 'focus-shell' : ''} ${isHelpPage ? 'help-shell' : ''} ${isAppPage ? 'app-shell' : ''} ${isNotFound ? 'notfound-shell' : ''} ${isProductPage ? 'product-shell' : ''} ${isPortfolioStudio ? 'pgx-shell' : ''} ${isWidePage ? 'wide-shell' : ''} ${isReportPage ? 'dashboard-shell' : ''}`}>
 
       {!isAdminPage && (
         <SiteBanner

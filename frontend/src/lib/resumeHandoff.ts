@@ -60,12 +60,15 @@ export async function fillTemplate(data: ExtractedResume, templateId: string, he
   return finishHtml(generated, template.id);
 }
 
-/** Reads resume text into the structured data the templates are filled from. */
-export async function parseResumeText(resumeText: string, headers: Record<string, string> = {}): Promise<ExtractedResume> {
+/**
+ * Reads resume text into the structured data the templates are filled from.
+ * exact: the text is already a finished resume (e.g. the AI-fixed one), so keep its wording instead of summarising.
+ */
+export async function parseResumeText(resumeText: string, headers: Record<string, string> = {}, exact = false): Promise<ExtractedResume> {
   const res = await authFetch(`${API_BASE}/api/resume/parse-data`, {
     method: 'POST',
     headers: { ...headers, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ resumeText }),
+    body: JSON.stringify({ resumeText, exact }),
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok || !body.data) throw new Error(body.error || 'Could not read your resume.');

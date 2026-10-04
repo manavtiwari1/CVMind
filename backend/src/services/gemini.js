@@ -504,7 +504,8 @@ async function callDeepSeek({
   customApiKey = null,
   temperature = 0.3,
   maxTokens = 3000,
-  jsonMode = false
+  jsonMode = false,
+  rejectTruncated = false
 }) {
   const apiKey = customApiKey || process.env.DEEPSEEK_API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -550,6 +551,11 @@ async function callDeepSeek({
   const result = await response.json();
   if (!result.choices || result.choices.length === 0) {
     throw new Error('No choices returned by DeepSeek API.');
+  }
+
+  // A reply cut off at max_tokens is incomplete (for HTML, whole sections go missing); callers can refuse it
+  if (rejectTruncated && result.choices[0].finish_reason === 'length') {
+    throw new Error('The AI reply was cut off before it finished. Please try again.');
   }
 
   const text = result.choices[0].message.content.trim();
@@ -912,7 +918,9 @@ ${keepFacts
       prompt: userPrompt,
       customApiKey,
       temperature: 0.35,
-      maxTokens: 5000
+      // deepseek-chat allows 8K output tokens; a filled two-column template with a long resume needs more than 5K
+      maxTokens: 8000,
+      rejectTruncated: true
     });
   } catch (error) {
     console.error('DeepSeek Resume Generation Error:', error);
@@ -934,7 +942,8 @@ Copy every value word for word. Keep the summary exactly as written (do not shor
     : '';
   const systemInstruction = `You are an elite ATS resume parser and recruitment intelligence specialist.
 Your task is to analyze the raw resume text provided and extract ALL relevant details into a clean, precise, and structured JSON object.
-Extract actual information from the text without hallucinating. If a field cannot be found, return empty strings or empty arrays.${exactRule}`;
+Extract actual information from the text without hallucinating. If a field cannot be found, return empty strings or empty arrays.
+Achievements: take them from an Achievements, Awards, Honours or Projects section only, at most 4. Never copy a bullet that already appears under a job into achievements; each bullet belongs in one place. If there is no such section, return an empty achievements array.${exactRule}`;
 
   const prompt = `Extract structured details from the following resume text:
 """

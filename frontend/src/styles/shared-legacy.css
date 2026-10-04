@@ -1,0 +1,66 @@
+/* Utility rules that used to live in pages/Dashboard.css and are still used by other pages
+   (LinkedIn post, company portal, home assistant, auth modal). Loaded once from App. */
+.tabs-bar {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding: 0.35rem;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(124,58,237,0.12);
+  border-radius: 14px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 2px 12px rgba(124,58,237,0.06);
+  scrollbar-width: none;
+}
+.tabs-bar::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: #6b7280;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.83rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  transition: var(--t-base);
+  flex-shrink: 0;
+}
+.tab-btn:hover {
+  color: #0d0d0d;
+  background: rgba(124,58,237,0.06);
+}
+.tab-btn.active {
+  background: rgba(124,58,237,0.1);
+  border-color: rgba(124,58,237,0.25);
+  color: #7c3aed;
+  font-weight: 700;
+  box-shadow: 0 0 14px rgba(124,58,237,0.1);
+}
+
+.badge-grid { display: flex; flex-wrap: wrap; gap: 0.55rem; }
+.text-danger { color: var(--red) !important; }
+.text-success { color: var(--green) !important; }
+.text-primary { color: var(--blue) !important; }
+.copy-btn {
+  background: rgba(124,58,237,0.05);
+  border: 1px solid rgba(124,58,237,0.18);
+  color: #6b7280;
+  padding: 0.28rem 0.7rem;
+  font-size: 0.72rem; font-weight: 600;
+  border-radius: 6px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-family: inherit;
+  transition: var(--t-base);
+}
+.copy-btn:hover {
+  background: var(--purple-dim); color: var(--purple);
+  border-color: rgba(124,58,237,0.3);
+}
+.spin-icon { animation: spinFull 1s linear infinite; color: var(--blue); }
+@keyframes spinFull { to { transform: rotate(360deg); } }
