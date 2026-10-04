@@ -12,16 +12,16 @@ import {
   getUserCodingProfile,
   updateUserCodingProfile,
   saveCustomCodingProblem,
-  getCustomCodingProblems
+  getCustomCodingProblems,
+  getUserCodingProgress,
+  resetUserCodingProgress,
+  saveCodingDraft,
+  deleteCodingDraft
 } from '../db.js';
 import { CURATED_PROBLEMS } from '../data/curatedProblems.js';
-import { optionalUser } from '../services/authToken.js';
+import { optionalUser, requireSelf, requireUser } from '../services/authToken.js';
 
 const router = express.Router();
-
-// Active submissions tracker & stats in-memory
-const SUBMISSIONS_DB = [];
-const CUSTOM_PROBLEMS = [];
 
 // ─── ROUTES ──────────────────────────────────────────────────────────────────
 
@@ -53,7 +53,7 @@ router.get('/problems', async (req, res) => {
       difficulty: p.difficulty,
       category: p.category,
       companies: p.companies,
-      acceptanceRate: p.acceptanceRate || '52.0%',
+      acceptanceRate: p.acceptanceRate || '',
       isAiGenerated: !!p.isAiGenerated
     }));
 
@@ -64,19 +64,38 @@ router.get('/problems', async (req, res) => {
 });
 
 // Get Problem by ID
-router.get('/problems/:id', (req, res) => {
-  const { id } = req.params;
-  const problem = [...CURATED_PROBLEMS, ...CUSTOM_PROBLEMS].find(p => p.id === id || p.slug === id);
-  if (!problem) {
-    return res.status(404).json({ success: false, error: 'Problem not found' });
-  }
+router.get('/problems/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    // AI-generated problems live in MongoDB, so look there too
+    const dbCustom = await getCustomCodingProblems();
+    const problem = [...CURATED_PROBLEMS, ...(dbCustom || [])].find(p => p.id === id || p.slug === id);
+    if (!problem) {
+      return res.status(404).json({ success: false, error: 'Problem not found' });
+    }
 
-  // Don't leak hidden test cases
-  const { hiddenTestCases, ...safeProblem } = problem;
-  res.json({ success: true, problem: safeProblem });
+    // Don't leak hidden test cases
+    const plain = typeof problem.toObject === 'function' ? problem.toObject() : problem;
+    const { hiddenTestCases, ...safeProblem } = plain;
+    res.json({ success: true, problem: safeProblem });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-// Run Code (Sample test cases only)
+// How a problem's data maps onto its function (linked lists, trees, design classes, answer ordering)
+function judgeMeta(problem) {
+  return {
+    kind: problem?.kind,
+    adapter: problem?.adapter,
+    argTypes: problem?.argTypes,
+    returnType: problem?.returnType,
+    compare: problem?.compare,
+    cppSpec: problem?.cppSpec,
+  };
+}
+
+// Run Code (sample test cases only, or one custom input)
 router.post('/run', optionalUser, async (req, res) => {
   try {
     const { problemId, code, language, customTestCases } = req.body;
@@ -85,8 +104,8 @@ router.post('/run', optionalUser, async (req, res) => {
     const dbCustom = await getCustomCodingProblems();
     const problem = [...CURATED_PROBLEMS, ...(dbCustom || [])].find(p => p.id === problemId || p.slug === problemId);
 
-    const testCasesToRun = customTestCases && customTestCases.length > 0 
-      ? customTestCases 
+    const testCasesToRun = customTestCases && customTestCases.length > 0
+      ? customTestCases
       : (problem ? problem.sampleTestCases : []);
 
     const fnName = problem ? problem.functionName : 'solution';
@@ -94,23 +113,30 @@ router.post('/run', optionalUser, async (req, res) => {
       code,
       language: language || 'javascript',
       testCases: testCasesToRun,
-      functionName: fnName
+      functionName: fnName,
+      meta: judgeMeta(problem),
     });
 
-    // Save run record to MongoDB (non-blocking)
-    saveCodingSubmission({
-      userId: userId || 'anonymous',
-      problemId: problem ? problem.id : 'custom',
-      problemTitle: problem ? problem.title : 'Custom Run',
-      language,
-      code,
-      verdict: result.verdict,
-      passedTests: result.passedTests,
-      totalTests: result.totalTests,
-      runtimeMs: result.runtimeMs,
-      memoryMb: result.memoryMb,
-      error: result.error
-    }).catch(err => console.error('[MONGODB] Save run error:', err));
+    // Keep a record of real runs only; a run that was never executed is not worth storing
+    if (!result.simulated) {
+      try {
+        await saveCodingSubmission({
+          userId: userId || 'anonymous',
+          kind: 'run',
+          problemId: problem ? problem.id : 'custom',
+          problemTitle: problem ? problem.title : 'Custom Run',
+          language,
+          code,
+          verdict: result.verdict,
+          passedTests: result.passedTests,
+          totalTests: result.totalTests,
+          runtimeMs: result.runtimeMs,
+          error: result.error
+        });
+      } catch (err) {
+        console.error('[MONGODB] Save run error:', err.message);
+      }
+    }
 
     res.json({ success: true, result });
   } catch (error) {
@@ -119,7 +145,7 @@ router.post('/run', optionalUser, async (req, res) => {
   }
 });
 
-// Submit Code (Full evaluation against sample + hidden test cases & saved to MongoDB)
+// Submit Code (full evaluation against sample + hidden test cases, saved to MongoDB)
 router.post('/submit', optionalUser, async (req, res) => {
   try {
     const { problemId, code, language } = req.body;
@@ -132,52 +158,57 @@ router.post('/submit', optionalUser, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Problem not found for evaluation' });
     }
 
-    const fullTestCases = [...(problem.sampleTestCases || []), ...(problem.hiddenTestCases || [])];
+    const samples = problem.sampleTestCases || [];
+    const fullTestCases = [...samples, ...(problem.hiddenTestCases || [])];
     const result = await runJudgeSubmission({
       code,
       language: language || 'javascript',
       testCases: fullTestCases,
-      functionName: problem.functionName
+      functionName: problem.functionName,
+      meta: judgeMeta(problem),
     });
 
-    const submissionRecord = {
-      id: `sub_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-      userId: userId || 'anonymous',
-      problemId: problem.id,
-      problemTitle: problem.title,
-      language,
-      code,
-      verdict: result.verdict,
-      passedTests: result.passedTests,
-      totalTests: result.totalTests,
-      runtimeMs: result.runtimeMs,
-      memoryMb: result.memoryMb,
-      runtimePercentile: result.runtimePercentile,
-      memoryPercentile: result.memoryPercentile,
-      createdAt: new Date().toISOString()
-    };
+    // Public feedback: the sample cases, plus the first failing hidden case so the user can see what broke
+    const all = result.results || [];
+    const firstHiddenFailure = all.slice(samples.length).find(r => !r.passed);
+    const publicResults = [...all.slice(0, samples.length), ...(firstHiddenFailure ? [firstHiddenFailure] : [])];
 
-    // Save submission to MongoDB
-    await saveCodingSubmission(submissionRecord);
-
-    // Update user profile in MongoDB (ratings & solved count)
-    const updatedProfile = await updateUserCodingProfile(submissionRecord.userId, {
-      problemId: problem.id,
-      verdict: result.verdict
-    });
+    // A result that was not produced by really running the code is neither stored nor counted
+    if (!result.simulated) {
+      const submissionRecord = {
+        id: `sub_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+        userId: userId || 'anonymous',
+        problemId: problem.id,
+        problemTitle: problem.title,
+        language,
+        code,
+        verdict: result.verdict,
+        passedTests: result.passedTests,
+        totalTests: result.totalTests,
+        runtimeMs: result.runtimeMs,
+        createdAt: new Date().toISOString()
+      };
+      try {
+        await saveCodingSubmission(submissionRecord);
+        // Signed-out submissions have no account to credit
+        if (userId) {
+          await updateUserCodingProfile(userId, { problemId: problem.id, verdict: result.verdict });
+        }
+      } catch (err) {
+        // The verdict is still valid; only the history write failed
+        console.error('[MONGODB] Save submission error:', err.message);
+      }
+    }
 
     res.json({
       success: true,
-      submission: submissionRecord,
-      profile: updatedProfile,
       verdict: result.verdict,
       passedTests: result.passedTests,
       totalTests: result.totalTests,
       runtimeMs: result.runtimeMs,
-      memoryMb: result.memoryMb,
-      runtimePercentile: result.runtimePercentile,
-      memoryPercentile: result.memoryPercentile,
-      results: result.results.slice(0, 3) // Return only public feedback
+      simulated: !!result.simulated,
+      error: result.error || undefined,
+      results: publicResults
     });
   } catch (error) {
     console.error('[CODE SUBMIT ERROR]', error);
@@ -250,7 +281,7 @@ router.post('/ai/debug', async (req, res) => {
 });
 
 // AI Problem Generator
-router.post('/ai/generate-problem', async (req, res) => {
+router.post('/ai/generate-problem', optionalUser, async (req, res) => {
   try {
     const { topic, difficulty, company, customPrompt } = req.body;
     const customApiKey = req.headers['x-gemini-key'] || null;
@@ -278,6 +309,7 @@ router.post('/ai/generate-problem', async (req, res) => {
       sampleTestCases: (generated.testCases || []).slice(0, 3),
       hiddenTestCases: (generated.testCases || []).slice(3),
       isAiGenerated: true,
+      createdBy: req.auth?.sub || 'anonymous',
       createdAt: new Date().toISOString()
     };
 
@@ -291,56 +323,98 @@ router.post('/ai/generate-problem', async (req, res) => {
   }
 });
 
-// User Coding Profile & Standardized CVMind Skill Score from MongoDB
-router.get('/profile/:userId', async (req, res) => {
+// Real coding stats for the signed-in user, derived only from what is stored in MongoDB.
+// Nothing here is seeded or estimated: a new account starts at zero.
+router.get('/profile/:userId', requireSelf(), async (req, res) => {
   try {
     const { userId } = req.params;
     const profile = await getUserCodingProfile(userId);
     const submissions = await getUserCodingSubmissions(userId);
+    const dbCustom = await getCustomCodingProblems();
+    const catalog = [...CURATED_PROBLEMS, ...(dbCustom || [])];
 
     const solvedList = profile.solvedProblemIds || [];
-    const uniqueSolved = solvedList.length;
+    const byDifficulty = { easy: 0, medium: 0, hard: 0 };
+    for (const id of solvedList) {
+      const p = catalog.find(x => x.id === id);
+      const key = String(p?.difficulty || '').toLowerCase();
+      if (key in byDifficulty) byDifficulty[key] += 1;
+    }
 
-    const profileStats = {
-      userId,
-      rating: profile.rating || (1640 + uniqueSolved * 15),
-      streakDays: profile.streak || 14,
-      solvedProblemIds: solvedList,
-      problemsSolved: {
-        total: uniqueSolved,
-        easy: Math.min(uniqueSolved, 8),
-        medium: Math.max(0, Math.min(uniqueSolved - 8, 12)),
-        hard: Math.max(0, uniqueSolved - 20)
-      },
-      skillScore: {
-        overall: Math.min(98, 75 + uniqueSolved * 4),
-        dsa: Math.min(99, 78 + uniqueSolved * 3),
-        problemSolving: Math.min(99, 80 + uniqueSolved * 3),
-        codeQuality: 92,
-        languages: {
-          javascript: 90,
-          python: 88,
-          cpp: 82
-        }
-      },
-      badges: [
-        { id: 'first-solve', name: 'First Solve', icon: '🚀', description: 'Solved first coding challenge on CVMind Code', earned: uniqueSolved >= 1 },
-        { id: 'streak-7', name: '7-Day Streak', icon: '🔥', description: 'Coded 7 consecutive days', earned: true },
-        { id: 'array-master', name: 'Array Master', icon: '⚡', description: 'Solved 10+ Array challenges', earned: uniqueSolved >= 2 },
-        { id: 'dp-conqueror', name: 'DP Conqueror', icon: '🧠', description: 'Solved Dynamic Programming challenge', earned: false },
-        { id: 'verified-candidate', name: 'CVMind Verified SDE', icon: '⭐', description: 'Skill score verified on CVMind Resume', earned: true }
-      ],
-      recentSubmissions: submissions.slice(0, 10)
-    };
+    const accepted = submissions.filter(s => s.verdict === 'Accepted').length;
 
-    res.json({ success: true, profile: profileStats });
+    res.json({
+      success: true,
+      profile: {
+        userId,
+        rating: profile.rating,
+        streakDays: profile.streak || 0,
+        solvedProblemIds: solvedList,
+        totalSubmissions: profile.totalSubmissions || 0,
+        acceptedSubmissions: accepted,
+        problemsSolved: { total: solvedList.length, ...byDifficulty },
+        lastActiveDate: profile.lastActiveDate || null,
+        recentSubmissions: submissions.slice(0, 10)
+      }
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// Get User's Past Submissions from MongoDB
-router.get('/submissions/:userId', async (req, res) => {
+// Signed-in user's full CVMind Code state: solved problems, submission history, saved drafts.
+// The UI rebuilds streaks, activity and per-topic progress from this, so it matches on every device.
+router.get('/progress', requireUser, async (req, res) => {
+  try {
+    res.json({ success: true, ...(await getUserCodingProgress(req.auth.sub)) });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Erase the signed-in user's coding progress (profile page "erase" button)
+router.delete('/progress', requireUser, async (req, res) => {
+  try {
+    await resetUserCodingProgress(req.auth.sub);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+const MAX_DRAFT_CHARS = 100000;
+
+router.put('/drafts', requireUser, async (req, res) => {
+  try {
+    const { problemId, language, code } = req.body || {};
+    if (!problemId || !language || typeof code !== 'string') {
+      return res.status(400).json({ success: false, error: 'problemId, language and code are required.' });
+    }
+    if (code.length > MAX_DRAFT_CHARS) {
+      return res.status(413).json({ success: false, error: 'Draft is too large to save.' });
+    }
+    await saveCodingDraft({ userId: req.auth.sub, problemId, language, code });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.delete('/drafts', requireUser, async (req, res) => {
+  try {
+    const { problemId, language } = req.query;
+    if (!problemId || !language) {
+      return res.status(400).json({ success: false, error: 'problemId and language are required.' });
+    }
+    await deleteCodingDraft({ userId: req.auth.sub, problemId, language });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// A user's own past submissions from MongoDB
+router.get('/submissions/:userId', requireSelf(), async (req, res) => {
   try {
     const { userId } = req.params;
     const { problemId } = req.query;

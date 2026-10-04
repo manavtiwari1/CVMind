@@ -41,6 +41,8 @@ async function render() {
   const paired = Boolean(state.success && state.data.paired);
   $('conn-badge').textContent = paired ? 'Connected' : 'Not connected';
   $('api-base').value = state.data?.apiBase || '';
+  // Runs after the sections are shown, so a "required" verdict can hide them
+  setTimeout(() => checkVersion(state.data?.apiBase || ''), 0);
   show('pair-section', !paired);
   show('connected-section', paired);
   show('page-section', paired);
@@ -48,6 +50,32 @@ async function render() {
   if (paired) {
     $('device-name').textContent = state.data.deviceName || 'This browser';
     loadPageContext();
+  }
+}
+
+// Asks the API whether this version is still allowed. "required" blocks the popup until the user updates.
+async function checkVersion(apiBase) {
+  const version = chrome.runtime.getManifest().version;
+  try {
+    const res = await fetch(`${apiBase}/api/config/version?client=extension&v=${encodeURIComponent(version)}`);
+    if (!res.ok) return;
+    const info = await res.json();
+    if (info.verdict === 'ok') return;
+    const required = info.verdict === 'required';
+    $('update-title').textContent = required ? 'Please update the extension' : 'A new version is available';
+    $('update-text').textContent = info.message || (required
+      ? `Version ${version} is no longer supported. Update to keep using CVMind.`
+      : `You have version ${version}. Version ${info.latestVersion} is out.`);
+    if (info.updateUrl) {
+      $('update-link').href = info.updateUrl;
+      show('update-link', true);
+    }
+    show('update-section', true);
+    if (required) {
+      ['pair-section', 'connected-section', 'page-section', 'action-section'].forEach((id) => show(id, false));
+    }
+  } catch {
+    // Offline or old API: never block the popup
   }
 }
 

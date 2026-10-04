@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════════
-   CV Mind — Design System (Light-first, Enhancv-inspired)
+   CV Mind — Design System (Light-first)
    ════════════════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
@@ -401,90 +401,6 @@ a:hover { opacity: 0.75; }
   font-weight: 600 !important;
 }
 
-/* ── Standalone GlassButton component CSS ────────────────────── */
-.glass-button-wrap {
-  position: relative;
-  display: inline-block;
-}
-
-.glass-button {
-  all: unset;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  cursor: pointer;
-  position: relative;
-  isolation: isolate;
-  background: rgba(255,255,255,0.65);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255,255,255,0.55);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.85) inset,
-    0 -1px 0 rgba(0,0,0,0.05) inset;
-  color: #1f2937;
-  transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
-}
-
-.glass-button::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, transparent 55%);
-  pointer-events: none;
-}
-
-.glass-button:hover {
-  background: rgba(255,255,255,0.82);
-  transform: translateY(-2px);
-}
-
-.glass-button:active  { transform: scale(0.97) translateY(0); }
-.glass-button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-.glass-button-text {
-  position: relative;
-  display: block;
-  user-select: none;
-  letter-spacing: -0.03em;
-  font-weight: 600;
-  color: inherit;
-}
-
-.glass-button-shadow {
-  position: absolute;
-  left: 8%;
-  right: 8%;
-  bottom: -8px;
-  height: 14px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.15);
-  filter: blur(10px);
-  pointer-events: none;
-  z-index: -1;
-  transition: opacity 0.18s ease, transform 0.18s ease;
-}
-
-.glass-button-wrap:hover .glass-button-shadow {
-  opacity: 0.7;
-  transform: translateY(2px) scaleX(0.9);
-}
-
-:root[data-theme='dark'] .glass-button {
-  background: rgba(255,255,255,0.09);
-  border-color: rgba(255,255,255,0.15);
-  color: var(--text-primary);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.14) inset,
-    0 -1px 0 rgba(0,0,0,0.2) inset;
-}
-
-:root[data-theme='dark'] .glass-button:hover {
-  background: rgba(255,255,255,0.15);
-}
-
 /* ════ Badge Utilities ══════════════════════════════════════════ */
 .badge {
   display: inline-flex;
@@ -663,6 +579,52 @@ textarea.form-input {
   margin: 0;
 }
 
+/* ════ My Documents app shell override ══════════════════════════ */
+.app-shell .main-content {
+  max-width: none;
+  padding: 0;
+}
+
+/* ════ Help Center full-bleed shell override ════════════════════ */
+.help-shell .main-content {
+  max-width: none;
+  padding: 0;
+}
+
+/* App products have no site navbar, so they don't need the space kept for it */
+.product-shell .main-content {
+  padding-top: 1.25rem;
+}
+
+.product-back-bar {
+  margin-bottom: 1rem;
+}
+
+.product-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1f2937;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.product-back:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+/* Sticky panels sat under the 64px navbar; without it they can ride near the top */
+.product-shell .cl-word-toolbar { top: 0.75rem; }
+.product-shell .aa-job-detail { top: 1rem; }
+
 /* ════ Responsive ════════════════════════════════════════════════ */
 @media (max-width: 768px) {
   .main-content { padding: 6rem 1.25rem 3rem; }
@@ -709,3 +671,19 @@ textarea.form-input {
 }
 
 .usage-badge-text strong { font-weight: 700; }
+
+/* ════ Guided resume-builder flow: full-bleed, no navbar/footer ═══ */
+.focus-shell { background: #fafbfc; }
+.focus-shell .main-content {
+  max-width: 100%;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
+.focus-exit {
+  position: fixed; top: 16px; right: 20px; z-index: 50;
+  padding: 7px 14px; border-radius: 6px; border: 1px solid #d6dbe4;
+  background: #fff; color: #1c1f26; font: inherit; font-size: .8rem; font-weight: 600; cursor: pointer;
+}
+.focus-exit:hover { border-color: #2bbf8e; color: #1b7a5a; }
+.focus-exit:focus-visible { outline: 2px solid #6f4fd6; outline-offset: 2px; }

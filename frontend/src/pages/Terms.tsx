@@ -1,95 +1,70 @@
-import './Legal.css';
+import LegalLayout from './resources/LegalLayout';
+import { SUPPORT_EMAIL } from '../data/support';
 
-export default function Terms() {
+interface TermsProps {
+  setCurrentPage: (page: string) => void;
+}
+
+export default function Terms({ setCurrentPage }: TermsProps) {
+  const mail = <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>;
+  const pageLink = (page: string, label: string) => (
+    <a href={`/${page}`} onClick={e => { e.preventDefault(); setCurrentPage(page); }}>{label}</a>
+  );
+
   return (
-    <div className="legal-page animate-fade-in-up">
-      <div className="legal-hero">
-        <div className="legal-badge">Legal</div>
-        <h1 className="legal-title">Terms and Conditions</h1>
-        <p className="legal-meta">Last updated: June 20, 2026 &nbsp;·&nbsp; Effective immediately</p>
-      </div>
+    <LegalLayout page="terms" title="Terms and Conditions" updated="June 20, 2026" setCurrentPage={setCurrentPage}>
+      <h2>Welcome to CV Mind</h2>
+      <p>Thanks for using CV Mind and trusting us with your career goals. This website and platform ("Service") are provided by CV Mind ("us", "we", or "our").</p>
+      <p>By accessing or using the Service, you agree to these Terms and Conditions. If you do not agree, please do not use the Service. These terms apply to all visitors, users and others who access or use it.</p>
 
-      <div className="legal-body">
+      <h2>What the Service is</h2>
+      <p>CV Mind provides AI-powered resume analysis, a resume and cover letter builder, LinkedIn optimisation, interview preparation and related career tools. The Service is provided on an "as is" basis and may be updated, changed or discontinued at any time without notice.</p>
 
-        <section className="legal-section">
-          <h2>1. Acceptance of Terms</h2>
-          <p>By accessing or using CV Mind ("the Service", "we", "us"), you agree to be bound by these Terms and Conditions. If you do not agree to these terms, please do not use our service. These terms apply to all visitors, users, and others who access or use the Service.</p>
-        </section>
+      <h2>Accounts</h2>
+      <p>Some features need an account. You are responsible for:</p>
+      <ul>
+        <li>Keeping your sign-in details confidential.</li>
+        <li>All activity that happens under your account.</li>
+        <li>Telling us straight away about any unauthorised use at {mail}.</li>
+      </ul>
+      <p>We may terminate accounts that break these Terms.</p>
 
-        <section className="legal-section">
-          <h2>2. Description of Service</h2>
-          <p>CV Mind provides AI-powered resume analysis, career tools, LinkedIn optimisation, interview preparation, and related career-development features (collectively, "the Service"). The Service is provided on an "as is" basis and may be updated, modified, or discontinued at any time without notice.</p>
-        </section>
+      <h2>Plans and payments</h2>
+      <p>CV Mind offers a Free plan and a paid Pro plan. By subscribing you authorise us to charge the fees for the billing cycle you chose (monthly, quarterly or yearly). Prices are in Indian Rupees (₹) unless stated otherwise.</p>
+      <p>Subscription fees are non-refundable except as described in our {pageLink('refund-policy', 'Refund Policy')}. We may change prices with 30 days' notice.</p>
 
-        <section className="legal-section">
-          <h2>3. User Accounts</h2>
-          <p>To access certain features you must create an account. You are responsible for:</p>
-          <ul>
-            <li>Maintaining the confidentiality of your account credentials.</li>
-            <li>All activity that occurs under your account.</li>
-            <li>Notifying us immediately of any unauthorised use at <a href="mailto:contact@manavtiwari.in">contact@manavtiwari.in</a>.</li>
-          </ul>
-          <p>We reserve the right to terminate accounts that violate these Terms.</p>
-        </section>
+      <h2>Acceptable use</h2>
+      <p>You agree not to:</p>
+      <ul>
+        <li>Use the Service for anything unlawful or in breach of any applicable law.</li>
+        <li>Upload malicious content, spam, or material that infringes anyone else's rights.</li>
+        <li>Reverse-engineer, scrape or exploit the Service.</li>
+        <li>Share, resell or sublicense access to your account.</li>
+      </ul>
 
-        <section className="legal-section">
-          <h2>4. Subscription Plans and Payments</h2>
-          <p>CV Mind offers a Free plan and a Pro subscription plan. Pro plan billing is processed securely through our payment provider. By subscribing you authorise us to charge the applicable fees on the billing cycle you selected (monthly, quarterly, or yearly). All prices are in Indian Rupees (₹) unless stated otherwise.</p>
-          <p>Subscription fees are non-refundable except as described in our <strong>Refund Policy</strong>. We may change pricing with 30 days' notice.</p>
-        </section>
+      <h2>Content and intellectual property</h2>
+      <p>The CV Mind software, design, branding and written content belong to CV Mind and its licensors. You keep ownership of every resume or document you upload or create. By uploading content you give us a limited, non-exclusive licence to process it only to provide the Service to you. More detail is in our {pageLink('copyright-policy', 'Copyright Policy')}.</p>
 
-        <section className="legal-section">
-          <h2>5. Acceptable Use</h2>
-          <p>You agree not to:</p>
-          <ul>
-            <li>Use the Service for any unlawful purpose or in violation of any applicable law.</li>
-            <li>Upload malicious content, spam, or any material that infringes third-party rights.</li>
-            <li>Attempt to reverse-engineer, scrape, or exploit the Service.</li>
-            <li>Share, resell, or sublicense access to your account.</li>
-          </ul>
-        </section>
+      <h2>AI-generated content</h2>
+      <p>Output from our AI tools is for career assistance and information only. It is not professional legal, financial or career advice. Review and check all AI-generated content before you use it in a job application or anywhere else. See our {pageLink('disclaimer', 'Disclaimer')}.</p>
 
-        <section className="legal-section">
-          <h2>6. Intellectual Property</h2>
-          <p>All content, branding, AI models, and software comprising CV Mind are the intellectual property of CV Mind and its licensors. You retain ownership of any resume or document you upload. By uploading content you grant us a limited, non-exclusive licence to process that content solely to provide the Service to you.</p>
-        </section>
+      <h2>Privacy</h2>
+      <p>Your use of the Service is also governed by our {pageLink('privacy', 'Privacy Policy')}, which forms part of these Terms. We process your data only as that policy describes.</p>
 
-        <section className="legal-section">
-          <h2>7. AI-Generated Content</h2>
-          <p>Outputs generated by our AI tools are provided for informational and career-assistance purposes only. They do not constitute professional legal, financial, or career advice. You are responsible for reviewing and verifying all AI-generated content before using it in job applications or professional contexts.</p>
-        </section>
+      <h2>Limitation of liability</h2>
+      <p>To the fullest extent permitted by law, CV Mind is not liable for any indirect, incidental, special, consequential or punitive damages arising from your use of the Service, including lost job opportunities, lost data or business interruption.</p>
 
-        <section className="legal-section">
-          <h2>8. Privacy</h2>
-          <p>Your use of the Service is also governed by our Privacy Policy, which is incorporated into these Terms by reference. We process your data only as described in that policy.</p>
-        </section>
+      <h2>Termination</h2>
+      <p>We may suspend or end your access to the Service at any time, with or without cause or notice. When access ends, your right to use the Service ends immediately.</p>
 
-        <section className="legal-section">
-          <h2>9. Limitation of Liability</h2>
-          <p>To the fullest extent permitted by law, CV Mind shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Service, including but not limited to loss of employment opportunities, loss of data, or business interruption.</p>
-        </section>
+      <h2>Governing law</h2>
+      <p>These Terms are governed by the laws of India. Any disputes are subject to the exclusive jurisdiction of the courts in New Delhi, India.</p>
 
-        <section className="legal-section">
-          <h2>10. Termination</h2>
-          <p>We may suspend or terminate your access to the Service at any time, with or without cause, with or without notice. Upon termination, your right to use the Service ceases immediately.</p>
-        </section>
+      <h2>Changes to these Terms</h2>
+      <p>We may update these Terms at any time. If you keep using the Service after a change, you accept the updated Terms. We will email registered users about material changes.</p>
 
-        <section className="legal-section">
-          <h2>11. Governing Law</h2>
-          <p>These Terms shall be governed by and construed in accordance with the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts located in New Delhi, India.</p>
-        </section>
-
-        <section className="legal-section">
-          <h2>12. Changes to Terms</h2>
-          <p>We reserve the right to update these Terms at any time. Continued use of the Service after changes constitutes acceptance. We will notify registered users of material changes via email.</p>
-        </section>
-
-        <section className="legal-section">
-          <h2>13. Contact Us</h2>
-          <p>Questions about these Terms? Contact us at <a href="mailto:contact@manavtiwari.in">contact@manavtiwari.in</a>.</p>
-        </section>
-
-      </div>
-    </div>
+      <h2>Contact us</h2>
+      <p>Questions about these Terms? Email us at {mail} or visit the {pageLink('help-center', 'Help Desk')}.</p>
+    </LegalLayout>
   );
 }

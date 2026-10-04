@@ -1,765 +1,244 @@
-import { useState, useMemo } from 'react';
-import { 
-  Folder, 
-  Search, 
-  ChevronLeft, 
-  Clock, 
-  ArrowRight,
-  Sparkles,
-  HelpCircle
-} from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Search, Plus } from 'lucide-react';
+import { PRICING_LOCKED } from '../lib/pricing';
+import { useSiteContent } from '../lib/siteContent';
+import './resources/Resources.css';
 import './FAQ.css';
-
-interface FAQArticle {
-  id: number;
-  question: string;
-  title: string;
-  editedTime: string;
-  content: React.ReactNode;
-  tags: string[];
-}
-
-interface FAQCategory {
-  id: 'resumes' | 'accounts' | 'tailor-prep' | 'job-finder';
-  title: string;
-  description: string;
-  articleCount: number;
-  articles: FAQArticle[];
-}
 
 interface FAQProps {
   setCurrentPage: (page: string) => void;
 }
 
+interface QA {
+  q: string;
+  a: string;
+  link?: { label: string; page: string };
+}
+
+interface Group {
+  id: string;
+  title: string;
+  items: QA[];
+}
+
+const GROUPS: Group[] = [
+  {
+    id: 'general',
+    title: 'General',
+    items: [
+      {
+        q: 'What is CV Mind?',
+        a: 'CV Mind is a set of AI tools for job seekers: a resume builder, an ATS resume checker, a resume tailorer, interview practice, LinkedIn tools and a job finder. You can use the core tools for free.',
+        link: { label: 'About CV Mind', page: 'about' },
+      },
+      {
+        q: 'Do I need an account?',
+        a: 'No account is needed to check a resume on the home page. You need a free account to save documents, use the builder and run the other AI tools, so your work is kept between visits.',
+      },
+      {
+        q: 'Does CV Mind guarantee I will get a job?',
+        a: 'No. CV Mind helps you write a clearer resume and prepare for interviews, but hiring decisions depend on your experience, the role and the employer.',
+        link: { label: 'Read the Disclaimer', page: 'disclaimer' },
+      },
+      {
+        q: 'Which languages are supported?',
+        a: 'CV Mind is available in English for now.',
+      },
+    ],
+  },
+  {
+    id: 'resume',
+    title: 'Resume builder & checker',
+    items: [
+      {
+        q: 'How is the ATS score calculated?',
+        a: 'The Resume Checker reads your resume the way screening software does, then rates how well each section is parsed, whether it has the keywords expected for the role, and how clear and specific your bullet points are. It lists what to fix, most important first.',
+        link: { label: 'Check my resume', page: 'home' },
+      },
+      {
+        q: 'Which file types can I upload?',
+        a: 'PDF, DOCX and TXT files up to 5 MB. If your PDF was exported as an image (from some design tools), the text cannot be read; try selecting text in it first to check.',
+      },
+      {
+        q: 'How do I download my resume?',
+        a: 'In the editor, click Download and then Download as PDF. The PDF is text-based, so screening software can read every word. You can also have it emailed to you from the same window.',
+      },
+      {
+        q: 'Can I start from the resume I already have?',
+        a: 'Yes. When the builder asks if you already have a resume, choose Yes and upload it. Your details are pulled into the editor, so you do not have to retype them. You can also import your LinkedIn profile.',
+        link: { label: 'Open the Resume Builder', page: 'resume-builder' },
+      },
+      {
+        q: 'Can I change the template after writing my resume?',
+        a: 'Yes. Open Templates in the editor and pick another one. Your content stays the same; only the design changes.',
+      },
+    ],
+  },
+  {
+    id: 'tools',
+    title: 'Interview & career tools',
+    items: [
+      {
+        q: 'How does the Resume Tailorer work?',
+        a: 'Paste a job description and upload your resume. The Tailorer compares the two, shows which skills and keywords are missing, and suggests rewritten sections that match the job without inventing experience.',
+        link: { label: 'Open the Resume Tailorer', page: 'tailor' },
+      },
+      {
+        q: 'What does Interview Prep AI do?',
+        a: 'It writes interview questions from your resume and the job you are applying for, then gives feedback on your answers. Voice Prep AI does the same out loud and comments on how you speak.',
+        link: { label: 'Practise an interview', page: 'prep' },
+      },
+      {
+        q: 'Are AI Job Finder results live job postings?',
+        a: 'The Job Finder suggests roles and companies that fit your profile. Its Apply button opens a LinkedIn Jobs search for that title, company and location, where you can find the current posting.',
+      },
+      {
+        q: 'Should I use AI-written text as it is?',
+        a: 'Always read it first. AI suggestions can be wrong or too general, so edit them until every line is true and sounds like you.',
+      },
+    ],
+  },
+  {
+    id: 'account',
+    title: 'Account & privacy',
+    items: [
+      {
+        q: 'Where are my saved resumes?',
+        a: 'In My Documents. Open the profile menu at the top right and choose My Documents. You can open, share or delete any document from there, on any device you sign in on.',
+        link: { label: 'Go to My Documents', page: 'my-documents' },
+      },
+      {
+        q: 'Do you keep the resume files I upload?',
+        a: 'No. Uploaded files are read in memory and discarded once your result is ready. We keep the result, such as your score, and anything you choose to save in the builder.',
+        link: { label: 'Read the Privacy Policy', page: 'privacy' },
+      },
+      {
+        q: 'Is my resume used to train AI?',
+        a: 'No. Your text is sent to our AI provider only to produce the feedback you ask for, and is not used to train any model.',
+      },
+      {
+        q: 'How do I delete my account?',
+        a: 'Go to Account → Your Profile and click Delete account. This permanently removes your profile and all saved documents and cannot be undone.',
+      },
+    ],
+  },
+  {
+    id: 'billing',
+    title: 'Plans & billing',
+    items: [
+      {
+        q: 'What is included in the Free plan?',
+        a: 'The Resume Builder with all templates, the Resume Checker, Interview Prep AI, the LinkedIn tools and 15,000 AI tokens that reset every 48 hours. Free resumes carry CV Mind branding and allow up to 12 items per section.',
+        ...(PRICING_LOCKED ? {} : { link: { label: 'Compare plans', page: 'pricing' } }),
+      },
+      PRICING_LOCKED
+        ? {
+            q: 'How much does Pro cost?',
+            a: "Pro isn't available yet. We're finishing our paid plans and will share prices when they launch. Everything on the Free plan works today.",
+          }
+        : {
+            q: 'How much does Pro cost?',
+            a: 'Pro is ₹250 a month, ₹800 every 3 months or ₹1,300 a year. It removes branding, unlocks Pro sections and unlimited items, and adds tools like the Resume Tailorer, Portfolio Generator and Voice Prep AI.',
+            link: { label: 'See pricing', page: 'pricing' },
+          },
+      {
+        q: 'Can I get a refund?',
+        a: 'First-time Pro purchases have a 7-day money-back guarantee. Email us within 7 days of buying with your registered email and purchase date. Renewals are not refundable.',
+        link: { label: 'Read the Refund Policy', page: 'refund-policy' },
+      },
+      {
+        q: 'How do I cancel Pro?',
+        a: 'Send us a message from the Help Desk with your registered email and we will cancel it. You keep Pro until the end of the period you have paid for, and you will not be charged again.',
+        link: { label: 'Contact us', page: 'contact' },
+      },
+    ],
+  },
+];
+
 export default function FAQ({ setCurrentPage }: FAQProps) {
-  const [selectedCategory, setSelectedCategory] = useState<'resumes' | 'accounts' | 'tailor-prep' | 'job-finder' | null>(null);
-  const [activeArticleId, setActiveArticleId] = useState<number | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [query, setQuery] = useState('');
+  // Questions added from the admin panel (Site content → FAQ entries) come first
+  const extra = useSiteContent('faq');
+  const allGroups = useMemo<Group[]>(
+    () => (extra.length ? [{ id: 'latest', title: 'Latest', items: extra.map(b => ({ q: b.title, a: b.body })) }, ...GROUPS] : GROUPS),
+    [extra]
+  );
+  const [active, setActive] = useState(GROUPS[0].id);
 
-  // Highly detailed and structured Help Center articles mapped exactly to CVMind's core features
-  const faqCategories: FAQCategory[] = [
-    {
-      id: 'resumes',
-      title: 'Resumes & Cover Letters',
-      description: 'Articles about uploading, scanning, ATS scores, formatting rules, and CVMind\'s built-in resume designer.',
-      articleCount: 5,
-      articles: [
-        {
-          id: 1,
-          question: 'How is the ATS compatibility score calculated?',
-          title: 'ATS Scoring Criteria & Calculation Methods',
-          editedTime: 'Edited 2 months ago',
-          tags: ['score', 'ats', 'audit', 'formatting', 'parsing'],
-          content: (
-            <div className="article-body">
-              <p className="lead-paragraph">
-                CV Mind’s proprietary Applicant Tracking System (ATS) scoring engine evaluates your resume against standard filters used by fortune 500 recruiters.
-              </p>
-              <h3>Scoring Vectors & Criteria</h3>
-              <p>Your resume is audited across five fundamental categories:</p>
-              <ul>
-                <li><strong>Formatting & Layout (30%):</strong> Scans for complex layouts, invisible text, tables, columns, or graphic overlays that blind parsing engines.</li>
-                <li><strong>Contact Details & Metadata (15%):</strong> Verifies existence and structures of email addresses, contact numbers, LinkedIn links, and location keywords.</li>
-                <li><strong>Skills Density (25%):</strong> Measures concentrations of high-demand industry-specific keywords relative to your target role.</li>
-                <li><strong>Action Verbs Check (15%):</strong> Analyzes bullet points to ensure achievements are led by impactful action words rather than passive descriptions.</li>
-                <li><strong>Readability & Length (15%):</strong> Evaluates page ratios, word counts, paragraph margins, and semantic flow.</li>
-              </ul>
-              <div className="callout-info">
-                <strong>Pro-Tip:</strong> Resumes scoring above 80% generally pass standard corporate ATS gatekeepers and secure human recruiter reviews.
-              </div>
-            </div>
-          )
-        },
-        {
-          id: 2,
-          question: 'Can I design and build a resume from scratch?',
-          title: 'Building a Resume From Scratch in CV Mind',
-          editedTime: 'Edited 1 month ago',
-          tags: ['builder', 'design', 'templates', 'resume'],
-          content: (
-            <div className="article-body">
-              <p>
-                Yes! CV Mind includes an advanced, interactive <strong>Resume Builder</strong> designed strictly within ATS compliance guidelines.
-              </p>
-              <h3>Step-by-Step Resume Building Process:</h3>
-              <ol>
-                <li>Navigate to the <strong>Resume Builder</strong> from the top navbar or footer.</li>
-                <li>Choose from our curated collection of 10 modern, single-column corporate templates. These are pre-tested to pass ATS scanners.</li>
-                <li>Fill out your contact details, objective, experience, education, and skills in the guided sidebar editor.</li>
-                <li>Click the <strong>AI Assist</strong> button beside any text field to automatically draft and polish professional descriptions in real-time.</li>
-                <li>Preview your changes and adjust margins, typography, and accent colors instantly.</li>
-              </ol>
-            </div>
-          )
-        },
-        {
-          id: 3,
-          question: 'What export options do I have for my resume?',
-          title: 'Supported Resume Export Formats & Downloads',
-          editedTime: 'Edited 3 weeks ago',
-          tags: ['export', 'pdf', 'docx', 'download'],
-          content: (
-            <div className="article-body">
-              <p>
-                CV Mind supports professional downloads optimized for standard recruitment systems and human resource pipelines.
-              </p>
-              <h3>Available Download Formats</h3>
-              <ul>
-                <li>
-                  <strong>PDF (Portable Document Format):</strong> Highly recommended for direct applications. Our PDF generator builds fully text-selectable documents, meaning ATS bots can easily read every word while ensuring formatting remains locked across all device sizes.
-                </li>
-                <li>
-                  <strong>DOCX (Microsoft Word format):</strong> Best if you need to perform additional offline custom adjustments or require editing via desktop word processing tools.
-                </li>
-              </ul>
-            </div>
-          )
-        },
-        {
-          id: 4,
-          question: 'What file formats are supported for resume scanning?',
-          title: 'Supported Upload File Formats & Scanning Limits',
-          editedTime: 'Edited 2 months ago',
-          tags: ['upload', 'pdf', 'docx', 'txt', 'size'],
-          content: (
-            <div className="article-body">
-              <p>
-                When uploading an existing resume to CV Mind for quick ATS auditing, rating, and keyword scoring, our parser accepts the following formats:
-              </p>
-              <ul>
-                <li><strong>PDF Documents (.pdf)</strong></li>
-                <li><strong>Microsoft Word Documents (.docx)</strong></li>
-                <li><strong>Plain Text Files (.txt)</strong></li>
-              </ul>
-              <h3>Uploading Limits</h3>
-              <p>
-                The maximum allowed file size is <strong>5MB</strong>. To maintain absolute safety and user trust, files are processed **strictly in-memory** and immediately flushed. Your physical resume documents are never written to disk or stored on CV Mind servers.
-              </p>
-            </div>
-          )
-        },
-        {
-          id: 5,
-          question: 'How do I ensure my resume formatting is ATS-friendly?',
-          title: 'Crucial ATS Formatting Best Practices',
-          editedTime: 'Edited 2 months ago',
-          tags: ['ats', 'formatting', 'margins', 'fonts'],
-          content: (
-            <div className="article-body">
-              <p>
-                Many highly qualified professionals are rejected solely because their resume formatting breaks standard parsing software.
-              </p>
-              <h3>Rules to Guarantee ATS Readability:</h3>
-              <ul>
-                <li><strong>Avoid Tables and Text Boxes:</strong> Scanners parse text left-to-right; text boxes and multi-nested tables scramble your sentences.</li>
-                <li><strong>Stick to Standard Fonts:</strong> Use clean, standard system fonts like Inter, Helvetica, Arial, Calibri, or Georgia. Avoid loading custom decorative fonts.</li>
-                <li><strong>Use Direct Section Titles:</strong> Standard titles like "Work Experience", "Education", and "Skills" are immediately indexable. Do not use creative titles like "Where I've Been" or "My Superpowers".</li>
-                <li><strong>No Icons, Charts, or Progress Bars:</strong> Scanners cannot decipher skills rated as "4 out of 5 stars" or styled inside colorful graphs. Use plain text lists instead.</li>
-              </ul>
-            </div>
-          )
-        }
-      ]
-    },
-    {
-      id: 'accounts',
-      title: 'Accounts',
-      description: 'Articles regarding secure signups, multi-device cloud synchronization, usage limits, and privacy compliance.',
-      articleCount: 5,
-      articles: [
-        {
-          id: 6,
-          question: 'Do I need to sign up to use CV Mind?',
-          title: 'Account Sign-Up Requirements & Benefits',
-          editedTime: 'Edited 4 months ago',
-          tags: ['signup', 'login', 'free', 'account'],
-          content: (
-            <div className="article-body">
-              <p className="lead-paragraph">
-                CV Mind is built with user autonomy in mind. You can perform quick resume audits directly on the homepage without registering.
-              </p>
-              <h3>Why Create a Free Account?</h3>
-              <p>To access our advanced professional suites, a secure login is required. An account unlocks:</p>
-              <ul>
-                <li><strong>Saved History:</strong> Access and manage your previous ATS scoring sheets, tailored variations, and drafts.</li>
-                <li><strong>Resume Builder:</strong> Design, edit, and export corporate resumes using our interactive editor.</li>
-                <li><strong>Resume Tailoring & SmartPrep:</strong> Run high-performance semantic keyword gap audits and custom mock interviews.</li>
-                <li><strong>Dashboard Telemetry:</strong> Track your ATS progress score over time with graphical scorecards.</li>
-              </ul>
-            </div>
-          )
-        },
-        {
-          id: 7,
-          question: 'How can I access my saved resumes on another device?',
-          title: 'Real-Time Cloud Synchronization & Multi-Device Access',
-          editedTime: 'Edited 1 month ago',
-          tags: ['sync', 'devices', 'login', 'storage', 'cloud'],
-          content: (
-            <div className="article-body">
-              <p className="lead-paragraph">
-                CV Mind supports real-time cloud synchronization, allowing you to access, edit, and export your career documents from any device.
-              </p>
-              <h3>Multi-Device Editing & Sync Guidelines</h3>
-              <ul>
-                <li><strong>Secured to Your Account:</strong> All of your tailored resumes, custom cover letters, dashboard scorecards, and smart mock interviews are synced automatically to your encrypted account profile.</li>
-                <li><strong>Cross-Platform Fluidity:</strong> You can start parsing a resume on your desktop computer, make minor adjustments using the Resume Builder on your tablet, and download the clean PDF directly from your mobile phone while on the go.</li>
-                <li><strong>Instant Synchronization:</strong> Changes are saved to our databases as you type, ensuring that logging in on any other web browser immediately pulls your latest edits without manual backup exports.</li>
-              </ul>
-            </div>
-          )
-        },
-        {
-          id: 8,
-          question: 'What are the account rate limits and credits?',
-          title: 'Daily Usage Quotas & Server Rate Limits',
-          editedTime: 'Edited 2 weeks ago',
-          tags: ['limits', 'credits', 'quota', 'free', 'usage'],
-          content: (
-            <div className="article-body">
-              <p>
-                To guarantee high-speed responsiveness for all candidates and prevent AI server congestion, CV Mind sets standard daily usage credits on free accounts.
-              </p>
-              <h3>How Usage Credits Reset</h3>
-              <ul>
-                <li><strong>Daily Reset Timer:</strong> Your core credits for ATS checks, Job Description tailoring, cover letter drafting, and SmartPrep interview questions reset automatically every night at 12:00 AM UTC.</li>
-                <li><strong>Status Checks:</strong> You can view your current remaining credits and active history logs inside your personal Dashboard panel.</li>
-                <li><strong>Enterprise Scaling:</strong> For heavy job search pipelines requiring bulk tailoring and continuous prep sessions, we offer high-throughput tiers to keep your workflow uninterrupted.</li>
-              </ul>
-            </div>
-          )
-        },
-        {
-          id: 9,
-          question: 'How can I delete my account and saved resumes?',
-          title: 'Full Account Deletion & Permanent Data Purges',
-          editedTime: 'Edited 2 months ago',
-          tags: ['delete', 'remove', 'privacy', 'purge'],
-          content: (
-            <div className="article-body">
-              <p>
-                We believe you have complete ownership over your career data. If you decide to close your account, we ensure a clean, permanent wipe.
-              </p>
-              <h3>How Data is Purged</h3>
-              <p>When you trigger an account deletion request inside your profile:</p>
-              <ul>
-                <li>All of your saved resume drafts, cover letters, and scorecards are **permanently deleted** from our secure database.</li>
-                <li>We do not retain backup cache files of your career details.</li>
-                <li>Your account information, login profiles, and connection metrics are permanently scrubbed from our systems.</li>
-              </ul>
-            </div>
-          )
-        },
-        {
-          id: 10,
-          question: 'Is CV Mind compliant with privacy laws?',
-          title: 'Privacy by Design Compliance & Article 21',
-          editedTime: 'Edited 2 months ago',
-          tags: ['legal', 'privacy', 'article 21', 'gdpr', 'constitution'],
-          content: (
-            <div className="article-body">
-              <p>
-                Yes. CV Mind is engineered under "Privacy by Design" guidelines.
-              </p>
-              <h3>Constitutional Sovereignty</h3>
-              <p>
-                In alignment with <strong>Article 21 of the Constitution of India</strong>—which guarantees the Right to Life and Personal Liberty as containing the Sovereign Right to Privacy—our software enforces absolute boundaries on data visibility.
-              </p>
-              <h3>Data Visibility Breakdown</h3>
-              <ul>
-                <li><strong>Resumes:</strong> Never saved (parsed in-memory).</li>
-                <li><strong>Technical Logs:</strong> Anonymized backend metrics only (your personal details are not collected).</li>
-                <li><strong>AI Assistant Conversations:</strong> Monitored solely for safety/QA audits and systematically purged.</li>
-              </ul>
-            </div>
-          )
-        }
-      ]
-    },
-    {
-      id: 'tailor-prep',
-      title: 'AI Career Suite, LinkedIn & SmartPrep',
-      description: 'Articles details regarding resume tailoring, interview coaching, LinkedIn optimization, and Career Path builders.',
-      articleCount: 8,
-      articles: [
-        {
-          id: 11,
-          question: 'How does the Job Description AI Tailor work?',
-          title: 'Keyword Gap Analysis & Dynamic Resume Tailoring',
-          editedTime: 'Edited 2 months ago',
-          tags: ['tailor', 'job description', 'keywords', 'skills'],
-          content: (
-            <div className="article-body">
-              <p className="lead-paragraph">
-                The <strong>Resume Tailorer</strong> is built to adapt your current resume to align perfectly with the target role you are applying for.
-              </p>
-              <h3>How Tailoring works:</h3>
-              <ol>
-                <li>Paste the complete Job Description (JD) text into the Tailoring console.</li>
-                <li>Our AI performs a semantic keywords gap audit, checking what skills, qualifications, and action verbs the job description expects.</li>
-                <li>The engine uncovers key phrases present in the JD but missing in your resume.</li>
-                <li>It outputs precise inline rewrites for your experience section, adapting sentences to highlight relevant skills while preserving factual career history.</li>
-              </ol>
-            </div>
-          )
-        },
-        {
-          id: 12,
-          question: 'What is SmartPrep AI and how does it help?',
-          title: 'SmartPrep AI - Customized Interview Coaching',
-          editedTime: 'Edited 1 month ago',
-          tags: ['prep', 'interview', 'coach', 'questions'],
-          content: (
-            <div className="article-body">
-              <p>
-                <strong>SmartPrep AI</strong> is our interactive, resume-driven mock interview simulator.
-              </p>
-              <h3>Personalized Interview Simulation</h3>
-              <p>
-                Unlike generic online interview lists, SmartPrep parses the exact experience on your resume to generate a customized set of high-impact behavioral, situational, and technical questions you are highly likely to face from recruiters.
-              </p>
-              <h3>Voice Interview Practice 🎙️</h3>
-              <p>
-                You can now practice your answers aloud! Using our Web Speech API integration, the system records your voice, transcribes it in real-time, and scores your vocal confidence, clarity, and filler words exactly like a human interviewer.
-              </p>
-              <div className="callout-info">
-                <strong>Behavioral Checks:</strong> SmartPrep analyzes your mock answers to evaluate STAR compliance (Situation, Task, Action, Result) to make sure your storytelling structure is correct.
-              </div>
-            </div>
-          )
-        },
-        {
-          id: 13,
-          question: 'How is the interview scorecard calculated?',
-          title: 'Interview Evaluation Scorecards & Feedback Criteria',
-          editedTime: 'Edited 3 weeks ago',
-          tags: ['scorecard', 'interview', 'feedback', 'grading'],
-          content: (
-            <div className="article-body">
-              <p>
-                When you complete a SmartPrep mock interview session, the AI compiles a detailed performance scorecard.
-              </p>
-              <h3>Grading Elements</h3>
-              <ul>
-                <li><strong>STAR Method Alignment:</strong> Evaluates if you clearly defined the context, your task, the active steps you took, and final quantitative results.</li>
-                <li><strong>Grammar & Professional Tone:</strong> Scores sentence clarity, vocabulary impact, and professionalism.</li>
-                <li><strong>Competency Alignment:</strong> Checks if your answers successfully demoed the specific technical skills claimed in your CV.</li>
-                <li><strong>Actionable Fixes:</strong> Provides model answers showing exactly how to reword weaker portions.</li>
-              </ul>
-            </div>
-          )
-        },
-        {
-          id: 14,
-          question: 'Are my mock interview answers recorded or shared?',
-          title: 'Mock Interview Privacy & AI Chat Auditing',
-          editedTime: 'Edited 2 months ago',
-          tags: ['privacy', 'chat', 'logs', 'purges'],
-          content: (
-            <div className="article-body">
-              <p>
-                We protect your vulnerability during interview practices.
-              </p>
-              <h3>Strict Session Policies</h3>
-              <ul>
-                <li><strong>Zero Machine Learning Training:</strong> Your mock answers and conversational inputs are never uploaded to train public LLM models.</li>
-                <li><strong>QA Logs Isolation:</strong> Conversation dialogue metrics are logged securely strictly for development error checks and chatbot behavior audits, and are periodically purged completely.</li>
-              </ul>
-            </div>
-          )
-        },
-        {
-          id: 15,
-          question: 'How does the LinkedIn Optimizer audit profile PDFs and generate assets?',
-          title: 'LinkedIn Optimization Audits, Headlines, and Recruiter DMs',
-          editedTime: 'Edited 1 day ago',
-          tags: ['linkedin', 'branding', 'bio', 'banner', 'outreach'],
-          content: (
-            <div className="article-body">
-              <p className="lead-paragraph">
-                The <strong>LinkedIn Optimizer</strong> is a dedicated suite designed to maximize your professional branding and social search indexing.
-              </p>
-              <h3>Core LinkedIn Suite Capabilities:</h3>
-              <ul>
-                <li><strong>Profile PDF Audit:</strong> Download your LinkedIn profile in PDF format, upload it directly to CVMind, and receive an instant scoring breakdown analyzing your searchability, headline, and bio.</li>
-                <li><strong>Bio & Banner Generator:</strong> Automatically generates catchyheadlines separated by | and compelling, narrative About summaries. It also shares visual direction layout copy to design custom profile banners.</li>
-                <li><strong>Outreach & DM Writer:</strong> Automatically drafts recruiter DMs (under 150 words) and warm connection request messages (under 300 characters) to boost response rates.</li>
-                <li><strong>Viral Post Generator:</strong> Generate 3 styles of highly-engaging LinkedIn posts (Professional, Storytelling, and Punchy) complete with viral hooks and trending hashtags based on your resume achievements.</li>
-              </ul>
-            </div>
-          )
-        },
-        {
-          id: 16,
-          question: 'How does Career Path AI help in transition planning and roadmaps?',
-          title: 'Career Path AI - Skills Transitions, Elevator Pitches, and Roadmaps',
-          editedTime: 'Edited 1 day ago',
-          tags: ['career', 'transition', 'roadmap', 'pitch', 'courses'],
-          content: (
-            <div className="article-body">
-              <p className="lead-paragraph">
-                <strong>Career Path AI</strong> is designed for candidates looking to upgrade their roles or pivot into completely new industries.
-              </p>
-              <h3>Key Transition Modules:</h3>
-              <ol>
-                <li><strong>Skill Gap & Courses:</strong> Checks your resume experience against target job descriptions, identifies training voids, and recommends online learning paths (Coursera/Udemy/LinkedIn Learning).</li>
-                <li><strong>Elevator Pitch Builder:</strong> Creates three tailored verbal pitches (Corporate metrics-focused, Tech/Startup mission-focused, and Creative storytelling) for your networking events.</li>
-                <li><strong>Interactive Roadmaps:</strong> Produces a customized, chronological 4-step transition plan complete with actions and measurable completion milestones.</li>
-              </ol>
-            </div>
-          )
-        },
-        {
-          id: 17,
-          question: 'How does silent background auto-save and deletion safety work?',
-          title: 'Background Auto-Save & Deletion Safety Sync',
-          editedTime: 'Edited 1 day ago',
-          tags: ['save', 'autosave', 'delete', 'sync', 'dashboard'],
-          content: (
-            <div className="article-body">
-              <p>
-                CV Mind supports automatic cloud synchronization so you never lose your progress or experience formatting glitches.
-              </p>
-              <h3>Auto-Save and Deletion Safety Workflows</h3>
-              <ul>
-                <li><strong>Silent Background Saves:</strong> Cover letters, resumes, and interview mock sandbox answers are saved automatically every 4 seconds in the background without disturbing your active keyboard state or cursor.</li>
-                <li><strong>Automatic Badges:</strong> The page displays a subtle `✓ Saved automatically to My Works` status badge instead of manual save buttons.</li>
-                <li><strong>Deletion Sync:</strong> When deleting a file from the navbar dashboard modal, the platform instantly clears current state variables and returns you to the home gallery so that stale, deleted files are not auto-saved back to the database.</li>
-              </ul>
-            </div>
-          )
-        },
-        {
-          id: 18,
-          question: 'Can I generate a personal portfolio website from my resume?',
-          title: '1-Click Portfolio Website Generator',
-          editedTime: 'Edited just now',
-          tags: ['portfolio', 'website', 'generator', 'html', 'theme'],
-          content: (
-            <div className="article-body">
-              <p className="lead-paragraph">
-                Yes! The Portfolio Generator instantly converts your static resume text into a fully responsive, interactive HTML/CSS personal website.
-              </p>
-              <h3>Portfolio Features:</h3>
-              <ul>
-                <li><strong>Premium Themes:</strong> Choose from 5 beautiful aesthetics (Dark Pro, Ocean, Emerald, Purple, Minimal).</li>
-                <li><strong>Device Preview:</strong> Preview exactly how your portfolio will look on Desktop, Tablet, and Mobile devices natively in your browser.</li>
-                <li><strong>1-Click Export:</strong> Download your generated portfolio as a ready-to-host <code>.html</code> file instantly, with no coding required.</li>
-              </ul>
-            </div>
-          )
-        }
-      ]
-    },
-    {
-      id: 'job-finder',
-      title: 'AI Job Finder',
-      description: 'Articles about matching CVs with job roles, work type filtering, application links, and match metrics.',
-      articleCount: 3,
-      articles: [
-        {
-          id: 19,
-          question: 'How does the AI Job Finder matching engine work?',
-          title: 'CV-to-Job Matching Algorithms & Logic',
-          editedTime: 'Edited just now',
-          tags: ['match', 'score', 'job description', 'skills', 'cv'],
-          content: (
-            <div className="article-body">
-              <p className="lead-paragraph">
-                The AI Job Finder scans and cross-references your resume skills against targeted role descriptions to locate high-probability match fits.
-              </p>
-              <h3>The Matching Flow</h3>
-              <ol>
-                <li><strong>CV Analysis:</strong> Extracts professional experience, skill density, seniority, and industry signals from your uploaded document.</li>
-                <li><strong>Job Description Parsing:</strong> Audits your targeted role preferences to identify must-have skills, preferred tools, and domain keywords.</li>
-                <li><strong>Semantic Scoring:</strong> Calculates compatibility by checking matches across required competencies, experience requirements, and work styles.</li>
-              </ol>
-              <div className="callout-info">
-                <strong>Pro-Tip:</strong> The match percentage indicates how well your current resume qualifies for the role. Use our AI Resume Analyzer to fix gaps if your match score is below 70%.
-              </div>
-            </div>
-          )
-        },
-        {
-          id: 20,
-          question: 'Are the job matches and apply links real?',
-          title: 'Job Match Synthesis & LinkedIn Redirection Links',
-          editedTime: 'Edited just now',
-          tags: ['linkedin', 'jobs', 'apply', 'links', 'data'],
-          content: (
-            <div className="article-body">
-              <p className="lead-paragraph">
-                Yes! Every job curated contains structured roles matching current market demands and pre-built search links that point directly to active job listings.
-              </p>
-              <h3>How Apply Links are Structured</h3>
-              <ul>
-                <li><strong>Market Realism:</strong> Our AI matching engine generates highly realistic company and position matches based on current industry postings.</li>
-                <li><strong>LinkedIn Redirects:</strong> The <strong>Apply Now</strong> button forwards you to pre-populated search queries on LinkedIn Jobs for the exact company, title, and location generated, allowing you to instantly find the live posting and apply with one click.</li>
-              </ul>
-            </div>
-          )
-        },
-        {
-          id: 21,
-          question: 'How do I filter job matches by work type?',
-          title: 'Work Style Filters: Remote, Full-time & Internships',
-          editedTime: 'Edited just now',
-          tags: ['filters', 'remote', 'full-time', 'part-time', 'internship'],
-          content: (
-            <div className="article-body">
-              <p>
-                To make your job search highly relevant to your lifestyle, CV Mind lets you filter results by work preferences.
-              </p>
-              <h3>Selecting Preferences</h3>
-              <p>
-                Before launching a search, choose from the filter row:
-              </p>
-              <ul>
-                <li><strong>🌐 All:</strong> Curates a mix of all available roles.</li>
-                <li><strong>💼 Full-time:</strong> Focuses strictly on permanent full-time careers.</li>
-                <li><strong>🕐 Part-time:</strong> Limits results to part-time positions.</li>
-                <li><strong>🏠 Remote:</strong> Matches only with fully home-based or remote job setups.</li>
-                <li><strong>🎓 Internship:</strong> Focuses on trainee, apprentice, and internship roles.</li>
-              </ul>
-            </div>
-          )
-        }
-      ]
-    }
-  ];
+  const q = query.trim().toLowerCase();
+  const groups = useMemo(
+    () =>
+      q
+        ? allGroups.map(g => ({ ...g, items: g.items.filter(i => i.q.toLowerCase().includes(q) || i.a.toLowerCase().includes(q)) })).filter(g => g.items.length)
+        : allGroups,
+    [q, allGroups]
+  );
 
-  // Helper to resolve all articles into a flat list for global search filtering
-  const allArticles = useMemo(() => {
-    const list: { catId: 'resumes' | 'accounts' | 'tailor-prep' | 'job-finder'; article: FAQArticle }[] = [];
-    faqCategories.forEach(category => {
-      category.articles.forEach(article => {
-        list.push({ catId: category.id, article });
-      });
-    });
-    return list;
-  }, []);
-
-  // Filtered autocomplete search suggestions
-  const filteredSuggestions = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    return allArticles.filter(item => {
-      return (
-        item.article.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.article.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-    });
-  }, [searchQuery, allArticles]);
-
-  // Navigate to split view from categories dashboard
-  const handleCategoryClick = (catId: 'resumes' | 'accounts' | 'tailor-prep' | 'job-finder') => {
-    setSelectedCategory(catId);
-    const category = faqCategories.find(c => c.id === catId);
-    if (category && category.articles.length > 0) {
-      setActiveArticleId(category.articles[0].id);
-    }
+  const jump = (id: string) => {
+    setActive(id);
+    document.getElementById(`faq-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
-
-  // Jump to specific article directly (e.g. from search click)
-  const handleArticleJump = (catId: 'resumes' | 'accounts' | 'tailor-prep' | 'job-finder', articleId: number) => {
-    setSelectedCategory(catId);
-    setActiveArticleId(articleId);
-    setSearchQuery('');
-    setShowSuggestions(false);
-  };
-
-  // Reset to categories dashboard view
-  const handleBackToHome = () => {
-    setSelectedCategory(null);
-    setActiveArticleId(null);
-    setSearchQuery('');
-  };
-
-  // Active category object
-  const activeCategoryObject = faqCategories.find(c => c.id === selectedCategory);
-
-  // Active article object
-  const activeArticleObject = activeCategoryObject?.articles.find(a => a.id === activeArticleId);
 
   return (
-    <div className="faq-container animate-fade-in-up">
-      {/* Background ambient glow nodes */}
-      <div className="faq-glow faq-glow-left"></div>
-      <div className="faq-glow faq-glow-right"></div>
+    <div className="rsc faq">
+      <h1 className="rsc-title">Frequently Asked Questions</h1>
+      <p className="rsc-lede">Quick answers about CV Mind, your account and your plan.</p>
 
-      {/* Main dashboard view (Category Folder Selection Grid) */}
-      {selectedCategory === null ? (
-        <div className="faq-dashboard-view">
-          <section className="faq-hero">
-            <div className="faq-hero-badge">
-              <span className="badge badge-purple">
-                <HelpCircle size={12} style={{ marginRight: '4px' }} /> Support Center
-              </span>
-            </div>
-            <h1 className="faq-title">How can we help you?</h1>
-          </section>
+      <label className="faq-search">
+        <Search size={18} />
+        <input
+          type="search"
+          placeholder="Search questions"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          aria-label="Search questions"
+        />
+      </label>
 
-          {/* Centered Global Search with suggestions */}
-          <div className="faq-search-section">
-            <div className="faq-search-wrapper glass-card">
-              <Search className="faq-search-icon" size={18} />
-              <input 
-                type="text" 
-                placeholder="Search articles by keywords (e.g. ATS, Cloud Sync, Privacy...)"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setShowSuggestions(true);
-                }}
-                onFocus={() => setShowSuggestions(true)}
-                className="faq-search-input"
-              />
-              {searchQuery && (
-                <button 
-                  className="faq-clear-btn" 
-                  onClick={() => { setSearchQuery(''); setShowSuggestions(false); }}
-                >
-                  Clear
-                </button>
-              )}
-
-              {/* Autocomplete Dropdown Panel */}
-              {showSuggestions && searchQuery.trim() && (
-                <div className="faq-search-dropdown glass-card">
-                  {filteredSuggestions.length > 0 ? (
-                    filteredSuggestions.map((item) => (
-                      <button 
-                        key={item.article.id}
-                        className="suggestion-row"
-                        onClick={() => handleArticleJump(item.catId, item.article.id)}
-                      >
-                        <div className="suggestion-info">
-                          <span className="suggestion-category-tag">{item.catId === 'resumes' ? 'Resumes & Cover Letters' : item.catId === 'accounts' ? 'Accounts' : item.catId === 'job-finder' ? 'AI Job Finder' : 'AI Tailor & SmartPrep'}</span>
-                          <span className="suggestion-question">{item.article.question}</span>
-                        </div>
-                        <ArrowRight size={14} className="suggestion-arrow" />
-                      </button>
-                    ))
-                  ) : (
-                    <div className="suggestion-empty">
-                      No articles found matching "{searchQuery}"
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Grid of Folders */}
-          <div className="faq-folders-grid">
-            {faqCategories.map((cat) => (
-              <button 
-                key={cat.id} 
-                className={`folder-card folder-card-${cat.id} glass-card animate-hover`}
-                onClick={() => handleCategoryClick(cat.id)}
-              >
-                <div className="folder-icon-box">
-                  <Folder size={32} className="folder-icon" />
-                </div>
-                <h3 className="folder-title">{cat.title}</h3>
-                <p className="folder-articles-count">{cat.articleCount} articles</p>
-              </button>
-            ))}
-          </div>
-
-          {/* Premium Bottom Callout */}
-          <section className="faq-cta-card glass-card">
-            <div className="faq-cta-glow"></div>
-            <div className="faq-cta-content">
-              <div className="faq-cta-header">
-                <Sparkles size={24} className="cta-icon" />
-                <h2>Ready to Optimize Your Resume?</h2>
-              </div>
-              <p>
-                Put these guides to the test. Let our AI audits grade your resume and optimize your professional outline in seconds.
-              </p>
-              <div className="faq-cta-actions">
-                <button 
-                  className="btn-primary" 
-                  onClick={() => { setCurrentPage('home'); window.scrollTo(0,0); }}
-                >
-                  Analyze Your Resume <ArrowRight size={16} />
-                </button>
-                <button 
-                  className="btn-secondary" 
-                  onClick={() => { setCurrentPage('resume-builder'); window.scrollTo(0,0); }}
-                >
-                  Build from Scratch
-                </button>
-              </div>
-            </div>
-          </section>
-        </div>
-      ) : (
-        /* Split-Screen Article Reader View */
-        <div className="faq-reader-view">
-          {/* Top Breadcrumb Navigation */}
-          <div className="faq-breadcrumb">
-            <button className="breadcrumb-back-btn" onClick={handleBackToHome}>
-              <ChevronLeft size={16} /> FAQ Home
+      <div className="faq-grid">
+        <nav className="rsc-legal-nav" aria-label="FAQ topics">
+          {allGroups.map(g => (
+            <button key={g.id} type="button" aria-current={active === g.id && !q ? 'page' : undefined} onClick={() => { setQuery(''); jump(g.id); }}>
+              {g.title}
             </button>
-            <span className="breadcrumb-separator">/</span>
-            <span className="breadcrumb-current-category">{activeCategoryObject?.title}</span>
-          </div>
+          ))}
+        </nav>
 
-          <div className="faq-split-layout">
-            {/* Left Sidebar - Article Links List */}
-            <aside className="faq-sidebar">
-              <h4 className="sidebar-heading">In this article</h4>
-              <div className="sidebar-links-list">
-                {activeCategoryObject?.articles.map((art) => {
-                  const isActive = art.id === activeArticleId;
-                  return (
-                    <button 
-                      key={art.id} 
-                      className={`sidebar-article-link ${isActive ? 'active' : ''}`}
-                      onClick={() => setActiveArticleId(art.id)}
-                    >
-                      <span className="bullet-dot"></span>
-                      <span className="link-text">{art.question}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </aside>
-
-            {/* Right Panel - Detailed Article Content */}
-            <main className="faq-article-container glass-card">
-              {activeArticleObject ? (
-                <article className="faq-main-article">
-                  <header className="article-header">
-                    <h1 className="article-main-title">{activeArticleObject.title}</h1>
-                    <div className="article-meta">
-                      <Clock size={14} className="meta-icon" />
-                      <span className="meta-text">{activeArticleObject.editedTime}</span>
-                    </div>
-                  </header>
-                  <div className="article-content-body">
-                    {activeArticleObject.content}
+        <div className="faq-groups">
+          {groups.length === 0 && (
+            <p className="faq-empty">No questions match "{query.trim()}". Try other words, or ask us in the Help Desk.</p>
+          )}
+          {groups.map(g => (
+            <section key={g.id} id={`faq-${g.id}`} className="faq-group">
+              <h2>{g.title}</h2>
+              {g.items.map(item => (
+                <details key={item.q} className="faq-item" open={Boolean(q) || undefined}>
+                  <summary>
+                    <span>{item.q}</span>
+                    <Plus size={18} className="faq-item-icon" aria-hidden="true" />
+                  </summary>
+                  <div className="faq-item-body">
+                    <p>{item.a}</p>
+                    {item.link && (
+                      <button type="button" className="rsc-link" onClick={() => setCurrentPage(item.link!.page)}>{item.link.label}</button>
+                    )}
                   </div>
-                  <div className="article-footer-tags">
-                    {activeArticleObject.tags.map((tag, idx) => (
-                      <span key={idx} className="article-tag">#{tag}</span>
-                    ))}
-                  </div>
-                </article>
-              ) : (
-                <div className="article-placeholder">
-                  <HelpCircle size={48} className="placeholder-icon animate-pulse" />
-                  <h3>Select an article</h3>
-                  <p>Choose one of the questions on the left to read its full help documentation.</p>
-                </div>
-              )}
-            </main>
-          </div>
+                </details>
+              ))}
+            </section>
+          ))}
         </div>
-      )}
+      </div>
+
+      <section className="rsc-cta">
+        <div>
+          <h2>Still have a question?</h2>
+          <p>Search the Help Desk for step-by-step answers, or send us a message and we will reply by email.</p>
+        </div>
+        <div className="rsc-cta-actions">
+          <button type="button" className="rsc-btn" onClick={() => setCurrentPage('help-center')}>Go to the Help Desk</button>
+        </div>
+      </section>
     </div>
   );
 }

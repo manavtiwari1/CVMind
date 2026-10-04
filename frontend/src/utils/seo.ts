@@ -1,4 +1,5 @@
 import { ARTICLES } from '../data/articles';
+import { isAppHost } from '../lib/hosts';
 
 interface PageSEO {
   title: string;
@@ -8,6 +9,9 @@ interface PageSEO {
 
 const SITE_URL = 'https://www.cvmind.in';
 
+// Account-only and error pages stay out of search results
+const NO_INDEX_PAGES = ['account', 'my-documents', 'admin', 'dashboard', 'resume-editor', 'not-found'];
+
 const PAGE_SEO: Record<string, PageSEO> = {
   home: {
     title: 'Free AI Resume Builder & CV Maker Online | CV Mind',
@@ -15,14 +19,24 @@ const PAGE_SEO: Record<string, PageSEO> = {
     keywords: 'Resume Builder, Free Resume Builder, CV Maker, CV Making Online, Online CV Builder, AI Resume Builder, ATS Resume Checker, Resume Maker Free, CV Builder India, Professional CV Format',
   },
   about: {
-    title: 'About Us | CV Mind Resume Intelligence',
-    description: 'Learn about CV Mind, our mission to democratize recruitment technology, and how our AI resume scanner helps candidates beat applicant tracking systems.',
+    title: 'About Us | CV Mind',
+    description: 'CV Mind is a set of tools for job seekers: a resume builder, an ATS resume checker, interview practice and LinkedIn help. Learn what we build and why.',
     keywords: 'About CV Mind, AI resume scanner, ATS technology, resume optimization mission, career tech',
   },
   contact: {
-    title: 'Contact Us | Support & Feedback - CV Mind',
-    description: 'Get in touch with the CV Mind team. We welcome your feedback, partnership inquiries, and questions about our AI resume checker and ATS optimization tools.',
+    title: 'Contact Us | CV Mind Help Desk',
+    description: 'Send the CV Mind team a message about your account, billing or our resume tools, or reach us by email or WhatsApp. We usually reply within 24 hours.',
     keywords: 'Contact CV Mind, resume checker support, career tool help, feedback, partnership',
+  },
+  'help-center': {
+    title: 'Help Desk | CV Mind',
+    description: 'Answers to common questions about building resumes, your CV Mind account, plans and billing, and how to reach our support team.',
+    keywords: 'CV Mind help, resume builder help, account help, CV Mind support',
+  },
+  account: {
+    title: 'Account | CV Mind',
+    description: 'Manage your CV Mind profile, password, plan and saved documents.',
+    keywords: 'CV Mind account, profile settings',
   },
   faq: {
     title: 'Frequently Asked Questions (FAQ) | CV Mind',
@@ -30,8 +44,8 @@ const PAGE_SEO: Record<string, PageSEO> = {
     keywords: 'FAQ, CV Mind questions, ATS help, resume builder help, how to write resume',
   },
   blog: {
-    title: 'Career Advice & Resume Optimization Blog | CV Mind',
-    description: 'Explore expert tips, resume writing guides, career strategies, and ATS secrets from recruiters to help you land your dream job.',
+    title: 'Resume & Career Advice Blog | CV Mind',
+    description: 'Step-by-step guides for writing an ATS-friendly resume, choosing the right keywords and format, and preparing for interviews and LinkedIn.',
     keywords: 'Resume Blog, Career Advice, Resume Writing Guides, Job Search Tips, Recruiter Secrets, ATS Optimization',
   },
   dashboard: {
@@ -40,8 +54,8 @@ const PAGE_SEO: Record<string, PageSEO> = {
     keywords: 'Resume Dashboard, Resume Scorecard, ATS Score, Keyword Match, Resume Analysis',
   },
   privacy: {
-    title: 'Privacy Policy | Secure & Anonymous Resume Parsing - CV Mind',
-    description: 'Your privacy is our priority. CV Mind parses your resume entirely in memory. Read our Privacy Policy to understand how we protect your document and data.',
+    title: 'Privacy Policy | CV Mind',
+    description: 'What information CV Mind collects, how uploaded resumes are handled, who we share data with, how ads and cookies work, and how to delete your data.',
     keywords: 'Privacy Policy, secure resume parsing, data privacy, resume builder terms',
   },
   terms: {
@@ -80,19 +94,19 @@ const PAGE_SEO: Record<string, PageSEO> = {
     keywords: 'Free Resume Builder, CV Maker Online, Make CV Online Free, AI Resume Builder, ATS Resume Templates, Resume Maker, CV Format for Freshers, Professional Resume Builder',
   },
   tailor: {
-    title: 'AI Resume Tailoring Tool | Match Job Descriptions - CV Mind',
-    description: 'Tailor your resume to any job description instantly. Our AI matches keywords, optimizes achievements, and aligns your experience for maximum ATS compatibility.',
-    keywords: 'Resume Tailorer, Job Matching, Resume Alignment, ATS Keyword Match',
+    title: 'AI Resume Tailor - Match Your Resume to Any Job Description | CV Mind',
+    description: 'Upload your CV and paste a job description. CV Mind rewrites your summary, bullets and skills for the role, keeps your facts, and gives you a designed resume to download as PDF, Word or TXT or edit further.',
+    keywords: 'Resume Tailor, Tailor Resume to Job Description, AI Resume Tailoring, ATS Keyword Match, Job Description Resume Match',
   },
   prep: {
-    title: 'AI Interview Preparation & Mock Interviews | CV Mind',
-    description: 'Prepare for interviews with personalized AI coaching. Get simulated behavioral questions, instant answers assessment, and industry-specific prep tips based on your resume.',
-    keywords: 'AI Interview Prep, Mock Interview, Interview Coaching, Behavioral Questions',
+    title: 'Interview Prep AI - Mock Interview from Your CV & the Job | CV Mind',
+    description: 'Practise a mock interview built from your CV and the job description. Answer each question and get a score, what was missing, a stronger answer, and a full interview report.',
+    keywords: 'AI Interview Prep, Mock Interview, Interview Questions, Job Description Interview, STAR Method',
   },
   'voice-prep': {
-    title: 'Voice Interview Practice | AI Coaching - CV Mind',
-    description: 'Practice interviews by speaking your answers aloud. AI transcribes, analyzes confidence, detects filler words, and gives real-time coaching feedback.',
-    keywords: 'Voice Interview Practice, AI Interview Coach, Mock Interview, Speech Analysis',
+    title: 'Voice Prep AI - Practise Interviews Out Loud | CV Mind',
+    description: 'Leo asks interview questions out loud, built from your CV and the job. Answer by speaking and get feedback on your content, pace, filler words and confidence.',
+    keywords: 'Voice Interview Practice, AI Interview Coach, Mock Interview, Speaking Feedback, Filler Words',
   },
   'job-finder': {
     title: 'AI Job Finder | Match Jobs to Your CV - CV Mind',
@@ -144,25 +158,47 @@ const PAGE_SEO: Record<string, PageSEO> = {
     description: 'Map out your long-term career growth with our AI Career Roadmap generator. Get step-by-step career milestones, certification paths, and skill progression plans.',
     keywords: 'Career Roadmap Generator, Career Path Planner, Skill Progression, Career Strategy',
   },
-  'career-copilot': {
-    title: 'AI Career Copilot - 9 AI Agents Managing Your Career | CV Mind',
-    description: 'Meet your AI Career Copilot: 9 AI agents working together on your resume, job search, LinkedIn, skills, interviews, networking, salary, and career analytics — all in one dashboard.',
-    keywords: 'AI Career Copilot, AI Career Agents, Career Management AI, Job Search Automation, Career Health Score',
-  },
   'auto-apply': {
     title: 'Auto Apply Agent - AI Applies to Jobs for You | CV Mind',
     description: "CV Mind's Auto Apply Agent finds matching jobs and applies on your behalf with a tailored resume and cover letter. Coming soon.",
     keywords: 'Auto Apply, AI Job Application, Automated Job Applying, Job Application Agent',
   },
+  'company-portal': {
+    title: 'Recruiter Portal - Post Jobs & Review Candidates | CV Mind',
+    description: 'Post openings, review AI-matched applicants and shortlist candidates from one recruiter dashboard on CV Mind.',
+    keywords: 'Recruiter Portal, Post Jobs, Candidate Screening, Applicant Tracking, CV Mind for Recruiters',
+  },
+  'resume-editor': {
+    title: 'Resume Editor - Edit Your CV with AI | CV Mind',
+    description: 'Edit your resume or cover letter in a live editor: pick an ATS-friendly template, rewrite bullets with AI, and download as PDF or DOCX.',
+    keywords: 'Resume Editor, CV Editor, Online Resume Editor, AI Resume Writer, Cover Letter Editor',
+  },
+  'my-documents': {
+    title: 'My Documents | CV Mind',
+    description: 'Open, edit, duplicate and download the resumes and cover letters saved to your CV Mind account.',
+    keywords: 'CV Mind documents, saved resumes, my resumes',
+  },
+  portfolio: {
+    title: 'Portfolio | Built with CV Mind',
+    description: 'A personal portfolio website generated from a resume with CV Mind.',
+  },
+  admin: {
+    title: 'Admin | CV Mind',
+    description: 'CV Mind admin console.',
+  },
+  'not-found': {
+    title: 'Page Not Found | CV Mind',
+    description: "The page you're looking for doesn't exist or has moved. Head back to CV Mind to check or build your resume.",
+  },
   code: {
     title: 'CVmind Code - AI Coding Judge, Practice & Career Assessments | CV Mind',
     description: 'Master Data Structures & Algorithms with an in-browser isolated code judge, 6-tier progressive AI assistance, contests, and standardized skill scores that recruiters verify.',
-    keywords: 'Coding Practice, LeetCode Alternative, Coding Judge, AI Code Assistant, DSA Practice, Coding Assessments, Interview Preparation, Coding Profile',
+    keywords: 'Coding Practice, Coding Judge, AI Code Assistant, DSA Practice, Coding Assessments, Interview Preparation, Coding Profile',
   },
   'cvmind-code': {
     title: 'CVmind Code - AI Coding Judge, Practice & Career Assessments | CV Mind',
     description: 'Master Data Structures & Algorithms with an in-browser isolated code judge, 6-tier progressive AI assistance, contests, and standardized skill scores that recruiters verify.',
-    keywords: 'Coding Practice, LeetCode Alternative, Coding Judge, AI Code Assistant, DSA Practice, Coding Assessments, Interview Preparation, Coding Profile',
+    keywords: 'Coding Practice, Coding Judge, AI Code Assistant, DSA Practice, Coding Assessments, Interview Preparation, Coding Profile',
   },
   'code-arena': {
     title: 'CVMind Code Arena - Live In-Browser Code Judge & Editor | CV Mind',
@@ -192,7 +228,7 @@ function setMeta(name: string, content: string, attr: 'name' | 'property' = 'nam
 }
 
 export function applySEO(page: string) {
-  const seo = PAGE_SEO[page] || PAGE_SEO.home;
+  const seo = PAGE_SEO[page] || PAGE_SEO['not-found'];
 
   document.title = seo.title;
   setMeta('description', seo.description);
@@ -213,4 +249,8 @@ export function applySEO(page: string) {
     document.head.appendChild(canonical);
   }
   canonical.setAttribute('href', url);
+
+  // app.cvmind.in duplicates the site build, and signed-in or missing pages have nothing to index
+  const noIndex = isAppHost() || NO_INDEX_PAGES.includes(page) || !PAGE_SEO[page];
+  setMeta('robots', noIndex ? 'noindex, nofollow' : 'index, follow');
 }

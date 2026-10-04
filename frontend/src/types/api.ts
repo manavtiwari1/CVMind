@@ -180,6 +180,8 @@ export interface SavedWork {
   type: string; // 'resume' | 'cover-letter' | tool-specific types
   templateId: string;
   htmlContent: string;
+  /** 'resume-tailor' for resumes made by the Resume Tailorer */
+  source?: string;
   createdAt?: string;
   updatedAt?: string;
   deleted?: false;
@@ -202,4 +204,9 @@ export interface StoredUser {
   address?: string;
   avatar?: string;
   isGoogleUser?: boolean;
+  plan?: string;
+  isPro?: boolean;
+  token?: string;
+  // false until the emailed link is clicked; missing on sessions from before verification existed
+  emailVerified?: boolean;
 }

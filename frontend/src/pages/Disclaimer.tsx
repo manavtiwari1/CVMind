@@ -1,73 +1,50 @@
-import './Legal.css';
+import LegalLayout from './resources/LegalLayout';
+import { SUPPORT_EMAIL } from '../data/support';
 
-export default function Disclaimer() {
+interface DisclaimerProps {
+  setCurrentPage: (page: string) => void;
+}
+
+export default function Disclaimer({ setCurrentPage }: DisclaimerProps) {
   return (
-    <div className="legal-page animate-fade-in-up">
-      <div className="legal-hero">
-        <div className="legal-badge">Legal</div>
-        <h1 className="legal-title">Disclaimer</h1>
-        <p className="legal-meta">Last updated: June 20, 2026 &nbsp;·&nbsp; Effective immediately</p>
-      </div>
+    <LegalLayout page="disclaimer" title="Disclaimer" updated="June 20, 2026" setCurrentPage={setCurrentPage}>
+      <h2>General information only</h2>
+      <p>The information CV Mind ("the Service") provides is for general career assistance and information only. All content, including AI-generated resume feedback, interview questions, LinkedIn copy, career roadmaps and job recommendations, is given in good faith but is not professional career counselling, legal, financial or recruitment advice.</p>
 
-      <div className="legal-body">
+      <h2>No guarantee of a job</h2>
+      <p>CV Mind does not guarantee that using the Service will lead to interviews, job offers or career progress. Resume scores, ATS compatibility checks and AI suggestions are estimates based on general hiring patterns and public information. Real outcomes depend on your qualifications, the job market and each employer.</p>
 
-        <section className="legal-section">
-          <h2>1. General Information Only</h2>
-          <p>The information provided by CV Mind ("the Service") is for general career-assistance and informational purposes only. All content — including AI-generated resume feedback, interview questions, LinkedIn copy, career roadmaps, and job recommendations — is provided in good faith but does not constitute professional career counselling, legal, financial, or recruitment advice.</p>
-        </section>
+      <h2>AI-generated content</h2>
+      <p>Our AI tools write content using large language models. We work to keep it accurate and useful, but:</p>
+      <ul>
+        <li>AI-generated text can contain errors, inaccuracies or outdated information.</li>
+        <li>You are responsible for reviewing, editing and checking all AI-generated content before sending it to employers or using it professionally.</li>
+        <li>We are not liable for consequences of relying on AI output without checking it.</li>
+      </ul>
 
-        <section className="legal-section">
-          <h2>2. No Guarantee of Employment</h2>
-          <p>CV Mind does not guarantee that use of the Service will result in job interviews, employment offers, or career advancement. Resume scoring, ATS compatibility analysis, and AI suggestions are estimates based on general hiring patterns and publicly available data. Actual outcomes vary based on individual qualifications, market conditions, and employer preferences.</p>
-        </section>
+      <h2>Third-party links</h2>
+      <p>The Service may link to other websites, job boards or course providers for convenience. CV Mind does not endorse or control them and is not responsible for their content, privacy practices or availability.</p>
 
-        <section className="legal-section">
-          <h2>3. AI-Generated Content</h2>
-          <p>Our AI tools generate content using large language models. While we strive for accuracy and quality:</p>
-          <ul>
-            <li>AI-generated text may contain errors, inaccuracies, or outdated information.</li>
-            <li>You are solely responsible for reviewing, editing, and verifying all AI-generated content before submitting it to employers or using it professionally.</li>
-            <li>We are not liable for any consequences arising from reliance on AI-generated output without verification.</li>
-          </ul>
-        </section>
+      <h2>Job listings and salary data</h2>
+      <p>Job listings, salary ranges and company details in the AI Job Finder come from publicly available sources. CV Mind does not verify that this data is accurate, complete or current. Openings and pay can change without notice.</p>
 
-        <section className="legal-section">
-          <h2>4. Third-Party Links and Resources</h2>
-          <p>The Service may contain links to third-party websites, job boards, or course providers. These links are provided for convenience only. CV Mind does not endorse, control, or take responsibility for the content, privacy practices, or availability of any third-party websites.</p>
-        </section>
+      <h2>Limitation of liability</h2>
+      <p>To the maximum extent the law allows, CV Mind, its founders, employees and partners are not liable for any direct, indirect, incidental, consequential or punitive damages arising from your use of or reliance on the Service, including:</p>
+      <ul>
+        <li>Not getting a job or an interview.</li>
+        <li>Lost data or resume content.</li>
+        <li>Decisions made based on AI-generated career advice.</li>
+        <li>Service interruptions or technical errors.</li>
+      </ul>
 
-        <section className="legal-section">
-          <h2>5. Job Listings and Salary Data</h2>
-          <p>Job listings, salary ranges, and company information displayed within the AI Job Finder feature are aggregated from publicly available sources. CV Mind does not verify the accuracy, completeness, or currency of this data. Job availability and compensation figures may change without notice.</p>
-        </section>
+      <h2>No warranty</h2>
+      <p>The Service is provided "as is" and "as available", without warranties of any kind, express or implied, including merchantability, fitness for a particular purpose or non-infringement. We do not promise that the Service will be uninterrupted, error-free or free of harmful components.</p>
 
-        <section className="legal-section">
-          <h2>6. Limitation of Liability</h2>
-          <p>To the maximum extent permitted by applicable law, CV Mind, its founders, employees, and partners shall not be liable for any direct, indirect, incidental, consequential, or punitive damages arising from your use of or reliance on the Service, including but not limited to:</p>
-          <ul>
-            <li>Failure to secure employment or interviews.</li>
-            <li>Loss of data or resume content.</li>
-            <li>Decisions made based on AI-generated career advice.</li>
-            <li>Service interruptions or technical errors.</li>
-          </ul>
-        </section>
+      <h2>Changes to this Disclaimer</h2>
+      <p>We may update this Disclaimer from time to time. If you keep using the Service after a change is posted, you accept the updated Disclaimer.</p>
 
-        <section className="legal-section">
-          <h2>7. No Warranty</h2>
-          <p>The Service is provided "as is" and "as available" without warranties of any kind, express or implied, including but not limited to implied warranties of merchantability, fitness for a particular purpose, or non-infringement. We do not warrant that the Service will be uninterrupted, error-free, or free from viruses or other harmful components.</p>
-        </section>
-
-        <section className="legal-section">
-          <h2>8. Changes to this Disclaimer</h2>
-          <p>We may update this Disclaimer from time to time. Continued use of the Service after changes are posted constitutes acceptance of the updated Disclaimer.</p>
-        </section>
-
-        <section className="legal-section">
-          <h2>9. Contact</h2>
-          <p>For questions about this Disclaimer, contact us at <a href="mailto:contact@manavtiwari.in">contact@manavtiwari.in</a>.</p>
-        </section>
-
-      </div>
-    </div>
+      <h2>Contact</h2>
+      <p>Questions about this Disclaimer? Email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>
+    </LegalLayout>
   );
 }

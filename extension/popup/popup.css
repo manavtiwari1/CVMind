@@ -276,3 +276,29 @@ body {
 .footer-btn:hover {
   text-decoration: underline;
 }
+
+/* Update notice (version gate from the admin panel) */
+.update-card {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #78350f;
+}
+
+.update-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.update-text {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.update-link {
+  margin-top: 10px;
+  text-decoration: none;
+}

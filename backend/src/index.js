@@ -12,12 +12,30 @@ import multer from 'multer';
 import bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
 import { parsePdf, parseDocx, parseTxt, fetchResumeFromUrl } from './services/parser.js';
-import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, findJobsWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek } from './services/gemini.js';
-import { getPublicStats, getAdminStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveJobFinderLog, savePaymentLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, getWhitelistedEmails, addWhitelistedEmail, deleteWhitelistedEmail, getAutoApplyAccessList, grantAutoApplyAccess, revokeAutoApplyAccess, hasAutoApplyAccess, getCareerCopilotAccessList, grantCareerCopilotAccess, revokeCareerCopilotAccess, hasCareerCopilotAccess, getAllUsersForAdmin, setUserStatus } from './db.js';
-import { Resend } from 'resend';
-import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser } from './services/authToken.js';
+import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, findJobsWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek, generateInterviewPlan, evaluateInterviewAnswer, generateInterviewReport } from './services/gemini.js';
+import { getPublicStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, updateUserFields, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveJobFinderLog, saveProofreadLog, savePaymentLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, hasAutoApplyAccess } from './db.js';
+import adminRouter from './admin/router.js';
+import adminPublicRoutes from './admin/publicRoutes.js';
+import { featureGate, signupsEnabled, getSettings } from './admin/settings.js';
+import { metricsMiddleware } from './admin/metrics.js';
+import { installSessionValidator, newSessionId, recordSession, revokeAllSessions, invalidateSessionCache } from './admin/sessions.js';
+import { ticketFromContact } from './admin/tickets.js';
+import { startInboxPolling } from './admin/inbox.js';
+import { evaluateCoupon, redeemCoupon } from './admin/coupons.js';
+import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser, userSessionStatus } from './services/authToken.js';
+import { verifiedGate } from './services/verifiedGate.js';
+import { issueVerification, verifyEmailToken, resendCooldown, hashToken, frontendUrl, markEmailVerified, VERIFY_MESSAGES } from './services/emailVerification.js';
+import { assessSignupRisk, isHighRisk, RISK_HIGH } from './services/emailRisk.js';
+import { hitLimit, clientIp, HOUR_MS, DAY_MS } from './services/limiter.js';
+import { logAuthEvent } from './services/authEvents.js';
+import { CaptchaChallenge } from './admin/models.js';
+import { sendEmail, emailConfigured } from './admin/mailer.js';
+import { welcomeEmail, passwordResetEmail, resumePdfEmail } from './services/emailTemplates.js';
+import { dbReady } from './admin/auth.js';
 import mongoose from 'mongoose';
 import { importUploadedResume, RESUME_MIME_TYPES } from './agent/resume/intake.js';
+import { renderResumePdf } from './agent/resume/pdf.js';
+import { searchJobs, getJobDetail, warmJobSearch, JOB_SEARCH_COMPANIES } from './services/jobSearch.js';
 
 const app = express();
 // Render/Vercel sit behind one proxy; trust it so rate limiting sees the real client IP
@@ -27,85 +45,55 @@ const PORT = process.env.PORT || 5000;
 // Refuse to boot in production without a token signing secret
 assertAuthConfigured();
 
-// Attach a signed session token to a user payload returned by a real sign-in
-const withSessionToken = (payload) => ({
-  ...payload,
-  token: signToken({ sub: payload.id, kind: 'user', email: payload.email })
-});
+// Revoked sessions and blocked accounts are rejected on every signed-in request
+installSessionValidator();
+
+// Attach a signed session token to a user payload returned by a real sign-in.
+// Each token gets its own session id, so it shows up (and can be signed out) in the admin panel and Account page.
+// Pass currentJti when re-issuing a token for a session that already exists (e.g. after a profile edit).
+const withSessionToken = (payload, req, provider = '', currentJti = '') => {
+  const jti = currentJti || newSessionId();
+  if (!currentJti) recordSession({ jti, userId: payload.id, email: payload.email, provider, req });
+  return {
+    ...payload,
+    token: signToken({ sub: payload.id, kind: 'user', email: payload.email, jti })
+  };
+};
+
+// Save a generated result to the signed-in user's My Works. A failed save must never throw away
+// an AI result the user already waited for, so errors are logged and the response goes out anyway.
+async function safeSaveWork(args) {
+  try {
+    return await saveWork(args);
+  } catch (err) {
+    console.error('[works] could not save result:', err.message);
+    return null;
+  }
+}
+
+// Saves a feature result as My Works JSON; no-op for signed-out visitors
+function saveFeatureWork(userId, { title, type, templateId, payload }) {
+  if (!userId) return Promise.resolve(null);
+  return safeSaveWork({
+    userId,
+    title: String(title || 'Untitled').slice(0, 120),
+    type,
+    templateId,
+    htmlContent: JSON.stringify(payload)
+  });
+}
 
 // Initialize Resend Client
-const resend = new Resend(process.env.RESEND_API_KEY || '');
-
-// Helper to send Welcome Email upon sign-up
-const sendWelcomeEmail = async (email, name, origin) => {
-  if (!resend || !process.env.RESEND_API_KEY) {
+// Welcome email for new social-login accounts (email sign-ups get the verification email instead)
+const sendWelcomeEmail = async (email, name) => {
+  if (!emailConfigured()) {
     console.warn('[WELCOME EMAIL] Skipping send - RESEND_API_KEY is not configured.');
     return;
   }
-
-  const isLocal = origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
-  const host = isLocal ? origin : 'https://www.cvmind.in';
-  const createResumeLink = `${host}`;
-
   try {
-    const { data, error } = await resend.emails.send({
-      from: 'CV Mind <no-reply@manavtiwari.in>',
-      to: [email],
-      subject: 'Welcome to CV Mind! ✨',
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 30px; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; color: #1e293b; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin: 0 auto;">
-          <div style="text-align: center; margin-bottom: 25px;">
-            <h2 style="color: #2997ff; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.02em;">CV Mind</h2>
-            <span style="font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Your AI-Powered Career Partner</span>
-          </div>
-          
-          <p style="font-size: 16px; line-height: 1.6; margin-bottom: 15px;">Hi <strong>${name}</strong>,</p>
-          
-          <p style="font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
-            Welcome to <strong>CV Mind</strong>! We are absolutely thrilled to have you join us. 
-            CV Mind is a state-of-the-art career suite designed to empower job seekers like you with advanced AI intelligence and ATS optimization tools.
-          </p>
-          
-          <div style="background-color: #f8fafc; border-radius: 12px; padding: 20px; margin-bottom: 25px; border: 1px solid #f1f5f9;">
-            <h3 style="margin-top: 0; color: #0f172a; font-size: 16px;">Here is how CV Mind accelerates your job search:</h3>
-            <ul style="padding-left: 20px; margin: 0; font-size: 14px; line-height: 1.8; color: #334155;">
-              <li><strong>ATS Resume Scanner & Scorecard:</strong> Get instant recruiter-grade scores, structural audits, and missing keyword analyses.</li>
-              <li><strong>AI-Powered Optimizer:</strong> Rewrite weak bullet points and enhance your resume's metrics with one click.</li>
-              <li><strong>Job Tailoring:</strong> Instantly match and adapt your profile to target job descriptions to beat the resume filters.</li>
-              <li><strong>SmartPrep Mock Interviews:</strong> Practice with dynamic AI-generated interview questions and receive instant evaluations.</li>
-              <li><strong>LinkedIn Optimizer:</strong> Elevate your profile, create compelling bios, and write high-impact outreach messages.</li>
-            </ul>
-          </div>
-          
-          <p style="font-size: 15px; line-height: 1.6; margin-bottom: 30px; text-align: center;">
-            Ready to take the next step in your career? Create a standout resume that lands interviews today!
-          </p>
-          
-          <div style="margin: 30px 0; text-align: center;">
-            <a href="${createResumeLink}" style="background: linear-gradient(135deg, #2997ff 0%, #bf5af2 100%); color: #ffffff; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; box-shadow: 0 4px 15px rgba(41, 151, 255, 0.3); font-size: 16px;">Create Beautiful Resume Now</a>
-          </div>
-          
-          <p style="font-size: 14px; color: #64748b; line-height: 1.6; margin-top: 25px;">
-            If you ever have any questions, feedback, or need help with your career tools, simply reply to this email. We're here to help you succeed!
-          </p>
-          
-          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0 20px 0;" />
-          
-          <p style="font-size: 11px; color: #94a3b8; text-align: center; line-height: 1.5; margin: 0;">
-            Designed & engineered by Manav Tiwari.<br />
-            © ${new Date().getFullYear()} CV Mind. Secure applicant tracking systems and resume optimization.
-          </p>
-        </div>
-      `
-    });
-
-    if (error) {
-      console.error('[WELCOME EMAIL] Resend Dispatch Error:', error);
-    } else {
-      console.log(`[WELCOME EMAIL] Sent successfully to: ${email}, ID: ${data?.id}`);
-    }
+    await sendEmail({ to: email, ...welcomeEmail({ name }) });
   } catch (err) {
-    console.error('[WELCOME EMAIL] Exception during dispatch:', err);
+    console.error('[WELCOME EMAIL] Send failed:', err.message);
   }
 };
 
@@ -113,10 +101,19 @@ const sendWelcomeEmail = async (email, name, origin) => {
 app.use(cors({
   origin: '*', 
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'OPTIONS', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-gemini-key', 'x-admin-secret']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-gemini-key']
 }));
 
-app.use(express.json());
+// Saved resumes / portfolios carry full HTML (often with an embedded photo); the 100kb default
+// body limit made those saves fail with a 413 and the work never reached MongoDB.
+app.use(express.json({ limit: '10mb' }));
+
+// Request timing for the admin System Health page
+app.use(metricsMiddleware);
+// Feature switches and maintenance mode set in the admin panel
+app.use(featureGate);
+// Email verification for the AI tools, saving, downloads and support (see services/verifiedGate.js)
+app.use(verifiedGate);
 
 // Public routes that call an AI model: limit each IP so scripted requests can't burn AI credits.
 // Signed-in-only AI routes (auto-apply, agent, company parse-job) are not included.
@@ -126,9 +123,13 @@ const AI_ROUTE_PATHS = [
   '/api/optimize',
   '/api/tailor',
   '/api/prep',
+  '/api/interview',
   '/api/cover-letter/refine',
   '/api/resume/generate',
   '/api/resume/parse-data',
+  '/api/resume/import-linkedin',
+  '/api/resume/pdf',
+  '/api/resume/email-pdf',
   '/api/linkedin',
   '/api/career',
   '/api/voice-prep',
@@ -179,37 +180,45 @@ apiRouter.get('/', (req, res) => {
   });
 });
 
-// Admin Authentication Login Route
-apiRouter.post('/api/admin/login', (req, res) => {
-  const { username, password } = req.body || {};
-  const targetUsername = process.env.ADMIN_USERNAME;
-  const targetPassword = process.env.ADMIN_PASSWORD;
-  const configuredSecret = process.env.ADMIN_SECRET;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  if (targetUsername && targetPassword && username === targetUsername && password === targetPassword) {
-    return res.json({
-      success: true,
-      message: 'Login successful.',
-      secret: configuredSecret || ''
-    });
-  }
-
-  return res.status(401).json({
-    success: false,
-    error: 'Invalid username or password.'
-  });
-});
+// 429 for an abuse limit, logged for the admin panel
+function rateLimited(req, res, { limit, retryAfter, error, userId = '', email = '' }) {
+  logAuthEvent(req, 'RATE_LIMIT_TRIGGERED', { userId, email, metadata: { limit } });
+  return res.status(429).json({ success: false, code: 'RATE_LIMITED', retryAfter, error });
+}
 
 // User Sign Up Route
 apiRouter.post('/api/auth/signup', async (req, res) => {
-  const { name, email, password } = req.body || {};
+  const { name, email, password, captchaId, captchaAnswer } = req.body || {};
 
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Name, email, and password are required.' });
   }
+  const cleanName = String(name).trim().slice(0, 100);
+  const cleanEmail = String(email).trim().toLowerCase();
+  if (!cleanName) return res.status(400).json({ error: 'Please enter your full name.' });
+  if (cleanEmail.length > 254 || !EMAIL_RE.test(cleanEmail)) return res.status(400).json({ error: 'Please enter a valid email address.' });
+  if (String(password).length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
 
   try {
-    const existingUser = await findUserByEmail(email);
+    const { security } = await getSettings();
+    const ipLimit = await hitLimit(`signup:ip:${clientIp(req)}`, security.signupPerIpHour, HOUR_MS);
+    if (!ipLimit.ok) {
+      return rateLimited(req, res, { limit: 'signupPerIpHour', retryAfter: ipLimit.retryAfter, email: cleanEmail, error: 'Too many accounts were created from this network. Please try again later.' });
+    }
+
+    // Disposable addresses and fast repeat sign-ups aren't refused, but must pass a captcha
+    const risk = assessSignupRisk(cleanEmail, { ipSignupCount: ipLimit.count });
+    if (risk.score >= RISK_HIGH && !(await verifyCaptcha(captchaId, captchaAnswer))) {
+      return res.status(400).json({
+        code: 'CAPTCHA_REQUIRED',
+        captchaRequired: true,
+        error: captchaId ? 'Captcha verification failed. Please try the new code.' : 'Please complete the captcha to create your account.'
+      });
+    }
+
+    const existingUser = await findUserByEmail(cleanEmail);
     if (existingUser) {
       return res.status(400).json({ error: 'Email is already registered. Please sign in.' });
     }
@@ -219,23 +228,28 @@ apiRouter.post('/api/auth/signup', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = await createUser({
-      email,
-      name,
+      email: cleanEmail,
+      name: cleanName,
       password: hashedPassword,
-      isGoogleUser: false
+      isGoogleUser: false,
+      riskScore: risk.score,
+      riskFlags: risk.flags
     });
 
     await saveLoginLog({ email: newUser.email, name: newUser.name, provider: 'signup' });
+    logAuthEvent(req, 'USER_REGISTERED', { userId: newUser.id || newUser._id, email: newUser.email, metadata: risk.flags.length ? { riskFlags: risk.flags } : null });
 
-    // Send welcome email asynchronously
-    sendWelcomeEmail(newUser.email, newUser.name, req.headers.origin);
+    // The verification email doubles as the welcome email
+    const { sent } = await issueVerification(newUser);
+    if (sent) logAuthEvent(req, 'VERIFICATION_EMAIL_SENT', { userId: newUser.id || newUser._id, email: newUser.email });
 
     const isPaid = await isUserPaid(newUser);
     const userPayload = {
       id: newUser.id || newUser._id,
       name: newUser.name,
       email: newUser.email,
-      isGoogleUser: newUser.isGoogleUser || false
+      isGoogleUser: newUser.isGoogleUser || false,
+      emailVerified: false
     };
     if (isPaid) {
       userPayload.plan = 'pro';
@@ -246,7 +260,8 @@ apiRouter.post('/api/auth/signup', async (req, res) => {
     return res.json({
       success: true,
       message: 'Account created successfully!',
-      user: withSessionToken(userPayload)
+      verificationEmailSent: sent,
+      user: withSessionToken(userPayload, req, 'password')
     });
   } catch (err) {
     console.error('Sign Up Error:', err);
@@ -270,7 +285,9 @@ apiRouter.get('/api/stats/public', async (req, res) => {
 });
 
 // ── Login Captcha ─────────────────────────────────────────────────────────────
-// Self-hosted SVG captcha: challenges live in memory, are single-use, and expire.
+// Self-hosted SVG captcha for sign-in and risky sign-ups. Challenges are single-use and expire.
+// They live in MongoDB so the server that checks the answer needn't be the one that drew it;
+// without a database they stay in this process's memory.
 const captchaStore = new Map(); // id -> { answer, expires }
 const CAPTCHA_TTL_MS = 5 * 60 * 1000;
 const CAPTCHA_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1 to avoid ambiguity
@@ -294,22 +311,39 @@ function generateCaptchaSvg(code) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${parts.join('')}</svg>`;
 }
 
-apiRouter.get('/api/auth/captcha', (req, res) => {
-  for (const [id, entry] of captchaStore) {
-    if (Date.now() > entry.expires) captchaStore.delete(id);
-  }
+apiRouter.get('/api/auth/captcha', async (req, res) => {
   let code = '';
   for (let i = 0; i < 5; i++) code += CAPTCHA_CHARS[crypto.randomInt(CAPTCHA_CHARS.length)];
   const captchaId = crypto.randomUUID();
-  captchaStore.set(captchaId, { answer: code, expires: Date.now() + CAPTCHA_TTL_MS });
+  const expires = Date.now() + CAPTCHA_TTL_MS;
+  try {
+    if (await dbReady(2000)) {
+      await CaptchaChallenge.create({ _id: captchaId, answer: code, expiresAt: new Date(expires) });
+    } else {
+      for (const [id, entry] of captchaStore) {
+        if (Date.now() > entry.expires) captchaStore.delete(id);
+      }
+      captchaStore.set(captchaId, { answer: code, expires });
+    }
+  } catch (err) {
+    console.error('[captcha] could not store challenge:', err.message);
+    return res.status(500).json({ error: 'Could not create a captcha. Please try again.' });
+  }
   res.json({ captchaId, svg: generateCaptchaSvg(code) });
 });
 
-function verifyCaptcha(captchaId, answer) {
-  const entry = captchaStore.get(captchaId);
-  if (!entry) return false;
-  captchaStore.delete(captchaId); // single-use: consumed on any attempt
-  if (Date.now() > entry.expires) return false;
+async function verifyCaptcha(captchaId, answer) {
+  if (!captchaId || typeof captchaId !== 'string') return false;
+  let entry = null;
+  if (await dbReady(0)) {
+    // single-use: consumed on any attempt
+    const row = await CaptchaChallenge.findOneAndDelete({ _id: captchaId }).lean().catch(() => null);
+    if (row) entry = { answer: row.answer, expires: new Date(row.expiresAt).getTime() };
+  } else {
+    entry = captchaStore.get(captchaId) || null;
+    captchaStore.delete(captchaId);
+  }
+  if (!entry || Date.now() > entry.expires) return false;
   return String(answer || '').trim().toUpperCase() === entry.answer;
 }
 
@@ -335,7 +369,7 @@ apiRouter.post('/api/auth/login', async (req, res) => {
     return res.status(400).json({ error: 'Email and password are required.' });
   }
 
-  if (!verifyCaptcha(captchaId, captchaAnswer)) {
+  if (!(await verifyCaptcha(captchaId, captchaAnswer))) {
     return res.status(400).json({ error: 'Captcha verification failed. Please try the new code.', captchaFailed: true });
   }
 
@@ -368,7 +402,7 @@ apiRouter.post('/api/auth/login', async (req, res) => {
         });
 
         // Send welcome email asynchronously for whitelisted user creation
-        sendWelcomeEmail(user.email, user.name, req.headers.origin);
+        sendWelcomeEmail(user.email, user.name);
       } else {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
@@ -385,28 +419,33 @@ apiRouter.post('/api/auth/login', async (req, res) => {
   try {
     const user = await findUserByEmail(email);
     if (!user) {
+      logAuthEvent(req, 'LOGIN_FAILED', { email: cleanEmail, metadata: { reason: 'unknown_email' } });
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
     // Compare bcrypt hashes
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      logAuthEvent(req, 'LOGIN_FAILED', { userId: user.id || user._id, email: user.email, metadata: { reason: 'wrong_password' } });
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
     const blockError = getAccountBlockError(user);
     if (blockError) {
+      logAuthEvent(req, 'LOGIN_FAILED', { userId: user.id || user._id, email: user.email, metadata: { reason: `account_${user.status}` } });
       return res.status(403).json(blockError);
     }
 
     await saveLoginLog({ email: user.email, name: user.name, provider: 'password' });
+    logAuthEvent(req, 'LOGIN_SUCCESS', { userId: user.id || user._id, email: user.email, metadata: { provider: 'password' } });
 
     const isPaid = await isUserPaid(user);
     const userPayload = {
       id: user.id || user._id,
       name: user.name,
       email: user.email,
-      isGoogleUser: user.isGoogleUser || false
+      isGoogleUser: user.isGoogleUser || false,
+      emailVerified: !!user.emailVerified
     };
     if (isPaid) {
       userPayload.plan = 'pro';
@@ -417,7 +456,7 @@ apiRouter.post('/api/auth/login', async (req, res) => {
     return res.json({
       success: true,
       message: 'Sign in successful!',
-      user: withSessionToken(userPayload)
+      user: withSessionToken(userPayload, req, 'password')
     });
   } catch (err) {
     console.error('Sign In Error:', err);
@@ -434,6 +473,12 @@ apiRouter.post('/api/auth/forgot-password', async (req, res) => {
   }
 
   try {
+    const { security } = await getSettings();
+    const ipLimit = await hitLimit(`password-reset:ip:${clientIp(req)}`, security.passwordResetPerIpHour, HOUR_MS);
+    if (!ipLimit.ok) {
+      return rateLimited(req, res, { limit: 'passwordResetPerIpHour', retryAfter: ipLimit.retryAfter, error: 'Too many password reset requests. Please try again later.' });
+    }
+
     const user = await findUserByEmail(email);
     if (!user) {
       // Industry-standard secure response to prevent user enumeration attacks
@@ -443,46 +488,21 @@ apiRouter.post('/api/auth/forgot-password', async (req, res) => {
       });
     }
 
-    // 1. Generate cryptographically secure recovery token
+    // 1. Generate cryptographically secure recovery token. Only its hash is stored, and the link
+    // always points at our own site rather than the request's Origin header.
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const host = req.headers.origin || 'http://localhost:5173';
-    const resetLink = `${host}/?resetToken=${resetToken}&email=${encodeURIComponent(user.email)}`;
+    const resetLink = `${frontendUrl()}/?resetToken=${resetToken}&email=${encodeURIComponent(user.email)}`;
 
     // Save reset token in DB with 1 hour expiration
-    await saveUserResetToken(user.email, resetToken, Date.now() + 3600000);
+    await saveUserResetToken(user.email, hashToken(resetToken), Date.now() + 3600000);
 
-    // 2. Dispatch email using Resend and user's verified manavtiwari.in domain
-    const { data, error } = await resend.emails.send({
-      from: 'CV Mind <no-reply@manavtiwari.in>',
-      to: [email],
-      subject: 'Reset your CV Mind Password',
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 25px; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1e293b; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-          <div style="text-align: center; margin-bottom: 20px;">
-            <h2 style="color: #2997ff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em;">CV Mind</h2>
-            <span style="font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Password Recovery Portal</span>
-          </div>
-          <p style="font-size: 15px; line-height: 1.6; margin-bottom: 15px;">Hi <strong>${user.name}</strong>,</p>
-          <p style="font-size: 15px; line-height: 1.6; margin-bottom: 20px;">We received a secure request to reset your CV Mind account password. Click the button below to set a new password. This link is valid for **1 hour**:</p>
-          <div style="margin: 30px 0; text-align: center;">
-            <a href="${resetLink}" style="background: linear-gradient(135deg, #2997ff 0%, #bf5af2 100%); color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; box-shadow: 0 4px 15px rgba(41, 151, 255, 0.25);">Reset My Password</a>
-          </div>
-          <p style="font-size: 14px; color: #64748b; line-height: 1.6; margin-top: 25px;">If you did not make this request, you can safely ignore this email. Your account credentials remain completely secure.</p>
-          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0 20px 0;" />
-          <p style="font-size: 11px; color: #94a3b8; text-align: center; line-height: 1.5; margin: 0;">
-            Designed & engineered by Manav Tiwari.<br />
-            © ${new Date().getFullYear()} CV Mind. Secure applicant tracking systems and resume optimization.
-          </p>
-        </div>
-      `
-    });
-
-    if (error) {
-      console.error('Resend API Dispatch Error:', error);
+    // 2. Email the link
+    try {
+      await sendEmail({ to: user.email, ...passwordResetEmail({ name: user.name, link: resetLink }) });
+    } catch (err) {
+      console.error('Password reset email failed:', err.message);
       return res.status(500).json({ error: 'Failed to send secure reset email. Please contact support.' });
     }
-
-    console.log(`[PASSWORD RESET] Live email sent using Resend. ID: ${data?.id} for user: ${user.name}`);
 
     return res.json({
       success: true,
@@ -507,7 +527,7 @@ apiRouter.post('/api/auth/reset-password', async (req, res) => {
   }
 
   try {
-    const user = await findUserByResetToken(token);
+    const user = await findUserByResetToken(hashToken(token));
     if (!user || user.email.toLowerCase() !== email.toLowerCase()) {
       return res.status(400).json({ error: 'Password reset link is invalid or has expired.' });
     }
@@ -524,6 +544,13 @@ apiRouter.post('/api/auth/reset-password', async (req, res) => {
     // Save password-reset audit log to backend database
     await saveLoginLog({ email: user.email, name: user.name, provider: 'password-reset' });
 
+    // The link reached this inbox, so the address is proven; and anyone signed in with the old password is signed out
+    if (!user.emailVerified) {
+      await markEmailVerified(user);
+      logAuthEvent(req, 'EMAIL_VERIFIED', { userId: user.id || user._id, email: user.email, metadata: { via: 'password_reset' } });
+    }
+    if (await dbReady(0)) await revokeAllSessions(user.id || user._id, 'password-reset').catch(() => {});
+
     return res.json({
       success: true,
       message: 'Password reset successful! You can now sign in with your new password.'
@@ -533,6 +560,16 @@ apiRouter.post('/api/auth/reset-password', async (req, res) => {
     return res.status(500).json({ error: err.message || 'An error occurred while resetting password.' });
   }
 });
+
+// A social login whose provider has confirmed the address proves ownership of it, so an account
+// that signed up with a password and never clicked the link becomes verified too. Returns the flag.
+async function verifyByProvider(req, user, providerVerified, provider) {
+  if (user.emailVerified) return true;
+  if (!providerVerified) return false;
+  await markEmailVerified(user);
+  logAuthEvent(req, 'EMAIL_VERIFIED', { userId: user.id || user._id, email: user.email, metadata: { via: provider } });
+  return true;
+}
 
 // Google Auth Verification Route
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -555,8 +592,13 @@ apiRouter.post('/api/auth/google', async (req, res) => {
     }
     
     const { email, name, picture } = payload;
+    // Google says whether it has confirmed the address; only then does it count as verified here
+    const googleVerified = payload.email_verified === true;
 
     let user = await findUserByEmail(email);
+    if (!user && !(await signupsEnabled())) {
+      return res.status(503).json({ error: 'New sign-ups are paused right now. Please try again later.' });
+    }
     if (!user) {
       // Auto-create Google user with dynamic unique mock password hash
       const salt = await bcrypt.genSalt(10);
@@ -565,19 +607,24 @@ apiRouter.post('/api/auth/google', async (req, res) => {
         email,
         name: name || email.split('@')[0],
         password: mockPasswordHash,
-        isGoogleUser: true
+        isGoogleUser: true,
+        emailVerified: googleVerified
       });
+      logAuthEvent(req, 'USER_REGISTERED', { userId: user.id || user._id, email: user.email, metadata: { provider: 'google' } });
 
       // Send welcome email asynchronously for Google signup
-      sendWelcomeEmail(user.email, user.name, req.headers.origin);
+      sendWelcomeEmail(user.email, user.name);
     }
 
     const blockError = getAccountBlockError(user);
     if (blockError) {
+      logAuthEvent(req, 'LOGIN_FAILED', { userId: user.id || user._id, email: user.email, metadata: { reason: `account_${user.status}`, provider: 'google' } });
       return res.status(403).json(blockError);
     }
 
+    const emailVerified = await verifyByProvider(req, user, googleVerified, 'google');
     await saveLoginLog({ email: user.email, name: user.name, provider: 'google' });
+    logAuthEvent(req, 'LOGIN_SUCCESS', { userId: user.id || user._id, email: user.email, metadata: { provider: 'google' } });
 
     const isPaid = await isUserPaid(user);
     const userPayload = {
@@ -585,7 +632,8 @@ apiRouter.post('/api/auth/google', async (req, res) => {
       name: user.name,
       email: user.email,
       avatar: picture || '',
-      isGoogleUser: user.isGoogleUser || false
+      isGoogleUser: user.isGoogleUser || false,
+      emailVerified
     };
     if (isPaid) {
       userPayload.plan = 'pro';
@@ -596,7 +644,7 @@ apiRouter.post('/api/auth/google', async (req, res) => {
     return res.json({
       success: true,
       message: 'Sign in with Google successful!',
-      user: withSessionToken(userPayload)
+      user: withSessionToken(userPayload, req, 'google')
     });
   } catch (err) {
     console.error('Google Sign In Error:', err);
@@ -618,9 +666,129 @@ apiRouter.get('/api/auth/account-status', async (req, res) => {
     if (blockError) {
       return res.json({ status: user.status, active: false, message: blockError.error });
     }
-    return res.json({ status: 'active', active: true });
+    // A session signed out from the admin panel or another device
+    const session = await userSessionStatus(req);
+    if (session && !session.ok) {
+      return res.json({ status: 'signed-out', active: false, message: session.error });
+    }
+    // Only the account's own session learns its verification state
+    const payload = verifyToken((req.headers.authorization || '').replace(/^Bearer /, ''));
+    const ownSession = payload?.kind === 'user' && String(payload.sub) === String(user.id || user._id);
+    return res.json({ status: 'active', active: true, ...(ownSession ? { emailVerified: !!user.emailVerified } : {}) });
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Status check failed.' });
+  }
+});
+
+// ── Email verification ───────────────────────────────────────────────────────
+const VERIFY_ATTEMPTS_PER_IP_HOUR = 30;
+
+// The link from the verification email. Works without being signed in, e.g. on another device.
+apiRouter.post('/api/auth/verify-email', async (req, res) => {
+  try {
+    const ipLimit = await hitLimit(`verify:ip:${clientIp(req)}`, VERIFY_ATTEMPTS_PER_IP_HOUR, HOUR_MS);
+    if (!ipLimit.ok) {
+      logAuthEvent(req, 'RATE_LIMIT_TRIGGERED', { metadata: { limit: 'verifyAttemptsPerIpHour' } });
+      return res.status(429).json({ success: false, code: 'TOO_MANY', retryAfter: ipLimit.retryAfter, error: VERIFY_MESSAGES.TOO_MANY });
+    }
+
+    const result = await verifyEmailToken(req.body?.token);
+    const who = result.user ? { userId: result.user.id || result.user._id, email: result.user.email } : {};
+    if (result.ok) {
+      logAuthEvent(req, 'EMAIL_VERIFIED', { ...who, metadata: { via: 'link' } });
+      return res.json({ success: true, code: 'VERIFIED', email: result.user.email });
+    }
+    if (result.code === 'ALREADY_VERIFIED') {
+      return res.json({ success: true, code: 'ALREADY_VERIFIED', email: result.user.email, message: VERIFY_MESSAGES.ALREADY_VERIFIED });
+    }
+    logAuthEvent(req, result.code === 'EXPIRED' ? 'VERIFICATION_EXPIRED' : 'VERIFICATION_FAILED', who);
+    return res.status(400).json({ success: false, code: result.code, error: VERIFY_MESSAGES[result.code] });
+  } catch (err) {
+    console.error('Verify Email Error:', err);
+    return res.status(500).json({ error: 'Email verification failed. Please try again.' });
+  }
+});
+
+// A fresh link for the signed-in account; the previous link stops working
+apiRouter.post('/api/auth/resend-verification', requireUser, async (req, res) => {
+  try {
+    const user = await findUserById(req.auth.sub);
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+    if (user.emailVerified) {
+      return res.json({ success: true, code: 'ALREADY_VERIFIED', emailVerified: true, message: VERIFY_MESSAGES.ALREADY_VERIFIED });
+    }
+    const who = { userId: req.auth.sub, email: user.email };
+
+    const cooldown = resendCooldown(user);
+    if (cooldown > 0) {
+      return res.status(429).json({ success: false, code: 'COOLDOWN', retryAfter: cooldown, error: `Resend available in ${cooldown} seconds.` });
+    }
+    const { security } = await getSettings();
+    for (const [key, limit] of [[`resend:user:${req.auth.sub}`, 'resendPerAccountHour'], [`resend:ip:${clientIp(req)}`, 'resendPerIpHour']]) {
+      const hit = await hitLimit(key, security[limit], HOUR_MS);
+      if (!hit.ok) return rateLimited(req, res, { limit, retryAfter: hit.retryAfter, ...who, error: VERIFY_MESSAGES.RESEND_LIMIT });
+    }
+
+    const { sent } = await issueVerification(user);
+    if (!sent) return res.status(503).json({ success: false, code: 'SEND_FAILED', retryAfter: 60, error: VERIFY_MESSAGES.SEND_FAILED });
+    logAuthEvent(req, 'VERIFICATION_EMAIL_RESENT', who);
+    return res.json({ success: true, retryAfter: 60, message: `We've sent a new verification link to ${user.email}.` });
+  } catch (err) {
+    console.error('Resend Verification Error:', err);
+    return res.status(500).json({ error: VERIFY_MESSAGES.SEND_FAILED });
+  }
+});
+
+// Fixes a mistyped address before it's verified, then sends the link there
+apiRouter.post('/api/auth/change-email', requireUser, async (req, res) => {
+  const newEmail = String(req.body?.email || '').trim().toLowerCase();
+  if (newEmail.length > 254 || !EMAIL_RE.test(newEmail)) return res.status(400).json({ error: 'Please enter a valid email address.' });
+  try {
+    const user = await findUserById(req.auth.sub);
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+    if (user.emailVerified) return res.status(400).json({ error: 'Your email address is already verified. Change it from your account settings.' });
+    if (newEmail === user.email) return res.status(400).json({ error: 'That is already your email address.' });
+    const owner = await findUserByEmail(newEmail);
+    if (owner) return res.status(409).json({ error: 'That email is already used by another account.' });
+
+    const { security } = await getSettings();
+    const hit = await hitLimit(`resend:user:${req.auth.sub}`, security.resendPerAccountHour, HOUR_MS);
+    if (!hit.ok) return rateLimited(req, res, { limit: 'resendPerAccountHour', retryAfter: hit.retryAfter, userId: req.auth.sub, email: user.email, error: VERIFY_MESSAGES.RESEND_LIMIT });
+
+    // A changed address may be disposable even if the first one wasn't
+    const risk = assessSignupRisk(newEmail);
+    const riskFlags = [...new Set([...(user.riskFlags || []), ...risk.flags])];
+    const updated = await updateUserFields(req.auth.sub, {
+      email: newEmail,
+      riskFlags,
+      riskScore: Math.max(Number(user.riskScore || 0), risk.score)
+    });
+    logAuthEvent(req, 'VERIFICATION_EMAIL_RESENT', { userId: req.auth.sub, email: newEmail, metadata: { changedFrom: user.email } });
+    const { sent } = await issueVerification(updated);
+
+    const userPayload = {
+      id: updated.id || updated._id,
+      name: updated.name,
+      email: updated.email,
+      avatar: updated.avatar || '',
+      isGoogleUser: updated.isGoogleUser || false,
+      emailVerified: false
+    };
+    if (await isUserPaid(updated)) {
+      userPayload.plan = 'pro';
+      userPayload.isPro = true;
+      userPayload.isPaid = true;
+    }
+    return res.json({
+      success: true,
+      verificationEmailSent: sent,
+      retryAfter: 60,
+      // Fresh token so its email matches the new address
+      user: withSessionToken(userPayload, req, '', req.auth.jti)
+    });
+  } catch (err) {
+    console.error('Change Email Error:', err);
+    return res.status(500).json({ error: err.message || 'Could not change your email address.' });
   }
 });
 
@@ -687,12 +855,15 @@ function redirectWithAuthError(res, origin, message) {
 
 // Shared: find/create the user, enforce moderation status, log the login,
 // then hand the session payload back to the SPA via a query param.
-async function completeOAuthLogin(req, res, origin, { email, name, avatar, provider }) {
+async function completeOAuthLogin(req, res, origin, { email, name, avatar, provider, emailVerified: providerVerified = false }) {
   if (!email) {
     return redirectWithAuthError(res, origin, `Your ${provider} account has no verified email address.`);
   }
 
   let user = await findUserByEmail(email);
+  if (!user && !(await signupsEnabled())) {
+    return redirectWithAuthError(res, origin, 'New sign-ups are paused right now. Please try again later.');
+  }
   if (!user) {
     const salt = await bcrypt.genSalt(10);
     const mockPasswordHash = await bcrypt.hash(`oauth-${provider}-` + Math.random().toString(36), salt);
@@ -701,17 +872,22 @@ async function completeOAuthLogin(req, res, origin, { email, name, avatar, provi
       name: name || email.split('@')[0],
       password: mockPasswordHash,
       isGoogleUser: true, // OAuth account — no usable password
-      provider
+      provider,
+      emailVerified: providerVerified
     });
-    sendWelcomeEmail(user.email, user.name, origin);
+    logAuthEvent(req, 'USER_REGISTERED', { userId: user.id || user._id, email: user.email, metadata: { provider } });
+    sendWelcomeEmail(user.email, user.name);
   }
 
   const blockError = getAccountBlockError(user);
   if (blockError) {
+    logAuthEvent(req, 'LOGIN_FAILED', { userId: user.id || user._id, email: user.email, metadata: { reason: `account_${user.status}`, provider } });
     return redirectWithAuthError(res, origin, blockError.error);
   }
 
+  const emailVerified = await verifyByProvider(req, user, providerVerified, provider);
   await saveLoginLog({ email: user.email, name: user.name, provider });
+  logAuthEvent(req, 'LOGIN_SUCCESS', { userId: user.id || user._id, email: user.email, metadata: { provider } });
 
   const isPaid = await isUserPaid(user);
   const userPayload = {
@@ -719,7 +895,8 @@ async function completeOAuthLogin(req, res, origin, { email, name, avatar, provi
     name: user.name,
     email: user.email,
     avatar: avatar || '',
-    isGoogleUser: user.isGoogleUser || false
+    isGoogleUser: user.isGoogleUser || false,
+    emailVerified
   };
   if (isPaid) {
     userPayload.plan = 'pro';
@@ -727,7 +904,7 @@ async function completeOAuthLogin(req, res, origin, { email, name, avatar, provi
     userPayload.isPaid = true;
   }
 
-  const encoded = Buffer.from(JSON.stringify(withSessionToken(userPayload))).toString('base64url');
+  const encoded = Buffer.from(JSON.stringify(withSessionToken(userPayload, req, provider))).toString('base64url');
   return res.redirect(`${origin}/?oauthUser=${encoded}`);
 }
 
@@ -770,21 +947,21 @@ apiRouter.get('/api/auth/github/callback', async (req, res) => {
     const profileRes = await fetch('https://api.github.com/user', { headers: ghHeaders });
     const profile = await profileRes.json();
 
-    let email = profile.email || '';
-    if (!email) {
-      const emailsRes = await fetch('https://api.github.com/user/emails', { headers: ghHeaders });
-      const emails = await emailsRes.json();
-      if (Array.isArray(emails)) {
-        const primary = emails.find(e => e.primary && e.verified) || emails.find(e => e.verified);
-        email = primary?.email || '';
-      }
+    // The public profile email may be unverified; GitHub's email list says which ones it has confirmed
+    let email = '';
+    const emailsRes = await fetch('https://api.github.com/user/emails', { headers: ghHeaders });
+    const emails = await emailsRes.json();
+    if (Array.isArray(emails)) {
+      const primary = emails.find(e => e.primary && e.verified) || emails.find(e => e.verified);
+      email = primary?.email || '';
     }
 
     return await completeOAuthLogin(req, res, origin, {
       email,
       name: profile.name || profile.login,
       avatar: profile.avatar_url || '',
-      provider: 'github'
+      provider: 'github',
+      emailVerified: !!email
     });
   } catch (err) {
     console.error('GitHub OAuth Error:', err);
@@ -839,114 +1016,13 @@ apiRouter.get('/api/auth/linkedin/callback', async (req, res) => {
       email: profile.email || '',
       name: profile.name || '',
       avatar: profile.picture || '',
-      provider: 'linkedin'
+      provider: 'linkedin',
+      emailVerified: profile.email_verified === true
     });
   } catch (err) {
     console.error('LinkedIn OAuth Error:', err);
     return redirectWithAuthError(res, origin, 'LinkedIn authentication failed. Please try again.');
   }
-});
-
-// Admin Analytics Stats Secure Route
-apiRouter.post('/api/admin/stats', async (req, res) => {
-  const adminSecret = req.headers['x-admin-secret'] || req.body.secret || null;
-  const configuredSecret = process.env.ADMIN_SECRET;
-
-  if (!configuredSecret || !adminSecret || adminSecret !== configuredSecret) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid admin secret key.' });
-  }
-
-  try {
-    const statsData = await getAdminStats();
-    return res.json({
-      success: true,
-      data: statsData
-    });
-  } catch (error) {
-    return res.status(500).json({ error: error.message || 'Stats query failed.' });
-  }
-});
-
-// Get whitelisted emails
-apiRouter.get('/api/admin/whitelist', async (req, res) => {
-  const adminSecret = req.headers['x-admin-secret'] || null;
-  const configuredSecret = process.env.ADMIN_SECRET;
-
-  if (!configuredSecret || !adminSecret || adminSecret !== configuredSecret) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid admin secret key.' });
-  }
-
-  try {
-    const list = await getWhitelistedEmails();
-    return res.json({ success: true, emails: list });
-  } catch (error) {
-    return res.status(500).json({ error: error.message || 'Whitelist query failed.' });
-  }
-});
-
-// Add whitelisted email
-apiRouter.post('/api/admin/whitelist', async (req, res) => {
-  const adminSecret = req.headers['x-admin-secret'] || req.body.secret || null;
-  const configuredSecret = process.env.ADMIN_SECRET;
-
-  if (!configuredSecret || !adminSecret || adminSecret !== configuredSecret) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid admin secret key.' });
-  }
-
-  const { email } = req.body || {};
-  if (!email) {
-    return res.status(400).json({ error: 'Email address is required.' });
-  }
-
-  try {
-    const entry = await addWhitelistedEmail(email);
-    return res.json({ success: true, data: entry });
-  } catch (error) {
-    return res.status(500).json({ error: error.message || 'Failed to add whitelisted email.' });
-  }
-});
-
-// Delete whitelisted email
-apiRouter.delete('/api/admin/whitelist/:email', async (req, res) => {
-  const adminSecret = req.headers['x-admin-secret'] || null;
-  const configuredSecret = process.env.ADMIN_SECRET;
-
-  if (!configuredSecret || !adminSecret || adminSecret !== configuredSecret) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid admin secret key.' });
-  }
-
-  const email = req.params.email;
-  if (!email) {
-    return res.status(400).json({ error: 'Email address parameter is required.' });
-  }
-
-  try {
-    await deleteWhitelistedEmail(email);
-    return res.json({ success: true, message: 'Email removed from whitelist.' });
-  } catch (error) {
-    return res.status(500).json({ error: error.message || 'Failed to delete whitelisted email.' });
-  }
-});
-
-// ── Auto Apply Access (Admin) ──────────────────────────────────────────────────
-apiRouter.get('/api/admin/auto-apply-access', async (req, res) => {
-  const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-  try { res.json({ success: true, data: await getAutoApplyAccessList() }); } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-apiRouter.post('/api/admin/auto-apply-access', async (req, res) => {
-  const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-  const { email } = req.body || {};
-  if (!email) return res.status(400).json({ error: 'Email is required' });
-  try { await grantAutoApplyAccess(email); res.json({ success: true }); } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-apiRouter.delete('/api/admin/auto-apply-access/:email', async (req, res) => {
-  const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-  try { await revokeAutoApplyAccess(req.params.email); res.json({ success: true }); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 apiRouter.get('/api/auto-apply/check-access', async (req, res) => {
@@ -956,80 +1032,51 @@ apiRouter.get('/api/auto-apply/check-access', async (req, res) => {
   try { res.json({ hasAccess: await hasAutoApplyAccess(email) }); } catch { res.status(503).json({ hasAccess: false, error: 'Could not check access right now.' }); }
 });
 
-// ── Career Copilot Access (Admin) ─────────────────────────────────────────────
-apiRouter.get('/api/admin/career-copilot-access', async (req, res) => {
-  const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-  try { res.json({ success: true, data: await getCareerCopilotAccessList() }); } catch (e) { res.status(500).json({ error: e.message }); }
-});
+// Support messages come from signed-in, verified accounts only (verifiedGate checks the email).
+// The name and email are the account's, never what the form sends.
+apiRouter.post('/api/contact', requireUser, async (req, res) => {
+  const { subject } = req.body || {};
+  const message = String(req.body?.message || '').trim().slice(0, 5000);
 
-apiRouter.post('/api/admin/career-copilot-access', async (req, res) => {
-  const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-  const { email } = req.body || {};
-  if (!email) return res.status(400).json({ error: 'Email is required' });
-  try { await grantCareerCopilotAccess(email); res.json({ success: true }); } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-apiRouter.delete('/api/admin/career-copilot-access/:email', async (req, res) => {
-  const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-  try { await revokeCareerCopilotAccess(req.params.email); res.json({ success: true }); } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// Career Copilot is unlocked for all users — always grant access.
-apiRouter.get('/api/career-copilot/check-access', async (req, res) => {
-  res.json({ hasAccess: true });
-});
-
-// ── User Moderation (Admin) ───────────────────────────────────────────────────
-// List all registered accounts with status + login activity
-apiRouter.get('/api/admin/users', async (req, res) => {
-  const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-  try { res.json({ success: true, data: await getAllUsersForAdmin() }); } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// Change account status: active | suspended | banned
-apiRouter.post('/api/admin/users/:id/status', async (req, res) => {
-  const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-  const { status, reason } = req.body || {};
-  if (!status) return res.status(400).json({ error: 'Status is required.' });
-  try {
-    const result = await setUserStatus(req.params.id, status, reason);
-    res.json({ success: true, data: result });
-  } catch (e) {
-    res.status(e.message === 'User not found' ? 404 : 400).json({ error: e.message });
-  }
-});
-
-// Permanently delete an account and its data
-apiRouter.delete('/api/admin/users/:id', async (req, res) => {
-  const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-  try { await deleteAccount(req.params.id); res.json({ success: true, message: 'User account deleted.' }); } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-apiRouter.post('/api/contact', async (req, res) => {
-  const { name, email, subject, message } = req.body || {};
-
-  if (!name || !email || !message) {
-    return res.status(400).json({ error: 'Name, email, and message are required.' });
-  }
-
-  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  if (!emailLooksValid) {
-    return res.status(400).json({ error: 'Please enter a valid email address.' });
+  if (!message) {
+    return res.status(400).json({ error: 'Please write a message.' });
   }
 
   try {
+    const user = await findUserById(req.auth.sub);
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+    const name = user.name;
+    const email = user.email;
+    const who = { userId: req.auth.sub, email };
+
+    if (isHighRisk(user)) {
+      logAuthEvent(req, 'RATE_LIMIT_TRIGGERED', { ...who, metadata: { limit: 'supportRiskHold', riskFlags: user.riskFlags || [] } });
+      return res.status(403).json({ code: 'SUPPORT_RESTRICTED', error: 'Support messages from this account are paused while our team reviews it.' });
+    }
+    const { security } = await getSettings();
+    for (const [key, limit] of [[`tickets:user:${req.auth.sub}`, 'ticketsPerAccountDay'], [`tickets:ip:${clientIp(req)}`, 'ticketsPerIpDay']]) {
+      const hit = await hitLimit(key, security[limit], DAY_MS);
+      if (!hit.ok) return rateLimited(req, res, { limit, retryAfter: hit.retryAfter, ...who, error: "You've sent several messages today. Our team will reply to those first. Please try again tomorrow." });
+    }
+
     const contact = await saveContactMessage({
       name: String(name).trim(),
       email: String(email).trim(),
-      subject: String(subject || '').trim(),
-      message: String(message).trim()
+      subject: String(subject || '').trim().slice(0, 200),
+      message
     });
+    // Every contact message is also a support ticket in the admin panel (MongoDB only)
+    if (contact?.id && mongoose.connection.readyState === 1) {
+      await ticketFromContact({
+        _id: contact.id,
+        name: String(name).trim(),
+        email: String(email).trim(),
+        subject: String(subject || '').trim().slice(0, 200) || 'General inquiry',
+        message,
+        createdAt: contact.createdAt
+      }).catch((err) => console.error('[tickets] could not create ticket:', err.message));
+    }
+    logAuthEvent(req, 'SUPPORT_TICKET_CREATED', { ...who, metadata: { contactId: String(contact?.id || contact?._id || '') } });
 
     return res.json({
       success: true,
@@ -1106,7 +1153,7 @@ async function importCheckerResumeForAgent(req, file) {
   }
 }
 
-apiRouter.post('/api/analyze', upload.single('resume'), async (req, res) => {
+apiRouter.post('/api/analyze', optionalUser, upload.single('resume'), async (req, res) => {
   try {
     const { file } = req;
     const resumeUrl = req.body?.resumeUrl || '';
@@ -1140,14 +1187,24 @@ apiRouter.post('/api/analyze', upload.single('resume'), async (req, res) => {
     const evaluation = await analyzeResumeWithGemini(extractedText, customApiKey);
 
     // Persist admin analytics after successful parsing.
+    const userId = req.auth?.sub || '';
+    const fileName = file ? file.originalname : 'Link Upload';
+    let savedWork = null;
     if (evaluation && evaluation.score) {
-      saveScan({
-        fileName: file ? file.originalname : 'Link Upload',
+      await saveScan({
+        fileName,
         fileType: file ? file.mimetype : 'link',
         fileSize: file ? file.size : 0,
-        evaluation
+        evaluation,
+        userId
       });
       invalidatePublicStats();
+      savedWork = await saveFeatureWork(userId, {
+        title: `Resume Check - ${fileName}`,
+        type: 'resume-check',
+        templateId: 'resume-checker',
+        payload: { fileName, resumeText: extractedText, evaluation }
+      });
     }
 
     const agentResume = await importCheckerResumeForAgent(req, file);
@@ -1157,7 +1214,8 @@ apiRouter.post('/api/analyze', upload.single('resume'), async (req, res) => {
       success: true,
       data: evaluation,
       resumeText: extractedText,
-      agentResume
+      agentResume,
+      work: savedWork
     });
 
   } catch (error) {
@@ -1176,7 +1234,7 @@ apiRouter.post('/api/analyze', upload.single('resume'), async (req, res) => {
 });
 
 // AI Resume Optimizer Endpoint
-apiRouter.post('/api/optimize', async (req, res) => {
+apiRouter.post('/api/optimize', optionalUser, async (req, res) => {
   try {
     const { resumeText, analysisResult } = req.body || {};
     const customApiKey = req.headers['x-gemini-key'] || null;
@@ -1192,17 +1250,21 @@ apiRouter.post('/api/optimize', async (req, res) => {
     const optimizedResume = await optimizeResumeWithGemini(resumeText, analysisResult, customApiKey);
 
     // Record the optimization fix safely in admin diagnostics
-    try {
-      const fileName = req.body.fileName || analysisResult.fileName || 'Unknown Resume';
-      const priorScore = Number(analysisResult.score || 0);
-      await saveFix({ fileName, priorScore });
-    } catch (dbErr) {
-      console.error('Error saving optimization fix log:', dbErr);
-    }
+    const userId = req.auth?.sub || '';
+    const fileName = req.body.fileName || analysisResult.fileName || 'Unknown Resume';
+    const priorScore = Number(analysisResult.score || 0);
+    await saveFix({ fileName, priorScore, userId });
+    const savedWork = await saveFeatureWork(userId, {
+      title: `Optimized Resume - ${fileName}`,
+      type: 'resume-optimized',
+      templateId: 'resume-optimizer',
+      payload: { fileName, priorScore, optimizedResume }
+    });
 
     return res.json({
       success: true,
-      data: { optimizedResume }
+      data: { optimizedResume },
+      work: savedWork
     });
   } catch (error) {
     console.error('Optimize API Error:', error);
@@ -1213,13 +1275,15 @@ apiRouter.post('/api/optimize', async (req, res) => {
 });
 
 // AI Resume Tailoring Endpoint
-apiRouter.post('/api/tailor', upload.single('resume'), async (req, res) => {
+apiRouter.post('/api/tailor', optionalUser, upload.single('resume'), async (req, res) => {
   try {
     const { file } = req;
-    const { jobDescription, resumeUrl } = req.body || {};
+    const { jobDescription, resumeUrl, templateHtml, templateId, resumeText } = req.body || {};
     const customApiKey = req.headers['x-gemini-key'] || null;
+    // Re-runs (new JD or a reopened saved tailor) send the text read on the first run instead of the file.
+    const priorText = typeof resumeText === 'string' && resumeText.trim().length >= 50 ? resumeText.slice(0, 20000) : '';
 
-    if (!file && !resumeUrl) {
+    if (!file && !resumeUrl && !priorText) {
       return res.status(400).json({ error: 'No resume file uploaded. Please upload a PDF, DOCX, or TXT file.' });
     }
 
@@ -1227,11 +1291,13 @@ apiRouter.post('/api/tailor', upload.single('resume'), async (req, res) => {
       return res.status(400).json({ error: 'Job Description is required and must be at least 15 characters.' });
     }
 
-    let extractedText = '';
-    try {
-      extractedText = await extractResumeText(file, resumeUrl);
-    } catch (parseErr) {
-      return res.status(parseErr.status || 400).json({ error: parseErr.message });
+    let extractedText = priorText;
+    if (!extractedText) {
+      try {
+        extractedText = await extractResumeText(file, resumeUrl);
+      } catch (parseErr) {
+        return res.status(parseErr.status || 400).json({ error: parseErr.message });
+      }
     }
 
     if (!extractedText || extractedText.trim().length < 50) {
@@ -1239,20 +1305,54 @@ apiRouter.post('/api/tailor', upload.single('resume'), async (req, res) => {
     }
 
     const result = await tailorResumeWithGemini(extractedText, jobDescription, customApiKey);
+    const data = result.tailoredData || {};
+    if (!data.personalInfo?.fullName && !data.workExperiences?.length && !data.summary) {
+      return res.status(502).json({ error: 'The AI returned an incomplete resume. Please try again.' });
+    }
+
+    // Fill the chosen CVMind template (sent without its locked footer; the client re-attaches it).
+    let generatedHtml = '';
+    if (typeof templateHtml === 'string' && templateHtml.trim()) {
+      const formData = {
+        personalInfo: data.personalInfo || {},
+        jobTitle: data.personalInfo?.jobTitle || '',
+        summary: data.summary || '',
+        education: data.educations || [],
+        workExperiences: data.workExperiences || [],
+        skills: data.skills || [],
+        courses: data.courses || [],
+        languages: data.languages || [],
+        achievements: data.achievements || [],
+        timeBreakdown: []
+      };
+      generatedHtml = String(await generateResumeWithGemini({ templateHtml, formData, customApiKey, keepFacts: true }))
+        .replace(/^```(?:html)?\s*/i, '').replace(/```\s*$/, '').trim();
+    }
+    const tailorTemplateId = typeof templateId === 'string' ? templateId.slice(0, 60) : '';
 
     // Record the tailoring event in MongoDB / Local DB
-    saveTailorLog({
-      fileName: file ? file.originalname : 'Link Upload',
+    const userId = req.auth?.sub || '';
+    const tailorFileName = file ? file.originalname : resumeUrl ? 'Link Upload' : 'Saved Resume';
+    await saveTailorLog({
+      fileName: tailorFileName,
       fileSize: file ? file.size : 0,
       score: result.matchScore,
       jobDescription: jobDescription,
       matchedSkills: result.matchedSkills,
-      missingSkills: result.missingSkillsRecommended
-    }).catch(err => console.error('Error logging tailoring scan:', err));
+      missingSkills: result.missingSkillsRecommended,
+      userId
+    });
+    const savedWork = await saveFeatureWork(userId, {
+      title: `Tailored Resume - ${tailorFileName}`,
+      type: 'resume-tailor',
+      templateId: 'resume-tailorer',
+      payload: { fileName: tailorFileName, jobDescription, resumeText: extractedText, result, generatedHtml, templateId: tailorTemplateId }
+    });
 
     return res.json({
       success: true,
-      data: result
+      data: { ...result, generatedHtml, templateId: tailorTemplateId, resumeText: extractedText },
+      work: savedWork
     });
   } catch (error) {
     console.error('Tailor API Error:', error);
@@ -1263,7 +1363,7 @@ apiRouter.post('/api/tailor', upload.single('resume'), async (req, res) => {
 });
 
 // AI Interview Prep Endpoint
-apiRouter.post('/api/prep', upload.single('resume'), async (req, res) => {
+apiRouter.post('/api/prep', optionalUser, upload.single('resume'), async (req, res) => {
   try {
     const { file } = req;
     const { resumeText, resumeUrl } = req.body || {};
@@ -1297,11 +1397,12 @@ apiRouter.post('/api/prep', upload.single('resume'), async (req, res) => {
 
     // Save logs to MongoDB / Local DB
     if (result && result.questions) {
-      savePrepLog({
+      await savePrepLog({
         fileName: fileName,
         fileSize: fileSize,
-        questionsCount: result.questions.length
-      }).catch(err => console.error('Error logging prep action:', err));
+        questionsCount: result.questions.length,
+        userId: req.auth?.sub || ''
+      });
     }
 
     return res.json({
@@ -1380,7 +1481,7 @@ apiRouter.post('/api/cover-letter/refine', async (req, res) => {
 // AI Resume Generation Endpoint
 apiRouter.post('/api/resume/generate', async (req, res) => {
   try {
-    const { templateHtml, formData } = req.body || {};
+    const { templateHtml, formData, keepFacts } = req.body || {};
     const customApiKey = req.headers['x-gemini-key'] || null;
 
     if (!templateHtml || typeof templateHtml !== 'string') {
@@ -1393,7 +1494,8 @@ apiRouter.post('/api/resume/generate', async (req, res) => {
     const generatedHtml = await generateResumeWithGemini({
       templateHtml,
       formData,
-      customApiKey
+      customApiKey,
+      keepFacts: keepFacts === true
     });
 
     return res.json({
@@ -1430,7 +1532,8 @@ apiRouter.post('/api/resume/parse-data', upload.single('resume'), async (req, re
       });
     }
 
-    const structuredData = await extractResumeDataWithAI(resumeText, customApiKey);
+    const exact = req.body?.exact === true || req.body?.exact === 'true';
+    const structuredData = await extractResumeDataWithAI(resumeText, customApiKey, exact);
 
     return res.json({
       success: true,
@@ -1445,6 +1548,169 @@ apiRouter.post('/api/resume/parse-data', upload.single('resume'), async (req, re
   }
 });
 
+// ── Live job search (resume builder step 1) ───────────────────────────────────
+apiRouter.get('/api/jobs/search', async (req, res) => {
+  const q = String(req.query.q || '').slice(0, 120);
+  try {
+    const result = await searchJobs(q);
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    return res.json({ success: true, ...result, companies: JOB_SEARCH_COMPANIES });
+  } catch (err) {
+    console.error('Job search error:', err);
+    return res.status(502).json({ error: 'Job search is unavailable right now. Please try again shortly.' });
+  }
+});
+
+apiRouter.get('/api/jobs/detail', async (req, res) => {
+  const id = String(req.query.id || '');
+  if (!/^(gh|lv):[\w-]+:[\w-]+$/.test(id)) return res.status(400).json({ error: 'Invalid job id.' });
+  try {
+    const data = await getJobDetail(id);
+    if (!data) return res.status(404).json({ error: 'This job is no longer available.' });
+    res.setHeader('Cache-Control', 'public, max-age=1800');
+    return res.json({ success: true, ...data });
+  } catch (err) {
+    console.error('Job detail error:', err);
+    return res.status(502).json({ error: 'Could not load this job description.' });
+  }
+});
+
+// ── Resume export: PDF download and "send PDF to my email" ─────────────────────
+const EXPORT_FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Rubik:wght@300;400;500;600;700&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;500;600&family=Open+Sans:wght@400;600;700;800&family=Raleway:wght@300;400;600&family=EB+Garamond:wght@400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&display=swap';
+
+const cleanFileName = (name) => (String(name || '').replace(/[^A-Za-z0-9 _-]/g, '').trim().slice(0, 80) || 'Resume');
+
+function readExportBody(req, res) {
+  const { html, fileName, paper } = req.body || {};
+  if (!html || typeof html !== 'string' || html.trim().length < 20) {
+    res.status(400).json({ error: 'There is no resume content to export.' });
+    return null;
+  }
+  return { html, fileName: cleanFileName(fileName), format: paper === 'letter' ? 'Letter' : 'A4' };
+}
+
+async function buildResumePdf(body) {
+  try {
+    return await renderResumePdf(body.html, { format: body.format, fontsHref: EXPORT_FONTS_HREF });
+  } catch (err) {
+    if (err?.code === 'BROWSER_UNAVAILABLE') {
+      // Keep Playwright's error as the cause so the server log shows the missing browser path
+      const e = new Error('PDF export is not available on this server right now.', { cause: err.cause || err });
+      e.status = 503;
+      throw e;
+    }
+    throw err;
+  }
+}
+
+apiRouter.post('/api/resume/pdf', requireUser, async (req, res) => {
+  const body = readExportBody(req, res);
+  if (!body) return;
+  try {
+    const pdf = await buildResumePdf(body);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${body.fileName}.pdf"`);
+    return res.send(Buffer.from(pdf));
+  } catch (err) {
+    console.error('Resume PDF export error:', err);
+    return res.status(err.status || 500).json({ error: err.status ? err.message : 'Could not create the PDF. Please try again.' });
+  }
+});
+
+// Sends the PDF to the signed-in user's own address only (never an address from the request).
+apiRouter.post('/api/resume/email-pdf', requireUser, async (req, res) => {
+  const body = readExportBody(req, res);
+  if (!body) return;
+  if (!emailConfigured()) return res.status(503).json({ error: 'Email is not configured on this server.' });
+  try {
+    const user = await findUserById(req.auth.sub);
+    if (!user?.email) return res.status(404).json({ error: 'We could not find the email address for your account.' });
+    const pdf = await buildResumePdf(body);
+    await sendEmail({
+      to: user.email,
+      ...resumePdfEmail({ name: user.name, fileName: body.fileName }),
+      attachments: [{ filename: `${body.fileName}.pdf`, content: Buffer.from(pdf).toString('base64') }],
+    });
+    return res.json({ success: true, email: user.email });
+  } catch (err) {
+    console.error('Resume email export error:', err);
+    return res.status(err.status || 500).json({ error: err.status ? err.message : 'Could not send the email. Please try again.' });
+  }
+});
+
+// Import resume data from a public LinkedIn profile URL.
+// LinkedIn often serves an auth wall to server-side requests; in that case we say so
+// and the client falls back to a "Save to PDF" upload via /api/resume/parse-data.
+const decodeEntities = (t) => t.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+
+function parseLinkedInProfileUrl(raw) {
+  let u;
+  try { u = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`); } catch { return null; }
+  // Strict host/path allow-list so this can't be used to fetch arbitrary URLs.
+  if (!/^([a-z]{2,3}\.)?linkedin\.com$/i.test(u.hostname) && u.hostname.toLowerCase() !== 'www.linkedin.com') return null;
+  if (!/^\/in\/[^/]+/i.test(u.pathname)) return null;
+  return `https://www.linkedin.com${u.pathname.replace(/\/+$/, '')}/`;
+}
+
+function profileTextFromHtml(html) {
+  const parts = [];
+  for (const m of html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)) {
+    try { parts.push(JSON.stringify(JSON.parse(m[1]))); } catch { /* ignore malformed block */ }
+  }
+  for (const m of html.matchAll(/<meta[^>]+(?:property|name)="(?:og:title|og:description|description)"[^>]+content="([^"]*)"/gi)) {
+    parts.push(decodeEntities(m[1]));
+  }
+  return parts.join('\n');
+}
+
+apiRouter.post('/api/resume/import-linkedin', async (req, res) => {
+  const profileUrl = parseLinkedInProfileUrl(String(req.body?.url || '').trim());
+  if (!profileUrl) {
+    return res.status(400).json({ error: 'Please enter a valid LinkedIn profile link, like https://linkedin.com/in/your-name' });
+  }
+  const walled = { error: "LinkedIn didn't share this profile publicly. On LinkedIn open your profile → More → Save to PDF, then upload that PDF instead.", code: 'LINKEDIN_PRIVATE' };
+  try {
+    const page = await fetch(profileUrl, {
+      redirect: 'manual',
+      signal: AbortSignal.timeout(8000),
+      headers: { 'Accept': 'text/html', 'Accept-Language': 'en-US,en;q=0.9', 'User-Agent': 'Mozilla/5.0 (compatible; CVMindImport/1.0)' },
+    });
+    if (page.status !== 200) return res.status(422).json(walled);
+    const profileText = profileTextFromHtml((await page.text()).slice(0, 500000));
+    if (profileText.trim().length < 80) return res.status(422).json(walled);
+
+    const data = await extractResumeDataWithAI(profileText, req.headers['x-gemini-key'] || null);
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('LinkedIn import error:', error);
+    return res.status(422).json(walled);
+  }
+});
+
+// Career tools take the CV as a file ('resume'), a link (resumeUrl) or text (resumeText).
+// The web app sends multipart form data; the mobile app and extension still send JSON.
+async function careerResumeText(req) {
+  const resumeUrl = String(req.body?.resumeUrl || '').trim();
+  if (req.file || resumeUrl) {
+    try {
+      return (await extractResumeText(req.file || null, resumeUrl || null)).trim();
+    } catch (err) {
+      throw Object.assign(err, { status: err.status || 400 });
+    }
+  }
+  return String(req.body?.resumeText || '').trim();
+}
+
+// Short free-text fields from the request body, trimmed and capped
+const careerField = (req, name, max = 200) => String(req.body?.[name] || '').trim().slice(0, max);
+
+// Sends a CV read error (bad file, unreadable link) as a 4xx, anything else as a 500
+function careerError(res, error, label) {
+  if (error.status) return res.status(error.status).json({ error: error.message });
+  console.error(`${label} API Error:`, error);
+  return res.status(500).json({ error: error.message || 'AI Generation failed. Please try again later.' });
+}
+
 // LinkedIn Profile Optimizer Endpoint
 apiRouter.post('/api/linkedin/analyze', optionalUser, upload.single('linkedinPdf'), async (req, res) => {
   try {
@@ -1453,6 +1719,8 @@ apiRouter.post('/api/linkedin/analyze', optionalUser, upload.single('linkedinPdf
     // Save to My Works only for the signed-in user (never a userId from the request body)
     const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
+    // Optional; sent by the web app
+    const targetRole = careerField(req, 'targetRole', 120);
 
     if (!file) {
       return res.status(400).json({ error: 'No LinkedIn PDF file uploaded. Please upload a PDF file.' });
@@ -1469,27 +1737,19 @@ apiRouter.post('/api/linkedin/analyze', optionalUser, upload.single('linkedinPdf
       return res.status(400).json({ error: 'Unable to extract text from the uploaded PDF. Please make sure the PDF has readable text.' });
     }
 
-    const evaluation = await analyzeLinkedInProfileWithGemini(extractedText, customApiKey);
+    const evaluation = await analyzeLinkedInProfileWithGemini(extractedText, customApiKey, targetRole);
 
     // Save logs to MongoDB / Local JSON DB
     if (evaluation && evaluation.score !== undefined) {
-      await saveLinkedinLog({ email: email || '', score: evaluation.score });
+      await saveLinkedinLog({ email: req.auth?.email || email || '', userId: userId || '', score: evaluation.score });
     }
 
-    let savedWork = null;
-    if (userId) {
-      const payload = {
-        profileText: extractedText,
-        evaluation
-      };
-      savedWork = await saveWork({
-        userId,
-        title: `LinkedIn Optimizer - ${new Date().toLocaleDateString()}`,
-        type: 'linkedin',
-        templateId: 'linkedin-opt',
-        htmlContent: JSON.stringify(payload)
-      });
-    }
+    const savedWork = await saveFeatureWork(userId, {
+      title: `LinkedIn Audit - ${targetRole || new Date().toLocaleDateString()}`,
+      type: 'linkedin',
+      templateId: 'linkedin-opt',
+      payload: { profileText: extractedText, targetRole, fileName: file.originalname || '', evaluation }
+    });
 
     return res.json({
       success: true,
@@ -1505,9 +1765,11 @@ apiRouter.post('/api/linkedin/analyze', optionalUser, upload.single('linkedinPdf
 });
 
 // LinkedIn Profile Bio & Banner Generator Endpoint
-apiRouter.post('/api/linkedin/bio', optionalUser, async (req, res) => {
+apiRouter.post('/api/linkedin/bio', optionalUser, upload.single('resume'), async (req, res) => {
   try {
-    const { skills, jobTitle, resumeText, email } = req.body || {};
+    const jobTitle = careerField(req, 'jobTitle', 120);
+    const skills = careerField(req, 'skills', 600);
+    const tone = careerField(req, 'tone', 40);
     // Save to My Works only for the signed-in user (never a userId from the request body)
     const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
@@ -1516,52 +1778,32 @@ apiRouter.post('/api/linkedin/bio', optionalUser, async (req, res) => {
       return res.status(400).json({ error: 'Job Title is required.' });
     }
 
-    const result = await generateLinkedinBioWithGemini({
-      skills,
-      jobTitle,
-      resumeText,
-      customApiKey
+    const resumeText = await careerResumeText(req);
+    const result = await generateLinkedinBioWithGemini({ skills, jobTitle, resumeText, tone, customApiKey });
+
+    await saveLinkedinBioLog({ email: req.auth?.email || req.body?.email || '', userId: userId || '', jobTitle });
+
+    const savedWork = await saveFeatureWork(userId, {
+      title: `LinkedIn Bio - ${jobTitle}`,
+      type: 'linkedin-bio',
+      templateId: 'linkedin-bio-gen',
+      payload: { skills, jobTitle, tone, resumeText, result }
     });
 
-    // Save log
-    await saveLinkedinBioLog({
-      email: email || '',
-      jobTitle: jobTitle
-    });
-
-    let savedWork = null;
-    if (userId) {
-      savedWork = await saveWork({
-        userId,
-        title: `LinkedIn Assets - ${jobTitle}`,
-        type: 'linkedin-bio',
-        templateId: 'linkedin-bio-gen',
-        htmlContent: JSON.stringify({
-          skills,
-          jobTitle,
-          resumeText,
-          result
-        })
-      });
-    }
-
-    return res.json({
-      success: true,
-      data: result,
-      work: savedWork
-    });
+    return res.json({ success: true, data: result, work: savedWork });
   } catch (error) {
-    console.error('LinkedIn Bio Generator API Error:', error);
-    return res.status(500).json({
-      error: error.message || 'try again after sometime or mail to contact@manavtiwari.in for this error'
-    });
+    return careerError(res, error, 'LinkedIn Bio Generator');
   }
 });
 
 // LinkedIn Outreach & DM Writer Endpoint
-apiRouter.post('/api/linkedin/outreach', optionalUser, async (req, res) => {
+apiRouter.post('/api/linkedin/outreach', optionalUser, upload.single('resume'), async (req, res) => {
   try {
-    const { jobTitle, companyName, context, targetName, email } = req.body || {};
+    const jobTitle = careerField(req, 'jobTitle', 120);
+    const companyName = careerField(req, 'companyName', 120);
+    const targetName = careerField(req, 'targetName', 80);
+    const context = careerField(req, 'context', 1000);
+    const tone = careerField(req, 'tone', 40);
     // Save to My Works only for the signed-in user (never a userId from the request body)
     const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
@@ -1570,53 +1812,30 @@ apiRouter.post('/api/linkedin/outreach', optionalUser, async (req, res) => {
       return res.status(400).json({ error: 'Job Title is required.' });
     }
 
-    const result = await generateLinkedinOutreachWithGemini({
-      jobTitle,
-      companyName,
-      context,
-      targetName,
-      customApiKey
+    const resumeText = await careerResumeText(req);
+    const result = await generateLinkedinOutreachWithGemini({ jobTitle, companyName, context, targetName, resumeText, tone, customApiKey });
+
+    await saveLinkedinOutreachLog({ email: req.auth?.email || req.body?.email || '', userId: userId || '', jobTitle });
+
+    const savedWork = await saveFeatureWork(userId, {
+      title: `LinkedIn Outreach - ${jobTitle} (${companyName || 'General'})`,
+      type: 'linkedin-outreach',
+      templateId: 'linkedin-outreach-gen',
+      payload: { jobTitle, companyName, context, targetName, tone, result }
     });
 
-    await saveLinkedinOutreachLog({
-      email: email || '',
-      jobTitle: jobTitle
-    });
-
-    let savedWork = null;
-    if (userId) {
-      savedWork = await saveWork({
-        userId,
-        title: `LinkedIn Outreach - ${jobTitle} (${companyName || 'General'})`,
-        type: 'linkedin-outreach',
-        templateId: 'linkedin-outreach-gen',
-        htmlContent: JSON.stringify({
-          jobTitle,
-          companyName,
-          context,
-          targetName,
-          result
-        })
-      });
-    }
-
-    return res.json({
-      success: true,
-      data: result,
-      work: savedWork
-    });
+    return res.json({ success: true, data: result, work: savedWork });
   } catch (error) {
-    console.error('LinkedIn Outreach API Error:', error);
-    return res.status(500).json({
-      error: error.message || 'AI Generation failed. Please try again later.'
-    });
+    return careerError(res, error, 'LinkedIn Outreach');
   }
 });
 
 // Skill Gap & Course Recommendation Endpoint
-apiRouter.post('/api/career/courses', optionalUser, async (req, res) => {
+apiRouter.post('/api/career/courses', optionalUser, upload.single('resume'), async (req, res) => {
   try {
-    const { targetJob, skills, resumeText, email } = req.body || {};
+    const targetJob = careerField(req, 'targetJob', 120);
+    const skills = careerField(req, 'skills', 600);
+    const level = careerField(req, 'level', 40);
     // Save to My Works only for the signed-in user (never a userId from the request body)
     const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
@@ -1625,51 +1844,30 @@ apiRouter.post('/api/career/courses', optionalUser, async (req, res) => {
       return res.status(400).json({ error: 'Target Job is required.' });
     }
 
-    const result = await generateCareerCoursesWithGemini({
-      targetJob,
-      skills,
-      resumeText,
-      customApiKey
+    const resumeText = await careerResumeText(req);
+    const result = await generateCareerCoursesWithGemini({ targetJob, skills, resumeText, level, customApiKey });
+
+    await saveCareerCoursesLog({ email: req.auth?.email || req.body?.email || '', userId: userId || '', jobTitle: targetJob });
+
+    const savedWork = await saveFeatureWork(userId, {
+      title: `Skill Gaps - ${targetJob}`,
+      type: 'career-courses',
+      templateId: 'career-courses-gen',
+      payload: { targetJob, skills, level, resumeText, result }
     });
 
-    await saveCareerCoursesLog({
-      email: email || '',
-      jobTitle: targetJob
-    });
-
-    let savedWork = null;
-    if (userId) {
-      savedWork = await saveWork({
-        userId,
-        title: `Career Courses - ${targetJob}`,
-        type: 'career-courses',
-        templateId: 'career-courses-gen',
-        htmlContent: JSON.stringify({
-          targetJob,
-          skills,
-          resumeText,
-          result
-        })
-      });
-    }
-
-    return res.json({
-      success: true,
-      data: result,
-      work: savedWork
-    });
+    return res.json({ success: true, data: result, work: savedWork });
   } catch (error) {
-    console.error('Career Courses API Error:', error);
-    return res.status(500).json({
-      error: error.message || 'AI Generation failed. Please try again later.'
-    });
+    return careerError(res, error, 'Career Courses');
   }
 });
 
 // Elevator Pitch Builder Endpoint
-apiRouter.post('/api/career/pitch', optionalUser, async (req, res) => {
+apiRouter.post('/api/career/pitch', optionalUser, upload.single('resume'), async (req, res) => {
   try {
-    const { jobTitle, details, resumeText, email } = req.body || {};
+    const jobTitle = careerField(req, 'jobTitle', 120);
+    const details = careerField(req, 'details', 1500);
+    const setting = careerField(req, 'setting', 60);
     // Save to My Works only for the signed-in user (never a userId from the request body)
     const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
@@ -1678,51 +1876,31 @@ apiRouter.post('/api/career/pitch', optionalUser, async (req, res) => {
       return res.status(400).json({ error: 'Job Title is required.' });
     }
 
-    const result = await generateElevatorPitchWithGemini({
-      jobTitle,
-      details,
-      resumeText,
-      customApiKey
+    const resumeText = await careerResumeText(req);
+    const result = await generateElevatorPitchWithGemini({ jobTitle, details, resumeText, setting, customApiKey });
+
+    await saveElevatorPitchLog({ email: req.auth?.email || req.body?.email || '', userId: userId || '', jobTitle });
+
+    const savedWork = await saveFeatureWork(userId, {
+      title: `Elevator Pitch - ${jobTitle}`,
+      type: 'elevator-pitch',
+      templateId: 'elevator-pitch-gen',
+      payload: { jobTitle, details, setting, resumeText, result }
     });
 
-    await saveElevatorPitchLog({
-      email: email || '',
-      jobTitle: jobTitle
-    });
-
-    let savedWork = null;
-    if (userId) {
-      savedWork = await saveWork({
-        userId,
-        title: `Elevator Pitch - ${jobTitle}`,
-        type: 'elevator-pitch',
-        templateId: 'elevator-pitch-gen',
-        htmlContent: JSON.stringify({
-          jobTitle,
-          details,
-          resumeText,
-          result
-        })
-      });
-    }
-
-    return res.json({
-      success: true,
-      data: result,
-      work: savedWork
-    });
+    return res.json({ success: true, data: result, work: savedWork });
   } catch (error) {
-    console.error('Elevator Pitch API Error:', error);
-    return res.status(500).json({
-      error: error.message || 'AI Generation failed. Please try again later.'
-    });
+    return careerError(res, error, 'Elevator Pitch');
   }
 });
 
 // Career Roadmap Endpoint
-apiRouter.post('/api/career/roadmap', optionalUser, async (req, res) => {
+apiRouter.post('/api/career/roadmap', optionalUser, upload.single('resume'), async (req, res) => {
   try {
-    const { currentRole, targetRole, years, resumeText, email } = req.body || {};
+    const currentRole = careerField(req, 'currentRole', 120);
+    const targetRole = careerField(req, 'targetRole', 120);
+    const years = careerField(req, 'years', 40);
+    const hoursPerWeek = careerField(req, 'hoursPerWeek', 40);
     // Save to My Works only for the signed-in user (never a userId from the request body)
     const userId = req.auth?.sub;
     const customApiKey = req.headers['x-gemini-key'] || null;
@@ -1731,45 +1909,21 @@ apiRouter.post('/api/career/roadmap', optionalUser, async (req, res) => {
       return res.status(400).json({ error: 'Target Role is required.' });
     }
 
-    const result = await generateCareerRoadmapWithGemini({
-      currentRole,
-      targetRole,
-      years,
-      resumeText,
-      customApiKey
+    const resumeText = await careerResumeText(req);
+    const result = await generateCareerRoadmapWithGemini({ currentRole, targetRole, years, resumeText, hoursPerWeek, customApiKey });
+
+    await saveCareerRoadmapLog({ email: req.auth?.email || req.body?.email || '', userId: userId || '' });
+
+    const savedWork = await saveFeatureWork(userId, {
+      title: `Career Roadmap - ${targetRole}`,
+      type: 'career-roadmap',
+      templateId: 'career-roadmap-gen',
+      payload: { currentRole, targetRole, years, hoursPerWeek, resumeText, result }
     });
 
-    await saveCareerRoadmapLog({
-      email: email || ''
-    });
-
-    let savedWork = null;
-    if (userId) {
-      savedWork = await saveWork({
-        userId,
-        title: `Career Roadmap - ${targetRole}`,
-        type: 'career-roadmap',
-        templateId: 'career-roadmap-gen',
-        htmlContent: JSON.stringify({
-          currentRole,
-          targetRole,
-          years,
-          resumeText,
-          result
-        })
-      });
-    }
-
-    return res.json({
-      success: true,
-      data: result,
-      work: savedWork
-    });
+    return res.json({ success: true, data: result, work: savedWork });
   } catch (error) {
-    console.error('Career Roadmap API Error:', error);
-    return res.status(500).json({
-      error: error.message || 'AI Generation failed. Please try again later.'
-    });
+    return careerError(res, error, 'Career Roadmap');
   }
 });
 
@@ -1778,7 +1932,8 @@ apiRouter.get('/api/portfolio/:workId', async (req, res) => {
   const { workId } = req.params;
   try {
     const work = await getWorkById(workId);
-    if (!work) {
+    // Hidden by a moderator: the public link stops working
+    if (!work || work.hidden) {
       return res.status(404).json({ error: 'Portfolio resume not found.' });
     }
     return res.json({
@@ -1862,7 +2017,7 @@ Return ONLY valid JSON.`;
 
     let savedWork = null;
     if (userId) {
-      savedWork = await saveWork({
+      savedWork = await safeSaveWork({
         userId,
         title: `LinkedIn Post - ${topic.substring(0, 40)}`,
         type: 'linkedin-post',
@@ -1871,7 +2026,7 @@ Return ONLY valid JSON.`;
       });
       const user = await findUserById(userId);
       if (user) {
-        await saveLinkedinPostLog({ email: user.email, topic });
+        await saveLinkedinPostLog({ email: user.email, userId, topic });
       }
     }
 
@@ -1879,6 +2034,165 @@ Return ONLY valid JSON.`;
   } catch (error) {
     console.error('LinkedIn Post API Error:', error);
     return res.status(500).json({ error: error.message || 'AI generation failed.' });
+  }
+});
+
+// ── Interview Prep AI / Voice Prep AI: Leo's mock interview ──
+// The older /api/prep and /api/voice-prep routes stay for the mobile app and extension.
+const INTERVIEW_LEVELS = ['Fresher', 'Mid-level', 'Senior', 'Lead / Manager'];
+const INTERVIEW_ROUNDS = ['Mixed', 'HR', 'Behavioural', 'Technical'];
+const pickFrom = (list, value, fallback) => (list.includes(value) ? value : fallback);
+const cleanText = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
+const strList = (value, maxItems, maxLen) => (Array.isArray(value) ? value.filter(v => typeof v === 'string').slice(0, maxItems).map(v => v.slice(0, maxLen)) : []);
+const cleanMetrics = (m) => (m && typeof m === 'object' ? {
+  seconds: Math.max(0, Math.round(Number(m.seconds) || 0)),
+  words: Math.max(0, Math.round(Number(m.words) || 0)),
+  wpm: Math.max(0, Math.round(Number(m.wpm) || 0)),
+  fillerCount: Math.max(0, Math.round(Number(m.fillerCount) || 0)),
+  fillers: strList(m.fillers, 10, 30),
+} : null);
+
+// Prepares the questions. The CV is optional: a file, a link, or text read earlier.
+apiRouter.post('/api/interview/plan', optionalUser, upload.single('resume'), async (req, res) => {
+  try {
+    const { file } = req;
+    const body = req.body || {};
+    const customApiKey = req.headers['x-gemini-key'] || null;
+    const role = cleanText(body.role, 120);
+    const jobDescription = cleanText(body.jobDescription, 12000);
+    const mode = body.mode === 'voice' ? 'voice' : 'text';
+    const count = Math.min(10, Math.max(3, parseInt(body.count, 10) || 5));
+    if (!role) return res.status(400).json({ error: 'Please tell Leo which role you are interviewing for.' });
+
+    let resumeText = cleanText(body.resumeText, 20000);
+    let fileName = resumeText ? 'Saved resume' : '';
+    if (file || body.resumeUrl) {
+      try {
+        resumeText = (await extractResumeText(file, body.resumeUrl)).slice(0, 20000);
+        fileName = file ? file.originalname : 'Linked CV';
+      } catch (parseErr) {
+        return res.status(parseErr.status || 400).json({ error: parseErr.message });
+      }
+      if (resumeText.trim().length < 50) {
+        return res.status(400).json({ error: 'I could not read any text in that CV. Please try a different file, or skip the CV.' });
+      }
+    }
+
+    const data = await generateInterviewPlan({
+      resumeText,
+      role,
+      jobDescription,
+      level: pickFrom(INTERVIEW_LEVELS, body.level, 'Mid-level'),
+      round: pickFrom(INTERVIEW_ROUNDS, body.round, 'Mixed'),
+      count,
+      mode,
+      customApiKey,
+    });
+    data.questions = data.questions.map((q, i) => ({ ...q, id: `q${i + 1}` }));
+
+    if (mode === 'text') {
+      await savePrepLog({ fileName: fileName || 'No CV', fileSize: file?.size || resumeText.length, questionsCount: data.questions.length, userId: req.auth?.sub || '' });
+    }
+    return res.json({ success: true, data, resumeText, fileName });
+  } catch (error) {
+    console.error('Interview Plan API Error:', error);
+    return res.status(500).json({ error: error.message || 'Could not prepare your interview. Please try again.' });
+  }
+});
+
+// Scores one answer
+apiRouter.post('/api/interview/evaluate', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const customApiKey = req.headers['x-gemini-key'] || null;
+    const question = cleanText(body.question, 600);
+    const answer = cleanText(body.answer, 6000);
+    if (!question || !answer) return res.status(400).json({ error: 'Please answer the question first.' });
+    const mode = body.mode === 'voice' ? 'voice' : 'text';
+
+    const data = await evaluateInterviewAnswer({
+      question,
+      answer,
+      keyPoints: strList(body.keyPoints, 5, 200),
+      role: cleanText(body.role, 120),
+      jobDescription: cleanText(body.jobDescription, 6000),
+      resumeText: cleanText(body.resumeText, 8000),
+      mode,
+      metrics: mode === 'voice' ? cleanMetrics(body.metrics) : null,
+      customApiKey,
+    });
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('Interview Evaluate API Error:', error);
+    return res.status(500).json({ error: error.message || 'Could not score your answer. Please try again.' });
+  }
+});
+
+// Writes the debrief and saves the whole interview to My Documents
+apiRouter.post('/api/interview/report', optionalUser, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const userId = req.auth?.sub;
+    const customApiKey = req.headers['x-gemini-key'] || null;
+    const mode = body.mode === 'voice' ? 'voice' : 'text';
+    const settings = body.settings && typeof body.settings === 'object' ? body.settings : {};
+    const role = cleanText(settings.role, 120);
+    const questions = Array.isArray(body.questions) ? body.questions.slice(0, 10) : [];
+    const turns = Array.isArray(body.turns) ? body.turns.slice(0, 10) : [];
+
+    // One line per question, paired with its answer and score
+    const rows = questions.map(q => {
+      const turn = turns.find(t => t && t.questionId === q?.id) || {};
+      const fb = turn.feedback && typeof turn.feedback === 'object' ? turn.feedback : null;
+      return {
+        question: cleanText(q?.question, 600),
+        answer: cleanText(turn.answer, 3000),
+        score: fb && Number.isFinite(Number(fb.score)) ? Math.max(0, Math.min(10, Number(fb.score))) : null,
+        missing: fb ? strList(fb.missing, 3, 200) : [],
+        metrics: mode === 'voice' ? cleanMetrics(turn.metrics) : null,
+      };
+    }).filter(r => r.question);
+
+    const scored = rows.filter(r => r.score !== null);
+    if (!scored.length) return res.status(400).json({ error: 'Answer at least one question to get your report.' });
+
+    const ai = await generateInterviewReport({ role, level: cleanText(settings.level, 40), mode, turns: rows, customApiKey });
+    const overallScore = Math.round((scored.reduce((sum, r) => sum + r.score, 0) / scored.length) * 10);
+    const report = {
+      overallScore,
+      answered: scored.length,
+      summary: cleanText(ai.summary, 1200),
+      strengths: strList(ai.strengths, 5, 300),
+      weakAreas: strList(ai.weakAreas, 5, 300),
+      practiceNext: strList(ai.practiceNext, 5, 300),
+    };
+
+    const work = await saveFeatureWork(userId, {
+      title: `${mode === 'voice' ? 'Voice Prep' : 'Interview Prep'} - ${role || 'Mock interview'}`,
+      type: mode === 'voice' ? 'voice-prep' : 'prep',
+      templateId: mode === 'voice' ? 'voice-practice' : 'interview-prep',
+      payload: {
+        version: 2,
+        mode,
+        settings,
+        fileName: cleanText(body.fileName, 200),
+        jobDescription: cleanText(body.jobDescription, 12000),
+        resumeText: cleanText(body.resumeText, 20000),
+        questions,
+        turns,
+        report,
+      },
+    });
+
+    if (mode === 'voice' && userId) {
+      const user = await findUserById(userId);
+      if (user) await saveVoicePrepLog({ email: user.email, userId, jobTitle: role || 'General', score: overallScore / 10 });
+    }
+
+    return res.json({ success: true, data: report, work });
+  } catch (error) {
+    console.error('Interview Report API Error:', error);
+    return res.status(500).json({ error: error.message || 'Could not write your report. Please try again.' });
   }
 });
 
@@ -1977,7 +2291,7 @@ Return ONLY this JSON:
 
     let savedWork = null;
     if (userId) {
-      savedWork = await saveWork({
+      savedWork = await safeSaveWork({
         userId,
         title: `Voice Practice - ${jobTitle || 'General'}`,
         type: 'voice-prep',
@@ -1986,7 +2300,7 @@ Return ONLY this JSON:
       });
       const user = await findUserById(userId);
       if (user) {
-        await saveVoicePrepLog({ email: user.email, jobTitle: jobTitle || 'General', score: data.overallScore || 0 });
+        await saveVoicePrepLog({ email: user.email, userId, jobTitle: jobTitle || 'General', score: data.overallScore || 0 });
       }
     }
 
@@ -2077,7 +2391,7 @@ Return this exact JSON structure:
 
     let savedWork = null;
     if (userId) {
-      savedWork = await saveWork({
+      savedWork = await safeSaveWork({
         userId,
         title: `Portfolio - ${portfolioData.name || 'My Portfolio'}`,
         type: 'portfolio-gen',
@@ -2086,7 +2400,7 @@ Return this exact JSON structure:
       });
       const user = await findUserById(userId);
       if (user) {
-        await savePortfolioGenLog({ email: user.email, theme: colorTheme || 'dark-pro' });
+        await savePortfolioGenLog({ email: user.email, userId, theme: colorTheme || 'dark-pro' });
       }
     }
 
@@ -2239,13 +2553,15 @@ ${education.length > 0 ? `
 
 apiRouter.post('/api/user/work', requireUser, async (req, res) => {
 
-  const { title, type, templateId, htmlContent, workId } = req.body || {};
+  const { title, type, templateId, htmlContent, workId, source } = req.body || {};
   const userId = req.auth.sub;
   if (!userId || !title || !type || !templateId || !htmlContent) {
     return res.status(400).json({ error: 'Missing required work fields.' });
   }
+  // Only known sources are stored (the editor uses it to hide tools that don't fit that resume)
+  const cleanSource = source === 'resume-tailor' ? source : '';
   try {
-    const saved = await saveWork({ userId, title, type, templateId, htmlContent, workId });
+    const saved = await saveWork({ userId, title, type, templateId, htmlContent, workId, source: cleanSource });
     return res.json({ success: true, data: saved });
   } catch (error) {
     console.error('Save work error:', error);
@@ -2300,7 +2616,16 @@ apiRouter.post('/api/user/profile', requireUser, async (req, res) => {
       return res.status(409).json({ error: 'That email is already used by another account.' });
     }
 
-    const updated = await updateUserProfile({ userId, name, email, address, avatar });
+    const before = await findUserById(userId);
+    let updated = await updateUserProfile({ userId, name, email, address, avatar });
+    // A new address has to be verified again before the account gets full access back
+    const emailChanged = before && String(before.email).toLowerCase() !== String(updated.email).toLowerCase();
+    if (emailChanged) {
+      updated = await updateUserFields(userId, { emailVerified: false, emailVerifiedAt: null }) || updated;
+      invalidateSessionCache(userId);
+      const { sent } = await issueVerification(updated);
+      if (sent) logAuthEvent(req, 'VERIFICATION_EMAIL_SENT', { userId, email: updated.email, metadata: { changedFrom: before.email } });
+    }
     const isPaid = await isUserPaid(updated);
     const userPayload = {
       id: updated.id || updated._id,
@@ -2308,7 +2633,8 @@ apiRouter.post('/api/user/profile', requireUser, async (req, res) => {
       email: updated.email,
       address: updated.address || '',
       avatar: updated.avatar || '',
-      isGoogleUser: updated.isGoogleUser || false
+      isGoogleUser: updated.isGoogleUser || false,
+      emailVerified: !!updated.emailVerified
     };
     if (isPaid) {
       userPayload.plan = 'pro';
@@ -2320,7 +2646,7 @@ apiRouter.post('/api/user/profile', requireUser, async (req, res) => {
       success: true,
       message: 'Profile updated successfully!',
       // Fresh token so its email matches the (possibly changed) account email
-      user: withSessionToken(userPayload)
+      user: withSessionToken(userPayload, req, '', req.auth.jti)
     });
   } catch (error) {
     console.error('Update profile error:', error);
@@ -2373,7 +2699,7 @@ apiRouter.post('/api/user/password', requireUser, async (req, res) => {
 });
 
 // AI Job Finder Endpoint
-apiRouter.post('/api/job-finder', upload.single('resume'), async (req, res) => {
+apiRouter.post('/api/job-finder', optionalUser, upload.single('resume'), async (req, res) => {
   try {
     const { file } = req;
     const { jobDescription, jobType } = req.body || {};
@@ -2405,18 +2731,26 @@ apiRouter.post('/api/job-finder', upload.single('resume'), async (req, res) => {
     const preferredJobType = jobType || 'All';
     const result = await findJobsWithGemini(extractedText, jobDescription.trim(), preferredJobType, customApiKey);
 
-    // Log the usage asynchronously
-    saveJobFinderLog({
-      email: req.body.email || '',
+    const userId = req.auth?.sub || '';
+    await saveJobFinderLog({
+      email: req.auth?.email || req.body.email || '',
+      userId,
       jobsCount: result?.jobs?.length || 0,
       jobDescription: jobDescription.trim().substring(0, 200),
       jobType: preferredJobType
-    }).catch(err => console.error('Error logging job finder usage:', err));
+    });
+    const savedWork = await saveFeatureWork(userId, {
+      title: `Job Search - ${jobDescription.trim().substring(0, 50)}`,
+      type: 'job-finder',
+      templateId: 'ai-job-finder',
+      payload: { jobDescription: jobDescription.trim(), jobType: preferredJobType, result }
+    });
 
     return res.json({
       success: true,
       data: result,
-      resumeText: extractedText
+      resumeText: extractedText,
+      work: savedWork
     });
   } catch (error) {
     console.error('Job Finder API Error:', error);
@@ -2426,9 +2760,9 @@ apiRouter.post('/api/job-finder', upload.single('resume'), async (req, res) => {
   }
 });
 
-// Checkout simulated payment route
+// Checkout simulated payment route. An optional coupon from the admin panel lowers the price.
 apiRouter.post('/api/payments/checkout', async (req, res) => {
-  const { email, amount, paymentMethod } = req.body || {};
+  const { email, amount, paymentMethod, couponCode, plan } = req.body || {};
 
   if (!email) {
     return res.status(400).json({ error: 'Email address is required to process payment.' });
@@ -2437,21 +2771,43 @@ apiRouter.post('/api/payments/checkout', async (req, res) => {
   // Generate a mock transaction ID
   const prefix = paymentMethod === 'upi' ? 'UPI' : paymentMethod === 'paypal' ? 'PAY' : 'TXN';
   const transactionId = `${prefix}-${Math.floor(100000 + Math.random() * 900000)}-${Date.now().toString().slice(-4)}`;
+  const listPrice = Number(amount || 200);
 
   try {
+    let coupon = null;
+    let discount = 0;
+    if (couponCode) {
+      if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({ error: 'Coupons are unavailable right now. Please try without one.' });
+      }
+      const check = await evaluateCoupon(couponCode, { email, amount: listPrice });
+      if (!check.ok) return res.status(400).json({ error: check.error });
+      coupon = check.coupon;
+      discount = check.discount;
+      if (!(await redeemCoupon(coupon, { email, amount: listPrice, discount, transactionId }))) {
+        return res.status(400).json({ error: 'That coupon has just been fully used.' });
+      }
+    }
+    const charged = Math.round((listPrice - discount) * 100) / 100;
+
     // Save successful log
     await savePaymentLog({
       email,
-      amount: Number(amount || 200),
+      amount: charged,
       paymentMethod: paymentMethod || 'card',
       transactionId,
-      status: 'success'
+      status: 'success',
+      plan: String(plan || '').slice(0, 40),
+      couponCode: coupon?.code || '',
+      discount
     });
 
     return res.json({
       success: true,
-      message: 'Payment of ₹200 processed successfully!',
-      transactionId
+      message: `Payment of ₹${charged} processed successfully!`,
+      transactionId,
+      amount: charged,
+      discount
     });
   } catch (error) {
     console.error('Payment Checkout API Error:', error);
@@ -2475,10 +2831,12 @@ apiRouter.get('/api/payments/check-access/:email', async (req, res) => {
 });
 
 // AI Proofreading Endpoint
-apiRouter.post('/api/ai/proofread', upload.single('resume'), async (req, res) => {
+apiRouter.post('/api/ai/proofread', optionalUser, upload.single('resume'), async (req, res) => {
   try {
     const customApiKey = req.headers['x-gemini-key'] || null;
     const industry = req.body?.industry || 'General';
+    // Optional; sent by the web app's Leo flow (older clients leave it out)
+    const documentType = String(req.body?.documentType || '').trim().slice(0, 40);
 
     const usageInfo = null;
 
@@ -2505,10 +2863,27 @@ apiRouter.post('/api/ai/proofread', upload.single('resume'), async (req, res) =>
     const result = await generateProofreadingWithDeepSeek({
       text: text.trim(),
       industry,
+      documentType,
       customApiKey
     });
 
-    return res.json({ success: true, data: result, extractedText: (req.file || resumeUrl) ? text.trim() : undefined, usage: usageInfo });
+    const userId = req.auth?.sub || '';
+    const issues = Array.isArray(result?.changes) ? result.changes : [];
+    await saveProofreadLog({
+      email: req.auth?.email || '',
+      userId,
+      industry,
+      charCount: text.trim().length,
+      issuesCount: issues.length
+    });
+    const savedWork = await saveFeatureWork(userId, {
+      title: `Proofread - ${documentType ? `${documentType} - ` : ''}${text.trim().substring(0, 40)}`,
+      type: 'proofread',
+      templateId: 'ai-proofreader',
+      payload: { industry, documentType, fileName: req.file?.originalname || '', originalText: text.trim(), result }
+    });
+
+    return res.json({ success: true, data: result, extractedText: (req.file || resumeUrl) ? text.trim() : undefined, usage: usageInfo, work: savedWork });
   } catch (error) {
     console.error('Proofreading API Error:', error);
     return res.status(500).json({
@@ -2530,6 +2905,10 @@ apiRouter.get('/api/user/usage/:userId', requireSelf(), async (req, res) => {
   }
 });
 
+app.use('/api/admin', adminRouter);
+app.use('/_/backend/api/admin', adminRouter);
+app.use('/_/backend', adminPublicRoutes);
+app.use('/', adminPublicRoutes);
 app.use('/_/backend', apiRouter);
 app.use('/', apiRouter);
 app.use('/api/auto-apply', autoApplyRouter);
@@ -2554,9 +2933,14 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
+// Tests import the app and listen on their own port
+if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
+  // Fill the live job-search cache so the first search in the resume builder is quick.
+  if (!process.env.VERCEL) warmJobSearch();
   // Local dev convenience: run agent queue workers in the API process (production uses src/worker.js)
+  // Pull the support inbox into tickets every 2 minutes (serverless hosts sync when Support is opened)
+  if (!process.env.VERCEL) startInboxPolling();
   if (process.env.INLINE_WORKERS === 'true' && !process.env.VERCEL) {
     startWorkers().catch((err) => console.error('[agent] failed to start inline workers:', err.message));
   } else if (!process.env.VERCEL) {
@@ -2564,3 +2948,5 @@ app.listen(PORT, () => {
     console.log('[agent] queue workers are not running in this process; start them with "npm run worker" (or INLINE_WORKERS=true for local dev)');
   }
 });
+
+export default app;

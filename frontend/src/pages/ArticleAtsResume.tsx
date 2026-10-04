@@ -1,9 +1,30 @@
 import { useEffect } from 'react';
-import './Article.css';
+import { getArticle } from '../data/articles';
+import ArticleLayout from './resources/ArticleLayout';
 
 interface ArticleProps {
   setCurrentPage: (page: string) => void;
 }
+
+const TOC = [
+  { id: 'what-is-ats', label: 'What is an ATS and how does it work?' },
+  { id: 'why-rejected', label: 'Why good candidates get rejected' },
+  { id: 'formatting', label: 'ATS-friendly formatting rules' },
+  { id: 'keywords', label: 'Finding and using the right keywords' },
+  { id: 'sections', label: 'Structuring each resume section' },
+  { id: 'comparison', label: 'ATS-friendly vs. unfriendly' },
+  { id: 'file-format', label: 'PDF or DOCX?' },
+  { id: 'test', label: 'Testing your resume before applying' },
+  { id: 'myths', label: 'Common myths about ATS' },
+  { id: 'faqs', label: 'FAQs' },
+];
+
+const SUMMARY = [
+  { lead: 'Layout', text: 'Use a single-column layout with standard headings and fonts. Multi-column designs are the most common cause of parsing errors.' },
+  { lead: 'Keywords', text: 'Keywords are the biggest factor in how an ATS ranks you. Take them from the job description and use them naturally in your summary, skills and experience.' },
+  { lead: 'File format', text: 'Follow the posting first. Otherwise DOCX parses reliably almost everywhere, and a text-based PDF works for most modern systems.' },
+  { lead: 'Test first', text: 'Run the copy-paste test and an ATS checker before every application. It takes five minutes.' },
+];
 
 const FAQS = [
   { q: 'What does ATS-friendly resume mean?', a: 'It means a resume formatted so Applicant Tracking Systems can accurately read and categorize it — single-column layout, standard headings and fonts, no graphics, and keywords that match the job description.' },
@@ -19,6 +40,7 @@ const FAQS = [
 ];
 
 export default function ArticleAtsResume({ setCurrentPage }: ArticleProps) {
+  const article = getArticle('how-to-create-an-ats-friendly-resume')!;
   // Article + FAQ structured data for rich results
   useEffect(() => {
     const script = document.createElement('script');
@@ -50,37 +72,11 @@ export default function ArticleAtsResume({ setCurrentPage }: ArticleProps) {
     return () => { document.getElementById('article-jsonld')?.remove(); };
   }, []);
 
-  const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-
   return (
-    <article className="art-page">
-      <div className="art-breadcrumb">
-        <button onClick={() => setCurrentPage('home')}>Home</button> › <button onClick={() => setCurrentPage('blog')}>Blog</button> › ATS-Friendly Resume Guide
-      </div>
-
-      <span className="art-tag">Resume Guide</span>
-      <h1 className="art-h1">How to Create an ATS-Friendly Resume in 2026 (Step-by-Step Guide)</h1>
-      <div className="art-meta">By CV Mind Team · Updated July 8, 2026 · 12 min read</div>
-
+    <ArticleLayout article={article} toc={TOC} summary={SUMMARY} setCurrentPage={setCurrentPage}>
       <p>You spent hours perfecting your resume. You hit "Apply" on twenty jobs. Then… silence. No calls, no emails, not even a rejection.</p>
       <p>Here's what probably happened: a human never saw your resume. Before any recruiter opens your application, most companies run it through an Applicant Tracking System (ATS) — software that scans, sorts, and ranks resumes before a person gets involved. According to research from Jobscan, more than 97% of Fortune 500 companies use an ATS, and a well-known Harvard Business School study found that 88% of employers believe qualified candidates get filtered out simply because their resumes don't match the software's criteria.</p>
       <p>The good news? Beating the ATS isn't about tricks. It's about understanding how the software reads your resume and formatting yours so nothing gets lost in translation. In this guide, you'll learn exactly how to do that, step by step.</p>
-
-      <nav className="art-toc">
-        <div className="art-toc-title">Table of Contents</div>
-        <ol>
-          <li><button className="art-link-btn" onClick={() => jump('what-is-ats')}>What Is an ATS and How Does It Work?</button></li>
-          <li><button className="art-link-btn" onClick={() => jump('why-rejected')}>Why Good Candidates Get Rejected by ATS</button></li>
-          <li><button className="art-link-btn" onClick={() => jump('formatting')}>ATS-Friendly Resume Formatting Rules</button></li>
-          <li><button className="art-link-btn" onClick={() => jump('keywords')}>How to Find and Use the Right Keywords</button></li>
-          <li><button className="art-link-btn" onClick={() => jump('sections')}>Structuring Each Resume Section</button></li>
-          <li><button className="art-link-btn" onClick={() => jump('comparison')}>ATS-Friendly vs. Unfriendly: Comparison</button></li>
-          <li><button className="art-link-btn" onClick={() => jump('file-format')}>PDF or DOCX: Which Format to Use?</button></li>
-          <li><button className="art-link-btn" onClick={() => jump('test')}>How to Test Your Resume Before Applying</button></li>
-          <li><button className="art-link-btn" onClick={() => jump('myths')}>Common Myths About ATS</button></li>
-          <li><button className="art-link-btn" onClick={() => jump('faqs')}>FAQs</button></li>
-        </ol>
-      </nav>
 
       <h2 id="what-is-ats">What Is an ATS and How Does It Work?</h2>
       <p>An Applicant Tracking System is software that companies use to manage job applications. Popular systems include Workday, Greenhouse, Lever, Taleo, and iCIMS. When you apply for a job online, your resume usually lands in one of these systems first.</p>
@@ -244,15 +240,6 @@ export default function ArticleAtsResume({ setCurrentPage }: ArticleProps) {
       <p>An ATS isn't your enemy — it's a filter, and filters have rules. Once you know them, they're easy to follow: keep the layout simple, use standard headings, mirror the job description's language honestly, save in the right format, and test before you apply.</p>
       <p>Your skills deserve to be seen by a human. Don't let formatting be the reason they aren't.</p>
 
-      <div className="art-cta">
-        <h2>Ready to Get Past the Filter?</h2>
-        <p>Stop guessing whether your resume will make it through. CV Mind gives you everything in one free toolkit — an instant ATS score, an AI resume builder with recruiter-approved templates, and AI interview prep for what comes next.</p>
-        <div className="art-cta-buttons">
-          <button className="art-cta-primary" onClick={() => setCurrentPage('home')}>Check My Resume Free</button>
-          <button className="art-cta-secondary" onClick={() => setCurrentPage('resume-builder')}>Build My Resume</button>
-          <button className="art-cta-secondary" onClick={() => setCurrentPage('prep')}>Practice Interviews</button>
-        </div>
-      </div>
-    </article>
+    </ArticleLayout>
   );
 }

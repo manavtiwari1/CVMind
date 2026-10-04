@@ -1,0 +1,194 @@
+.ro-page {
+  --ro-green: #2bbf8e;
+  --ro-green-dark: #22a77b;
+  --ro-purple: #6f4fd6;
+  --ro-ink: #1c1f26;
+  --ro-muted: #6b7280;
+  --ro-line: #e3e7ee;
+  min-height: 80vh;
+  padding: 28px 16px 56px;
+  background: #fafbfc;
+  color: var(--ro-ink);
+  font-family: inherit;
+}
+.ro-center { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.ro-page.ro-center { min-height: 80vh; gap: 18px; }
+.ro-stage { gap: 14px; padding-top: 12px; animation: ro-in .35s ease both; }
+@keyframes ro-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.ro-spin { animation: ro-rot .8s linear infinite; }
+@keyframes ro-rot { to { transform: rotate(360deg); } }
+
+/* Stepper */
+.ro-stepper { display: flex; align-items: center; justify-content: center; list-style: none; margin: 0 auto 28px; padding: 0; }
+.ro-dot {
+  position: relative; width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 11px; font-weight: 700;
+  background: #a3b4d4; color: #fff;
+}
+.ro-dot.is-done, .ro-dot.is-active { background: var(--ro-green); }
+.ro-dot + .ro-dot { margin-left: 70px; }
+.ro-dot + .ro-dot::before {
+  content: ''; position: absolute; right: 100%; top: 50%; width: 70px; height: 2px;
+  background: var(--ro-line); transform: translateY(-50%);
+}
+.ro-dot.is-done + .ro-dot::before, .ro-dot.is-active + .ro-dot.is-done::before { background: var(--ro-green); }
+.ro-dot.is-done + .ro-dot.is-active::before { background: var(--ro-green); }
+
+/* Leo */
+.ro-leo { position: relative; width: 240px; height: 200px; animation: ro-float 4s ease-in-out infinite; }
+@keyframes ro-float { 50% { transform: translateY(-6px); } }
+.ro-leo-name {
+  position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%);
+  background: #fff; border: 1px solid var(--ro-line); border-radius: 999px;
+  padding: 2px 12px; font-size: 12px; font-weight: 700; color: var(--ro-green-dark);
+  box-shadow: 0 2px 8px rgba(20, 30, 50, .08);
+}
+.ro-loading-text { display: flex; align-items: center; gap: 8px; color: var(--ro-muted); font-size: 15px; margin: 0; }
+
+/* Text + buttons */
+.ro-title { font-size: clamp(1.4rem, 2.6vw, 1.9rem); font-weight: 500; line-height: 1.3; margin: 0; max-width: 560px; }
+.ro-sub { color: var(--ro-muted); font-size: .95rem; margin: 8px 0 0; }
+.ro-actions { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 8px; }
+.ro-btn {
+  display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 8px;
+  padding: 11px 26px; font: inherit; font-size: .9rem; font-weight: 700; color: #fff; cursor: pointer;
+  transition: background .15s, opacity .15s;
+}
+.ro-btn--green { background: var(--ro-green); }
+.ro-btn--green:hover:not(:disabled) { background: var(--ro-green-dark); }
+.ro-btn--purple { background: var(--ro-purple); }
+.ro-btn--purple:hover { background: #5d3fc0; }
+.ro-btn:disabled { background: #cfd5df; color: #8a93a3; cursor: not-allowed; }
+.ro-btn:focus-visible, .ro-link:focus-visible, .ro-go:focus-visible { outline: 2px solid var(--ro-purple); outline-offset: 2px; }
+.ro-link { background: none; border: 0; padding: 6px; font: inherit; font-size: .85rem; font-weight: 600; color: var(--ro-ink); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+.ro-link:hover { text-decoration: underline; }
+.ro-error { display: flex; align-items: center; gap: 6px; justify-content: center; color: #dc2626; font-size: .85rem; margin: 10px 0 0; }
+.ro-empty { text-align: center; color: var(--ro-muted); margin-top: 28px; }
+
+/* Job search step */
+.ro-job { max-width: 960px; margin: 0 auto; text-align: center; }
+.ro-search {
+  display: flex; align-items: center; gap: 8px; max-width: 480px; margin: 22px auto 0;
+  background: #fff; border: 1px solid var(--ro-line); border-radius: 999px; padding: 6px 8px 6px 16px;
+}
+.ro-search:focus-within { border-color: var(--ro-green); }
+.ro-search-icon { color: var(--ro-purple); flex: none; }
+.ro-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: .9rem; color: var(--ro-ink); }
+.ro-icon-btn { border: 0; background: none; color: var(--ro-ink); cursor: pointer; display: grid; place-items: center; padding: 4px; }
+.ro-go { flex: none; width: 28px; height: 28px; border-radius: 50%; border: 0; background: var(--ro-green); color: #fff; display: grid; place-items: center; cursor: pointer; }
+.ro-go:disabled { opacity: .5; cursor: not-allowed; }
+
+.ro-jobs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); height: 500px; margin-top: 22px; background: #fff; border: 1px solid var(--ro-line); border-radius: 10px; overflow: hidden; text-align: left; }
+.ro-jobs-list { overflow-y: auto; padding: 14px; border-right: 1px solid var(--ro-line); }
+.ro-jobs-count { font-size: .75rem; font-weight: 700; margin: 0 0 10px 4px; }
+.ro-job-card { display: flex; gap: 12px; width: 100%; text-align: left; font: inherit; background: #fff; border: 1px solid var(--ro-line); border-radius: 8px; padding: 12px; margin-bottom: 10px; cursor: pointer; }
+.ro-job-card:hover { background: #f7f9fb; }
+.ro-job-card.is-selected { border-color: var(--ro-green); background: #f2fbf7; }
+.ro-job-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ro-job-main strong { font-size: .82rem; }
+.ro-job-main span { font-size: .75rem; font-weight: 600; }
+.ro-job-main small { font-size: .7rem; color: var(--ro-muted); }
+.ro-logo { flex: none; width: 36px; height: 36px; border-radius: 8px; background: #eef2f8; color: var(--ro-purple); font-weight: 800; display: grid; place-items: center; }
+.ro-logo--lg { width: 48px; height: 48px; font-size: 1.2rem; }
+.ro-jobs-detail { overflow-y: auto; padding: 20px; }
+.ro-jobs-detail header { display: flex; gap: 14px; align-items: flex-start; }
+.ro-jobs-detail h2 { font-size: 1rem; margin: 0; }
+.ro-jobs-detail header p { margin: 2px 0; font-size: .82rem; text-decoration: underline; }
+.ro-jobs-detail small { color: var(--ro-muted); font-size: .72rem; }
+.ro-posted { margin-left: auto; font-size: .72rem; color: var(--ro-muted); white-space: nowrap; }
+.ro-jobs-detail h3 { font-size: .85rem; margin: 22px 0 8px; }
+.ro-detail-line { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--ro-muted); margin: 16px 0 0; }
+.ro-skills { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0 0 16px; padding: 0; }
+.ro-skills li { background: #eef7f3; color: #1b7a5a; border-radius: 999px; padding: 4px 12px; font-size: .75rem; font-weight: 600; }
+
+/* Upload + position */
+.ro-drop { width: min(480px, 100%); background: #fff; border: 2px dashed var(--ro-line); border-radius: 16px; padding: 28px 24px; transition: border-color .15s; }
+.ro-drop.is-over { border-color: var(--ro-green); }
+.ro-drop p { margin: 0 0 4px; font-size: .85rem; }
+.ro-drop .ro-btn { margin-top: 14px; }
+.ro-extracting { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--ro-green-dark); font-weight: 600; margin-top: 14px !important; }
+.ro-privacy { display: flex; align-items: center; gap: 6px; color: var(--ro-muted); font-size: .78rem; margin: 6px 0 0; }
+.ro-position { display: flex; gap: 12px; width: min(520px, 100%); margin-top: 12px; }
+.ro-position input { flex: 1; min-width: 0; font: inherit; font-size: .9rem; padding: 10px 12px; border: 1px solid var(--ro-green); border-radius: 6px; background: #fff; color: var(--ro-ink); outline: 0; }
+
+@media (max-width: 720px) {
+  .ro-dot + .ro-dot { margin-left: 34px; }
+  .ro-dot + .ro-dot::before { width: 34px; }
+  .ro-jobs { grid-template-columns: 1fr; height: auto; }
+  .ro-jobs-list { max-height: 320px; border-right: 0; border-bottom: 1px solid var(--ro-line); }
+  .ro-actions { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ro-leo, .ro-stage { animation: none; }
+}
+
+/* Quick start (template picked on the home page) */
+.ro-quick { padding-top: 12vh; }
+.ro-quick-tag { margin: 0 0 6px; padding: 6px 14px; border-radius: 999px; background: #eef7f3; color: #1b6e52; font-size: .82rem; }
+
+/* LinkedIn import step */
+.ro-linkedin { width: min(520px, 100%); }
+.ro-li-field { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: #fff; border: 1px solid var(--ro-green); border-radius: 6px; color: #1c1f26; }
+.ro-li-field input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: .88rem; padding: 10px 0; color: inherit; }
+.ro-link:disabled { opacity: .5; cursor: not-allowed; }
+.ro-or { margin: 2px 0 0; font-size: .78rem; color: var(--ro-muted); }
+.ro-hint { margin: 0; font-size: .75rem; color: var(--ro-muted); }
+.ro-btn--outline { background: #fff; color: var(--ro-ink); border: 1.5px solid var(--ro-line); }
+.ro-btn--outline:hover:not(:disabled) { border-color: var(--ro-green); color: var(--ro-green-dark); }
+
+/* ── Live job search (step 1) ───────────────────────────── */
+.ro-title { margin-left: auto; margin-right: auto; }
+.ro-job { max-width: 1060px; }
+.js-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 14px auto 0; max-width: 620px; }
+.js-chips button { border: 1px solid var(--ro-line); background: #fff; border-radius: 999px; padding: 6px 14px; font: inherit; font-size: .8rem; color: #3b4558; cursor: pointer; transition: border-color .15s, color .15s; }
+.js-chips button:hover { border-color: var(--ro-green); color: var(--ro-green-dark); }
+.js-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.55fr); height: min(620px, calc(100vh - 290px)); min-height: 440px; margin-top: 22px; background: #fff; border: 1px solid var(--ro-line); border-radius: 12px; overflow: hidden; text-align: left; box-shadow: 0 10px 30px rgba(20, 30, 60, .06); }
+.js-wrap.is-busy { opacity: .6; transition: opacity .2s; }
+.js-list { overflow-y: auto; padding: 14px; border-right: 1px solid var(--ro-line); background: #fbfcfd; }
+.js-count { margin: 2px 4px 12px; font-size: .78rem; color: #3b4558; display: grid; gap: 2px; }
+.js-count b { font-weight: 400; }
+.js-count span { font-size: .7rem; color: var(--ro-muted); }
+.js-card { position: relative; display: flex; gap: 12px; width: 100%; text-align: left; font: inherit; background: #fff; border: 1px solid var(--ro-line); border-radius: 10px; padding: 12px 12px 12px 12px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.js-card:hover { border-color: #c7cfdb; box-shadow: 0 4px 12px rgba(20, 30, 60, .06); }
+.js-card.is-on { border-color: var(--ro-green); background: #f3fbf8; box-shadow: inset 3px 0 0 var(--ro-green); }
+.js-logo { flex: none; display: grid; place-items: center; border-radius: 10px; background: #fff; border: 1px solid var(--ro-line); color: var(--ro-purple); font-weight: 800; overflow: hidden; }
+.js-logo img { width: 70%; height: 70%; object-fit: contain; }
+.js-card-main { display: grid; gap: 2px; min-width: 0; padding-right: 54px; }
+.js-card-main strong { font-size: .84rem; line-height: 1.3; color: var(--ro-ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.js-card-co { font-size: .76rem; font-weight: 600; color: #3b4558; }
+.js-card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .7rem; color: var(--ro-muted); }
+.js-card-meta span { display: inline-flex; align-items: center; gap: 3px; }
+.js-card-meta em { font-style: normal; font-weight: 700; color: #1b7a5a; background: #e6f6ef; border-radius: 4px; padding: 1px 6px; }
+.js-card-age { position: absolute; top: 12px; right: 12px; font-size: .66rem; color: var(--ro-muted); white-space: nowrap; }
+.js-detail { overflow-y: auto; padding: 22px 26px 28px; }
+.js-head { display: flex; gap: 14px; align-items: flex-start; }
+.js-head h2 { margin: 0; font-size: 1.2rem; line-height: 1.3; color: var(--ro-ink); }
+.js-co { margin: 2px 0 6px; font-size: .88rem; font-weight: 600; color: #3b4558; }
+.js-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; font-size: .76rem; color: var(--ro-muted); }
+.js-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.js-head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin: 18px 0 6px; padding-bottom: 18px; border-bottom: 1px solid var(--ro-line); }
+.js-apply { display: inline-flex; align-items: center; gap: 4px; font-size: .84rem; font-weight: 700; color: var(--ro-purple); text-decoration: none; }
+.js-apply:hover { text-decoration: underline; }
+.js-about { margin: 18px 0 10px; font-size: .95rem; color: var(--ro-ink); }
+.js-desc { font-size: .84rem; line-height: 1.65; color: #344054; }
+.js-desc h4 { margin: 16px 0 6px; font-size: .86rem; color: var(--ro-ink); }
+.js-desc p, .js-desc li { font-size: .84rem; line-height: 1.65; color: #344054; }
+.js-desc p { margin: 0 0 10px; }
+.js-desc ul { margin: 0 0 12px; padding-left: 20px; }
+.js-desc li { margin-bottom: 4px; }
+.js-muted { color: var(--ro-muted); font-size: .84rem; }
+.js-lines { display: grid; gap: 10px; }
+.js-lines span, .js-skel { display: block; height: 12px; border-radius: 6px; background: linear-gradient(100deg, #eef1f5 30%, #f7f9fb 50%, #eef1f5 70%); background-size: 200% 100%; animation: js-shimmer 1.2s linear infinite; }
+.js-skel { height: 84px; margin-bottom: 8px; border-radius: 10px; }
+.js-skel--tall { height: 100%; margin: 0; border-radius: 0; }
+@keyframes js-shimmer { to { background-position: -200% 0; } }
+.js-empty { max-width: 560px; margin: 34px auto 0; padding: 28px 24px; background: #fff; border: 1px dashed #cfd6e2; border-radius: 12px; color: var(--ro-muted); }
+.js-empty { text-align: center; }
+.js-empty svg { display: block; margin: 0 auto; color: var(--ro-purple); }
+.js-empty h2 { margin: 10px 0 6px; font-size: 1.05rem; color: var(--ro-ink); }
+.js-empty p { margin: 0; font-size: .86rem; line-height: 1.6; }
+@media (max-width: 860px) {
+  .js-wrap { grid-template-columns: 1fr; height: auto; }
+  .js-list { max-height: 360px; border-right: 0; border-bottom: 1px solid var(--ro-line); }
+}
+@media (prefers-reduced-motion: reduce) { .js-lines span, .js-skel { animation: none; } }

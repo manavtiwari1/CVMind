@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { authFetch } from '../lib/authFetch';
 import {
   Upload, FileText, Search, RefreshCw, ShieldCheck,
   Briefcase, MapPin, Clock, ExternalLink, AlertCircle, Sparkles
@@ -194,7 +195,7 @@ export default function JobFinder({ customApiKey }: JobFinderProps) {
       const headers: Record<string, string> = {};
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
 
-      const response = await fetch(`${baseUrl}/api/job-finder`, {
+      const response = await authFetch(`${baseUrl}/api/job-finder`, {
         method: 'POST',
         headers,
         body: formData,
@@ -209,7 +210,7 @@ export default function JobFinder({ customApiKey }: JobFinderProps) {
         throw new Error('Job search completed but returned no results.');
       }
     } catch (err) {
-      setErrorMsg(getErrorMessage(err) || 'Connection failed. Please check that the backend server is running.');
+      setErrorMsg(getErrorMessage(err) || 'Something went wrong on our side. Please try again in a moment.');
     } finally {
       clearInterval(stepInterval);
       setLoading(false);

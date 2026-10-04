@@ -1,0 +1,202 @@
+/* ════════════════════════════════════════════════════════════
+   Resources pages (Blog, About, FAQ, legal): plain white pages,
+   centred titles, grey cards and purple text links (prefix rsc-)
+   ════════════════════════════════════════════════════════════ */
+/* Shared tokens; the article page (.art) uses the same buttons and links */
+.rsc, .art {
+  --rsc-ink: #1f2933;
+  --rsc-ink-strong: #111827;
+  --rsc-muted: #52606d;
+  --rsc-soft: #6b7280;
+  --rsc-line: #e5e7eb;
+  --rsc-card: #f5f6fa;
+  --rsc-green: #2dc08d;
+  --rsc-green-dark: #22a577;
+  --rsc-link: #5b3fd6;
+}
+
+.rsc {
+  width: min(1200px, 100% - 2rem);
+  margin: 0 auto;
+  padding: 3.5rem 0 5rem;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--rsc-ink);
+  text-align: left;
+}
+
+.rsc h1, .rsc h2, .rsc h3, .rsc h4 { color: var(--rsc-ink-strong); letter-spacing: -0.02em; }
+
+.rsc-title {
+  margin: 0 0 0.9rem;
+  font-size: clamp(2rem, 4.2vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.rsc-lede {
+  max-width: 640px;
+  margin: 0 auto;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--rsc-muted);
+  text-align: center;
+}
+
+.rsc-eyebrow {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rsc-soft);
+}
+
+/* Purple text link with an arrow, as in "Read Full Article →" */
+.rsc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--rsc-link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.rsc-link:hover { text-decoration-thickness: 2px; }
+
+.rsc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.75rem 1.4rem;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--rsc-green);
+  border: 1.5px solid var(--rsc-green);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.rsc-btn:hover { background: var(--rsc-green-dark); border-color: var(--rsc-green-dark); }
+.rsc-btn--ghost { color: var(--rsc-ink-strong); background: #fff; border-color: var(--rsc-ink-strong); }
+.rsc-btn--ghost:hover { color: #fff; background: var(--rsc-ink-strong); border-color: var(--rsc-ink-strong); }
+
+.rsc-link:focus-visible, .rsc-btn:focus-visible, .rsc button:focus-visible {
+  outline: 2px solid var(--rsc-green);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Closing call-to-action band */
+.rsc-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-top: 4.5rem;
+  padding: 2.5rem;
+  background: var(--rsc-card);
+  border-radius: 16px;
+}
+.rsc-cta h2 { margin: 0 0 0.4rem; font-size: 1.5rem; font-weight: 700; }
+.rsc-cta p { margin: 0; max-width: 520px; line-height: 1.6; color: var(--rsc-muted); }
+.rsc-cta-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+
+/* ── Legal pages: sidebar + document ──────────────────────── */
+.rsc-legal-grid {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 3rem;
+  margin-top: 3.5rem;
+}
+
+.rsc-legal-nav {
+  position: sticky;
+  top: 96px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.rsc-legal-nav button {
+  padding: 0.55rem 0;
+  font: inherit;
+  font-size: 1.15rem;
+  text-align: left;
+  color: var(--rsc-ink);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.rsc-legal-nav button:hover { color: var(--rsc-green-dark); }
+.rsc-legal-nav button[aria-current='page'] { font-weight: 600; color: var(--rsc-green-dark); }
+
+.rsc-doc { max-width: 820px; font-size: 1rem; line-height: 1.7; }
+.rsc-doc-updated { margin: 0 0 2.5rem; font-size: 0.85rem; color: var(--rsc-muted); }
+
+.rsc-doc h2 { margin: 2.6rem 0 0.9rem; font-size: 1.6rem; font-weight: 500; }
+.rsc-doc h2:first-of-type { margin-top: 0; }
+.rsc-doc h3 { margin: 1.8rem 0 0.6rem; font-size: 1.1rem; font-weight: 700; }
+.rsc-doc p { margin: 0 0 1rem; }
+.rsc-doc ul { margin: 0 0 1.1rem; padding-left: 1.4rem; list-style: disc; }
+.rsc-doc li { margin-bottom: 0.55rem; }
+.rsc-doc strong { color: var(--rsc-ink-strong); }
+.rsc-doc a {
+  color: var(--rsc-link);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.rsc-doc a:hover { text-decoration-style: solid; }
+
+.rsc-doc table { width: 100%; margin: 0.4rem 0 1.4rem; border-collapse: collapse; font-size: 0.93rem; }
+.rsc-doc th, .rsc-doc td { padding: 0.7rem 0.8rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--rsc-line); }
+.rsc-doc th { font-weight: 700; color: var(--rsc-ink-strong); background: var(--rsc-card); }
+.rsc-table-wrap { overflow-x: auto; }
+
+.rsc-doc-toc {
+  margin: 0 0 2.5rem;
+  padding: 1.4rem 1.6rem;
+  background: var(--rsc-card);
+  border-radius: 12px;
+}
+.rsc-doc-toc p { margin: 0 0 0.6rem; font-weight: 700; color: var(--rsc-ink-strong); }
+.rsc-doc-toc ol { margin: 0; padding-left: 1.3rem; list-style: decimal; columns: 2; column-gap: 2rem; }
+.rsc-doc-toc li { margin-bottom: 0.35rem; break-inside: avoid; }
+.rsc-doc-toc button {
+  padding: 0;
+  font: inherit;
+  font-size: 0.95rem;
+  text-align: left;
+  color: var(--rsc-link);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.rsc-doc-toc button:hover { text-decoration: underline; }
+
+@media (max-width: 860px) {
+  .rsc { padding-top: 2.5rem; }
+  .rsc-legal-grid { grid-template-columns: 1fr; gap: 1.5rem; margin-top: 2rem; }
+  .rsc-legal-nav {
+    position: static;
+    flex-direction: row;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--rsc-line);
+  }
+  .rsc-legal-nav button { flex: none; padding: 0.4rem 0.8rem; font-size: 0.92rem; white-space: nowrap; border-radius: 999px; }
+  .rsc-legal-nav button[aria-current='page'] { color: #fff; background: var(--rsc-green-dark); }
+  .rsc-doc h2 { font-size: 1.35rem; }
+  .rsc-doc-toc ol { columns: 1; }
+  .rsc-cta { padding: 1.75rem; }
+}

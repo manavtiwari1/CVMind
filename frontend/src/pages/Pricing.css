@@ -310,48 +310,17 @@
 }
 
 @media (max-width: 768px) {
+  .pricing-wrapper {
+    padding: 1.5rem 0 4rem;
+  }
   .pricing-card-layout {
     grid-template-columns: 1fr;
     max-width: 420px;
   }
-}
-
-/* ── 3. Trust Section ────────────────────────────────────── */
-.pricing-payment-trust {
-  width: 100%;
-  max-width: 900px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  padding: 2rem 0;
-  margin-bottom: 6rem;
-  border-bottom: 1px solid rgba(124, 58, 237, 0.12);
-}
-
-.pricing-trust-header {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: #6b7280;
-}
-
-.pricing-payment-logos {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.pricing-payment-logos img {
-  height: 1.25rem;
-  opacity: 0.6;
-  filter: grayscale(1);
-  transition: opacity 0.2s;
-}
-
-.pricing-payment-logos img:hover {
-  opacity: 0.9;
-  filter: none;
+  .pricing-column-card {
+    min-width: 0;
+    padding: 2rem 1.25rem;
+  }
 }
 
 /* ── 4. Features Intro Sections ──────────────────────────── */
@@ -365,13 +334,13 @@
 .pricing-intro-inner,
 .pricing-tailor-inner {
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
   gap: 4rem;
   align-items: center;
 }
 
 .pricing-tailor-inner {
-  grid-template-columns: 0.9fr 1.1fr;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
 }
 
 .pricing-intro-content,
@@ -437,14 +406,15 @@
   object-fit: cover;
 }
 
-.pricing-tailor-img {
-  max-height: 280px;
+.pricing-sample {
+  overflow: hidden;
+  background: #ffffff;
 }
 
 @media (max-width: 768px) {
   .pricing-intro-inner,
   .pricing-tailor-inner {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 2.5rem;
   }
   .pricing-tailor-inner .pricing-tailor-visual {

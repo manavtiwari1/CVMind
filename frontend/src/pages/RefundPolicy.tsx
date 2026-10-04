@@ -1,75 +1,56 @@
-import './Legal.css';
+import LegalLayout from './resources/LegalLayout';
+import { SUPPORT_EMAIL } from '../data/support';
 
-export default function RefundPolicy() {
+interface RefundPolicyProps {
+  setCurrentPage: (page: string) => void;
+}
+
+export default function RefundPolicy({ setCurrentPage }: RefundPolicyProps) {
+  const mail = <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>;
+
   return (
-    <div className="legal-page animate-fade-in-up">
-      <div className="legal-hero">
-        <div className="legal-badge">Legal</div>
-        <h1 className="legal-title">Refund Policy</h1>
-        <p className="legal-meta">Last updated: June 20, 2026 &nbsp;·&nbsp; Effective immediately</p>
-      </div>
+    <LegalLayout page="refund-policy" title="Refund Policy" updated="June 20, 2026" setCurrentPage={setCurrentPage}>
+      <h2>Overview</h2>
+      <p>We want you to be happy with your CV Mind subscription. This policy explains when and how you can ask for a refund on a Pro plan.</p>
 
-      <div className="legal-body">
+      <h2>7-day money-back guarantee</h2>
+      <p>If you are not satisfied with Pro, you can ask for a full refund within <strong>7 calendar days</strong> of your first purchase. The guarantee covers first-time Pro purchases only, not renewals.</p>
 
-        <section className="legal-section">
-          <h2>1. Overview</h2>
-          <p>At CV Mind, we want you to be completely satisfied with your subscription. This Refund Policy explains when and how you may request a refund for a Pro plan subscription.</p>
-        </section>
+      <h2>Who is eligible</h2>
+      <p>A refund may be granted if:</p>
+      <ul>
+        <li>You ask within 7 days of the original purchase.</li>
+        <li>You have not used Pro features heavily (more than 10 AI-generated outputs).</li>
+        <li>It is your first subscription, not a renewal or reactivation.</li>
+      </ul>
+      <p>Refunds are <strong>not</strong> available for:</p>
+      <ul>
+        <li>Subscription renewals (monthly, quarterly or yearly).</li>
+        <li>Accounts suspended for breaking our Terms and Conditions.</li>
+        <li>Unused days within a billing cycle.</li>
+        <li>The Free plan, which has no charges.</li>
+      </ul>
 
-        <section className="legal-section">
-          <h2>2. 7-Day Money-Back Guarantee</h2>
-          <p>If you are not satisfied with your Pro subscription, you may request a full refund within <strong>7 calendar days</strong> of the initial purchase date. This guarantee applies to first-time Pro plan purchases only and is not applicable to renewal charges.</p>
-        </section>
+      <h2>How to ask for a refund</h2>
+      <p>Email our support team:</p>
+      <ul>
+        <li><strong>Email:</strong> {mail}</li>
+        <li><strong>Subject:</strong> Refund Request – [your registered email]</li>
+        <li><strong>Include:</strong> your name, registered email address, purchase date and the reason for the request.</li>
+      </ul>
+      <p>We reply within <strong>3–5 business days</strong>. Approved refunds go back to your original payment method within 7–10 business days, depending on your bank or card issuer.</p>
 
-        <section className="legal-section">
-          <h2>3. Eligibility for Refund</h2>
-          <p>A refund may be granted if:</p>
-          <ul>
-            <li>The refund request is submitted within 7 days of the original purchase.</li>
-            <li>You have not used Pro features extensively (more than 10 AI-generated outputs).</li>
-            <li>The request is for a first-time subscription (not a renewal or reactivation).</li>
-          </ul>
-          <p>Refunds are <strong>not</strong> available for:</p>
-          <ul>
-            <li>Subscription renewals (monthly, quarterly, or yearly).</li>
-            <li>Accounts that have been suspended due to violations of our Terms and Conditions.</li>
-            <li>Partial refunds for unused days within a billing cycle.</li>
-            <li>Free plan — no charges apply.</li>
-          </ul>
-        </section>
+      <h2>Cancelling</h2>
+      <p>You can cancel your subscription at any time from your account settings. Cancelling stops future billing but does not refund the current period. You keep Pro until the end of the billing period you have paid for.</p>
 
-        <section className="legal-section">
-          <h2>4. How to Request a Refund</h2>
-          <p>To request a refund, please contact our support team:</p>
-          <ul>
-            <li><strong>Email:</strong> <a href="mailto:contact@manavtiwari.in">contact@manavtiwari.in</a></li>
-            <li><strong>Subject:</strong> Refund Request – [Your Registered Email]</li>
-            <li><strong>Include:</strong> Your name, registered email address, purchase date, and reason for the refund request.</li>
-          </ul>
-          <p>We will respond within <strong>3–5 business days</strong>. Approved refunds will be processed back to your original payment method within 7–10 business days, depending on your bank or card issuer.</p>
-        </section>
+      <h2>Technical issues</h2>
+      <p>If a verifiable technical problem stops you using the Service and our support team cannot fix it in a reasonable time, you may be offered a pro-rated refund or account credit at our discretion.</p>
 
-        <section className="legal-section">
-          <h2>5. Cancellation</h2>
-          <p>You may cancel your subscription at any time from your account settings. Cancellation prevents future billing but does not trigger an automatic refund. You will continue to have access to Pro features until the end of your current billing period.</p>
-        </section>
+      <h2>Changes to this policy</h2>
+      <p>We may update this Refund Policy at any time. Changes are posted on this page with a new "Last updated" date.</p>
 
-        <section className="legal-section">
-          <h2>6. Technical Issues</h2>
-          <p>If you experience a verifiable technical issue that prevents you from using the Service, and our support team is unable to resolve it within a reasonable timeframe, you may be eligible for a pro-rated refund or account credit at our discretion.</p>
-        </section>
-
-        <section className="legal-section">
-          <h2>7. Changes to this Policy</h2>
-          <p>We reserve the right to update this Refund Policy at any time. Changes will be posted on this page with an updated effective date.</p>
-        </section>
-
-        <section className="legal-section">
-          <h2>8. Contact</h2>
-          <p>For any refund-related queries, reach us at <a href="mailto:contact@manavtiwari.in">contact@manavtiwari.in</a>.</p>
-        </section>
-
-      </div>
-    </div>
+      <h2>Contact</h2>
+      <p>For refund questions, email {mail}.</p>
+    </LegalLayout>
   );
 }

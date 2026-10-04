@@ -136,6 +136,12 @@ router.post('/jobs', requireCompany, async (req, res) => {
       return res.status(400).json({ error: 'Job title and description are required.' });
     }
 
+    // Companies suspended from the admin panel can't publish jobs
+    const company = await findCompanyByEmail(req.auth.email);
+    if (company?.status === 'suspended') {
+      return res.status(403).json({ error: 'Your company account is suspended. Please contact CVMind support.' });
+    }
+
     const job = await saveCentralJob({
       companyId: companyId || 'comp_cvmind',
       companyName: companyName || 'TechCorp Global',
@@ -171,7 +177,8 @@ router.get('/jobs', async (req, res) => {
     const filter = {};
     if (companyId) filter.companyId = companyId;
 
-    const jobs = await getCentralJobs(filter);
+    // Jobs hidden by moderators never show; the public board also skips paused jobs
+    const jobs = (await getCentralJobs(filter)).filter((j) => j.status !== 'HIDDEN' && (companyId || j.status !== 'PAUSED'));
     return res.json({ jobs });
   } catch (err) {
     return res.status(500).json({ error: 'Failed to fetch jobs.' });

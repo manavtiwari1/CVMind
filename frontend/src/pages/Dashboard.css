@@ -90,6 +90,10 @@
   transform: translate(-50%, -50%);
 }
 
+@media (max-width: 768px) {
+  .glow-ambient { display: none; }
+}
+
 /* glass-card reset for dashboard */
 .dashboard-container .glass-card {
   background: var(--glass-bg) !important;

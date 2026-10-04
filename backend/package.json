@@ -9,7 +9,8 @@
     "dev": "nodemon src/index.js",
     "worker": "node src/worker.js",
     "migrate:auto-apply": "node scripts/migrate-auto-apply-json.mjs",
-    "test": "node scripts/test.mjs"
+    "test": "node scripts/test.mjs",
+    "migrate:email-verified": "node scripts/migrate-email-verified.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.22.0",
@@ -20,6 +21,8 @@
     "express": "^4.21.1",
     "express-rate-limit": "^8.7.0",
     "google-auth-library": "^10.6.2",
+    "imapflow": "^2.2.2",
+    "mailparser": "^3.9.33",
     "mammoth": "^1.8.0",
     "mongoose": "^9.6.2",
     "multer": "^1.4.5-lts.1",

@@ -1,0 +1,108 @@
+/* Mega menu panel: columns separated by hairlines, icon tiles, plain link column. */
+.nm-panel {
+  display: flex;
+  align-items: stretch;
+  padding: 0.6rem 0.4rem;
+}
+
+.nm-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 270px;
+  padding: 0 0.6rem;
+}
+
+.nm-col + .nm-col { border-left: 1px solid #eceef1; }
+.nm-col--links { min-width: 240px; }
+
+.nm-heading {
+  padding: 0.35rem 0.6rem 0.6rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+/* Higher specificity than the generic link rule in navigation-menu.css */
+[data-slot="navigation-menu-link"].nm-tile {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.5rem 0.6rem;
+}
+
+.nm-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: #374151;
+  background: #f3f4f6;
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+[data-slot="navigation-menu-link"].nm-tile:hover .nm-icon {
+  color: #fff;
+  background: #2dc08d;
+}
+
+.nm-text { display: flex; flex-direction: column; min-width: 0; }
+
+.nm-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.3;
+}
+
+.nm-desc {
+  margin-top: 0.1rem;
+  font-size: 0.775rem;
+  font-weight: 400;
+  color: #6b7280;
+  line-height: 1.35;
+}
+
+.nm-badge {
+  padding: 1px 6px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+  border-radius: 99px;
+}
+.nm-badge--new { background: linear-gradient(135deg, #10b981, #06b6d4); }
+.nm-badge--soon { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+
+[data-slot="navigation-menu-link"].nm-link {
+  padding: 0.55rem 0.6rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+[data-slot="navigation-menu-link"].nm-link:hover { color: #0d0d0d; }
+
+[data-slot="navigation-menu-link"]:focus-visible {
+  outline: 2px solid #2dc08d;
+  outline-offset: -2px;
+}
+
+/* The floating panel inherits a black default border colour; use the soft grey from the design. */
+[data-slot="navigation-menu-content"] {
+  border-color: #e5e7eb !important;
+  border-radius: 14px !important;
+  box-shadow: 0 10px 32px -4px rgba(0, 0, 0, 0.12), 0 4px 6px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.nm-col { min-width: 290px; }
+.nm-title { white-space: nowrap; }
+
+.nm-col.nm-col--links { min-width: 240px; }

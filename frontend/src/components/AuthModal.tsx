@@ -16,6 +16,9 @@ import {
 } from './ui/sign-up';
 import { useRef } from 'react';
 import { getErrorMessage } from '../utils/errors';
+import { setSession } from '../lib/session';
+import { siteOrigin } from '../lib/hosts';
+import VerifyEmailPanel from './VerifyEmailPanel';
 
 /* ─── Types ─────────────────────────────────────────────────────── */
 
@@ -87,10 +90,14 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  // Set by the server for risky sign-ups (e.g. a disposable address): adds the captcha step to sign-up
+  const [signupCaptcha, setSignupCaptcha] = useState(false);
+  // After sign-up: the "Verify your email address" step for this address
+  const [verifyFor, setVerifyFor] = useState<{ email: string; sendFailed: boolean } | null>(null);
 
   const confettiRef = useRef<ConfettiRef>(null);
 
-  const steps = MODE_STEPS[mode];
+  const steps = mode === 'signUp' && signupCaptcha ? [...MODE_STEPS.signUp, 'captcha'] : MODE_STEPS[mode];
   const currentStepName = steps[step];
   const isLastStep = step === steps.length - 1;
 
@@ -118,6 +125,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       setCaptcha(null); setCaptchaAnswer('');
       setSuccessMsg(null);
       setLoading(false); setDone(false);
+      setSignupCaptcha(false); setVerifyFor(null);
       // Surface OAuth redirect errors (GitHub/LinkedIn) passed back via query param
       setErrorMsg(params.get('authError'));
     }
@@ -134,10 +142,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     }
   }, [isOpen]);
 
-  /* Load a fresh captcha whenever the sign-in captcha step is shown ─ */
+  /* Load a fresh captcha whenever the captcha step is shown ─ */
   useEffect(() => {
-    if (isOpen && mode === 'signIn' && MODE_STEPS.signIn[step] === 'captcha') loadCaptcha();
-  }, [isOpen, mode, step]);
+    if (isOpen && currentStepName === 'captcha') loadCaptcha();
+  }, [isOpen, currentStepName]);
 
   async function loadCaptcha() {
     setCaptchaAnswer('');
@@ -165,6 +173,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     setShowPw(false); setShowConfirm(false);
     setCaptcha(null); setCaptchaAnswer('');
     setDone(false);
+    setSignupCaptcha(false);
   }
 
   function goBack() {
@@ -241,14 +250,23 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       try {
         const res = await fetch(`${getBaseUrl()}/api/auth/signup`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password }),
+          body: JSON.stringify({ name, email, password, captchaId: captcha?.id, captchaAnswer }),
         });
         const data = await res.json();
+        if (data.captchaRequired) {
+          // The server wants a captcha for this sign-up: show (or refresh) the captcha step
+          setErrorMsg(data.error || null);
+          if (signupCaptcha) loadCaptcha();
+          else { setSignupCaptcha(true); setStep(MODE_STEPS.signUp.length); }
+          return;
+        }
         if (!res.ok) throw new Error(data.error || 'Sign up failed.');
-        localStorage.setItem('cvmind_logged_in', 'true');
-        localStorage.setItem('cvmind_user', JSON.stringify(data.user));
-        fireSuccess();
-      } catch (err) { setErrorMsg(getErrorMessage(err) || 'Connection failed.'); }
+        setSession(data.user);
+        setVerifyFor({ email: data.user?.email || email, sendFailed: data.verificationEmailSent === false });
+      } catch (err) {
+        setErrorMsg(getErrorMessage(err) || 'Connection failed.');
+        if (signupCaptcha) loadCaptcha();
+      }
       finally { setLoading(false); }
       return;
     }
@@ -262,8 +280,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Authentication failed.');
-      localStorage.setItem('cvmind_logged_in', 'true');
-      localStorage.setItem('cvmind_user', JSON.stringify(data.user));
+      setSession(data.user);
       fireSuccess();
     } catch (err) {
       setErrorMsg(getErrorMessage(err) || 'Connection failed.');
@@ -276,7 +293,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
   function startGoogleRedirectFlow() {
     const clientId = '1036904236561-m92usq7j7pso47r9k02n9dtdmm563162.apps.googleusercontent.com';
-    const redirectUri = window.location.origin + '/';
+    // Google only knows www.cvmind.in, so app.cvmind.in sign-ins return there too; www then
+    // shares the session and sends the user on to the app (enterAfterSignIn in App)
+    const redirectUri = siteOrigin() + '/';
     const responseType = 'id_token';
     const scope = 'openid email profile';
     const nonce = 'cvmindnonce' + Math.random().toString(36).substring(2, 15);
@@ -312,7 +331,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
   const headings: Record<AuthMode, string[]> = {
     signIn:         ['Welcome back.', 'Great to see you.', 'Sign in below.'],
-    signUp:         ['Create your account.', 'Join CV Mind.', 'Get started today.'],
+    signUp:         ['Create your account.', 'Join CVMind.', 'Get started today.'],
     forgotPassword: ['Forgot password?', 'No worries.', 'Reset it now.'],
     resetPassword:  ['Choose a new password.', 'Almost done.', 'Make it strong.'],
   };
@@ -357,11 +376,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               <Sparkles size={15} className="text-white" />
             </div>
             <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-              CV Mind
+              CVMind
             </span>
           </div>
           <button
-            onClick={onClose}
+            // Once the account exists the user is signed in, even if they close before verifying
+            onClick={verifyFor ? () => { onSuccess(); onClose(); } : onClose}
             className="flex h-9 w-9 items-center justify-center rounded-full transition-all hover:opacity-70"
             style={{
               background: 'var(--bg-card)',
@@ -379,19 +399,30 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           <div className="w-full max-w-[420px]">
 
             {/* Heading */}
-            <div className="mb-8 text-center">
-              <h1 className="mb-2 text-3xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-                <TextLoop interval={3.5}>
-                  {headings[mode].map((h, i) => <span key={i}>{h}</span>)}
-                </TextLoop>
-              </h1>
-              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                {stepHints[currentStepName]}
-              </p>
-            </div>
+            {verifyFor && !done ? (
+              <div className="mb-8 text-center">
+                <h1 className="mb-2 text-3xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                  Verify your email address
+                </h1>
+                <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                  Your account is ready. One last step.
+                </p>
+              </div>
+            ) : (
+              <div className="mb-8 text-center">
+                <h1 className="mb-2 text-3xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                  <TextLoop interval={3.5}>
+                    {headings[mode].map((h, i) => <span key={i}>{h}</span>)}
+                  </TextLoop>
+                </h1>
+                <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                  {stepHints[currentStepName]}
+                </p>
+              </div>
+            )}
 
             {/* Step dots */}
-            <StepDots total={steps.length} current={step} />
+            {!verifyFor && <StepDots total={steps.length} current={step} />}
 
             {/* Card */}
             <div
@@ -404,7 +435,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             >
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={`${mode}-${step}`}
+                  key={verifyFor ? 'verify' : `${mode}-${step}`}
                   initial={{ opacity: 0, x: 20, filter: 'blur(4px)' }}
                   animate={{ opacity: 1, x: 0,  filter: 'blur(0px)' }}
                   exit={{    opacity: 0, x: -20, filter: 'blur(4px)' }}
@@ -422,12 +453,19 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                         <CheckCircle size={48} style={{ color: 'var(--green)' }} />
                       </motion.div>
                       <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                        {mode === 'signUp' ? 'Account created!' : 'Signed in!'}
+                        {verifyFor ? 'Email verified!' : mode === 'signUp' ? 'Account created!' : 'Signed in!'}
                       </p>
                       <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
                         Redirecting you now…
                       </p>
                     </div>
+                  ) : verifyFor ? (
+                    <VerifyEmailPanel
+                      email={verifyFor.email}
+                      initialCooldown={verifyFor.sendFailed ? 0 : 60}
+                      sendFailed={verifyFor.sendFailed}
+                      onVerified={fireSuccess}
+                    />
                   ) : (
                     <>
                       {/* Email step */}
@@ -516,7 +554,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                         </BlurFade>
                       )}
 
-                      {/* Captcha step (sign in) */}
+                      {/* Captcha step (sign in, and risky sign-ups) */}
                       {currentStepName === 'captcha' && (
                         <BlurFade delay={0}>
                           <div className="flex flex-col gap-3">
@@ -737,8 +775,17 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               )}
             </AnimatePresence>
 
+            {/* After sign-up: carry on with limited access until the email is verified */}
+            {verifyFor && !done && (
+              <p className="mt-6 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                <button type="button" onClick={() => { onSuccess(); onClose(); }} className="font-semibold" style={{ color: 'var(--blue)' }}>
+                  I'll verify later
+                </button>
+              </p>
+            )}
+
             {/* Mode toggle footer */}
-            {!done && !isForgotOrReset && (
+            {!done && !isForgotOrReset && !verifyFor && (
               <p className="mt-6 text-center text-sm" style={{ color: 'var(--text-tertiary)' }}>
                 {mode === 'signIn' ? (
                   <>

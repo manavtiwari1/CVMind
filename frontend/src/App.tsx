@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import Chatbot from './components/Chatbot';
 import Home from './pages/Home';
 import About from './pages/About';
-import Contact from './pages/Contact';
+import Account from './pages/Account';
+import HelpCenter from './pages/HelpCenter';
+import MyDocuments from './pages/MyDocuments';
 import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
+import SiteBanner from './components/SiteBanner';
+import AppUpdateGate from './components/AppUpdateGate';
 import Tailor from './pages/Tailor';
 import Prep from './pages/Prep';
 import CoverLetter from './pages/CoverLetter';
@@ -27,6 +31,8 @@ import Products from './pages/Products';
 // import JobFinder from './pages/JobFinder'; // temporarily disabled — restore with the job-finder case below
 import ResumeBuilderLanding from './pages/ResumeBuilderLanding';
 import Pricing from './pages/Pricing';
+import PricingSoon from './pages/PricingSoon';
+import { PRICING_LOCKED } from './lib/pricing';
 import AuthModal from './components/AuthModal';
 import Terms from './pages/Terms';
 import RefundPolicy from './pages/RefundPolicy';
@@ -34,42 +40,70 @@ import Disclaimer from './pages/Disclaimer';
 import Proofreading from './pages/Proofreading';
 import AutoApply from './pages/AutoApply';
 import CompanyPortal from './pages/CompanyPortal';
-import CareerCopilot from './pages/CareerCopilot';
 import ArticleAtsResume from './pages/ArticleAtsResume';
 import CopyrightPolicy from './pages/CopyrightPolicy';
 import ArticlePage from './pages/ArticlePage';
 import CVmindCode from './pages/code/CVmindCode';
 import CVmindCodeLanding from './pages/code/CVmindCodeLanding';
+import NotFound from './pages/NotFound';
+import VerifyEmail from './pages/VerifyEmail';
+import VerifyEmailGate from './components/VerifyEmailGate';
+import PageLoader from './components/PageLoader';
 import { ARTICLES } from './data/articles';
-import DigitalSerenityBackground from './components/DigitalSerenityBackground';
-import TawkChat from './components/TawkChat';
 import { applySEO } from './utils/seo';
 import { getErrorMessage } from './utils/errors';
+import { APP_PAGES, PUBLIC_APP_PAGES, isAppHost, isCrossHost, isSplitHost, siteOrigin, urlForPage } from './lib/hosts';
+import { clearSession, setSession } from './lib/session';
+import { peekPickedTemplate } from './lib/templatePick';
+import { authFetch, AUTH_REQUIRED_EVENT, VERIFY_REQUIRED_EVENT } from './lib/authFetch';
+import { readUser, saveUser, USER_CHANGE_EVENT } from './lib/currentUser';
 import type { LoadedWork, ResumeAnalysis } from './types/api';
 import './styles/theme.css';
 import './styles/3d-effects.css';
 import './styles/skeleton.css';
 
+// How long the loading screen shows when moving to another page
+const ROUTE_LOADER_MS = 450;
+
+const VALID_PAGES = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'copyright-policy', 'account', 'help-center', 'my-documents', 'verify-email', ...ARTICLES.map(a => a.slug)];
+
+// Leo's pages (Resume Tailorer, Interview Prep AI, Voice Prep AI, AI Proofreading) and the Career tools
+const GUIDED_PAGES = ['tailor', 'prep', 'voice-prep', 'proofreading', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'career-courses', 'elevator-pitch', 'career-roadmap'];
+
+// Signed-in pages an unverified account can still open (the server enforces the rest)
+const UNVERIFIED_OPEN_PAGES = ['account', 'my-documents'];
+
+// Sign-in addresses open the AuthModal over the home page
+const AUTH_PATHS = ['/sign-in', '/sign-up', '/login'];
+
+// The page an address shows: null for the site root, 'not-found' for anything the app doesn't serve
+function pageFromPath(pathname: string): string | null {
+  if (pathname.startsWith('/portfolio/')) return 'portfolio';
+  if (AUTH_PATHS.includes(pathname)) return 'home';
+  const page = pathname.replace(/^\/+|\/+$/g, '');
+  if (!page || page === 'index.html') return null;
+  return VALID_PAGES.includes(page) ? page : 'not-found';
+}
 
 export default function App() {
   const [currentPage, setCurrentPageState] = useState<string>(() => {
-    const pathname = window.location.pathname;
-    if (pathname.startsWith('/portfolio/')) {
-      return 'portfolio';
-    }
-    const urlPage = pathname.replace(/^\//, '');
-    const validPages = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'career-copilot', 'copyright-policy', ...ARTICLES.map(a => a.slug)];
-    if (urlPage && validPages.includes(urlPage)) {
-      return urlPage;
-    }
-    const savedPage = localStorage.getItem('cvmind_current_page');
-    if (savedPage && validPages.includes(savedPage)) {
+    const urlPage = pageFromPath(window.location.pathname);
+    if (urlPage) return urlPage;
+    // On cvmind.in the address always decides the page, so a remembered app page can't open on www
+    const savedPage = isSplitHost() ? null : localStorage.getItem('cvmind_current_page');
+    if (savedPage && VALID_PAGES.includes(savedPage)) {
       return savedPage;
     }
     return 'home';
   });
 
-  const theme = 'light';
+  // Loading screen between pages; started by navigation handlers, cleared by the timer below
+  const [routeLoading, setRouteLoading] = useState(false);
+  useEffect(() => {
+    if (!routeLoading) return;
+    const t = setTimeout(() => setRouteLoading(false), ROUTE_LOADER_MS);
+    return () => clearTimeout(t);
+  }, [routeLoading]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', 'light');
@@ -103,13 +137,40 @@ export default function App() {
   });
   const [showAuthModal, setShowAuthModal] = useState<boolean>(() => {
     const pathname = window.location.pathname;
-    if (pathname === '/sign-in' || pathname === '/sign-up' || pathname === '/login') return true;
+    if (AUTH_PATHS.includes(pathname)) return true;
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.get('resetToken') && searchParams.get('email')) return true;
     // AuthModal reads and clears ?authError itself to show the message
     return Boolean(searchParams.get('authError'));
   });
   const [loadedWork, setLoadedWork] = useState<LoadedWork | null>(null);
+  // false only once the server has said this account's email isn't verified
+  const [emailVerified, setEmailVerified] = useState<boolean | undefined>(() => readUser()?.emailVerified);
+  const [verifyGateOpen, setVerifyGateOpen] = useState(false);
+
+  // Follow the stored session: sign-in, verification in this or another tab, sign-out
+  useEffect(() => {
+    const sync = () => setEmailVerified(readUser()?.emailVerified);
+    window.addEventListener(USER_CHANGE_EVENT, sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener(USER_CHANGE_EVENT, sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+
+  // The server refused a request: unverified email → verify screen, signed out → sign-in
+  useEffect(() => {
+    const onVerify = () => setVerifyGateOpen(true);
+    const onAuth = () => { if (localStorage.getItem('cvmind_logged_in') !== 'true') setShowAuthModal(true); };
+    window.addEventListener(VERIFY_REQUIRED_EVENT, onVerify);
+    window.addEventListener(AUTH_REQUIRED_EVENT, onAuth);
+    return () => {
+      window.removeEventListener(VERIFY_REQUIRED_EVENT, onVerify);
+      window.removeEventListener(AUTH_REQUIRED_EVENT, onAuth);
+    };
+  }, []);
+  const [builderFocus, setBuilderFocus] = useState<false | 'flow' | 'studio'>(false);
 
   useEffect(() => {
     localStorage.setItem('cvmind_aa_access', 'true');
@@ -123,12 +184,15 @@ export default function App() {
     const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
 
     const signOut = (message: string) => {
-      localStorage.removeItem('cvmind_logged_in');
-      localStorage.removeItem('cvmind_user');
-      setIsLoggedIn(false);
-      setCurrentPageState('home');
+      clearSession();
       const params = new URLSearchParams(window.location.search);
       params.set('authError', message);
+      if (isAppHost()) {
+        window.location.replace(`${siteOrigin()}/?${new URLSearchParams({ authError: message })}`);
+        return;
+      }
+      setIsLoggedIn(false);
+      setCurrentPageState('home');
       window.history.replaceState({}, '', window.location.pathname + `?${params.toString()}`);
       setShowAuthModal(true);
     };
@@ -141,11 +205,18 @@ export default function App() {
         signOut('Please sign in again to continue.');
         return;
       }
-      fetch(`${base}/api/auth/account-status?email=${encodeURIComponent(user.email)}`)
+      // With the token, so a session signed out elsewhere also ends here
+      authFetch(`${base}/api/auth/account-status?email=${encodeURIComponent(user.email)}`)
         .then(r => r.json())
         .then(d => {
           if (d && d.active === false) {
             signOut(d.message || 'Your account access has been restricted.');
+            return;
+          }
+          // Sessions from before verification existed learn their state here
+          const stored = readUser();
+          if (stored && typeof d?.emailVerified === 'boolean' && stored.emailVerified !== d.emailVerified) {
+            saveUser({ ...stored, emailVerified: d.emailVerified });
           }
         })
         .catch(() => {}); // network/offline — never sign the user out on errors
@@ -157,23 +228,42 @@ export default function App() {
     return () => document.removeEventListener('visibilitychange', onFocus);
   }, [isLoggedIn]);
 
-  const setCurrentPage = (page: string) => {
+  // `page` may carry a query string, e.g. 'account?tab=billing'
+  const setCurrentPage = (target: string) => {
+    const [page, query = ''] = target.split('?');
+    const search = query ? `?${query}` : '';
+    // Pages on the other cvmind.in host (site vs app) need a full page load
+    if (isCrossHost(page)) {
+      // sessionStorage doesn't cross hosts, so a template picked on the site travels in the URL
+      const template = page === 'resume-editor' ? peekPickedTemplate() : null;
+      window.location.assign(urlForPage(page, template ? `?template=${encodeURIComponent(template)}` : search));
+      return;
+    }
+    if (page !== currentPage) setRouteLoading(true);
     setCurrentPageState(page);
     localStorage.setItem('cvmind_current_page', page);
     const newPath = page === 'home' ? '/' : `/${page}`;
-    window.history.pushState({}, '', newPath);
+    const depth = (window.history.state?.cvDepth ?? 0) + 1;
+    window.history.pushState({ cvDepth: depth }, '', newPath + search);
+  };
+
+  // Back on app product pages: the previous in-app page, or My Documents when the page was opened directly
+  const goBack = () => {
+    if ((window.history.state?.cvDepth ?? 0) > 0) window.history.back();
+    else setCurrentPage('my-documents');
+  };
+
+  // Where a fresh sign-in lands: the home page, or My Documents when signing in on the app host
+  const enterAfterSignIn = () => {
+    setCurrentPage(isAppHost() ? 'my-documents' : 'home');
   };
 
   useEffect(() => {
     const handlePopState = () => {
-      const pathname = window.location.pathname;
-      if (pathname.startsWith('/portfolio/')) {
-        setCurrentPageState('portfolio');
-        return;
-      }
-      const page = pathname.replace(/^\//, '') || 'home';
+      const page = pageFromPath(window.location.pathname) || 'home';
+      setRouteLoading(true);
       setCurrentPageState(page);
-      localStorage.setItem('cvmind_current_page', page);
+      if (VALID_PAGES.includes(page)) localStorage.setItem('cvmind_current_page', page);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -190,12 +280,16 @@ export default function App() {
 
   // Private route interceptor — all private pages require sign-in only (no paid gating)
   useEffect(() => {
-    const privatePages = ['prep', 'resume-editor', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'proofreading', 'tailor', 'voice-prep', 'portfolio-gen', 'job-finder', 'career-courses', 'elevator-pitch', 'career-roadmap', 'auto-apply', 'career-copilot'];
-
-    if (privatePages.includes(currentPage) && !isLoggedIn) {
-      // setCurrentPage also updates browser history, so this redirect has to run in an effect
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCurrentPage('home');
+    if (APP_PAGES.includes(currentPage) && !isLoggedIn) {
+      if (isAppHost()) {
+        // 'home' belongs to www; on the app host just show sign-in over it
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setCurrentPageState('home');
+        window.history.replaceState({}, '', '/sign-in');
+      } else {
+        // setCurrentPage also updates browser history, so this redirect has to run in an effect
+        setCurrentPage('home');
+      }
       setShowAuthModal(true);
     }
   }, [currentPage, isLoggedIn]);
@@ -203,7 +297,9 @@ export default function App() {
   // Sign-in URLs open the AuthModal (see showAuthModal's initial state); tidy the URL
   useEffect(() => {
     const pathname = window.location.pathname;
-    if (pathname === '/sign-in' || pathname === '/sign-up' || pathname === '/login') {
+    // The app host keeps /sign-in: its '/' means My Documents
+    if (isAppHost()) return;
+    if (AUTH_PATHS.includes(pathname)) {
       window.history.replaceState({}, '', '/');
     }
   }, []);
@@ -236,10 +332,10 @@ export default function App() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Google login failed.');
 
-        localStorage.setItem('cvmind_logged_in', 'true');
-        localStorage.setItem('cvmind_user', JSON.stringify(data.user));
+        setSession(data.user);
         setIsLoggedIn(true);
-        setCurrentPage('dashboard');
+        // Google returns to the www home page (see AuthModal); the user stays there, signed in
+        setCurrentPage('home');
       } catch (err) {
         console.error('Google Redirect Auth Error:', err);
         // Surface the failure (e.g. banned/suspended account) in the auth modal
@@ -272,20 +368,25 @@ export default function App() {
       const user = JSON.parse(new TextDecoder().decode(bytes));
       if (!user?.email) throw new Error('Invalid OAuth payload');
 
-      localStorage.setItem('cvmind_logged_in', 'true');
-      localStorage.setItem('cvmind_user', JSON.stringify(user));
+      setSession(user);
       // One-time login from the OAuth redirect URL; setCurrentPage also updates browser history
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoggedIn(true);
-      setCurrentPage('dashboard');
+      enterAfterSignIn();
     } catch (err) {
       console.error('OAuth Redirect Auth Error:', err);
     }
+    // Runs once, for the GitHub/LinkedIn redirect back to the site
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
   const handleSignOut = () => {
-    localStorage.removeItem('cvmind_logged_in');
+    clearSession();
+    if (isAppHost()) {
+      window.location.assign(`${siteOrigin()}/`);
+      return;
+    }
     setIsLoggedIn(false);
     resetAnalysis();
   };
@@ -313,11 +414,17 @@ export default function App() {
           />
         );
       case 'about':
-        return <About />;
+        return <About setCurrentPage={setCurrentPage} />;
+      case 'account':
+        return <Account setCurrentPage={setCurrentPage} handleSignOut={handleSignOut} setLoadedWork={setLoadedWork} />;
+      case 'my-documents':
+        return <MyDocuments setCurrentPage={setCurrentPage} handleSignOut={handleSignOut} setLoadedWork={setLoadedWork} />;
+      // The Contact page is the Help Center's contact form
+      case 'help-center':
       case 'contact':
-        return <Contact />;
+        return <HelpCenter setCurrentPage={setCurrentPage} page={currentPage} />;
       case 'privacy':
-        return <Privacy />;
+        return <Privacy setCurrentPage={setCurrentPage} />;
       case 'faq':
         return <FAQ setCurrentPage={setCurrentPage} />;
       case 'blog':
@@ -337,69 +444,82 @@ export default function App() {
       case 'admin':
         return <Admin setCurrentPage={setCurrentPage} />;
       case 'tailor':
-        return <Tailor customApiKey={customApiKey} />;
+        return <Tailor customApiKey={customApiKey} setCurrentPage={setCurrentPage} loadedWork={loadedWork} setLoadedWork={setLoadedWork} onFocusChange={setBuilderFocus} />;
       case 'prep':
         return (
-          <Prep 
+          <Prep
             customApiKey={customApiKey}
             resumeText={resumeText}
             setResumeText={setResumeText}
             setCurrentPage={setCurrentPage}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'linkedin':
         return (
-          <LinkedIn 
+          <LinkedIn
             customApiKey={customApiKey}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'linkedin-bio':
         return (
-          <LinkedInBio 
+          <LinkedInBio
             customApiKey={customApiKey}
             resumeText={resumeText}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'linkedin-outreach':
         return (
-          <LinkedInOutreach 
+          <LinkedInOutreach
             customApiKey={customApiKey}
             resumeText={resumeText}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'career-courses':
         return (
-          <CareerCourses 
+          <CareerCourses
             customApiKey={customApiKey}
             resumeText={resumeText}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'elevator-pitch':
         return (
-          <ElevatorPitch 
+          <ElevatorPitch
             customApiKey={customApiKey}
             resumeText={resumeText}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'career-roadmap':
         return (
-          <CareerRoadmap 
+          <CareerRoadmap
             customApiKey={customApiKey}
             resumeText={resumeText}
             loadedWork={loadedWork}
             setLoadedWork={setLoadedWork}
+            setCurrentPage={setCurrentPage}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'linkedin-post':
@@ -416,6 +536,11 @@ export default function App() {
           <VoicePrep
             customApiKey={customApiKey}
             resumeText={resumeText}
+            setResumeText={setResumeText}
+            setCurrentPage={setCurrentPage}
+            loadedWork={loadedWork}
+            setLoadedWork={setLoadedWork}
+            onFocusChange={setBuilderFocus}
           />
         );
       case 'portfolio-gen':
@@ -424,6 +549,7 @@ export default function App() {
             customApiKey={customApiKey}
             resumeText={resumeText}
             setCurrentPage={setCurrentPage}
+            onExit={goBack}
           />
         );
       case 'products':
@@ -435,8 +561,7 @@ export default function App() {
             <div style={{fontSize:'3rem'}}>🔍</div>
             <h2 style={{fontSize:'1.8rem',fontWeight:800,margin:0}}>AI Job Finder</h2>
             <div style={{display:'inline-flex',alignItems:'center',gap:'6px',background:'linear-gradient(135deg,#ff9f0a,#ff453a)',color:'#fff',padding:'4px 14px',borderRadius:'99px',fontSize:'0.78rem',fontWeight:700,letterSpacing:'0.05em'}}>TEMPORARILY UNAVAILABLE</div>
-            <p style={{color:'#6e6e73',fontSize:'1rem',maxWidth:'440px',lineHeight:1.6,margin:0}}>AI Job Finder is temporarily unavailable while we upgrade it. It will be back soon — meanwhile, try the AI Career Copilot for curated job matches.</p>
-            <button onClick={() => setCurrentPage('career-copilot')} style={{marginTop:'8px',padding:'12px 28px',borderRadius:'12px',border:'none',background:'linear-gradient(135deg,#2997ff,#bf5af2)',color:'#fff',fontWeight:600,fontSize:'0.95rem',cursor:'pointer'}}>Try AI Career Copilot →</button>
+            <p style={{color:'#6e6e73',fontSize:'1rem',maxWidth:'440px',lineHeight:1.6,margin:0}}>AI Job Finder is temporarily unavailable while we upgrade it. It will be back soon — meanwhile, explore our other AI tools.</p>
             <button onClick={() => setCurrentPage('home')} style={{padding:'10px 24px',borderRadius:'12px',border:'none',background:'#1d1d1f',color:'#fff',fontWeight:600,fontSize:'0.9rem',cursor:'pointer'}}>← Go Home</button>
           </div>
         );
@@ -447,21 +572,29 @@ export default function App() {
       case 'resume-builder':
         return <ResumeBuilderLanding setCurrentPage={setCurrentPage} />;
       case 'resume-editor':
-        return <CoverLetter customApiKey={customApiKey} loadedWork={loadedWork} setLoadedWork={setLoadedWork} />;
+        return <CoverLetter customApiKey={customApiKey} loadedWork={loadedWork} setLoadedWork={setLoadedWork} onFocusChange={setBuilderFocus} onExit={() => setCurrentPage(isSplitHost() ? 'my-documents' : 'resume-builder')} />;
       case 'pricing':
+        if (PRICING_LOCKED) return <PricingSoon setCurrentPage={setCurrentPage} />;
         return <Pricing setCurrentPage={setCurrentPage} isLoggedIn={isLoggedIn} setShowAuthModal={setShowAuthModal} />;
       case 'terms':
-        return <Terms />;
+        return <Terms setCurrentPage={setCurrentPage} />;
       case 'refund-policy':
-        return <RefundPolicy />;
+        return <RefundPolicy setCurrentPage={setCurrentPage} />;
       case 'copyright-policy':
-        return <CopyrightPolicy />;
+        return <CopyrightPolicy setCurrentPage={setCurrentPage} />;
       case 'disclaimer':
-        return <Disclaimer />;
+        return <Disclaimer setCurrentPage={setCurrentPage} />;
       case 'proofreading':
-        return <Proofreading customApiKey={customApiKey} />;
-      case 'career-copilot':
-        return <CareerCopilot customApiKey={customApiKey} resumeText={resumeText} setResumeText={setResumeText} />;
+        return (
+          <Proofreading
+            customApiKey={customApiKey}
+            resumeText={resumeText}
+            setCurrentPage={setCurrentPage}
+            loadedWork={loadedWork}
+            setLoadedWork={setLoadedWork}
+            onFocusChange={setBuilderFocus}
+          />
+        );
       case 'company-portal':
         return (
           <CompanyPortal 
@@ -477,29 +610,58 @@ export default function App() {
       case 'code-arena':
       case 'cvmind-code-arena':
         return <CVmindCode customApiKey={customApiKey} />;
+      case 'verify-email':
+        // Full-screen like the sign-in overlay, so it renders outside <main> (see below)
+        return null;
       default:
-        return (
-          <Home 
-            setCurrentPage={setCurrentPage} 
-            setAnalysisResult={setAnalysisResult}
-            setResumeText={setResumeText}
-            customApiKey={customApiKey}
-          />
-        );
+        return <NotFound setCurrentPage={setCurrentPage} />;
     }
   };
 
   const isAdminPage = currentPage === 'admin';
   const isCodePage = currentPage === 'code-arena' || currentPage === 'cvmind-code-arena';
-  const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || isCodePage;
+  // Guided tools: Leo's pages and the Career tools. They keep the site header and footer on their
+  // intro page; the work and the result run full-screen in the app without them.
+  const isGuidedPage = GUIDED_PAGES.includes(currentPage);
+  // Full-screen guided flows: the resume builder and the guided tools
+  const isFocusFlow = (currentPage === 'resume-editor' || isGuidedPage) && builderFocus !== false;
+  // My Documents is a standalone app view with its own top bar
+  const isAppPage = currentPage === 'my-documents';
+  // The 404 page stands alone, without the site header and footer
+  const isNotFound = currentPage === 'not-found';
+  // App products (the app.cvmind.in pages) show no site header or footer, just a way back
+  // The guided tools keep the site header and footer (see isGuidedPage)
+  const isProductPage = APP_PAGES.includes(currentPage) && !isGuidedPage;
+  // Account and My Documents have their own Back button / top bar; the editor's full-screen flows have Exit
+  // The Portfolio Generator is a full-screen chat with its own top bar and Back button
+  const isPortfolioStudio = currentPage === 'portfolio-gen';
+  const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && !isFocusFlow && !isPortfolioStudio;
+  const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || currentPage === 'verify-email' || isCodePage || isFocusFlow || isAppPage || isPortfolioStudio;
+  // The Help Center (and its Contact form) is full-width with its own top bar and footer instead of the site ones
+  const isHelpPage = currentPage === 'help-center' || currentPage === 'contact';
+
+  // Unverified accounts see the verify screen over locked app pages, or when the server refused a request
+  const unverified = isLoggedIn && emailVerified === false;
+  const onLockedPage = APP_PAGES.includes(currentPage) && !UNVERIFIED_OPEN_PAGES.includes(currentPage);
+  const showVerifyGate = unverified && (verifyGateOpen || onLockedPage) && !showAuthModal;
+
+  // Mark the focused builder flow on <body> (used to keep floating widgets out of the way).
+  useEffect(() => {
+    document.body.classList.toggle('cv-focus', isFocusFlow);
+  }, [isFocusFlow]);
 
   return (
-    <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''}`}>
+    <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''} ${isFocusFlow ? 'focus-shell' : ''} ${isHelpPage ? 'help-shell' : ''} ${isAppPage ? 'app-shell' : ''} ${isNotFound ? 'notfound-shell' : ''} ${isProductPage ? 'product-shell' : ''} ${isPortfolioStudio ? 'pgx-shell' : ''}`}>
 
-      {/* ── Global Digital Serenity Background (for both dark & light modes) ── */}
-      {!isMinimalPage && <DigitalSerenityBackground theme={theme} />}
+      {!isAdminPage && (
+        <SiteBanner
+          setCurrentPage={setCurrentPage}
+          onVerifyEmail={unverified && currentPage !== 'verify-email' ? () => setVerifyGateOpen(true) : undefined}
+        />
+      )}
+      <AppUpdateGate />
 
-      {!isMinimalPage && (
+      {!isMinimalPage && !isNotFound && !isHelpPage && !isProductPage && (
         <Navbar 
           currentPage={currentPage} 
           setCurrentPage={setCurrentPage} 
@@ -512,18 +674,57 @@ export default function App() {
         />
       )}
 
+      {isFocusFlow && builderFocus === 'flow' && currentPage === 'resume-editor' && (
+        <button type="button" className="focus-exit" onClick={() => setCurrentPage('resume-builder')} aria-label="Exit resume builder">
+          Exit ✕
+        </button>
+      )}
+
       <main className="main-content">
+        {showBackBar && (
+          <div className="product-back-bar">
+            <button type="button" className="product-back" onClick={goBack}>
+              <ArrowLeft size={16} /> Back
+            </button>
+          </div>
+        )}
         {renderPage()}
       </main>
 
-      {!isMinimalPage && <Footer setCurrentPage={setCurrentPage} />}
-      {!isMinimalPage && <Chatbot customApiKey={customApiKey} />}
-      {!isMinimalPage && <TawkChat />}
+      {currentPage === 'verify-email' && !showAuthModal && <VerifyEmail setCurrentPage={setCurrentPage} openSignIn={() => setShowAuthModal(true)} />}
+
+      {routeLoading && <PageLoader />}
+
+      {!isMinimalPage && !isHelpPage && !isNotFound && !isProductPage && <Footer setCurrentPage={setCurrentPage} />}
+
+      {showVerifyGate && (
+        <VerifyEmailGate
+          email={readUser()?.email || ''}
+          onVerified={() => setVerifyGateOpen(false)}
+          onClose={() => {
+            setVerifyGateOpen(false);
+            if (onLockedPage) setCurrentPage('my-documents');
+          }}
+          onSignOut={() => {
+            setVerifyGateOpen(false);
+            handleSignOut();
+          }}
+        />
+      )}
 
       <AuthModal
         isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onSuccess={() => { setIsLoggedIn(true); }}
+        onClose={() => {
+          setShowAuthModal(false);
+          // Apart from Code Arena the app host has nothing for signed-out visitors, so closing sign-in returns to www
+          if (isAppHost() && localStorage.getItem('cvmind_logged_in') !== 'true' && !PUBLIC_APP_PAGES.includes(currentPage)) {
+            window.location.assign(`${siteOrigin()}/`);
+          }
+        }}
+        onSuccess={() => {
+          setIsLoggedIn(true);
+          enterAfterSignIn();
+        }}
       />
     </div>
   );

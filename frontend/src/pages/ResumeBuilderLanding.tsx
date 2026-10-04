@@ -1,63 +1,138 @@
-import { useState, useEffect } from 'react';
-import { CheckCircle2, ChevronDown, ArrowRight, FileText, Zap, Target, Shield, Users, Star } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import {
+  ArrowRight, ArrowUpDown, Briefcase, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, CircleCheck, Clock, Contrast,
+  Download, FileText, Home, LayoutTemplate, Link2, Lock, MousePointer2, Pencil, ShieldCheck, Smile, Sparkles, Upload, Wand2,
+} from 'lucide-react';
 import { useLiveStats, formatStat } from '../utils/stats';
+import TemplatePreview from '../components/TemplatePreview';
+import { TEMPLATES as ALL_TEMPLATES, RESUME_TEMPLATES, type Template } from '../data/resumeTemplates';
+import { pickTemplate } from '../lib/templatePick';
 import './ResumeBuilderLanding.css';
 
 interface ResumeBuilderLandingProps {
   setCurrentPage: (page: string) => void;
 }
 
-const TEMPLATES = [
-  { name: 'Double Column', color: '#6366f1' },
-  { name: 'Ivy League',    color: '#0ea5e9' },
-  { name: 'Elegant',       color: '#8b5cf6' },
-  { name: 'Contemporary',  color: '#2dc08d' },
-  { name: 'Modern',        color: '#f59e0b' },
-  { name: 'Minimal',       color: '#374151' },
+const COVER_LETTER_COUNT = ALL_TEMPLATES.filter(t => t.type === 'cover-letter').length;
+const byId = (id: string): Template => ALL_TEMPLATES.find(t => t.id === id) ?? RESUME_TEMPLATES[0];
+
+const FREE_TOOLS = [
+  { label: 'Resume Checker', page: 'home' },
+  { label: 'Tailor Resume', page: 'tailor' },
+  { label: 'Cover Letter', page: 'resume-editor' },
+  { label: 'Interview Prep', page: 'prep' },
+  { label: 'LinkedIn Optimizer', page: 'linkedin' },
 ];
 
-const TESTIMONIALS = [
-  { name: 'Priya S.', role: 'Software Engineer · Google', text: 'The AI rewriter transformed my bullet points overnight. Got 3 callbacks in a week after using CVMind.' },
-  { name: 'James K.', role: 'Product Manager · Meta', text: 'The ATS score went from 54 to 91 after following the AI suggestions. Landed my dream job in 3 weeks.' },
-  { name: 'Aisha M.', role: 'Marketing Director', text: 'I\'ve tried every resume builder. CVMind\'s AI is in a different league — it actually understands context.' },
+interface FeatureSection {
+  tag: string;
+  title: string;
+  accent: string;
+  body: string;
+  page: string;
+  cta: string;
+  card: { title: string; sub: string; lines: string[] };
+  points: { title: string; text: string }[];
+}
+
+const FEATURE_SECTIONS: FeatureSection[] = [
+  {
+    tag: 'Tailor to the job', title: 'Customize your resume for any role', accent: '#2f8fe0',
+    body: 'Paste a job description and CVMind compares it with your resume, then suggests the keywords, skills and wording that role is asking for. Keep one resume per job instead of one for everything.',
+    page: 'tailor', cta: 'Tailor my resume',
+    card: { title: 'Resume Tailor', sub: 'Upload resume and paste a job ad', lines: ['Upload your resume (PDF or DOCX)', 'Paste the job description', 'Get a tailored version to review'] },
+    points: [
+      { title: 'Keyword match', text: 'See which terms from the job ad your resume is missing.' },
+      { title: 'Your wording stays', text: 'Suggestions build on what you wrote, so it still sounds like you.' },
+      { title: 'Review before you use it', text: 'Accept the changes you like and ignore the rest.' },
+      { title: 'One per application', text: 'Make a separate version for every role you apply to.' },
+    ],
+  },
+  {
+    tag: 'ATS check', title: 'Know how a parser reads your resume', accent: '#1fa97a',
+    body: 'Run your resume through the ATS checker to see your score, the keywords you are missing and the formatting problems that can trip up applicant tracking systems, with a short list of fixes.',
+    page: 'home', cta: 'Check my resume',
+    card: { title: 'ATS Resume Checker', sub: 'Score and fix list', lines: ['Overall ATS score', 'Missing keywords', 'Formatting issues to fix'] },
+    points: [
+      { title: 'Score out of 100', text: 'A single number to track as you improve the resume.' },
+      { title: 'Keyword gaps', text: 'Compare against a job description of your choice.' },
+      { title: 'Plain-text readable', text: 'Spot layouts a parser may not read correctly.' },
+      { title: 'Clear next steps', text: 'Fixes are listed so you know what to change first.' },
+    ],
+  },
+  {
+    tag: 'Cover letters', title: 'A cover letter that matches your resume', accent: '#e9962b',
+    body: 'Pick a cover letter layout, edit it in the same editor as your resume, and let the AI refine the draft for the job you are applying to.',
+    page: 'resume-editor', cta: 'Write a cover letter',
+    card: { title: 'Cover Letter Builder', sub: 'Pick a layout and edit', lines: [`${COVER_LETTER_COUNT} cover letter layouts`, 'Word-style editor', 'Refine with an AI prompt'] },
+    points: [
+      { title: 'Layouts to match', text: 'Choose a style that pairs with your resume template.' },
+      { title: 'Edit freely', text: 'Fonts, tables, colors and headings, like a word processor.' },
+      { title: 'Refine with AI', text: 'Tell the AI what to change and it rewrites the draft.' },
+      { title: 'PDF and DOCX', text: 'Download in the format the employer asks for.' },
+    ],
+  },
+  {
+    tag: 'LinkedIn', title: 'Tidy up your LinkedIn profile too', accent: '#6f4fd6',
+    body: 'Recruiters look at your profile as well as your resume. Upload your profile PDF to get an audit, headline ideas, an About section draft and outreach messages.',
+    page: 'linkedin', cta: 'Open LinkedIn tools',
+    card: { title: 'LinkedIn Optimizer', sub: 'Audit your profile PDF', lines: ['Profile audit and score', 'Headline and About ideas', 'Recruiter outreach drafts'] },
+    points: [
+      { title: 'Profile audit', text: 'See what is missing or weak in your profile.' },
+      { title: 'Headline ideas', text: 'Several options built around your target role.' },
+      { title: 'About section', text: 'A draft you can edit and paste straight in.' },
+      { title: 'Outreach messages', text: 'Short notes for recruiters and new connections.' },
+    ],
+  },
+];
+
+const LEVELS = [
+  {
+    key: 'senior', label: 'Senior & Executive', templateId: 'cv-polished',
+    body: 'Fit a long career onto a page or two. The AI helps you tighten the experience section so recent, relevant impact comes first.',
+    points: ['Shorten older roles and keep the highlights', 'Draft a summary aimed at leadership roles', 'Choose an executive layout that stays ATS-readable'],
+  },
+  {
+    key: 'mid', label: 'Entry & Mid-Level', templateId: 'cv-double-column',
+    body: 'Not sure how to structure your resume yet? Start from a layout built for early careers and let the AI help with wording.',
+    points: ['Turn projects and internships into strong bullets', 'Pull a skills section from your experience', 'Tailor the resume to each job you apply for'],
+  },
+  {
+    key: 'change', label: 'Career Changers', templateId: 'cv-modern',
+    body: 'Moving to a new field means showing the skills that carry over. Tailor your resume to the new role and lead with those.',
+    points: ['Match transferable skills to the new job ad', 'Lead with skills instead of job titles', 'Keep the format simple for ATS parsing'],
+  },
+];
+
+const STAGES = [
+  { key: 'build', label: 'Resume Builder', page: 'resume-editor', title: 'Build the resume', text: 'Pick from ATS-friendly templates, fill in your details or upload an old resume, and edit everything in a Word-style editor.', points: ['Start from an existing resume or a blank page', 'Import details from a LinkedIn PDF', 'Download as PDF or DOCX'] },
+  { key: 'check', label: 'Resume Checker', page: 'home', title: 'Check it', text: 'Get an ATS score, keyword gaps and a fix list before a recruiter or parser sees it.', points: ['Overall score', 'Missing keywords', 'Formatting issues'] },
+  { key: 'cover', label: 'Cover Letter', page: 'resume-editor', title: 'Write the cover letter', text: 'Pair your resume with a cover letter in a matching layout and refine it with AI.', points: ['Matching layouts', 'Edit in the same editor', 'AI refinement prompts'] },
+  { key: 'tailor', label: 'Tailor Resume', page: 'tailor', title: 'Tailor it to the job', text: 'Paste a job description and adjust your resume to match what the role asks for.', points: ['Keyword suggestions', 'Per-job versions', 'You approve every change'] },
+  { key: 'prep', label: 'Interview Prep', page: 'prep', title: 'Practice for the interview', text: 'Rehearse likely questions for the role and get feedback on your answers.', points: ['Role-specific questions', 'Feedback on answers', 'Voice practice'] },
+  { key: 'linkedin', label: 'LinkedIn', page: 'linkedin', title: 'Polish your profile', text: 'Audit your LinkedIn profile and draft a headline, About section and outreach messages.', points: ['Profile audit', 'Headline ideas', 'Outreach drafts'] },
 ];
 
 const FAQS = [
-  { q: 'What is an AI resume builder?', a: 'An AI resume builder uses machine learning to help you write, format, and optimize your resume. CV Mind provides real-time feedback, rewrites weak bullet points, checks ATS compatibility, and tailors your resume to specific job descriptions.' },
-  { q: 'Is CVMind\'s resume builder ATS-friendly?', a: 'Yes. Every template is tested against major ATS systems including Workday, Greenhouse, and Lever. We use clean formatting with no tables, graphics, or text-in-images that can confuse parsers.' },
-  { q: 'How does AI resume tailoring work?', a: 'Paste any job description and our AI analyzes the required keywords, skills, and experience. It then rewrites your resume sections to match — boosting your match score and ATS ranking for that specific role.' },
-  { q: 'Can I use CVMind for free?', a: 'Yes! The resume checker, ATS score, and keyword analysis are free. Premium features like unlimited AI rewrites, DOCX export, and job tailoring require an account.' },
-  { q: 'How is CVMind different from Canva or Google Docs?', a: 'Design tools create pretty resumes that often fail ATS scans. CVMind is built specifically for job seekers — every template is ATS-tested, and the AI actively improves your content, not just the design.' },
-  { q: 'Can recruiters detect AI-written resumes?', a: 'CV Mind enhances and refines your existing content rather than generating generic text. The result reads as authentically yours — just more polished, quantified, and keyword-optimized.' },
-];
-
-const FEATURES = [
-  {
-    icon: <FileText size={22} />, title: 'Smart Resume Builder',
-    desc: '20+ resume sections, real-time grammar checking, and professionally designed layouts built by certified resume writers.',
-    bullets: ['20+ customizable sections', 'Grammar & punctuation AI', '30+ language support', 'Live preview as you type'],
-  },
-  {
-    icon: <Target size={22} />, title: 'ATS Resume Checker',
-    desc: '19 automated checks that score your resume against ATS algorithms and rewrite weak bullets for maximum impact.',
-    bullets: ['ATS score 0–100', 'Keyword gap analysis', 'AI bullet rewriter', 'Formatting compliance'],
-  },
-  {
-    icon: <Zap size={22} />, title: 'One-Click Job Tailoring',
-    desc: 'Paste any job description and AI rewrites your resume in under 30 seconds — matched keywords, optimized skills, higher ATS rank.',
-    bullets: ['30-second tailoring', 'Unlimited job matches', 'Keyword injection', 'Match score %'],
-  },
-  {
-    icon: <Shield size={22} />, title: 'AI Cover Letters',
-    desc: 'Generate a unique, job-specific cover letter for every application — matching your resume\'s design and tone.',
-    bullets: ['Job-description tailored', 'Matching design themes', 'New letter per application', 'Instant generation'],
-  },
+  { q: 'What is an AI resume builder?', a: 'It is a resume editor with AI built in. You choose a template, add your details (or upload an old resume), and the AI helps you rewrite bullet points, write a summary and tailor the resume to a job description.' },
+  { q: 'Are the templates ATS-friendly?', a: 'The templates use real text, standard section headings and a single readable flow, with no text inside images. Two-column and colored layouts are included too; if you only care about parsing, pick one of the plainer layouts. Running the finished resume through the ATS checker is a good final step.' },
+  { q: 'Can I start from my existing resume?', a: 'Yes. Upload a PDF or DOCX at the start and we pre-fill the form with the details we find. You can also import from a LinkedIn profile PDF. Check the filled-in fields before you generate the resume, since extraction can miss things.' },
+  { q: 'How does tailoring to a job work?', a: 'Paste the job description into the Tailor tool. It compares the posting with your resume and suggests changes to your summary, skills and bullet points. You decide which suggestions to keep.' },
+  { q: 'Can I download my resume?', a: 'Yes. You can download your resume as a PDF or a Word file from the editor. Free and paid limits are listed on the pricing page.' },
+  { q: 'Will it sound like AI wrote it?', a: 'The AI works from the details you give it, and you can edit every line afterwards. Reading it through and adding specifics only you know (numbers, tools, results) is the best way to make it sound like you.' },
 ];
 
 export default function ResumeBuilderLanding({ setCurrentPage }: ResumeBuilderLandingProps) {
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [level, setLevel] = useState(LEVELS[0].key);
+  const [stage, setStage] = useState(STAGES[0].key);
+  const railRef = useRef<HTMLDivElement>(null);
   const liveStats = useLiveStats();
-  const resumesStat = liveStats.resumesAnalyzed != null ? formatStat(liveStats.resumesAnalyzed) : '50K+';
+  const analyzed = liveStats.resumesAnalyzed != null ? formatStat(liveStats.resumesAnalyzed) : null;
+
+  const build = () => setCurrentPage('resume-editor');
+  const activeLevel = LEVELS.find(l => l.key === level) ?? LEVELS[0];
+  const activeStage = STAGES.find(s => s.key === stage) ?? STAGES[0];
 
   useEffect(() => {
     const main = document.querySelector('.main-content') as HTMLElement | null;
@@ -75,336 +150,237 @@ export default function ResumeBuilderLanding({ setCurrentPage }: ResumeBuilderLa
     };
   }, []);
 
-  return (
-    <div className="rbl-page">
+  const scrollRail = (dir: 1 | -1) => {
+    const rail = railRef.current;
+    if (rail) rail.scrollBy({ left: dir * rail.clientWidth * 0.8, behavior: 'smooth' });
+  };
 
-      {/* ── HERO ─────────────────────────────────────────────────── */}
+  return (
+    <div className="rbl">
+
+      {/* ── HERO ─────────────────────────────────────────────── */}
       <section className="rbl-hero">
-        <div className="rbl-hero-blob rbl-blob-1" />
-        <div className="rbl-hero-blob rbl-blob-2" />
-        <div className="rbl-hero-inner">
-          <div className="rbl-hero-left">
-            <div className="rbl-eyebrow">
-              <span className="rbl-eyebrow-dot" />
-              AI-Powered Resume Builder
+        <div className="rbl-wrap rbl-hero-grid">
+          <div className="rbl-hero-copy">
+            <nav className="rbl-crumb" aria-label="Breadcrumb">
+              <button type="button" onClick={() => setCurrentPage('home')} aria-label="Home"><Home size={14} /></button>
+              <span aria-hidden="true">›</span>
+              <span>AI Resume Builder</span>
+            </nav>
+            <h1>The AI resume builder that helps you <em>land more job interviews</em></h1>
+            <ul className="rbl-checks">
+              <li><CheckCircle2 size={18} />Build a professional resume with AI feedback on what you write, not a generic template filled with filler.</li>
+              <li><CheckCircle2 size={18} />Rewrite weak bullets, tailor to a job description, and export a clean PDF or DOCX.</li>
+            </ul>
+            <div className="rbl-hero-cta">
+              <button type="button" className="rbl-btn rbl-btn--hero" onClick={build}>Build Your Resume With AI</button>
+              <span className="rbl-note">Takes a few minutes. No card needed to start.</span>
             </div>
-            <h1 className="rbl-hero-h1">
-              AI Resume Builder That Helps You<br />
-              <span className="rbl-hero-grad">Land More Job Interviews</span>
-            </h1>
-            <p className="rbl-hero-sub">
-              Get real-time AI feedback, keyword optimization, ATS scoring, and one-click job tailoring — then export a professionally formatted PDF in minutes.
-            </p>
-            <div className="rbl-hero-actions">
-              <button className="rbl-btn-primary" onClick={() => setCurrentPage('resume-editor')}>
-                Build Your Resume With AI <ArrowRight size={16} />
-              </button>
-              <button className="rbl-btn-outline" onClick={() => setCurrentPage('home')}>
-                Check My ATS Score
-              </button>
-            </div>
-            <div className="rbl-hero-trust">
-              <div className="rbl-trust-stars">
-                {'★★★★★'.split('').map((s, i) => <span key={i} className="rbl-star">{s}</span>)}
-                <span className="rbl-trust-text">4.9 · <strong>250+ Reviews</strong></span>
+            {analyzed && <p className="rbl-live"><strong>{analyzed}</strong> resumes analyzed on CVMind</p>}
+          </div>
+
+          <div className="rbl-hero-art" aria-hidden="true">
+            <div className="rbl-app">
+              <div className="rbl-app-bar">
+                <span className="rbl-app-logo">CVMind</span>
+                <i /><i /><i className="is-wide" />
               </div>
-              <span className="rbl-trust-divider" />
-              <span className="rbl-trust-users"><Users size={14} /> <strong>{resumesStat}</strong> resumes analyzed</span>
+              <div className="rbl-app-body">
+                <div className="rbl-app-tools">
+                  <Pencil size={15} /><ArrowUpDown size={15} /><LayoutTemplate size={15} /><Contrast size={15} />
+                  <CircleCheck size={15} /><ShieldCheck size={15} /><Link2 size={15} /><Clock size={15} />
+                </div>
+                <div className="rbl-app-paper">
+                  <TemplatePreview html={byId('cv-polished').html} name="Sample resume" eager aspect="1 / 0.95" />
+                </div>
+              </div>
+
+              <div className="rbl-assist">
+                <span className="rbl-assist-title"><b /> AI ASSISTANT</span>
+                <span className="rbl-assist-row"><Wand2 size={14} /> Improve writing</span>
+                <span className="rbl-assist-row"><Smile size={14} /> Recruiter review</span>
+                <span className="rbl-assist-row"><Sparkles size={14} /> Inspire me</span>
+                <span className="rbl-assist-or">or</span>
+                <span className="rbl-assist-input">Polish for interview: concise, results-driven, highlight leadership<u /></span>
+              </div>
+              <span className="rbl-assist-cursor"><MousePointer2 size={26} fill="currentColor" /></span>
             </div>
-            <div className="rbl-trust-pills">
-              {['No credit card required', 'ATS-tested templates', 'Instant AI feedback'].map(t => (
-                <span key={t} className="rbl-trust-pill">
-                  <CheckCircle2 size={13} color="#2dc08d" /> {t}
-                </span>
+
+            <span className="rbl-oneclick"><small>IN ONE CLICK!</small><span><Briefcase size={15} /> Tailored to Job</span></span>
+            <span className="rbl-atspdf"><Download size={15} /> ATS PDF</span>
+            <span className="rbl-score" title="Sample ATS score">
+              <svg viewBox="0 0 100 100" width="100%" height="100%">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#e4e7f3" strokeWidth="7" />
+                <circle cx="50" cy="50" r="40" fill="none" stroke="url(#rbl-ring)" strokeWidth="7" strokeLinecap="round" strokeDasharray="216 251" transform="rotate(-90 50 50)" />
+                <defs><linearGradient id="rbl-ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#6f4fd6" /><stop offset="1" stopColor="#2bbf8e" /></linearGradient></defs>
+              </svg>
+              <b>86<small>%</small></b>
+              <i className="rbl-ribbon" />
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FREE TOOLS + START ───────────────────────────────── */}
+      <section className="rbl-light">
+        <div className="rbl-wrap">
+          <p className="rbl-kicker">Free AI resume tools</p>
+          <div className="rbl-pills">
+            {FREE_TOOLS.map(t => (
+              <button key={t.label} type="button" className="rbl-pill" onClick={() => setCurrentPage(t.page)}>{t.label}</button>
+            ))}
+          </div>
+
+          <div className="rbl-start">
+            <div>
+              <h2>Start for free,<br /><span>build it your way</span></h2>
+              <p>Begin with a blank page or bring the resume you already have. CVMind reads it, fills in the form for you, and you pick a template that suits the job you want next.</p>
+            </div>
+            <button type="button" className="rbl-drop" onClick={build}>
+              <Upload size={22} aria-hidden="true" />
+              <span>Start with your old resume or from scratch.</span>
+              <span className="rbl-drop-sub">PDF and DOCX supported</span>
+              <span className="rbl-btn rbl-btn--small">Get Started</span>
+              <span className="rbl-privacy"><Lock size={12} /> We never share your data with 3rd parties or use it for AI model training.</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FEATURE ROWS ─────────────────────────────────────── */}
+      <section className="rbl-light rbl-light--tint">
+        <div className="rbl-wrap">
+          {FEATURE_SECTIONS.map((f, i) => (
+            <article key={f.tag} className={`rbl-feature${i % 2 ? ' is-flip' : ''}`} style={{ '--accent': f.accent } as React.CSSProperties}>
+              <div className="rbl-feature-art">
+                <div className="rbl-tilt">
+                  <div className="rbl-tool-card">
+                    <header>
+                      <span className="rbl-tool-ico"><FileText size={18} /></span>
+                      <div><strong>{f.card.title}</strong><small>{f.card.sub}</small></div>
+                    </header>
+                    <ul>
+                      {f.card.lines.map(l => <li key={l}><CheckCircle2 size={14} />{l}</li>)}
+                    </ul>
+                    <span className="rbl-tool-btn">Open tool</span>
+                  </div>
+                </div>
+              </div>
+              <div className="rbl-feature-copy">
+                <span className="rbl-tag">{f.tag}</span>
+                <h2>{f.title}</h2>
+                <p>{f.body}</p>
+                <button type="button" className="rbl-textlink" onClick={() => setCurrentPage(f.page)}>{f.cta} <ArrowRight size={15} /></button>
+              </div>
+              <ul className="rbl-points">
+                {f.points.map(p => (
+                  <li key={p.title}><strong>{p.title}</strong><span>{p.text}</span></li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* ── EXPERIENCE LEVELS ────────────────────────────────── */}
+      <section className="rbl-light">
+        <div className="rbl-wrap">
+          <h2 className="rbl-center">Make a great resume, whatever your experience</h2>
+          <div className="rbl-pills rbl-pills--center" role="tablist">
+            {LEVELS.map(l => (
+              <button key={l.key} type="button" role="tab" aria-selected={level === l.key} className={`rbl-pill${level === l.key ? ' is-on' : ''}`} onClick={() => setLevel(l.key)}>{l.label}</button>
+            ))}
+          </div>
+          <div className="rbl-level" role="tabpanel">
+            <div className="rbl-level-copy">
+              <h3>{activeLevel.label}</h3>
+              <p>{activeLevel.body}</p>
+              <ul className="rbl-list">
+                {activeLevel.points.map(p => <li key={p}><CheckCircle2 size={16} />{p}</li>)}
+              </ul>
+              <button type="button" className="rbl-btn" onClick={build}>Build my resume</button>
+            </div>
+            <div className="rbl-level-art">
+              <div className="rbl-level-sheet"><TemplatePreview html={byId(activeLevel.templateId).html} name={byId(activeLevel.templateId).name} aspect="1 / 1.1" /></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── STAGES (dark) ────────────────────────────────────── */}
+      <section className="rbl-dark">
+        <div className="rbl-wrap">
+          <h2 className="rbl-center">AI tools at every stage of your job search</h2>
+          <p className="rbl-center rbl-dark-sub">Whether you are starting out or already interviewing, there is a tool for the next step.</p>
+          <div className="rbl-pills rbl-pills--center rbl-pills--dark" role="tablist">
+            {STAGES.map(s => (
+              <button key={s.key} type="button" role="tab" aria-selected={stage === s.key} className={`rbl-pill${stage === s.key ? ' is-on' : ''}`} onClick={() => setStage(s.key)}>{s.label}</button>
+            ))}
+          </div>
+          <div className="rbl-stage" role="tabpanel">
+            <div>
+              <h3>{activeStage.title}</h3>
+              <p>{activeStage.text}</p>
+              <ul className="rbl-list rbl-list--dark">
+                {activeStage.points.map(p => <li key={p}><CheckCircle2 size={16} />{p}</li>)}
+              </ul>
+              <button type="button" className="rbl-btn" onClick={() => setCurrentPage(activeStage.page)}>Open {activeStage.label}</button>
+            </div>
+            <div className="rbl-stage-art" aria-hidden="true">
+              {[byId('modern-blue'), byId('classic-pro'), byId('cv-polished')].map((t, i) => (
+                <div key={t.id} className={`rbl-stack rbl-stack--${i}`}><TemplatePreview html={t.html} name={t.name} /></div>
               ))}
             </div>
           </div>
-
-          {/* Right: builder mockup */}
-          <div className="rbl-hero-right">
-            <div className="rbl-mockup">
-              <div className="rbl-mockup-bar">
-                <span className="rbl-dot red" /><span className="rbl-dot yellow" /><span className="rbl-dot green" />
-                <span className="rbl-mockup-title">CVMind Resume Builder</span>
-              </div>
-              <div className="rbl-mockup-body">
-                <div className="rbl-mockup-sidebar">
-                  <div className="rbl-mock-section-label">Sections</div>
-                  {['Contact', 'Summary', 'Experience', 'Education', 'Skills'].map((s, i) => (
-                    <div key={s} className={`rbl-mock-section-item${i === 2 ? ' active' : ''}`}>{s}</div>
-                  ))}
-                  <div className="rbl-mock-add-btn">+ Add Section</div>
-                </div>
-                <div className="rbl-mockup-editor">
-                  <div className="rbl-mock-resume-header">
-                    <div className="rbl-mock-avatar">SJ</div>
-                    <div>
-                      <div className="rbl-mock-name">Sarah Jenkins</div>
-                      <div className="rbl-mock-role">Senior Software Engineer</div>
-                    </div>
-                    <div className="rbl-mock-score-badge">ATS: 91</div>
-                  </div>
-                  <div className="rbl-mock-section-title">Experience</div>
-                  <div className="rbl-mock-exp-card">
-                    <div className="rbl-mock-exp-title">Lead Engineer · TechCorp <span>2023–Present</span></div>
-                    <div className="rbl-mock-line" style={{ width: '90%' }} />
-                    <div className="rbl-mock-line" style={{ width: '75%' }} />
-                  </div>
-                  <div className="rbl-mock-ai-banner">
-                    <Zap size={13} color="#2dc08d" />
-                    <span>AI suggestion: Add a quantified achievement →</span>
-                    <button className="rbl-mock-ai-btn">Apply</button>
-                  </div>
-                  <div className="rbl-mock-section-title" style={{ marginTop: '0.75rem' }}>Skills</div>
-                  <div className="rbl-mock-tags">
-                    {['React', 'TypeScript', 'Node.js', 'AWS', 'Docker'].map(s => (
-                      <span key={s} className="rbl-mock-tag">{s}</span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* Floating badges */}
-            <div className="rbl-float rbl-float-score">
-              <div className="rbl-float-icon"><Star size={14} color="#f59e0b" /></div>
-              <div>
-                <div className="rbl-float-val">91 / 100</div>
-                <div className="rbl-float-lbl">ATS Score</div>
-              </div>
-            </div>
-            <div className="rbl-float rbl-float-kw">
-              <div className="rbl-float-icon"><CheckCircle2 size={14} color="#2dc08d" /></div>
-              <div>
-                <div className="rbl-float-val">+18 Keywords</div>
-                <div className="rbl-float-lbl">Matched</div>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* ── FREE AI TOOLS STRIP ──────────────────────────────────── */}
-      <section className="rbl-tools-strip">
-        <div className="rbl-tools-inner">
-          <p className="rbl-tools-label">Use CVMind's free AI resume tools</p>
-          <div className="rbl-tools-row">
-            {[
-              { label: 'Resume Checker', page: 'home' },
-              { label: 'Resume Tailor', page: 'tailor' },
-              { label: 'Cover Letter', page: 'resume-editor' },
-              { label: 'Interview Prep', page: 'prep' },
-              { label: 'LinkedIn Optimizer', page: 'linkedin' },
-            ].map(({ label, page }) => (
-              <button key={label} className="rbl-tool-pill" onClick={() => setCurrentPage(page)}>
-                {label} <ArrowRight size={13} />
-              </button>
-            ))}
-          </div>
+      {/* ── TEMPLATE RAIL ────────────────────────────────────── */}
+      <section className="rbl-light rbl-rail-sec">
+        <div className="rbl-wrap">
+          <h2 className="rbl-center">Pick from {RESUME_TEMPLATES.length} resume templates</h2>
+          <p className="rbl-center rbl-sub">Real layouts, not screenshots. Hover a template and start with it.</p>
         </div>
-      </section>
-
-      {/* ── EXPERIENCE LEVEL CARDS ───────────────────────────────── */}
-      <section className="rbl-levels-section">
-        <div className="rbl-section-inner">
-          <div className="rbl-section-tag">Built for every career stage</div>
-          <h2 className="rbl-section-h2">An AI Resume Builder for Every Professional</h2>
-          <div className="rbl-levels-grid">
-            {[
-              {
-                label: 'Senior & Executive', color: '#7c3aed',
-                bullets: ['Fit career history on a single page', 'AI rewrites experience sections', 'Generate tailored executive summaries', 'Optimize for leadership roles', 'Highlight strategic impact'],
-              },
-              {
-                label: 'Entry & Mid-Level', color: '#2dc08d',
-                bullets: ['Find your winning resume formula', 'AI tailors to any job description', 'Extract and generate relevant skills', 'Get achievement suggestions', 'Follow proven resume structures'],
-              },
-              {
-                label: 'Career Changers', color: '#f59e0b',
-                bullets: ['Optimize for new industries instantly', 'ATS compatibility for any sector', 'Match transferable skills to roles', 'Clean formatting for ATS parsing', 'Highlight adaptable achievements'],
-              },
-            ].map(({ label, color, bullets }) => (
-              <div key={label} className="rbl-level-card" style={{ '--card-color': color } as React.CSSProperties}>
-                <div className="rbl-level-card-top" style={{ background: color }}>
-                  <div className="rbl-level-resume-mock">
-                    <div className="rbl-level-mock-line" style={{ width: '60%', background: 'rgba(255,255,255,0.8)' }} />
-                    <div className="rbl-level-mock-line" style={{ width: '40%', background: 'rgba(255,255,255,0.5)' }} />
-                    <div style={{ height: '0.5rem' }} />
-                    <div className="rbl-level-mock-line" style={{ width: '80%' }} />
-                    <div className="rbl-level-mock-line" style={{ width: '70%' }} />
-                    <div className="rbl-level-mock-line" style={{ width: '55%' }} />
-                  </div>
-                </div>
-                <div className="rbl-level-card-body">
-                  <h3 className="rbl-level-title" style={{ color }}>{label}</h3>
-                  <ul className="rbl-level-bullets">
-                    {bullets.map(b => (
-                      <li key={b}><CheckCircle2 size={14} color={color} />{b}</li>
-                    ))}
-                  </ul>
-                  <button className="rbl-level-cta" style={{ color, border: `1.5px solid ${color}` }} onClick={() => setCurrentPage('resume-editor')}>
-                    Build My Resume <ArrowRight size={14} />
-                  </button>
-                </div>
+        <div className="rbl-rail-wrap">
+          <button type="button" className="rbl-rail-nav rbl-rail-nav--prev" onClick={() => scrollRail(-1)} aria-label="Previous templates"><ChevronLeft size={20} /></button>
+          <div className="rbl-rail" ref={railRef} tabIndex={0} aria-label="Resume templates">
+            {RESUME_TEMPLATES.map(t => (
+              <div key={t.id} className="rbl-slide" style={{ '--t': t.accent } as React.CSSProperties}>
+                <TemplatePreview html={t.html} name={t.name} />
+                <span className="rbl-slide-name">{t.name}</span>
+                <button type="button" className="rbl-btn rbl-slide-cta" onClick={() => { pickTemplate(t.id); build(); }}>Start with this template</button>
               </div>
             ))}
           </div>
+          <button type="button" className="rbl-rail-nav rbl-rail-nav--next" onClick={() => scrollRail(1)} aria-label="Next templates"><ChevronRight size={20} /></button>
         </div>
       </section>
 
-      {/* ── TEMPLATES ────────────────────────────────────────────── */}
-      <section className="rbl-templates-section">
-        <div className="rbl-section-inner">
-          <div className="rbl-section-tag">Resume Templates</div>
-          <h2 className="rbl-section-h2">Start from a Recruiter-Reviewed Layout</h2>
-          <p className="rbl-section-sub">22 ATS-tested templates with 90%+ parsing rate — no graphics, no text-in-images, no ATS traps.</p>
-          <div className="rbl-templates-grid">
-            {TEMPLATES.map(({ name, color }) => (
-              <div key={name} className="rbl-template-card" onClick={() => setCurrentPage('resume-editor')}>
-                <div className="rbl-template-preview" style={{ '--t-color': color } as React.CSSProperties}>
-                  <div className="rbl-tpl-header" style={{ background: color }}>
-                    <div className="rbl-tpl-avatar" />
-                    <div>
-                      <div className="rbl-tpl-name-line" />
-                      <div className="rbl-tpl-role-line" />
-                    </div>
-                  </div>
-                  <div className="rbl-tpl-body">
-                    <div className="rbl-tpl-section-label" style={{ color }} />
-                    <div className="rbl-tpl-line" style={{ width: '90%' }} />
-                    <div className="rbl-tpl-line" style={{ width: '75%' }} />
-                    <div className="rbl-tpl-line" style={{ width: '60%' }} />
-                    <div className="rbl-tpl-section-label" style={{ color, marginTop: '0.5rem' }} />
-                    <div className="rbl-tpl-line" style={{ width: '80%' }} />
-                    <div className="rbl-tpl-line" style={{ width: '65%' }} />
-                  </div>
-                </div>
-                <div className="rbl-template-label">{name}</div>
-                <div className="rbl-template-overlay">
-                  <span>Use Template</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="rbl-templates-cta">
-            <button className="rbl-btn-primary" onClick={() => setCurrentPage('resume-editor')}>
-              View All 22 Templates <ArrowRight size={16} />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FEATURE MODULES ──────────────────────────────────────── */}
-      <section className="rbl-features-section">
-        <div className="rbl-section-inner">
-          <div className="rbl-section-tag">AI Tools at Every Stage</div>
-          <h2 className="rbl-section-h2">Everything You Need for Your Job Search</h2>
-          <div className="rbl-features-grid">
-            {FEATURES.map((f, i) => (
-              <div key={f.title} className={`rbl-feature-row${i % 2 === 1 ? ' rbl-feature-row-reverse' : ''}`}>
-                <div className="rbl-feature-text">
-                  <div className="rbl-feature-icon-wrap">{f.icon}</div>
-                  <h3 className="rbl-feature-title">{f.title}</h3>
-                  <p className="rbl-feature-desc">{f.desc}</p>
-                  <ul className="rbl-feature-bullets">
-                    {f.bullets.map(b => (
-                      <li key={b}><CheckCircle2 size={14} color="#2dc08d" />{b}</li>
-                    ))}
-                  </ul>
-                  <button className="rbl-feature-link" onClick={() => setCurrentPage('resume-editor')}>
-                    Try it free <ArrowRight size={14} />
-                  </button>
-                </div>
-                <div className="rbl-feature-visual">
-                  <div className="rbl-feature-card-mock">
-                    <div className="rbl-fcm-header" style={{ background: ['#6366f1','#2dc08d','#f59e0b','#7c3aed'][i] }}>
-                      <span>{f.title}</span>
-                    </div>
-                    <div className="rbl-fcm-body">
-                      {f.bullets.map(b => (
-                        <div key={b} className="rbl-fcm-row">
-                          <CheckCircle2 size={13} color="#2dc08d" />
-                          <span>{b}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── TESTIMONIALS ─────────────────────────────────────────── */}
-      <section className="rbl-testimonials-section">
-        <div className="rbl-section-inner">
-          <div className="rbl-section-tag">Social Proof</div>
-          <h2 className="rbl-section-h2">Trusted by Professionals Worldwide</h2>
-          <div className="rbl-stats-row">
-            {[[resumesStat,'Resumes Analyzed'],['4.9★','User Rating'],['+42%','More Interviews'],['12K+','Jobs Landed']].map(([v,l]) => (
-              <div key={l} className="rbl-stat">
-                <div className="rbl-stat-val">{v}</div>
-                <div className="rbl-stat-lbl">{l}</div>
-              </div>
-            ))}
-          </div>
-          <div className="rbl-testimonials-grid">
-            {TESTIMONIALS.map(({ name, role, text }) => (
-              <div key={name} className="rbl-testimonial-card">
-                <div className="rbl-testi-stars">{'★★★★★'}</div>
-                <p className="rbl-testi-text">"{text}"</p>
-                <div className="rbl-testi-author">
-                  <div className="rbl-testi-avatar">{name[0]}</div>
-                  <div>
-                    <div className="rbl-testi-name">{name}</div>
-                    <div className="rbl-testi-role">{role}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── FAQ ──────────────────────────────────────────────────── */}
-      <section className="rbl-faq-section">
-        <div className="rbl-section-inner rbl-faq-inner">
-          <div className="rbl-section-tag">FAQ</div>
-          <h2 className="rbl-section-h2">Frequently Asked Questions</h2>
-          <div className="rbl-faq-list">
-            {FAQS.map((faq, i) => (
-              <div key={i} className={`rbl-faq-item${openFaq === i ? ' open' : ''}`}>
-                <button className="rbl-faq-trigger" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-                  <span>{faq.q}</span>
-                  <ChevronDown size={18} className="rbl-faq-arrow" />
+      {/* ── FAQ ──────────────────────────────────────────────── */}
+      <section className="rbl-light rbl-light--tint">
+        <div className="rbl-wrap rbl-faq">
+          <h2 className="rbl-center">Frequently asked questions</h2>
+          <div>
+            {FAQS.map((f, i) => (
+              <div key={f.q} className={`rbl-faq-item${openFaq === i ? ' is-open' : ''}`}>
+                <button type="button" aria-expanded={openFaq === i} onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+                  <span>{f.q}</span><ChevronDown size={18} />
                 </button>
-                {openFaq === i && <div className="rbl-faq-answer">{faq.a}</div>}
+                {openFaq === i && <p>{f.a}</p>}
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── FINAL CTA ────────────────────────────────────────────── */}
-      <section className="rbl-final-cta">
-        <div className="rbl-final-inner">
-          <h2 className="rbl-final-h2">Your Resume Is the First Impression.<br />Make It Count.</h2>
-          <p className="rbl-final-sub">Join 50,000+ job seekers who landed more interviews with CV Mind.</p>
-          <div className="rbl-final-actions">
-            <button className="rbl-btn-primary rbl-btn-large" onClick={() => setCurrentPage('resume-editor')}>
-              Build Your Resume Now <ArrowRight size={18} />
-            </button>
-            <button className="rbl-btn-outline rbl-btn-outline-white" onClick={() => setCurrentPage('home')}>
-              Check ATS Score Free
-            </button>
-          </div>
-          <div className="rbl-final-trust">
-            {'★★★★★'.split('').map((s, i) => <span key={i} style={{ color: '#f59e0b' }}>{s}</span>)}
-            <span style={{ marginLeft: '0.5rem', fontSize: '0.85rem', opacity: 0.8 }}>4.9 rated · 250+ reviews</span>
-          </div>
+      {/* ── FINAL CTA ────────────────────────────────────────── */}
+      <section className="rbl-final">
+        <div className="rbl-wrap rbl-center">
+          <h2>Ready to build your next resume?</h2>
+          <p>Pick the job you want, choose a template, and have a draft in a few minutes.</p>
+          <button type="button" className="rbl-btn rbl-btn--hero" onClick={build}>Build Your Resume With AI</button>
         </div>
       </section>
-
     </div>
   );
 }

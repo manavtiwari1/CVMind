@@ -1,29 +1,35 @@
-import { useState, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type React from 'react';
 import {
-  CheckCircle2, Copy, Check, ArrowRight, RefreshCw, FileText,
-  AlertCircle, Zap, MessageSquare, BookOpen, Target, Upload, X, Link
+  AlertTriangle, ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Copy, Download, FileText, Home, Link2,
+  LayoutTemplate, Loader2, Lock, PenLine, PencilLine, RefreshCw, Sparkles, SpellCheck, Undo2, Upload, X,
 } from 'lucide-react';
-import SkeletonLoader from '../components/SkeletonLoader';
+import { Leo, Stepper } from '../components/ResumeOnboarding';
+import ResumeDownload from '../components/ResumeDownload';
+import ResumeSheet from '../components/ResumeSheet';
+import TemplatePreview from '../components/TemplatePreview';
+import { RESUME_TEMPLATES } from '../data/resumeTemplates';
+import { authFetch } from '../lib/authFetch';
+import { API_BASE } from '../lib/apiBase';
+import { readUser } from '../lib/currentUser';
+import { cvFileError, isLink } from '../lib/jobInput';
+import { DEFAULT_TEMPLATE, downloadWord, fillTemplate, htmlToText, parseResumeText, templateFor, workForEditor } from '../lib/resumeHandoff';
+import { parseSavedContent } from '../utils/savedWork';
 import { getErrorMessage } from '../utils/errors';
+import type { ExtractedResume, LoadedWork } from '../types/api';
+import '../components/ResumeOnboarding.css';
+import './Tailor.css';
 import './Proofreading.css';
 
-const INDUSTRIES = [
-  'General', 'Technology', 'Finance', 'Healthcare', 'Marketing',
-  'Engineering', 'Education', 'Legal', 'Sales', 'Design'
-];
-
-const CHANGE_TYPE_META: Record<string, { label: string; color: string; bg: string }> = {
-  grammar:       { label: 'Grammar',      color: '#2997ff', bg: 'rgba(41,151,255,0.10)' },
-  punctuation:   { label: 'Punctuation',  color: '#2997ff', bg: 'rgba(41,151,255,0.10)' },
-  spelling:      { label: 'Spelling',     color: '#f43f5e', bg: 'rgba(244,63,94,0.10)' },
-  passive_voice: { label: 'Active Voice', color: '#a78bfa', bg: 'rgba(167,139,250,0.10)' },
-  weak_verb:     { label: 'Power Verb',   color: '#10b981', bg: 'rgba(16,185,129,0.10)' },
-  tone:          { label: 'Tone',         color: '#fb923c', bg: 'rgba(251,146,60,0.10)' },
-  clarity:       { label: 'Clarity',      color: '#fb923c', bg: 'rgba(251,146,60,0.10)' },
-};
-
-function getChangeMeta(type: string) {
-  return CHANGE_TYPE_META[type] || { label: type, color: 'var(--text-secondary)', bg: 'var(--bg-secondary)' };
+interface ProofreadingProps {
+  customApiKey: string;
+  /** The resume text the app already has (from the Resume Checker or an earlier run) */
+  resumeText: string;
+  setCurrentPage: (page: string) => void;
+  loadedWork: LoadedWork | null;
+  setLoadedWork: (work: LoadedWork | null) => void;
+  /** Hides the site chrome while Leo's guided flow is open. */
+  onFocusChange?: (mode: false | 'flow') => void;
 }
 
 // /api/ai/proofread (schema in backend/src/services/gemini.js)
@@ -39,458 +45,946 @@ interface ProofreadResult {
   score: number;
   summary: string;
   changes: ProofreadChange[];
-  stats: {
-    grammarFixes: number;
-    spellingFixes: number;
-    passiveToActive: number;
-    verbUpgrades: number;
-    toneAlignments: number;
+  stats?: {
+    grammarFixes?: number;
+    spellingFixes?: number;
+    passiveToActive?: number;
+    verbUpgrades?: number;
+    toneAlignments?: number;
   };
 }
 
-interface ProofreadingProps {
-  customApiKey: string;
+// What the server saves for a proofread run (backend/src/index.js /api/ai/proofread)
+interface SavedProofread {
+  industry?: string;
+  documentType?: string;
+  fileName?: string;
+  originalText?: string;
+  result?: ProofreadResult;
 }
 
-export default function Proofreading({ customApiKey }: ProofreadingProps) {
-  const [inputMode, setInputMode] = useState<'text' | 'file' | 'link'>('text');
+// Leo's guided steps; null shows the intro page (or the result)
+type Flow = null | 'text' | 'setup' | 'working';
+const FLOW_DOT: Record<Exclude<Flow, null>, number> = { text: 1, setup: 2, working: 3 };
+type Source = 'saved' | 'text' | 'file' | 'link';
+
+const DOC_TYPES = ['Resume', 'Cover letter', 'LinkedIn summary', 'Email', 'Other text'];
+const INDUSTRIES = ['General', 'Technology', 'Finance', 'Healthcare', 'Marketing', 'Engineering', 'Education', 'Legal', 'Sales', 'Design'];
+const PHASES = ['Reading your text', 'Fixing grammar and spelling', 'Strengthening verbs and tone'];
+const MIN_CHARS = 20;
+const NO_CHANGES: ProofreadChange[] = [];
+
+// One tone per kind of change; grammar and punctuation share one, as do tone and clarity
+const KINDS: Record<string, { label: string; tone: string }> = {
+  grammar: { label: 'Grammar', tone: 'blue' },
+  punctuation: { label: 'Punctuation', tone: 'blue' },
+  spelling: { label: 'Spelling', tone: 'red' },
+  passive_voice: { label: 'Active voice', tone: 'purple' },
+  weak_verb: { label: 'Stronger verb', tone: 'green' },
+  tone: { label: 'Tone', tone: 'amber' },
+  clarity: { label: 'Clarity', tone: 'amber' },
+};
+const kindOf = (type: string) => KINDS[type] ?? { label: type.replace(/_/g, ' '), tone: 'amber' };
+
+const STEPS = [
+  { icon: Upload, title: 'Add your text', text: 'Paste it, upload a PDF, DOCX or TXT, or link to it. Your resume works too.' },
+  { icon: PenLine, title: 'Tell Leo what it is', text: 'A resume, cover letter, LinkedIn summary or email, and the industry it is for.' },
+  { icon: CheckCircle2, title: 'Review every change', text: 'See each fix with the reason. Keep your original wording wherever you prefer it.' },
+];
+
+const FIXES = [
+  'Grammar, spelling and punctuation',
+  'Passive sentences turned active',
+  'Weak verbs like "helped" or "worked on" made specific',
+  'Tone matched to your industry',
+  'Wordy sentences made shorter',
+];
+const KEPT = [
+  'Your facts, names, dates and numbers',
+  'What you meant to say',
+  'Your structure and line order',
+  'The final say: undo any change with one click',
+];
+
+const FAQS = [
+  { q: 'What can Leo proofread?', a: 'Any professional writing: a resume, cover letter, LinkedIn summary, email or statement. Paste the text, upload a PDF, DOCX or TXT file (up to 5 MB), or paste a Google Drive, Dropbox or OneDrive link.' },
+  { q: 'Will it change my facts?', a: 'The AI is told to keep your meaning and not to add numbers or details you never wrote. It can still get things wrong, so every change is listed with the reason, and you can keep your original wording for any of them before you copy or download.' },
+  { q: 'What does the score mean?', a: 'It is the AI\'s estimate of how polished your original text was, from 0 to 100. Use it as a rough guide, not a grade a recruiter would give.' },
+  { q: 'Is my text saved?', a: 'Your text is sent to our AI provider to proofread it. When you are signed in, the result is saved to My Documents so you can reopen it. We also keep a usage record (industry, length and number of fixes). We don\'t sell your data.' },
+];
+
+function scoreBand(score: number) {
+  if (score >= 80) return { tone: 'good', label: 'Already polished', text: 'Your original was in good shape. The changes below are mostly finishing touches.' };
+  if (score >= 60) return { tone: 'ok', label: 'A few things to fix', text: 'A solid draft with some errors and weak phrasing. Check the changes below before you send it.' };
+  return { tone: 'low', label: 'Needed a careful pass', text: 'There was a lot to fix. Read the corrected version through once before you use it.' };
+}
+
+/** The corrected text with any changes the user turned down put back to their original wording. */
+function applyChoices(corrected: string, changes: ProofreadChange[], kept: Set<number>): string {
+  let out = corrected;
+  changes.forEach((c, i) => {
+    if (kept.has(i) && c.corrected && out.includes(c.corrected)) out = out.replace(c.corrected, c.original);
+  });
+  return out;
+}
+
+type Segment = { text: string; change?: number };
+
+/** Splits the final text into plain runs and the runs each change touched, for highlighting. */
+function segmentsFor(text: string, changes: ProofreadChange[], kept: Set<number>): Segment[] {
+  const ranges: { start: number; end: number; change: number }[] = [];
+  changes.forEach((c, i) => {
+    const needle = kept.has(i) ? c.original : c.corrected;
+    if (!needle?.trim()) return;
+    let from = 0;
+    while (from <= text.length) {
+      const at = text.indexOf(needle, from);
+      if (at < 0) return;
+      const end = at + needle.length;
+      if (!ranges.some(r => at < r.end && end > r.start)) { ranges.push({ start: at, end, change: i }); return; }
+      from = at + 1;
+    }
+  });
+  ranges.sort((a, b) => a.start - b.start);
+  const out: Segment[] = [];
+  let pos = 0;
+  for (const r of ranges) {
+    if (r.start > pos) out.push({ text: text.slice(pos, r.start) });
+    out.push({ text: text.slice(r.start, r.end), change: r.change });
+    pos = r.end;
+  }
+  if (pos < text.length) out.push({ text: text.slice(pos) });
+  return out;
+}
+
+/** The CVMind templates one at a time, with arrows and a strip of thumbnails. */
+function TemplateSlider({ title, current, busy = false, onUse }: { title: string; current?: string; busy?: boolean; onUse: (id: string) => void }) {
+  const count = RESUME_TEMPLATES.length;
+  const [index, setIndex] = useState(() => {
+    const at = RESUME_TEMPLATES.findIndex(t => t.id === (current || DEFAULT_TEMPLATE));
+    return at < 0 ? 0 : at;
+  });
+  const stripRef = useRef<HTMLDivElement>(null);
+  const t = RESUME_TEMPLATES[index];
+  const isCurrent = t.id === current;
+  const go = (step: number) => setIndex(n => (n + step + count) % count);
+
+  // Keep the chosen thumbnail in view; scrolls the strip only, never the page
+  useEffect(() => {
+    const strip = stripRef.current;
+    const thumb = strip?.children[index] as HTMLElement | undefined;
+    if (strip && thumb) strip.scrollTo({ left: thumb.offsetLeft - (strip.clientWidth - thumb.clientWidth) / 2, behavior: 'smooth' });
+  }, [index]);
+
+  return (
+    <section
+      id="prf-slider"
+      className="tlr-card prf-slider"
+      aria-roledescription="carousel"
+      aria-label="Resume templates"
+      onKeyDown={e => { if (e.key === 'ArrowLeft') go(-1); if (e.key === 'ArrowRight') go(1); }}
+    >
+      <div className="prf-slider-head">
+        <h3>{title}</h3>
+        <small>{index + 1} / {count}</small>
+      </div>
+      <p className="prf-slider-sub">Leo copies your proofread resume, with the fixes you kept, into the one you pick.</p>
+      <div className="prf-slide" style={{ '--t': t.accent } as React.CSSProperties}>
+        <button type="button" className="prf-slide-nav is-prev" onClick={() => go(-1)} aria-label="Previous template"><ChevronLeft size={20} /></button>
+        <div className="prf-slide-art" key={t.id} aria-live="polite">
+          <TemplatePreview html={t.html} name={t.name} eager aspect="1 / 1.25" />
+        </div>
+        <button type="button" className="prf-slide-nav is-next" onClick={() => go(1)} aria-label="Next template"><ChevronRight size={20} /></button>
+      </div>
+      <div className="prf-slide-name">
+        <strong>{t.name}</strong>
+        {isCurrent ? <span className="tlr-tag">In use</span> : t.id === DEFAULT_TEMPLATE && <span className="tlr-tag">Recommended</span>}
+      </div>
+      <div className="prf-strip" ref={stripRef}>
+        {RESUME_TEMPLATES.map((x, n) => (
+          <button key={x.id} type="button" className={`tlr-mini${n === index ? ' is-on' : ''}`} onClick={() => setIndex(n)} aria-label={x.name} aria-pressed={n === index}>
+            <TemplatePreview html={x.html} name={x.name} aspect="1 / 1.2" />
+          </button>
+        ))}
+      </div>
+      <button type="button" className="tlr-btn tlr-btn--purple tlr-btn--block" disabled={busy || isCurrent} onClick={() => onUse(t.id)}>
+        {busy ? <><Loader2 size={17} className="tlr-spin" /> Filling the template…</> : isCurrent ? <><Check size={17} /> Using {t.name}</> : <><LayoutTemplate size={17} /> Use {t.name}</>}
+      </button>
+    </section>
+  );
+}
+
+export default function Proofreading({ customApiKey, resumeText: appResumeText, setCurrentPage, loadedWork, setLoadedWork, onFocusChange }: ProofreadingProps) {
+  const hasAppResume = appResumeText.trim().length >= 50;
+  const [flow, setFlow] = useState<Flow>(null);
+  const [source, setSource] = useState<Source>(hasAppResume ? 'saved' : 'text');
   const [inputText, setInputText] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [resumeUrl, setResumeUrl] = useState('');
   const [dragActive, setDragActive] = useState(false);
+  const [docType, setDocType] = useState('Resume');
   const [industry, setIndustry] = useState('General');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<ProofreadResult | null>(null);
+  const [phase, setPhase] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [result, setResult] = useState<ProofreadResult | null>(null);
+  const [originalText, setOriginalText] = useState('');
+  const [sourceName, setSourceName] = useState('');
+  const [kept, setKept] = useState<Set<number>>(new Set());
+  const [view, setView] = useState<'corrected' | 'original'>('corrected');
+  const [filter, setFilter] = useState('all');
+  const [active, setActive] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // The proofread resume in a CVMind template, shown after the review
+  const [designOpen, setDesignOpen] = useState(false);
+  // Exit from the result goes back to the intro; the result stays one click away
+  const [atIntro, setAtIntro] = useState(false);
+  const [design, setDesign] = useState<{ templateId: string; html: string } | null>(null);
+  const [pendingTemplate, setPendingTemplate] = useState('');
+  const [designBusy, setDesignBusy] = useState(false);
+  const [designError, setDesignError] = useState<string | null>(null);
+  const [showDownload, setShowDownload] = useState(false);
+  const [handingOff, setHandingOff] = useState(false);
+  // Structured data read from the final text; read again only when the text changes
+  const [parsed, setParsed] = useState<{ text: string; data: ExtractedResume } | null>(null);
 
-  const userId = (() => {
-    try { const u = JSON.parse(localStorage.getItem('cvmind_user') || '{}'); return u.id || u._id || ''; } catch { return ''; }
-  })();
+  useEffect(() => {
+    // Leo's questions and his results run full-screen in the app, without the site header and footer
+    onFocusChange?.(flow || (result && !atIntro) ? 'flow' : false);
+  }, [flow, result, atIntro, onFocusChange]);
+  useEffect(() => () => onFocusChange?.(false), [onFocusChange]);
 
-  const handleCopy = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+  // Full-bleed sections, like the Resume Tailorer
+  useEffect(() => {
+    const main = document.querySelector('.main-content') as HTMLElement | null;
+    if (!main) return;
+    main.style.maxWidth = 'none';
+    main.style.padding = '0';
+    main.style.margin = '0';
+    return () => {
+      main.style.maxWidth = '';
+      main.style.padding = '';
+      main.style.margin = '';
+    };
+  }, []);
+
+  useEffect(() => {
+    if (flow !== 'working' || errorMsg) return;
+    const timers = [setTimeout(() => setPhase(1), 3000), setTimeout(() => setPhase(2), 9000)];
+    return () => timers.forEach(clearTimeout);
+  }, [flow, errorMsg]);
+
+  const showResult = (data: ProofreadResult, original: string) => {
+    setResult({ ...data, changes: Array.isArray(data.changes) ? data.changes : [] });
+    setOriginalText(original);
+    setKept(new Set());
+    setView('corrected');
+    setFilter('all');
+    setActive(null);
+    setDesignOpen(false);
+    setDesign(null);
+    setDesignError(null);
+    setParsed(null);
+    setAtIntro(false);
   };
 
-  const validateAndSetFile = (file: File) => {
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    if (!ext || !['pdf', 'docx', 'txt'].includes(ext)) {
-      setErrorMsg('Unsupported file type. Please upload a PDF, DOCX, or TXT file.');
-      return;
+  // Reopen a saved proofread from My Documents. Local state is adjusted during render;
+  // clearing the parent's one-shot loadedWork happens in the effect below.
+  const [handledWork, setHandledWork] = useState<LoadedWork | null>(null);
+  if (loadedWork && loadedWork !== handledWork) {
+    setHandledWork(loadedWork);
+    if (!loadedWork.deleted && loadedWork.type === 'proofread') {
+      const saved = parseSavedContent<SavedProofread>(loadedWork.htmlContent);
+      if (saved?.result?.correctedText) {
+        showResult(saved.result, saved.originalText || '');
+        setIndustry(saved.industry || 'General');
+        setDocType(saved.documentType || '');
+        setSourceName(saved.fileName || '');
+        setErrorMsg(null);
+        setFlow(null);
+      }
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMsg('File too large. Please upload a file under 5MB.');
-      return;
-    }
-    setSelectedFile(file);
-    setErrorMsg(null);
+  }
+  useEffect(() => {
+    if (loadedWork) setLoadedWork(null);
+  }, [loadedWork, setLoadedWork]);
+
+  const validateFile = (file: File) => {
+    const problem = cvFileError(file);
+    setErrorMsg(problem);
+    if (!problem) { setSelectedFile(file); setSource('file'); }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(e.type === 'dragenter' || e.type === 'dragover');
   };
 
   const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
+    handleDrag(e);
     setDragActive(false);
-    if (e.dataTransfer.files?.[0]) validateAndSetFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files?.[0]) validateFile(e.dataTransfer.files[0]);
   };
 
-  const handleProofread = async () => {
-    if (inputMode === 'text' && !inputText.trim()) {
-      setErrorMsg('Please paste some text to proofread.');
-      return;
-    }
-    if (inputMode === 'text' && inputText.trim().length < 20) {
-      setErrorMsg('Please provide at least 20 characters of text.');
-      return;
-    }
-    if (inputMode === 'file' && !selectedFile) {
-      setErrorMsg('Please upload a resume file to proofread.');
-      return;
-    }
-    if (inputMode === 'link' && !resumeUrl.trim()) {
-      setErrorMsg('Please paste a link to your resume.');
-      return;
-    }
+  const removeFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
-    setLoading(true);
+  const openFlow = (step: Exclude<Flow, null> = 'text') => {
     setErrorMsg(null);
-    setResult(null);
+    setFlow(step);
+    window.scrollTo({ top: 0 });
+  };
+
+  const goToStep = (step: Exclude<Flow, null>) => {
+    setErrorMsg(null);
+    setFlow(step);
+  };
+
+  const pickSource = (s: Source) => {
+    setSource(s);
+    setErrorMsg(null);
+    // Pasted text is more often a cover letter or email; files and links are usually a resume
+    if (s !== 'text') setDocType('Resume');
+  };
+
+  const textReady = source === 'saved' ? hasAppResume
+    : source === 'file' ? Boolean(selectedFile)
+      : source === 'link' ? isLink(resumeUrl)
+        : inputText.trim().length >= MIN_CHARS;
+
+  const proofread = async () => {
+    setFlow('working');
+    setPhase(0);
+    setErrorMsg(null);
+
+    const form = new FormData();
+    if (source === 'file' && selectedFile) form.append('resume', selectedFile);
+    else if (source === 'link') form.append('resumeUrl', resumeUrl.trim());
+    else form.append('text', source === 'saved' ? appResumeText.trim() : inputText.trim());
+    form.append('industry', industry);
+    if (docType) form.append('documentType', docType);
+    const headers: Record<string, string> = customApiKey ? { 'x-gemini-key': customApiKey } : {};
 
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL
-        || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
-
-      const headers: Record<string, string> = {};
-      if (customApiKey) headers['x-gemini-key'] = customApiKey;
-
-      let body: FormData | string;
-
-      if (inputMode === 'file' && selectedFile) {
-        const fd = new FormData();
-        fd.append('resume', selectedFile);
-        fd.append('industry', industry);
-        if (userId) fd.append('userId', userId);
-        body = fd;
-      } else if (inputMode === 'link') {
-        const fd = new FormData();
-        fd.append('resumeUrl', resumeUrl.trim());
-        fd.append('industry', industry);
-        if (userId) fd.append('userId', userId);
-        body = fd;
-      } else {
-        headers['Content-Type'] = 'application/json';
-        body = JSON.stringify({ text: inputText.trim(), industry, userId });
-      }
-
-      const response = await fetch(`${baseUrl}/api/ai/proofread`, {
-        method: 'POST',
-        headers,
-        body
-      });
-
-      const resData = await response.json();
-      if (!response.ok) throw new Error(resData.error || 'Server returned an error');
-      if (resData.success && resData.data) {
-        setResult(resData.data);
-        // If file was uploaded, show the extracted text so the user can see it
-        if (resData.extractedText) setInputText(resData.extractedText);
-      } else {
-        throw new Error('Invalid response format from server.');
-      }
+      const res = await authFetch(`${API_BASE}/api/ai/proofread`, { method: 'POST', headers, body: form });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Proofreading failed. Please try again.');
+      const data: ProofreadResult | undefined = body.data;
+      if (!data?.correctedText) throw new Error('Leo could not finish proofreading this. Please try again.');
+      const original = typeof body.extractedText === 'string' ? body.extractedText
+        : source === 'saved' ? appResumeText.trim() : inputText.trim();
+      showResult(data, original);
+      setSourceName(source === 'file' ? selectedFile?.name || '' : source === 'link' ? 'Linked file' : source === 'saved' ? 'Your saved resume' : '');
+      setFlow(null);
+      window.scrollTo({ top: 0 });
     } catch (err) {
-      setErrorMsg(getErrorMessage(err) || 'Proofreading failed. Make sure the servers are online.');
-    } finally {
-      setLoading(false);
+      setErrorMsg(getErrorMessage(err) || 'Something went wrong on our side. Please try again in a moment.');
     }
   };
 
-  const handleReset = () => {
+  const reset = () => {
     setResult(null);
+    setDesignOpen(false);
+    setDesign(null);
+    setParsed(null);
+    setOriginalText('');
     setInputText('');
-    setSelectedFile(null);
     setResumeUrl('');
-    setErrorMsg(null);
+    setSourceName('');
+    removeFile();
+    openFlow('text');
   };
 
-  const totalFixes = result
-    ? (result.stats?.grammarFixes || 0) + (result.stats?.spellingFixes || 0) +
-      (result.stats?.passiveToActive || 0) + (result.stats?.verbUpgrades || 0) +
-      (result.stats?.toneAlignments || 0)
-    : 0;
+  const changes = result?.changes ?? NO_CHANGES;
+  const finalText = useMemo(() => (result ? applyChoices(result.correctedText, changes, kept) : ''), [result, changes, kept]);
+  const segments = useMemo(() => segmentsFor(finalText, changes, kept), [finalText, changes, kept]);
+  // A change can only be undone when its new wording is found in the corrected text
+  const undoable = useMemo(() => changes.map(c => Boolean(c.corrected) && Boolean(result?.correctedText.includes(c.corrected))), [changes, result]);
 
-  const scoreColor = result
-    ? result.score >= 80 ? '#10b981' : result.score >= 60 ? '#fb923c' : '#f43f5e'
-    : '#10b981';
+  const toggleKeep = (i: number) => {
+    setKept(prev => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i); else next.add(i);
+      return next;
+    });
+  };
 
-  return (
-    <div className="proofread-container animate-fade-in-up">
-      <div className="glow-ambient" style={{ top: '10%', left: '8%' }} />
-      <div className="glow-ambient" style={{ bottom: '20%', right: '10%' }} />
+  const copyText = async () => {
+    try {
+      await navigator.clipboard.writeText(finalText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setErrorMsg('Your browser blocked copying. Select the text and copy it instead.');
+    }
+  };
 
-      {/* Header */}
-      <div className="proofread-header">
-        <div className="proofread-title-section">
-          <div className="proofread-badge">
-            <Zap size={12} /> AI PROOFREADING
-          </div>
-          <h1 className="proofread-title">Leave proofreading to AI tech</h1>
-          <p className="proofread-subtitle">
-            Our AI catches typos, grammar mistakes, weak phrasing, and passive voice — then rewrites
-            everything to sound polished and professional. One click, zero errors.
-          </p>
-        </div>
-        {result && (
-          <button className="btn-secondary" onClick={handleReset}>
-            <RefreshCw size={14} /> Start Over
-          </button>
-        )}
-      </div>
+  const download = () => {
+    const url = URL.createObjectURL(new Blob([finalText], { type: 'text/plain;charset=utf-8' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: `${docType || 'Text'} - proofread.txt` });
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  };
 
-      {/* Feature pills */}
-      {!result && !loading && (
-        <div className="proofread-features-row">
-          <div className="proofread-feature-pill">
-            <CheckCircle2 size={14} className="pill-check" /> Grammar &amp; Spelling
-          </div>
-          <div className="proofread-feature-pill">
-            <CheckCircle2 size={14} className="pill-check" /> Passive → Active Voice
-          </div>
-          <div className="proofread-feature-pill">
-            <CheckCircle2 size={14} className="pill-check" /> Weak → Power Verbs
-          </div>
-          <div className="proofread-feature-pill">
-            <CheckCircle2 size={14} className="pill-check" /> Tone Alignment
-          </div>
-        </div>
-      )}
+  const showChange = (i: number) => {
+    setActive(i);
+    setFilter('all');
+    document.getElementById(`prf-change-${i}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
 
-      <div className="proofread-content-area">
-        {/* Input card */}
-        {!loading && !result && (
-          <div className="proofread-input-card glass-card">
-            {/* Tab switcher */}
-            <div className="proofread-mode-tabs">
-              <button
-                className={`proofread-mode-tab${inputMode === 'text' ? ' active' : ''}`}
-                onClick={() => { setInputMode('text'); setErrorMsg(null); }}
-              >
-                <FileText size={14} /> Paste Text
+  const apiHeaders = (): Record<string, string> => (customApiKey ? { 'x-gemini-key': customApiKey } : {});
+
+  /** Reads the proofread resume (with the user's choices) and fills the chosen template with it. */
+  const applyTemplate = async (tid: string) => {
+    if (designBusy) return;
+    setPendingTemplate(tid);
+    setDesignOpen(true);
+    setDesignBusy(true);
+    setDesignError(null);
+    window.scrollTo({ top: 0 });
+    try {
+      let source = parsed;
+      if (!source || source.text !== finalText) {
+        source = { text: finalText, data: await parseResumeText(finalText, apiHeaders()) };
+        setParsed(source);
+      }
+      setDesign({ templateId: tid, html: await fillTemplate(source.data, tid, apiHeaders()) });
+    } catch (err) {
+      setDesignError(getErrorMessage(err) || 'Could not put your resume in this template. Please try again.');
+    } finally {
+      setDesignBusy(false);
+    }
+  };
+
+  const exitToIntro = () => {
+    setAtIntro(true);
+    setDesignOpen(false);
+    setDesignError(null);
+    window.scrollTo({ top: 0 });
+  };
+
+  const openInEditor = async () => {
+    if (!design?.html || handingOff) return;
+    setHandingOff(true);
+    const name = parsed?.data.personalInfo?.fullName?.trim();
+    const title = (name ? `${name} - Proofread Resume` : `Proofread Resume - ${templateFor(design.templateId).name}`).slice(0, 120);
+    setLoadedWork(await workForEditor(design.html, design.templateId, title, 'proofread'));
+    setCurrentPage('resume-editor');
+  };
+
+  // ── LEO'S GUIDED FLOW ────────────────────────────────────────
+  if (flow) {
+    return (
+      <div className="ro-page tlr tlr-flow prf prf-flow">
+        <button type="button" className="tlr-flow-exit" onClick={() => { setFlow(null); setErrorMsg(null); }} disabled={flow === 'working' && !errorMsg} aria-label="Exit AI Proofreading">
+          Exit <X size={15} />
+        </button>
+        <Stepper active={FLOW_DOT[flow]} total={3} />
+
+        {flow === 'text' && (
+          <div className="ro-center ro-stage">
+            <Leo />
+            <h1 className="ro-title">Hi, I'm Leo. I'll proofread your writing. What should I check?</h1>
+            <div className={`tlr-toggle tlr-flow-toggle prf-source${hasAppResume ? ' has-4' : ' has-3'}`} role="tablist" aria-label="How to add your text">
+              {hasAppResume && (
+                <button type="button" role="tab" aria-selected={source === 'saved'} className={source === 'saved' ? 'is-on' : ''} onClick={() => pickSource('saved')}>
+                  <FileText size={14} /> My resume
+                </button>
+              )}
+              <button type="button" role="tab" aria-selected={source === 'text'} className={source === 'text' ? 'is-on' : ''} onClick={() => pickSource('text')}>
+                <PenLine size={14} /> Paste text
               </button>
-              <button
-                className={`proofread-mode-tab${inputMode === 'file' ? ' active' : ''}`}
-                onClick={() => { setInputMode('file'); setErrorMsg(null); }}
-              >
-                <Upload size={14} /> Upload Resume
+              <button type="button" role="tab" aria-selected={source === 'file'} className={source === 'file' ? 'is-on' : ''} onClick={() => pickSource('file')}>
+                <Upload size={14} /> Upload file
               </button>
-              <button
-                className={`proofread-mode-tab${inputMode === 'link' ? ' active' : ''}`}
-                onClick={() => { setInputMode('link'); setErrorMsg(null); }}
-              >
-                <Link size={14} /> Paste Link
+              <button type="button" role="tab" aria-selected={source === 'link'} className={source === 'link' ? 'is-on' : ''} onClick={() => pickSource('link')}>
+                <Link2 size={14} /> Paste link
               </button>
             </div>
-
-            <div className="proofread-form">
-              {inputMode === 'text' ? (
-                <div className="form-group">
-                  <label>Text to Proofread *</label>
-                  <textarea
-                    placeholder="Paste your cover letter, resume bullet points, email draft, LinkedIn summary, or any professional text here..."
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    className="proofread-textarea"
-                    rows={10}
-                  />
-                  <div className="char-count">{inputText.length} characters</div>
+            <div className="tlr-flow-box prf-box">
+              {source === 'saved' && (
+                <div className="tlr-file">
+                  <FileText size={22} />
+                  <div><strong>The resume you already added</strong><small>{appResumeText.trim().slice(0, 70)}…</small></div>
                 </div>
-              ) : inputMode === 'file' ? (
-                <div className="form-group">
-                  <label>Upload Resume (PDF, DOCX, TXT)</label>
-                  <div
-                    className={`proofread-upload-zone${dragActive ? ' drag-active' : ''}${selectedFile ? ' has-file' : ''}`}
-                    onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-                    onDragLeave={() => setDragActive(false)}
-                    onDrop={handleDrop}
-                    onClick={() => !selectedFile && fileInputRef.current?.click()}
-                  >
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".pdf,.docx,.txt"
-                      className="file-input-hidden"
-                      onChange={(e) => e.target.files?.[0] && validateAndSetFile(e.target.files[0])}
-                    />
-                    {selectedFile ? (
-                      <div className="proofread-file-selected">
-                        <div className="proofread-file-icon">
-                          <FileText size={22} />
-                        </div>
-                        <div className="proofread-file-details">
-                          <span className="proofread-file-name">{selectedFile.name}</span>
-                          <span className="proofread-file-size">{(selectedFile.size / 1024).toFixed(1)} KB</span>
-                        </div>
-                        <button
-                          className="proofread-file-remove"
-                          onClick={(e) => { e.stopPropagation(); setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
-                          title="Remove file"
-                        >
-                          <X size={15} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="proofread-upload-prompt">
-                        <Upload size={28} className="upload-icon" />
-                        <p className="upload-main-text">Drag &amp; drop or <span className="upload-browse">browse</span></p>
-                        <p className="upload-sub-text">PDF, DOCX, or TXT · Max 5MB</p>
+              )}
+              {source === 'text' && (
+                <>
+                  <textarea
+                    className="tlr-textarea prf-paste"
+                    placeholder="Paste your resume, cover letter, LinkedIn summary, email or any professional text"
+                    value={inputText}
+                    onChange={e => { setInputText(e.target.value); setErrorMsg(null); }}
+                    aria-label="Text to proofread"
+                    autoFocus
+                  />
+                  <small className="prf-count">
+                    {inputText.trim().length < MIN_CHARS ? `At least ${MIN_CHARS} characters` : `${inputText.trim().split(/\s+/).length} words`}
+                  </small>
+                </>
+              )}
+              {source === 'file' && (selectedFile ? (
+                <div className="tlr-file">
+                  <FileText size={22} />
+                  <div><strong>{selectedFile.name}</strong><small>{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</small></div>
+                  <button type="button" onClick={removeFile} aria-label="Remove file"><X size={16} /></button>
+                </div>
+              ) : (
+                <label className={`tlr-drop${dragActive ? ' is-drag' : ''}`} onDragEnter={handleDrag} onDragOver={handleDrag} onDragLeave={handleDrag} onDrop={handleDrop}>
+                  <input ref={fileInputRef} type="file" accept=".pdf,.docx,.txt" onChange={e => e.target.files?.[0] && validateFile(e.target.files[0])} />
+                  <Upload size={22} />
+                  <span><b>Choose a file</b> or drag it here</span>
+                  <small>PDF, DOCX or TXT · up to 5 MB</small>
+                </label>
+              ))}
+              {source === 'link' && (
+                <input
+                  type="url"
+                  className="tlr-input"
+                  placeholder="https://drive.google.com/… or a direct PDF/DOCX link"
+                  value={resumeUrl}
+                  onChange={e => setResumeUrl(e.target.value)}
+                  aria-label="Link to your file"
+                  autoFocus
+                />
+              )}
+            </div>
+            {errorMsg && <p className="ro-error"><AlertTriangle size={14} /> {errorMsg}</p>}
+            <button type="button" className="ro-btn ro-btn--green" disabled={!textReady} onClick={() => goToStep('setup')}>Next <ArrowRight size={16} /></button>
+          </div>
+        )}
+
+        {flow === 'setup' && (
+          <div className="ro-center ro-stage">
+            <Leo />
+            <h1 className="ro-title">What is it, and which industry is it for?</h1>
+            <p className="ro-sub">I'll match the tone to what you're writing and who will read it.</p>
+            <div className="prf-setup">
+              <fieldset>
+                <legend>It's a…</legend>
+                <div className="prf-chips">
+                  {DOC_TYPES.map(d => <button key={d} type="button" className={docType === d ? 'is-on' : ''} aria-pressed={docType === d} onClick={() => setDocType(d)}>{d}</button>)}
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend>Industry</legend>
+                <div className="prf-chips">
+                  {INDUSTRIES.map(ind => <button key={ind} type="button" className={industry === ind ? 'is-on' : ''} aria-pressed={industry === ind} onClick={() => setIndustry(ind)}>{ind}</button>)}
+                </div>
+              </fieldset>
+            </div>
+            <button type="button" className="ro-btn ro-btn--green" onClick={proofread}><SpellCheck size={16} /> Proofread it</button>
+            <button type="button" className="ro-link" onClick={() => goToStep('text')}>← Go back</button>
+          </div>
+        )}
+
+        {flow === 'working' && (
+          <div className="ro-center ro-stage">
+            <Leo />
+            {errorMsg ? (
+              <>
+                <h1 className="ro-title">Something went wrong while proofreading.</h1>
+                <p className="ro-error"><AlertTriangle size={14} /> {errorMsg}</p>
+                <div className="ro-actions">
+                  <button type="button" className="ro-btn ro-btn--green" onClick={proofread}><RefreshCw size={15} /> Try again</button>
+                  <button type="button" className="ro-btn ro-btn--purple" onClick={() => goToStep('text')}>Change my text</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h1 className="ro-title">I'm reading every sentence…</h1>
+                <ul className="tlr-phases" aria-live="polite">
+                  {PHASES.map((p, i) => (
+                    <li key={p} className={i < phase ? 'is-done' : i === phase ? 'is-on' : ''}>
+                      {i < phase ? <CheckCircle2 size={17} /> : i === phase ? <Loader2 size={17} className="ro-spin" /> : <span className="tlr-phase-dot" />}
+                      {p}
+                    </li>
+                  ))}
+                </ul>
+                <p className="ro-sub">This usually takes 10 to 30 seconds, longer for a full resume.</p>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const appBar = (back: React.ReactNode) => (
+    <div className="prf-bar">
+      {back}
+      <span className="prf-bar-title"><SpellCheck size={16} /> AI Proofreading</span>
+      <button type="button" className="prf-exit" onClick={exitToIntro} aria-label="Exit AI Proofreading">Exit <X size={15} /></button>
+    </div>
+  );
+
+  // ── THE PROOFREAD RESUME IN A TEMPLATE ───────────────────────
+  if (result && !atIntro && designOpen) {
+    const target = templateFor(designBusy || !design ? pendingTemplate : design.templateId);
+    const personName = parsed?.data.personalInfo?.fullName?.trim();
+    const ready = Boolean(design?.html) && !designBusy && !designError;
+    return (
+      <div className="tlr tlr-result prf prf-result prf-app">
+        <div className="tlr-wrap">
+          {appBar(
+            <button type="button" className="tlr-back" onClick={() => { setDesignOpen(false); setDesignError(null); window.scrollTo({ top: 0 }); }}>
+              <ArrowLeft size={16} /> Back to the changes
+            </button>,
+          )}
+
+          <section className="tlr-done">
+            <div className="tlr-done-leo"><Leo /></div>
+            <div className="tlr-done-copy">
+              <h1>
+                {designBusy ? `I'm putting your proofread resume into ${target.name}…`
+                  : designError ? 'Something went wrong while filling the template.'
+                    : `Done! Your proofread resume is in the ${target.name} template.`}
+              </h1>
+              <p>
+                {designBusy ? 'Every fix you kept goes in, and your facts stay as they are. This usually takes 20 to 40 seconds.'
+                  : designError ? designError
+                    : 'Download it now, or open it in the CVMind resume editor to keep working on it.'}
+              </p>
+              <div className="tlr-done-actions">
+                {ready && (
+                  <>
+                    <button type="button" className="tlr-btn" onClick={() => setShowDownload(true)}><Download size={17} /> Download</button>
+                    <button type="button" className="tlr-btn tlr-btn--purple" disabled={handingOff} onClick={openInEditor}>
+                      {handingOff ? <Loader2 size={17} className="tlr-spin" /> : <PencilLine size={17} />} Edit in CVMind Resume Editor
+                    </button>
+                  </>
+                )}
+                {designError && !designBusy && (
+                  <button type="button" className="tlr-btn" onClick={() => applyTemplate(pendingTemplate)}><RefreshCw size={17} /> Try again</button>
+                )}
+              </div>
+              <p className="tlr-fine"><Lock size={12} /> The cvmind.in · Powered by CVMind footer stays on every page.{readUser() ? '' : ' Sign in to save it to My Documents.'}</p>
+            </div>
+          </section>
+
+          <div className="prf-layout">
+            <div className="tlr-paper">
+              {design?.html ? (
+                <div className={designBusy ? 'is-busy' : undefined}>
+                  <ResumeSheet html={design.html} title="Proofread resume preview" />
+                  {designBusy && <div className="tlr-paper-busy"><Loader2 size={22} className="tlr-spin" /> Filling the template…</div>}
+                </div>
+              ) : (
+                <div className="tlr-paper-empty">
+                  {designBusy ? <Loader2 size={28} className="tlr-spin" /> : <FileText size={28} />}
+                  <h3>{designBusy ? 'Reading your proofread resume' : 'No template yet'}</h3>
+                  <p>{designBusy ? 'Leo is sorting it into sections: experience, education, skills and more.' : 'Try again, or pick another template on the right.'}</p>
+                </div>
+              )}
+            </div>
+
+            <aside className="prf-side">
+              <TemplateSlider
+                title="Try another template"
+                current={designBusy ? pendingTemplate : design?.templateId}
+                busy={designBusy}
+                onUse={id => { if (id !== design?.templateId || !design?.html) applyTemplate(id); }}
+              />
+              <section className="tlr-card">
+                <h3>What goes in</h3>
+                <ul className="tlr-list">
+                  <li><CheckCircle2 size={15} />{kept.size ? `${changes.length - kept.size} of ${changes.length} fixes, the ones you kept` : `All ${changes.length} fixes from the proofread`}</li>
+                  <li><CheckCircle2 size={15} />Your companies, titles, dates and degrees as you wrote them</li>
+                  <li><CheckCircle2 size={15} />Laid out in sections, ready to edit line by line</li>
+                </ul>
+              </section>
+            </aside>
+          </div>
+        </div>
+
+        {showDownload && design?.html && (
+          <ResumeDownload
+            defaultName={personName ? `${personName} Resume` : 'Proofread Resume'}
+            paper="a4"
+            getHtml={() => design.html}
+            getText={() => htmlToText(design.html)}
+            customApiKey={customApiKey}
+            onWord={name => downloadWord(design.html, name)}
+            onClose={() => setShowDownload(false)}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // ── RESULT ───────────────────────────────────────────────────
+  if (result && !atIntro) {
+    const score = Math.max(0, Math.min(100, Math.round(result.score || 0)));
+    const band = scoreBand(score);
+    const used = changes.length - kept.size;
+    const kinds = Array.from(new Set(changes.map(c => kindOf(c.type).label)));
+    const counts = [
+      { label: 'Grammar & punctuation', n: result.stats?.grammarFixes, tone: 'blue' },
+      { label: 'Spelling', n: result.stats?.spellingFixes, tone: 'red' },
+      { label: 'Active voice', n: result.stats?.passiveToActive, tone: 'purple' },
+      { label: 'Stronger verbs', n: result.stats?.verbUpgrades, tone: 'green' },
+      { label: 'Tone & clarity', n: result.stats?.toneAlignments, tone: 'amber' },
+    ].map(c => ({ ...c, n: Number(c.n) || 0 }));
+    const maxCount = Math.max(1, ...counts.map(c => c.n));
+    const what = docType ? docType.toLowerCase() : 'text';
+    const isResume = docType === 'Resume';
+    const listed = changes.map((c, i) => ({ c, i })).filter(({ c }) => filter === 'all' || kindOf(c.type).label === filter);
+
+    return (
+      <div className="tlr tlr-result prf prf-result prf-app">
+        <div className="tlr-wrap">
+          {appBar(<button type="button" className="tlr-back" onClick={reset}><ArrowLeft size={16} /> Proofread something else</button>)}
+
+          <section className="tlr-done">
+            <div className="tlr-done-leo"><Leo /></div>
+            <div className="tlr-done-copy">
+              <h1>{changes.length ? `Done! I made ${changes.length} ${changes.length === 1 ? 'improvement' : 'improvements'} to your ${what}.` : `Your ${what} already reads well.`}</h1>
+              <p>{result.summary || 'Your corrected text and every change are below.'}</p>
+              <small className="tlr-done-meta">
+                {[docType, industry !== 'General' ? industry : '', sourceName].filter(Boolean).join(' · ')}
+              </small>
+              <div className="tlr-done-actions">
+                <button type="button" className="tlr-btn" onClick={copyText}>{copied ? <><Check size={17} /> Copied</> : <><Copy size={17} /> Copy the corrected text</>}</button>
+                <button type="button" className="tlr-btn tlr-btn--outline" onClick={download}><Download size={17} /> Download .txt</button>
+                {isResume && (
+                  <button type="button" className="tlr-btn tlr-btn--purple prf-to-slider" onClick={() => document.getElementById('prf-slider')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                    <LayoutTemplate size={17} /> Put it in a template
+                  </button>
+                )}
+              </div>
+              <p className="tlr-fine">
+                {kept.size > 0 ? `Using ${used} of ${changes.length} changes. You kept your original wording for ${kept.size}.` : 'Don\'t like a change? Keep your original wording for it.'}
+                {readUser() ? '' : ' Sign in to save it to My Documents.'}
+              </p>
+            </div>
+          </section>
+
+          {errorMsg && <div className="tlr-error" role="alert"><AlertTriangle size={16} /> {errorMsg}</div>}
+
+          <div className="prf-layout">
+            <div className="prf-main">
+              {changes.length > 0 && (
+                <section className="prf-changes">
+                  <div className="prf-changes-head">
+                    <h2>Leo's changes <span>{changes.length}</span></h2>
+                    {kinds.length > 1 && (
+                      <div className="prf-filter" role="group" aria-label="Filter changes">
+                        {['all', ...kinds].map(k => (
+                          <button key={k} type="button" className={filter === k ? 'is-on' : ''} aria-pressed={filter === k} onClick={() => setFilter(k)}>
+                            {k === 'all' ? 'All' : k}
+                          </button>
+                        ))}
                       </div>
                     )}
                   </div>
-                </div>
-              ) : (
-                <div className="form-group">
-                  <label>Paste a shareable link to your resume</label>
-                  <div className="proofread-link-zone">
-                    <Link size={22} className="link-input-icon" />
-                    <input
-                      type="url"
-                      className="resume-link-input"
-                      placeholder="https://drive.google.com/... or any direct PDF/DOCX link"
-                      value={resumeUrl}
-                      onChange={(e) => setResumeUrl(e.target.value)}
-                    />
-                    <p className="link-input-hint">Supports Google Drive, Dropbox, OneDrive, or any direct link</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="form-group">
-                <label>Target Industry</label>
-                <select
-                  value={industry}
-                  onChange={(e) => setIndustry(e.target.value)}
-                  className="proofread-select"
-                >
-                  {INDUSTRIES.map(ind => (
-                    <option key={ind} value={ind}>{ind}</option>
-                  ))}
-                </select>
-              </div>
-
-              {errorMsg && (
-                <div className="proofread-error-bar">
-                  <AlertCircle size={15} /> {errorMsg}
-                </div>
-              )}
-
-              <button
-                className="btn-primary proofread-submit-btn"
-                onClick={handleProofread}
-                disabled={
-                  inputMode === 'text' ? !inputText.trim() :
-                  inputMode === 'file' ? !selectedFile :
-                  !resumeUrl.trim()
-                }
-              >
-                Proofread My {inputMode === 'text' ? 'Text' : 'Resume'} <ArrowRight size={16} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {loading && (
-          <SkeletonLoader
-            type="text"
-            title="Proofreading Your Text..."
-            subtitle="Analysing grammar, passive voice, verb strength, and tone alignment..."
-          />
-        )}
-
-        {/* Results */}
-        {result && (
-          <div className="proofread-results-grid animate-fade-in">
-            {/* Sidebar */}
-            <div className="proofread-sidebar">
-              <div className="glass-card proofread-score-card">
-                <div className="score-ring-wrapper">
-                  <svg viewBox="0 0 80 80" className="score-ring-svg">
-                    <circle cx="40" cy="40" r="34" fill="none" stroke="var(--border)" strokeWidth="6" />
-                    <circle
-                      cx="40" cy="40" r="34" fill="none"
-                      stroke={scoreColor} strokeWidth="6"
-                      strokeLinecap="round"
-                      strokeDasharray={`${2 * Math.PI * 34}`}
-                      strokeDashoffset={`${2 * Math.PI * 34 * (1 - result.score / 100)}`}
-                      transform="rotate(-90 40 40)"
-                    />
-                  </svg>
-                  <div className="score-ring-inner">
-                    <span className="score-value" style={{ color: scoreColor }}>{result.score}</span>
-                    <span className="score-label">/ 100</span>
-                  </div>
-                </div>
-                <p className="score-caption">Original Writing Score</p>
-              </div>
-
-              <div className="glass-card proofread-stats-card">
-                <h4>Fixes Applied</h4>
-                <div className="stat-row">
-                  <span>Grammar &amp; Punctuation</span>
-                  <strong>{result.stats?.grammarFixes || 0}</strong>
-                </div>
-                <div className="stat-row">
-                  <span>Spelling</span>
-                  <strong>{result.stats?.spellingFixes || 0}</strong>
-                </div>
-                <div className="stat-row">
-                  <span>Active Voice</span>
-                  <strong style={{ color: '#a78bfa' }}>{result.stats?.passiveToActive || 0}</strong>
-                </div>
-                <div className="stat-row">
-                  <span>Power Verbs</span>
-                  <strong style={{ color: '#10b981' }}>{result.stats?.verbUpgrades || 0}</strong>
-                </div>
-                <div className="stat-row">
-                  <span>Tone &amp; Clarity</span>
-                  <strong style={{ color: '#fb923c' }}>{result.stats?.toneAlignments || 0}</strong>
-                </div>
-                <div className="stat-total-row">
-                  <span>Total Improvements</span>
-                  <strong>{totalFixes}</strong>
-                </div>
-              </div>
-
-              <div className="glass-card proofread-summary-card">
-                <div className="summary-icon-row">
-                  <BookOpen size={15} />
-                  <span>AI Summary</span>
-                </div>
-                <p>{result.summary}</p>
-              </div>
-            </div>
-
-            {/* Main panel */}
-            <div className="proofread-main-panel">
-              <div className="glass-card proofread-corrected-card">
-                <div className="corrected-card-header">
-                  <div className="corrected-header-left">
-                    <Target size={16} />
-                    <span>Corrected Text</span>
-                    <div className="corrected-badge">Polished &amp; Professional</div>
-                  </div>
-                  <button
-                    className="btn-secondary btn-sm"
-                    onClick={() => handleCopy(result.correctedText, 'corrected')}
-                  >
-                    {copiedId === 'corrected'
-                      ? <><Check size={12} className="text-success" /> Copied!</>
-                      : <><Copy size={12} /> Copy Text</>
-                    }
-                  </button>
-                </div>
-                <div className="corrected-text-body">
-                  {result.correctedText}
-                </div>
-              </div>
-
-              {result.changes && result.changes.length > 0 && (
-                <div className="glass-card proofread-changes-card">
-                  <div className="changes-card-header">
-                    <MessageSquare size={16} />
-                    <span>Detailed Changes</span>
-                    <span className="changes-count">{result.changes.length} improvements</span>
-                  </div>
-
-                  <div className="changes-list">
-                    {result.changes.map((change, idx: number) => {
-                      const meta = getChangeMeta(change.type);
+                  <div className="prf-changes-list">
+                    {listed.map(({ c, i }) => {
+                      const kind = kindOf(c.type);
+                      const isKept = kept.has(i);
                       return (
-                        <div key={idx} className="change-item">
-                          <div className="change-type-badge" style={{ color: meta.color, background: meta.bg }}>
-                            {meta.label}
+                        <article key={i} id={`prf-change-${i}`} className={`prf-change prf-tone--${kind.tone}${isKept ? ' is-kept' : ''}${active === i ? ' is-active' : ''}`} onMouseEnter={() => setActive(i)}>
+                          <div className="prf-change-top">
+                            <span className="prf-kind">{kind.label}</span>
+                            {undoable[i] && (
+                              <button type="button" className="prf-keep" onClick={() => toggleKeep(i)} aria-pressed={isKept}>
+                                {isKept ? <><Sparkles size={13} /> Use Leo's version</> : <><Undo2 size={13} /> Keep my original</>}
+                              </button>
+                            )}
                           </div>
-                          <div className="change-diff-row">
-                            <div className="change-original">
-                              <span className="diff-label">Before</span>
-                              <span className="diff-text original-text">{change.original}</span>
-                            </div>
-                            <ArrowRight size={14} className="diff-arrow" />
-                            <div className="change-corrected">
-                              <span className="diff-label">After</span>
-                              <span className="diff-text corrected-text">{change.corrected}</span>
-                            </div>
+                          <div className="prf-diff">
+                            <del>{c.original}</del>
+                            <ArrowRight size={15} aria-hidden="true" />
+                            <ins>{c.corrected}</ins>
                           </div>
-                          <p className="change-explanation">{change.explanation}</p>
-                        </div>
+                          <p>{c.explanation}</p>
+                        </article>
                       );
                     })}
                   </div>
-                </div>
+                </section>
               )}
+
+              <section className="prf-doc">
+                <header className="prf-doc-head">
+                  {originalText ? (
+                    <div className="tlr-toggle prf-view" role="tablist" aria-label="Which version to show">
+                      <button type="button" role="tab" aria-selected={view === 'corrected'} className={view === 'corrected' ? 'is-on' : ''} onClick={() => setView('corrected')}>Corrected</button>
+                      <button type="button" role="tab" aria-selected={view === 'original'} className={view === 'original' ? 'is-on' : ''} onClick={() => setView('original')}>Your original</button>
+                    </div>
+                  ) : <h2>Corrected text</h2>}
+                  {view === 'corrected' && changes.length > 0 && <small>Highlighted words were changed. Click one to see why.</small>}
+                </header>
+                <div className="prf-doc-body">
+                  {view === 'original' ? originalText : segments.map((s, k) => (s.change === undefined ? s.text : (
+                    <mark
+                      key={k}
+                      className={`prf-mark prf-tone--${kindOf(changes[s.change].type).tone}${kept.has(s.change) ? ' is-kept' : ''}${active === s.change ? ' is-active' : ''}`}
+                      title={changes[s.change].explanation}
+                      onClick={() => showChange(s.change!)}
+                    >
+                      {s.text}
+                    </mark>
+                  )))}
+                </div>
+              </section>
             </div>
+
+            <aside className="prf-side">
+              {isResume && <TemplateSlider title="Put it in a template" onUse={applyTemplate} />}
+
+              <section className={`tlr-card tlr-score tlr-score--${band.tone}`}>
+                <div className="tlr-ring" style={{ '--p': score } as React.CSSProperties}>
+                  <b>{score}<small>/100</small></b>
+                </div>
+                <div>
+                  <span className="tlr-score-label">{band.label}</span>
+                  <p>{band.text}</p>
+                  <small className="tlr-fine">How your original scored, estimated by AI.</small>
+                </div>
+              </section>
+
+              {counts.some(c => c.n > 0) && (
+                <section className="tlr-card">
+                  <h3>What Leo fixed</h3>
+                  <ul className="prf-bars">
+                    {counts.map(c => (
+                      <li key={c.label} className={`prf-tone--${c.tone}`}>
+                        <span>{c.label}</span>
+                        <i><em style={{ width: `${(c.n / maxCount) * 100}%` }} /></i>
+                        <b>{c.n}</b>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {!isResume && (
+                <section className="tlr-card">
+                  <h3>Before you send it</h3>
+                  <ul className="tlr-list">
+                    <li><CheckCircle2 size={15} />Read the corrected version once, out loud if you can.</li>
+                    <li><CheckCircle2 size={15} />Check names, dates and numbers are still right.</li>
+                  </ul>
+                </section>
+              )}
+            </aside>
           </div>
-        )}
+        </div>
       </div>
+    );
+  }
+
+  // ── INTRO ────────────────────────────────────────────────────
+  return (
+    <div className="tlr prf">
+      <section className="tlr-hero">
+        <div className="tlr-wrap tlr-hero-grid">
+          <div className="tlr-hero-copy">
+            <nav className="tlr-crumb" aria-label="Breadcrumb">
+              <button type="button" onClick={() => setCurrentPage('home')} aria-label="Home"><Home size={14} /></button>
+              <span aria-hidden="true">›</span>
+              <span>AI Proofreading</span>
+            </nav>
+            <h1>Send it <em>without the typos</em></h1>
+            <ul className="tlr-checks">
+              <li><CheckCircle2 size={18} />Leo fixes grammar, spelling and punctuation in your resume, cover letter or any professional text.</li>
+              <li><CheckCircle2 size={18} />Passive sentences become active, weak verbs become specific, and the tone fits your industry.</li>
+              <li><CheckCircle2 size={18} />Every change comes with the reason, and you can keep your original wording for any of them.</li>
+            </ul>
+            <p className="tlr-note">Free to try. No card needed.</p>
+          </div>
+
+          <div className="tlr-start">
+            <div className="tlr-start-leo"><Leo /></div>
+            <h2>Leo will proofread it with you</h2>
+            <ol className="tlr-start-steps">
+              <li><span>1</span>Paste your text, or add your resume</li>
+              <li><span>2</span>Say what it is and the industry</li>
+              <li><span>3</span>Review the changes, then copy or download</li>
+            </ol>
+            <label
+              className={`tlr-drop${dragActive ? ' is-drag' : ''}`}
+              onDragEnter={handleDrag}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={e => { handleDrop(e); if (e.dataTransfer.files?.[0]) { setDocType('Resume'); openFlow('text'); } }}
+            >
+              <input type="file" accept=".pdf,.docx,.txt" onChange={e => { if (e.target.files?.[0]) { validateFile(e.target.files[0]); setDocType('Resume'); openFlow('text'); } }} />
+              <Upload size={22} />
+              <span><b>Drop your resume here</b> to start</span>
+              <small>PDF, DOCX or TXT · up to 5 MB</small>
+            </label>
+            {result && (
+              <button type="button" className="tlr-btn tlr-btn--outline tlr-btn--block" onClick={() => { setAtIntro(false); window.scrollTo({ top: 0 }); }}>
+                <ArrowRight size={17} /> Back to your proofread ({changes.length} {changes.length === 1 ? 'change' : 'changes'})
+              </button>
+            )}
+            <button type="button" className="tlr-btn tlr-btn--block tlr-btn--big" onClick={() => openFlow('text')}>
+              <Sparkles size={18} /> Proofread with Leo
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="tlr-light">
+        <div className="tlr-wrap">
+          <p className="tlr-kicker">How it works</p>
+          <h2 className="tlr-center">Clean, confident writing in three steps</h2>
+          <ol className="tlr-steps">
+            {STEPS.map((s, i) => (
+              <li key={s.title}>
+                <span className="tlr-step-ico"><s.icon size={20} /></span>
+                <small>Step {i + 1}</small>
+                <h3>{s.title}</h3>
+                <p>{s.text}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section className="tlr-light tlr-light--tint">
+        <div className="tlr-wrap tlr-compare">
+          <div>
+            <span className="tlr-tag">What Leo fixes</span>
+            <h2>Mistakes and weak phrasing</h2>
+            <ul className="tlr-list">{FIXES.map(c => <li key={c}><CheckCircle2 size={16} />{c}</li>)}</ul>
+          </div>
+          <div>
+            <span className="tlr-tag tlr-tag--kept">What stays yours</span>
+            <h2>Your words, your call</h2>
+            <ul className="tlr-list tlr-list--kept">{KEPT.map(c => <li key={c}><Lock size={15} />{c}</li>)}</ul>
+          </div>
+        </div>
+      </section>
+
+      <section className="tlr-light">
+        <div className="tlr-wrap tlr-faq">
+          <h2 className="tlr-center">Frequently asked questions</h2>
+          {FAQS.map((f, i) => (
+            <div key={f.q} className={`tlr-faq-item${openFaq === i ? ' is-open' : ''}`}>
+              <button type="button" aria-expanded={openFaq === i} onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+                <span>{f.q}</span><ChevronDown size={18} />
+              </button>
+              {openFaq === i && <p>{f.a}</p>}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="tlr-final">
+        <div className="tlr-wrap tlr-center">
+          <h2>One last read before you hit send</h2>
+          <p>Paste your text and Leo will have it proofread in seconds.</p>
+          <button type="button" className="tlr-btn tlr-btn--big" onClick={() => openFlow('text')}>Proofread with Leo <ArrowRight size={18} /></button>
+        </div>
+      </section>
     </div>
   );
 }
