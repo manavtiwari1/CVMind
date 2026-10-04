@@ -5,6 +5,7 @@ import {
   ApiError, listResumes, uploadResume, importFromWork, updateResume, reparseResume,
   setDefaultResume, deleteResume, downloadResumeFile, listCvmindResumes, toEditable, RESUME_FILE_TYPES, type CvmindResume
 } from '../../lib/agentApi';
+import SlowWaitNotice from './SlowWaitNotice';
 import './ResumeTab.css';
 
 const POLL_MS = 3000;
@@ -305,7 +306,11 @@ export default function ResumeTab({ initialSelectedId }: { initialSelectedId?: s
       {resume.sourceMissing && <div className="aa-resume-warning"><AlertCircle size={16} /> The CVMind resume this was imported from has been deleted.</div>}
 
       {(resume.status === 'queued' || resume.status === 'parsing') && (
-        <div className="aa-empty"><RefreshCw size={28} className="aa-spin" /><p>Reading your resume and building a structured profile…</p></div>
+        <div className="aa-empty">
+          <RefreshCw size={28} className="aa-spin" />
+          <p>Reading your resume and building a structured profile…</p>
+          <SlowWaitNotice key={resume.id} since={resume.updatedAt} />
+        </div>
       )}
       {resume.status === 'failed' && (
         <div className="aa-error">

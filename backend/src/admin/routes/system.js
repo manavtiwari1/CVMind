@@ -6,6 +6,7 @@ import { metricsSnapshot } from '../metrics.js';
 import { FEATURES, VERSION_CLIENTS, SECURITY_LIMITS, getSettings, saveSettingGroup, SETTING_KEYS } from '../settings.js';
 import { handle, httpError } from '../util.js';
 import { emailConfigured } from '../mailer.js';
+import { workerStatus } from '../../agent/queue/heartbeat.js';
 
 const router = express.Router();
 const DB_STATES = ['disconnected', 'connected', 'connecting', 'disconnecting'];
@@ -14,6 +15,7 @@ router.get('/health', requireAdmin('system.view'), handle(async (req, res) => {
   const ready = await dbReady(1000);
   let database = { state: DB_STATES[mongoose.connection.readyState] || 'unknown', configured: !!process.env.MONGODB_URI };
   let queue = null;
+  let worker = null;
 
   if (ready) {
     const started = Date.now();
@@ -38,6 +40,11 @@ router.get('/health', requireAdmin('system.view'), handle(async (req, res) => {
         queue[r._id.queue][r._id.status] = r.count;
       }
     }
+    try {
+      worker = await workerStatus();
+    } catch (err) {
+      console.error('[admin] worker status failed:', err.message);
+    }
   }
 
   const mem = process.memoryUsage();
@@ -53,6 +60,7 @@ router.get('/health', requireAdmin('system.view'), handle(async (req, res) => {
       },
       database,
       queue,
+      worker,
       metrics: metricsSnapshot(),
       // Only whether each key is set, never the value
       integrations: [

@@ -9,6 +9,7 @@ interface Health {
   server: { uptimeSec: number; node: string; platform: string; memoryMb: { rss: number; heapUsed: number; heapTotal: number }; inlineWorkers: boolean };
   database: { state: string; configured: boolean; pingMs?: number | null; name?: string; collections?: number; objects?: number; dataSizeMb?: number; storageSizeMb?: number };
   queue: Record<string, Record<string, number>> | null;
+  worker: { running: boolean; workers: number; lastSeenAt: string | null; dueJobs: number; oldestDueAt: string | null } | null;
   metrics: {
     since: string;
     lastHour: { requests: number; errors: number; avgMs: number };
@@ -103,6 +104,21 @@ export default function SystemHealth() {
           ) : <Empty icon={<Database size={20} />} title="No database details" />}
         </Card>
         <Card title="Auto Apply queue" description={h?.server.inlineWorkers ? 'Workers run inside this API process' : 'Workers run as a separate process'}>
+          {h?.worker && (
+            <dl className="ad-kv">
+              <dt>Worker</dt>
+              <dd>
+                {h.worker.running
+                  ? <Badge tone="green" dot>Running{h.worker.workers > 1 ? ` (${h.worker.workers})` : ''}</Badge>
+                  : <Badge tone="red" dot>Not running</Badge>}
+              </dd>
+              <dt>Last seen</dt><dd>{h.worker.lastSeenAt ? ago(h.worker.lastSeenAt) : 'Never'}</dd>
+              <dt>Waiting jobs</dt><dd>{count(h.worker.dueJobs)}{h.worker.oldestDueAt ? `, oldest ${ago(h.worker.oldestDueAt)}` : ''}</dd>
+            </dl>
+          )}
+          {h?.worker && !h.worker.running && h.worker.dueJobs > 0 && (
+            <Notice tone="amber">Jobs are waiting and nothing is processing them. Set INLINE_WORKERS=true on the API, or start the worker (npm run worker / backend/Dockerfile.worker).</Notice>
+          )}
           {h?.queue && Object.keys(h.queue).length ? (
             <div className="ad-table-wrap">
               <table className="ad-table">
