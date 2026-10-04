@@ -17,7 +17,7 @@ import {
 import { useRef } from 'react';
 import { getErrorMessage } from '../utils/errors';
 import { setSession } from '../lib/session';
-import { siteOrigin } from '../lib/hosts';
+import { OAUTH_NONCE_KEY, siteOrigin } from '../lib/hosts';
 import VerifyEmailPanel from './VerifyEmailPanel';
 
 /* ─── Types ─────────────────────────────────────────────────────── */
@@ -306,8 +306,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   /* GitHub / LinkedIn OAuth — server-side flow via backend redirect ─ */
 
   function startProviderRedirectFlow(provider: 'github' | 'linkedin') {
+    // Kept in this tab; the sign-in code that comes back only works together with it (see App.tsx)
+    const bytes = crypto.getRandomValues(new Uint8Array(24));
+    const nonce = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+    try { sessionStorage.setItem(OAUTH_NONCE_KEY, nonce); } catch { /* storage blocked: the sign-in will ask to retry */ }
     window.location.assign(
-      `${getBaseUrl()}/api/auth/${provider}?origin=${encodeURIComponent(window.location.origin)}`
+      `${getBaseUrl()}/api/auth/${provider}?origin=${encodeURIComponent(window.location.origin)}&nonce=${nonce}`
     );
   }
 

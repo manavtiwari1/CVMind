@@ -173,6 +173,167 @@ test('the admin switch turns the verification requirement off', async () => {
   }
 });
 
+test('wrong passwords lock the account for a while, even for the right password', async () => {
+  const bcrypt = (await import('bcryptjs')).default;
+  const { createUser } = await import('../../src/db.js');
+  const { CaptchaChallenge } = await import('../../src/admin/models.js');
+  await createUser({ email: 'guessed@example.com', name: 'Target', password: await bcrypt.hash('right-password', 10), isGoogleUser: false });
+
+  const login = async (password) => {
+    const { captchaId } = (await call('/api/auth/captcha')).body;
+    const { answer } = await CaptchaChallenge.findById(captchaId).lean();
+    return call('/api/auth/login', { method: 'POST', body: { email: 'guessed@example.com', password, captchaId, captchaAnswer: answer } });
+  };
+
+  assert.equal((await login('right-password')).status, 200, 'the right password works before any failures');
+  for (let i = 0; i < 10; i++) assert.equal((await login('wrong-password')).status, 401, `attempt ${i + 1}`);
+  const locked = await login('right-password');
+  assert.equal(locked.status, 429);
+  assert.equal(locked.body.code, 'RATE_LIMITED');
+  assert.ok(locked.body.retryAfter > 0);
+});
+
+test('GitHub sign-in returns a single-use code, never the session token, and works across server instances', async () => {
+  process.env.GITHUB_CLIENT_ID = 'test-client';
+  process.env.GITHUB_CLIENT_SECRET = 'test-secret';
+  const realFetch = globalThis.fetch;
+  // GitHub's side of the flow, faked; requests to this test server still go through
+  globalThis.fetch = async (url, init) => {
+    const href = String(url);
+    if (href.startsWith('https://github.com/login/oauth/access_token')) return Response.json({ access_token: 'gh-token' });
+    if (href === 'https://api.github.com/user') return Response.json({ login: 'octo', name: 'Octo Cat', avatar_url: '' });
+    if (href === 'https://api.github.com/user/emails') return Response.json([{ email: 'octo@example.com', primary: true, verified: true }]);
+    return realFetch(url, init);
+  };
+  try {
+    // Without the browser's nonce the sign-in doesn't start
+    const noNonce = await realFetch(`${base}/api/auth/github?origin=${encodeURIComponent('http://localhost:5173')}`, { redirect: 'manual' });
+    assert.match(noNonce.headers.get('location'), /authError=/);
+
+    const nonce = 'browser-nonce-0123456789abcdef';
+    const signIn = async () => {
+      const start = await realFetch(`${base}/api/auth/github?origin=${encodeURIComponent('http://localhost:5173')}&nonce=${nonce}`, { redirect: 'manual' });
+      const startState = new URL(start.headers.get('location')).searchParams.get('state');
+      const back = await realFetch(`${base}/api/auth/github/callback?state=${encodeURIComponent(startState)}&code=abc`, { redirect: 'manual' });
+      return new URL(back.headers.get('location')).searchParams.get('oauthCode');
+    };
+    const start = await realFetch(`${base}/api/auth/github?origin=${encodeURIComponent('http://localhost:5173')}&nonce=${nonce}`, { redirect: 'manual' });
+    const state = new URL(start.headers.get('location')).searchParams.get('state');
+    assert.ok(state, 'the consent URL carries a state');
+
+    // Signed state: valid on any instance, but not when forged or changed
+    const forged = await realFetch(`${base}/api/auth/github/callback?state=${encodeURIComponent(`${state}x`)}&code=abc`, { redirect: 'manual' });
+    assert.match(forged.headers.get('location'), /authError=/);
+
+    const back = await realFetch(`${base}/api/auth/github/callback?state=${encodeURIComponent(state)}&code=abc`, { redirect: 'manual' });
+    const location = back.headers.get('location');
+    assert.ok(location.startsWith('http://localhost:5173/?oauthCode='), location);
+    assert.doesNotMatch(location, /oauthUser|token%22|\.ey/, 'no session data in the address');
+
+    const code = new URL(location).searchParams.get('oauthCode');
+    const exchanged = await call('/api/auth/oauth/exchange', { method: 'POST', body: { code, nonce } });
+    assert.equal(exchanged.status, 200);
+    assert.equal(exchanged.body.user.email, 'octo@example.com');
+    assert.ok(exchanged.body.user.token);
+    assert.equal(exchanged.body.user.emailVerified, true);
+
+    const again = await call('/api/auth/oauth/exchange', { method: 'POST', body: { code, nonce } });
+    assert.equal(again.status, 400, 'a code works once');
+    assert.equal((await call('/api/auth/oauth/exchange', { method: 'POST', body: { code: 'made-up', nonce } })).status, 400);
+
+    // A code planted in someone else's browser fails: that browser doesn't hold the nonce, and the code is spent
+    const planted = await signIn();
+    assert.equal((await call('/api/auth/oauth/exchange', { method: 'POST', body: { code: planted, nonce: 'victim-browser-nonce-000000' } })).status, 400);
+    assert.equal((await call('/api/auth/oauth/exchange', { method: 'POST', body: { code: planted, nonce } })).status, 400);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test('account status only answers for the account in the caller\'s own token', async () => {
+  const { createUser } = await import('../../src/db.js');
+  const { signToken } = await import('../../src/services/authToken.js');
+  const owner = await createUser({ email: 'status-owner@example.com', name: 'Owner', password: 'x', isGoogleUser: false });
+  const ownerToken = signToken({ sub: String(owner._id || owner.id), kind: 'user', email: 'status-owner@example.com' });
+
+  // Without a token nobody learns whether an address is registered or banned
+  const anonymous = await call('/api/auth/account-status?email=status-owner@example.com');
+  assert.equal(anonymous.status, 401);
+  assert.equal(anonymous.body.active, false);
+  assert.equal(anonymous.body.status, 'signed-out');
+
+  const own = await call('/api/auth/account-status?email=status-owner@example.com', { token: ownerToken });
+  assert.equal(own.status, 200);
+  assert.equal(own.body.active, true);
+  assert.equal(own.body.emailVerified, false);
+
+  // The ?email= is ignored: asking about someone else still answers about the caller
+  const probe = await call('/api/auth/account-status?email=nobody-here@example.com', { token: ownerToken });
+  assert.equal(probe.body.active, true);
+});
+
+test('a provider that has not confirmed the email cannot open an existing account', async () => {
+  const bcrypt = (await import('bcryptjs')).default;
+  const { createUser } = await import('../../src/db.js');
+  await createUser({ email: 'existing@example.com', name: 'Owner', password: await bcrypt.hash('pw-123456', 10), isGoogleUser: false });
+  process.env.LINKEDIN_CLIENT_ID = 'test-client';
+  process.env.LINKEDIN_CLIENT_SECRET = 'test-secret';
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    const href = String(url);
+    if (href.startsWith('https://www.linkedin.com/oauth/v2/accessToken')) return Response.json({ access_token: 'li-token' });
+    if (href === 'https://api.linkedin.com/v2/userinfo') return Response.json({ email: 'existing@example.com', email_verified: false, name: 'Someone' });
+    return realFetch(url, init);
+  };
+  try {
+    const nonce = 'browser-nonce-linkedin-0123456';
+    const start = await realFetch(`${base}/api/auth/linkedin?origin=${encodeURIComponent('http://localhost:5173')}&nonce=${nonce}`, { redirect: 'manual' });
+    const state = new URL(start.headers.get('location')).searchParams.get('state');
+    const back = await realFetch(`${base}/api/auth/linkedin/callback?state=${encodeURIComponent(state)}&code=abc`, { redirect: 'manual' });
+    const location = back.headers.get('location');
+    assert.match(location, /authError=/);
+    assert.doesNotMatch(location, /oauthCode=/);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test('verifying an account first opened through a provider still signs everyone else out', async () => {
+  const { verifyThroughProvider } = await import('../../src/services/emailVerification.js');
+  const { createUser } = await import('../../src/db.js');
+  const { signToken } = await import('../../src/services/authToken.js');
+  const created = await createUser({ email: 'oauth-made@example.com', name: 'Made', password: 'x', isGoogleUser: true });
+  const earlyToken = signToken({ sub: String(created._id || created.id), kind: 'user', email: 'oauth-made@example.com' });
+  const doc = await userDoc('oauth-made@example.com');
+  const { passwordCleared } = await verifyThroughProvider({ ...doc, id: String(doc._id) });
+  assert.equal(passwordCleared, false, 'a provider account has no password to clear');
+  assert.equal((await call('/api/auth/resend-verification', { method: 'POST', token: earlyToken })).status, 401);
+});
+
+// Placed before the per-IP sign-up test, which uses up this IP's sign-ups
+test('a social login that verifies a password account clears that password and signs everyone out', async () => {
+  const { verifyThroughProvider } = await import('../../src/services/emailVerification.js');
+  const bcrypt = (await import('bcryptjs')).default;
+  const { createUser } = await import('../../src/db.js');
+  const { signToken } = await import('../../src/services/authToken.js');
+  // Someone opened an account with this address and a password they know, and never verified it
+  // (created directly: earlier tests use up this IP's sign-ups)
+  const squatter = await createUser({ email: 'claimed@example.com', name: 'Squatter', password: await bcrypt.hash('secret123', 10), isGoogleUser: false });
+  const squatterToken = signToken({ sub: String(squatter._id || squatter.id), kind: 'user', email: 'claimed@example.com' });
+  assert.notEqual((await call('/api/auth/resend-verification', { method: 'POST', token: squatterToken })).status, 401);
+
+  const before = await userDoc('claimed@example.com');
+  const { passwordCleared } = await verifyThroughProvider({ ...before, id: String(before._id) });
+  assert.equal(passwordCleared, true);
+
+  const after = await userDoc('claimed@example.com');
+  assert.equal(after.emailVerified, true);
+  assert.equal(await bcrypt.compare('secret123', after.password), false, 'the old password must stop working');
+  const stale = await call('/api/auth/resend-verification', { method: 'POST', token: squatterToken });
+  assert.equal(stale.status, 401);
+  assert.equal(stale.body.code, 'SESSION_REVOKED');
+});
+
 test('sign-ups are limited per IP', async () => {
   // Earlier tests already used part of this hour's allowance from 127.0.0.1
   let last;

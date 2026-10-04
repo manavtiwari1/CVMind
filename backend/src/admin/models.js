@@ -196,4 +196,16 @@ const captchaChallengeSchema = new Schema({
 captchaChallengeSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 export const CaptchaChallenge = mongoose.models.CaptchaChallenge || mongoose.model('CaptchaChallenge', captchaChallengeSchema);
 
-export const ADMIN_MODELS = [AdminUser, AdminAuditLog, AppSetting, Ticket, Notification, Coupon, ContentBlock, ContentReport, UserSession, AuthEvent, CaptchaChallenge];
+// A GitHub/LinkedIn sign-in waiting to be picked up by the site. Only the code's hash is stored, the
+// code itself travels in the redirect, and each one can be exchanged once within a couple of minutes.
+const oauthHandoffSchema = new Schema({
+  _id: { type: String },
+  user: { type: Schema.Types.Mixed, required: true },
+  // Hash of the nonce kept by the browser tab that started the sign-in; the code only works with it
+  nonceHash: { type: String, required: true },
+  expiresAt: { type: Date, required: true }
+});
+oauthHandoffSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+export const OAuthHandoff = mongoose.models.OAuthHandoff || mongoose.model('OAuthHandoff', oauthHandoffSchema);
+
+export const ADMIN_MODELS = [AdminUser, AdminAuditLog, AppSetting, Ticket, Notification, Coupon, ContentBlock, ContentReport, UserSession, AuthEvent, CaptchaChallenge, OAuthHandoff];

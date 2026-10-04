@@ -74,6 +74,12 @@ async function checkUserSession(payload) {
   }
 }
 
+// The same account check for tokens that act for a user without being a user session, such as the
+// browser extension's device tokens: a banned, deleted or signed-out-everywhere account is refused
+export function checkAccount(payload) {
+  return checkUserSession(payload);
+}
+
 // The validator reports the account's emailVerified flag when it looked the user up (MongoDB only)
 const withVerification = (payload, check) =>
   (typeof check?.emailVerified === 'boolean' ? { ...payload, emailVerified: check.emailVerified } : payload);

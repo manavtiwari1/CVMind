@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { assertIdentifier, computeFinalVerdict } from './judgeShared.js';
+import { assertIdentifier, childEnv, computeFinalVerdict, valuesMatch } from './judgeShared.js';
 
 /**
  * Runs Python solutions in a child process.
@@ -212,6 +212,33 @@ if __name__ == '__main__':
     main()
 `;
 
+// The child's report is only trusted for what each test returned: pass/fail is checked here against the
+// expected values the child never saw, and rows for unknown or repeated tests are ignored
+function judgeRows(reported, testCases, meta, stdout) {
+  const seen = new Set();
+  const rows = [];
+  for (const r of Array.isArray(reported) ? reported : []) {
+    const i = Number(r?.testCaseIndex) - 1;
+    if (!Number.isInteger(i) || i < 0 || i >= testCases.length || seen.has(i)) continue;
+    seen.add(i);
+    const tc = testCases[i];
+    const custom = tc.expected === null || tc.expected === undefined;
+    const error = typeof r.error === 'string' && r.error ? r.error : null;
+    rows.push({
+      testCaseIndex: i + 1,
+      input: tc.input,
+      expected: tc.expected ?? null,
+      actual: error ? null : (r.actual ?? null),
+      ...(error ? { error } : {}),
+      passed: !error && (custom || valuesMatch(r.actual, tc.expected, meta.compare)),
+      custom,
+      runtimeMs: Number(r.runtimeMs) || 0,
+      stdout
+    });
+  }
+  return rows.sort((a, b) => a.testCaseIndex - b.testCaseIndex);
+}
+
 // number of harness lines that come before the user's code
 const USER_LINE_OFFSET = HARNESS.slice(0, HARNESS.indexOf('__USER_CODE__')).split('\n').length - 1;
 
@@ -220,7 +247,9 @@ export async function executePython({ code, testCases, functionName = 'solution'
   const cmd = await detectPython();
   if (!cmd) return { unavailable: true };
 
-  const cfg = { fn, meta, tests: testCases };
+  // Expected outputs never reach the child: user code can read anything in its own process,
+  // so it only reports what it returned and the server decides what passed
+  const cfg = { fn, meta, tests: testCases.map((tc) => ({ input: tc.input, expected: null })) };
   // the user's code is placed verbatim; the config travels as a Python string literal holding JSON
   const script = HARNESS.replace('__USER_CODE__', () => String(code ?? '')).replace('__CFG__', () => JSON.stringify(JSON.stringify(cfg)));
   const scriptPath = path.join(os.tmpdir(), `cvmind_py_${Date.now()}_${Math.random().toString(36).slice(2, 9)}.py`);
@@ -233,7 +262,8 @@ export async function executePython({ code, testCases, functionName = 'solution'
 
   return new Promise((resolve) => {
     const started = Date.now();
-    const py = spawn(cmd, ['-I', scriptPath], { timeout: timeoutMs, killSignal: 'SIGKILL' });
+    // Started in the temp folder, not the backend's, so relative paths can't reach .env or the problem data
+    const py = spawn(cmd, ['-I', scriptPath], { cwd: os.tmpdir(), timeout: timeoutMs, killSignal: 'SIGKILL', env: childEnv() });
     let out = '';
     let err = '';
     py.stdout.on('data', (d) => { if (out.length < 2_000_000) out += d.toString(); });
@@ -267,7 +297,7 @@ export async function executePython({ code, testCases, functionName = 'solution'
             resolve({ verdict: 'Runtime Error', error: parsed.error, passedTests: 0, totalTests: testCases.length, runtimeMs: 0, results: [] });
             return;
           }
-          const rows = (parsed.results || []).map((r) => ({ ...r, stdout }));
+          const rows = judgeRows(parsed.results, testCases, meta, stdout);
           resolve(computeFinalVerdict(rows, testCases.length, rows.reduce((a, r) => a + (r.runtimeMs || 0), 0)));
           return;
         } catch {

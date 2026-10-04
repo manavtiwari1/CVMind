@@ -1,5 +1,6 @@
 import { dbReady } from '../admin/auth.js';
 import { tryConsume } from '../agent/rateLimit.js';
+import RateBucket from '../agent/models/RateBucket.js';
 
 // Abuse limits (sign-ups, verification emails, support messages). Counted in MongoDB so every
 // serverless instance shares them; without a database each process counts on its own.
@@ -32,6 +33,23 @@ export async function hitLimit(key, limit, windowMs) {
     return { ok: true, count: 0, retryAfter: 0 };
   }
   return { ok: result.ok, count: result.count, retryAfter: Math.max(1, Math.ceil((result.retryAt.getTime() - now) / 1000)) };
+}
+
+// Whether key is already at its limit, without counting a hit (e.g. "too many failed sign-ins").
+// { ok, retryAfter }; like hitLimit, a database error lets the request through.
+export async function checkLimit(key, limit, windowMs) {
+  const now = Date.now();
+  const windowStart = Math.floor(now / windowMs) * windowMs;
+  const retryAfter = Math.max(1, Math.ceil((windowStart + windowMs - now) / 1000));
+  try {
+    const count = (await dbReady(0))
+      ? (await RateBucket.findOne({ key: `abuse:${key}`, windowStart: new Date(windowStart) }).select('count').lean())?.count || 0
+      : memory.get(`${key}|${windowStart}`) || 0;
+    return { ok: count < limit, retryAfter };
+  } catch (err) {
+    console.error('[limiter] check failed, allowing request:', err.message);
+    return { ok: true, retryAfter: 0 };
+  }
 }
 
 export const HOUR_MS = 60 * 60 * 1000;

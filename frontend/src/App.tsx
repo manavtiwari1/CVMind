@@ -56,7 +56,7 @@ import PageLoader from './components/PageLoader';
 import { ARTICLES } from './data/articles';
 import { applySEO } from './utils/seo';
 import { getErrorMessage } from './utils/errors';
-import { APP_PAGES, PUBLIC_APP_PAGES, isAppHost, isCrossHost, isSplitHost, siteOrigin, urlForPage } from './lib/hosts';
+import { APP_PAGES, PUBLIC_APP_PAGES, OAUTH_NONCE_KEY, isAppHost, isCrossHost, isSplitHost, siteOrigin, urlForPage } from './lib/hosts';
 import { clearSession, setSession } from './lib/session';
 import { peekPickedTemplate } from './lib/templatePick';
 import { letterDraftHash } from './lib/coverLetter';
@@ -356,33 +356,53 @@ export default function App() {
     handleGoogleRedirect();
   }, []);
 
-  // Handle GitHub/LinkedIn OAuth Redirect Callback (backend sends ?oauthUser= / ?authError=)
+  // Handle GitHub/LinkedIn OAuth Redirect Callback. The backend sends a single-use ?oauthCode=
+  // (never the session itself, which would end up in history and logs) or ?authError=
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
 
     // ?authError already opened the AuthModal via its initial state
     if (searchParams.get('authError')) return;
 
-    const encoded = searchParams.get('oauthUser');
-    if (!encoded) return;
+    const code = searchParams.get('oauthCode');
+    if (!code) return;
 
-    searchParams.delete('oauthUser');
+    searchParams.delete('oauthCode');
     const qs = searchParams.toString();
     window.history.replaceState({}, document.title, window.location.pathname + (qs ? `?${qs}` : ''));
 
-    try {
-      const bytes = Uint8Array.from(atob(encoded.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
-      const user = JSON.parse(new TextDecoder().decode(bytes));
-      if (!user?.email) throw new Error('Invalid OAuth payload');
+    const exchange = async () => {
+      try {
+        const baseUrl =
+          import.meta.env.VITE_API_BASE_URL ||
+          import.meta.env.VITE_BACKEND_URL ||
+          (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
+        let nonce = '';
+        try {
+          nonce = sessionStorage.getItem(OAUTH_NONCE_KEY) || '';
+          sessionStorage.removeItem(OAUTH_NONCE_KEY);
+        } catch { /* storage blocked: the server refuses the code and the user signs in again */ }
+        const res = await fetch(`${baseUrl}/api/auth/oauth/exchange`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, nonce }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.user?.email) throw new Error(data.error || 'Sign-in failed. Please try again.');
 
-      setSession(user);
-      // One-time login from the OAuth redirect URL; setCurrentPage also updates browser history
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsLoggedIn(true);
-      enterAfterSignIn();
-    } catch (err) {
-      console.error('OAuth Redirect Auth Error:', err);
-    }
+        setSession(data.user);
+        setIsLoggedIn(true);
+        enterAfterSignIn();
+      } catch (err) {
+        console.error('OAuth Redirect Auth Error:', err);
+        // Show the reason in the sign-in modal, the same way the backend's ?authError= does
+        const params = new URLSearchParams(window.location.search);
+        params.set('authError', getErrorMessage(err) || 'Sign-in failed. Please try again.');
+        window.history.replaceState({}, '', window.location.pathname + `?${params.toString()}`);
+        setShowAuthModal(true);
+      }
+    };
+    exchange();
     // Runs once, for the GitHub/LinkedIn redirect back to the site
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
