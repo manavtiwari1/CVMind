@@ -1,87 +1,81 @@
 import { useState } from 'react';
-import { FileSpreadsheet, FileJson, FileText } from 'lucide-react';
-import type { AdminStats } from '../types';
+import { FileJson, FileSpreadsheet } from 'lucide-react';
+import { downloadExport } from '../api';
+import { useApi, useToast } from '../hooks';
+import { Card, Empty, ErrorState, PageHeader, Spinner } from '../ui';
 
-interface ReportsProps {
-  stats: AdminStats;
-}
+interface Report { key: string; label: string; columns: string[] }
 
-export default function Reports({ stats }: ReportsProps) {
-  const [loading, setLoading] = useState<string | null>(null);
+const DESCRIPTIONS: Record<string, string> = {
+  users: 'Every account with sign-in method, status and join date.',
+  payments: 'Transactions with amounts, methods, coupons and refunds.',
+  'ai-usage': 'One row per AI request, across every tool.',
+  tickets: 'Support tickets with status, priority and assignee.',
+  coupons: 'Every coupon with its limits and how often it was used.',
+  audit: 'Every admin action: who did what, and when.'
+};
 
-  const triggerExport = (reportType: string, format: string) => {
-    const key = `${reportType}-${format}`;
-    setLoading(key);
-    setTimeout(() => {
-      setLoading(null);
-      // Simulate download
-      alert(`Successfully generated and downloaded ${reportType} report in ${format.toUpperCase()} format!`);
-    }, 1500);
+const DATED = new Set(['users', 'payments', 'ai-usage', 'tickets', 'audit']);
+
+export default function Reports() {
+  const { data, error, reload } = useApi<{ data: Report[] }>('/reports');
+  const toast = useToast();
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const download = async (key: string, format: 'csv' | 'json') => {
+    setBusy(`${key}-${format}`);
+    try {
+      await downloadExport(key, { format, from: DATED.has(key) ? from : '', to: DATED.has(key) ? to : '' });
+      toast('Download started');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Export failed.', 'error');
+    } finally {
+      setBusy(null);
+    }
   };
 
-  const reportsList = [
-    {
-      key: 'users',
-      name: 'User Accounts Report',
-      desc: `${stats.totalLogins || 0} logins with authentication methods, emails and registration history.`,
-      icon: <FileSpreadsheet size={18} style={{ color: 'var(--blue)' }} />
-    },
-    {
-      key: 'revenue',
-      name: 'Revenue & Transaction Logs',
-      desc: `${stats.totalPayments || 0} payment records with billing amounts, gateway details and currency types.`,
-      icon: <FileText size={18} style={{ color: 'var(--green)' }} />
-    },
-    {
-      key: 'ai-usage',
-      name: 'AI Module Usage Report',
-      desc: `${(stats.totalScans || 0) + (stats.totalFixes || 0) + (stats.totalTailors || 0) + (stats.totalPreps || 0)} tracked AI requests across core modules.`,
-      icon: <FileJson size={18} style={{ color: 'var(--purple)' }} />
-    },
-    {
-      key: 'resume-scans',
-      name: 'Resume Scores & Trends',
-      desc: `${stats.totalScans || 0} scan records with ATS distribution and missing keyword frequencies.`,
-      icon: <FileSpreadsheet size={18} style={{ color: 'var(--cyan)' }} />
-    }
-  ];
-
   return (
-    <div className="section-animate">
-      <div className="section-header">
-        <div className="section-header-left">
-          <h2>Exportable Reports</h2>
-          <p>Download full structured system snapshots in standard business formats</p>
-        </div>
-      </div>
-
-      <div className="export-grid">
-        {reportsList.map(r => (
-          <div className="export-card" key={r.key}>
-            <div className="export-card-icon" style={{ background: 'var(--surface-3)' }}>
-              {r.icon}
-            </div>
-            <div className="export-card-name">{r.name}</div>
-            <div className="export-card-desc">{r.desc}</div>
-            <div className="export-card-btns">
-              {['csv', 'excel', 'json', 'pdf'].map(format => {
-                const key = `${r.key}-${format}`;
-                const isBtnLoading = loading === key;
-                return (
-                  <button
-                    key={format}
-                    className="export-format-btn"
-                    disabled={!!loading}
-                    onClick={() => triggerExport(r.key, format)}
-                  >
-                    {isBtnLoading ? 'Exporting…' : format.toUpperCase()}
-                  </button>
-                );
-              })}
-            </div>
+    <>
+      <PageHeader title="Reports & exports" description="Download real data as CSV (opens in Excel or Google Sheets) or JSON. Every export is recorded in the audit log." />
+      <Card title="Date range" description="Applies to reports with dates. Leave empty for everything.">
+        <div className="ad-toolbar">
+          <div className="ad-field" style={{ margin: 0 }}>
+            <label htmlFor="r-from">From</label>
+            <input id="r-from" className="ad-input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
           </div>
-        ))}
-      </div>
-    </div>
+          <div className="ad-field" style={{ margin: 0 }}>
+            <label htmlFor="r-to">To</label>
+            <input id="r-to" className="ad-input" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
+          {(from || to) && <button type="button" className="ad-btn ghost" style={{ alignSelf: 'flex-end' }} onClick={() => { setFrom(''); setTo(''); }}>Clear</button>}
+        </div>
+      </Card>
+      {error && !data ? <Card><ErrorState message={error} onRetry={reload} /></Card> : !data ? <Card><div className="ad-skeleton" style={{ height: 160 }} /></Card> : data.data.length === 0 ? (
+        <Card><Empty title="No reports for your role" /></Card>
+      ) : (
+        <div className="ad-grid cols-3">
+          {data.data.map((r) => (
+            <div key={r.key} className="ad-card ad-stat" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className="ad-stat-top">
+                <span className="ad-cell-title">{r.label}</span>
+                <span className="ad-stat-icon purple"><FileSpreadsheet size={16} /></span>
+              </div>
+              <p className="ad-muted ad-small" style={{ margin: '8px 0 4px', flex: 1 }}>{DESCRIPTIONS[r.key] || ''}</p>
+              <p className="ad-hint" style={{ margin: '0 0 14px' }}>{r.columns.length} columns{DATED.has(r.key) && (from || to) ? ' · date range applied' : ''}</p>
+              <div className="ad-actions-row">
+                <button type="button" className="ad-btn primary sm" disabled={!!busy} onClick={() => download(r.key, 'csv')}>
+                  {busy === `${r.key}-csv` ? <Spinner size={13} /> : <FileSpreadsheet size={14} />} CSV
+                </button>
+                <button type="button" className="ad-btn sm" disabled={!!busy} onClick={() => download(r.key, 'json')}>
+                  {busy === `${r.key}-json` ? <Spinner size={13} /> : <FileJson size={14} />} JSON
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }

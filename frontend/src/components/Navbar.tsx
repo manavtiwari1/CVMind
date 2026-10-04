@@ -5,6 +5,7 @@ import {
   NavigationMenuItem,
   NavigationMenuList,
 } from './ui/navigation-menu';
+import NotificationBell from './NotificationBell';
 import NavMegaMenu from './NavMegaMenu';
 import { NAV_MENUS } from './navMenus';
 import cvmindIcon from '../assets/cvmind_icon.png';
@@ -112,9 +113,12 @@ export default function Navbar({
         {/* Right actions */}
         <div className="navbar-actions">
           {isLoggedIn ? (
-            <button className="navbar-cta" onClick={() => go('my-documents')}>
-              My Documents
-            </button>
+            <>
+              <NotificationBell setCurrentPage={setCurrentPage} />
+              <button className="navbar-cta" onClick={() => go('my-documents')}>
+                My Documents
+              </button>
+            </>
           ) : (
             <>
               <button
