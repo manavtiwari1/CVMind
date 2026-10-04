@@ -383,9 +383,17 @@ const userSchema = new mongoose.Schema({
   status: { type: String, default: 'active' }, // 'active' | 'suspended' | 'banned'
   statusReason: { type: String, default: '' },
   statusUpdatedAt: { type: Date, default: null },
-  // Set by an admin from the user drawer
+  // Set by the emailed verification link, a verified social login, a password reset, or an admin
   emailVerified: { type: Boolean, default: false },
   emailVerifiedAt: { type: Date, default: null },
+  // sha256 of the single-use link token; the raw token only ever exists in the email
+  emailVerificationTokenHash: { type: String, default: '' },
+  emailVerificationExpires: { type: Date, default: null },
+  lastVerificationSentAt: { type: Date, default: null },
+  verificationFailures: { type: Number, default: 0 },
+  // Abuse signals, e.g. 'disposable_email'. A score of RISK_HIGH or more keeps support closed until an admin clears it.
+  riskScore: { type: Number, default: 0 },
+  riskFlags: { type: [String], default: [] },
   // Tokens issued before this moment are rejected ("sign out everywhere")
   sessionsRevokedAt: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
@@ -542,7 +550,7 @@ export async function findUserByEmail(email) {
   return db.users.find(u => u.email === searchEmail) || null;
 }
 
-export async function createUser({ email, name, password, isGoogleUser = false, provider = '' }) {
+export async function createUser({ email, name, password, isGoogleUser = false, provider = '', emailVerified = false, riskScore = 0, riskFlags = [] }) {
   await ensureMongoConnection();
   const cleanEmail = String(email || '').trim().toLowerCase();
   const cleanName = String(name || '').trim();
@@ -555,7 +563,11 @@ export async function createUser({ email, name, password, isGoogleUser = false, 
       name: cleanName,
       password,
       isGoogleUser,
-      provider: cleanProvider
+      provider: cleanProvider,
+      emailVerified,
+      emailVerifiedAt: emailVerified ? new Date() : null,
+      riskScore,
+      riskFlags
     });
     await newUser.save();
     return {
@@ -563,6 +575,9 @@ export async function createUser({ email, name, password, isGoogleUser = false, 
       email: newUser.email,
       name: newUser.name,
       isGoogleUser: newUser.isGoogleUser,
+      emailVerified: newUser.emailVerified,
+      riskScore: newUser.riskScore,
+      riskFlags: newUser.riskFlags,
       createdAt: newUser.createdAt
     };
   }
@@ -583,6 +598,10 @@ export async function createUser({ email, name, password, isGoogleUser = false, 
     password,
     isGoogleUser,
     provider: cleanProvider,
+    emailVerified,
+    emailVerifiedAt: emailVerified ? new Date().toISOString() : null,
+    riskScore,
+    riskFlags,
     createdAt: new Date().toISOString()
   };
 
@@ -1703,6 +1722,35 @@ export async function findUserByResetToken(token) {
     u.resetPasswordToken && u.resetPasswordToken === searchToken &&
     u.resetPasswordExpires && new Date(u.resetPasswordExpires).getTime() > now
   ) || null;
+}
+
+// Sets plain fields on a user. Dates are stored as ISO strings in the JSON fallback.
+export async function updateUserFields(userId, fields) {
+  await ensureMongoConnection();
+  const cleanId = String(userId || '').trim();
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    return await User.findByIdAndUpdate(cleanId, { $set: fields }, { returnDocument: 'after' });
+  }
+  const db = readDb();
+  const u = (db.users || []).find(x => x.id === cleanId || x._id === cleanId);
+  if (!u) return null;
+  for (const [key, value] of Object.entries(fields)) {
+    u[key] = value instanceof Date ? value.toISOString() : value;
+  }
+  writeDb(db);
+  return u;
+}
+
+// Expiry is checked by the caller, so an expired link can be told apart from a wrong one
+export async function findUserByVerificationHash(hash) {
+  await ensureMongoConnection();
+  const clean = String(hash || '').trim();
+  if (!clean) return null;
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    return await User.findOne({ emailVerificationTokenHash: clean });
+  }
+  const db = readDb();
+  return (db.users || []).find(u => u.emailVerificationTokenHash === clean) || null;
 }
 
 // ─── COMPANY, JOB & APPLICATION DATA HELPERS ───────────────────────────────

@@ -722,7 +722,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
         || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
-      const res = await fetch(`${baseUrl}/api/cover-letter/refine`, {
+      const res = await authFetch(`${baseUrl}/api/cover-letter/refine`, {
         method: 'POST', headers,
         body: JSON.stringify({ coverLetterText: htmlContent, jobTitle: 'Professional', companyName: 'Target Company' }),
       });
@@ -752,7 +752,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
         || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
-      const res = await fetch(`${baseUrl}/api/cover-letter/refine`, {
+      const res = await authFetch(`${baseUrl}/api/cover-letter/refine`, {
         method: 'POST', headers,
         body: JSON.stringify({ 
           coverLetterText: htmlContent, 
@@ -789,7 +789,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
       
       const generationPrompt = `WRITE A COMPLETELY NEW COVER LETTER from scratch replacing the current content entirely. Do NOT use the existing content. Generate a fresh, professional cover letter according to this prompt: "${aiPrompt}". Keep the HTML structure, wrappers, fonts, and inline styles exactly as they are.`;
 
-      const res = await fetch(`${baseUrl}/api/cover-letter/refine`, {
+      const res = await authFetch(`${baseUrl}/api/cover-letter/refine`, {
         method: 'POST', headers,
         body: JSON.stringify({ 
           coverLetterText: htmlContent, 
@@ -849,7 +849,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
 
-      const res = await fetch(`${baseUrl}/api/resume/generate`, {
+      const res = await authFetch(`${baseUrl}/api/resume/generate`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -1042,7 +1042,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
       // exact: copy the wording as it is on the page instead of summarising it.
-      const res = await fetch(`${baseUrl}/api/resume/parse-data`, { method: 'POST', headers, body: JSON.stringify({ resumeText, exact: true }) });
+      const res = await authFetch(`${baseUrl}/api/resume/parse-data`, { method: 'POST', headers, body: JSON.stringify({ resumeText, exact: true }) });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || 'Could not read your resume.');
       setActiveWorkTitle(`Resume - ${template.name}`);

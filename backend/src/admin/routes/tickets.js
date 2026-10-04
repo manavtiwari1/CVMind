@@ -27,7 +27,9 @@ export function ticketFilter(query, admin) {
   return filter;
 }
 
-const summary = (t) => ({
+// senderVerified: the ticket's email belongs to an account with a verified address.
+// Inbox tickets can come from anyone, so the admin panel tags the rest as unverified senders.
+const summary = (t, verifiedEmails = new Set()) => ({
   id: String(t._id),
   number: t.number,
   name: t.name,
@@ -36,6 +38,7 @@ const summary = (t) => ({
   status: t.status,
   priority: t.priority,
   source: t.source || 'form',
+  senderVerified: verifiedEmails.has(String(t.email || '').toLowerCase()),
   assigneeId: t.assigneeId,
   assigneeName: t.assigneeName,
   messageCount: (t.messages || []).length,
@@ -87,7 +90,9 @@ router.get('/', requireAdmin('tickets.view'), handle(async (req, res) => {
     Ticket.countDocuments(filter),
     Ticket.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }])
   ]);
-  res.json({ success: true, total, page, limit, data: rows.map(summary), counts: Object.fromEntries(counts.map((c) => [c._id, c.count])) });
+  const verified = await model('User').find({ email: { $in: rows.map((t) => t.email) }, emailVerified: true }).select('email').lean();
+  const verifiedEmails = new Set(verified.map((u) => u.email));
+  res.json({ success: true, total, page, limit, data: rows.map((t) => summary(t, verifiedEmails)), counts: Object.fromEntries(counts.map((c) => [c._id, c.count])) });
 }));
 
 router.get('/assignees', requireAdmin('tickets.view'), handle(async (req, res) => {
@@ -103,12 +108,12 @@ async function loadTicket(id) {
 }
 
 const detail = async (t) => {
-  const user = await model('User').findOne({ email: t.email }).select('name status createdAt').lean();
+  const user = await model('User').findOne({ email: t.email }).select('name status createdAt emailVerified riskScore riskFlags').lean();
   return {
-    ...summary(t),
+    ...summary(t, new Set(user?.emailVerified ? [String(t.email).toLowerCase()] : [])),
     messages: t.messages.map((m) => ({ id: String(m._id), kind: m.kind, authorName: m.authorName, body: m.body, emailed: m.emailed, attachments: m.attachments || 0, viaEmail: !!m.messageId, createdAt: m.createdAt })),
     resolvedAt: t.resolvedAt,
-    user: user ? { id: String(user._id), name: user.name, status: user.status || 'active', createdAt: user.createdAt } : null,
+    user: user ? { id: String(user._id), name: user.name, status: user.status || 'active', createdAt: user.createdAt, emailVerified: !!user.emailVerified, riskScore: user.riskScore || 0, riskFlags: user.riskFlags || [] } : null,
     emailConfigured: emailConfigured(),
     supportEmail: SUPPORT_EMAIL
   };

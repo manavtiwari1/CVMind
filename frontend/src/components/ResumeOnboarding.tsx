@@ -5,6 +5,7 @@ import { getErrorMessage } from '../utils/errors';
 import type { ExtractedResume } from '../types/api';
 import JobSearchStep, { type LiveJob } from './JobSearchStep';
 import './ResumeOnboarding.css';
+import { authFetch } from '../lib/authFetch';
 
 export type ResumeGoal = 'recruiters' | 'ats';
 
@@ -139,7 +140,7 @@ export default function ResumeOnboarding({ customApiKey, onComplete }: ResumeOnb
       fd.append('exact', 'true');
       const headers: Record<string, string> = {};
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
-      const res = await fetch(`${API_BASE}/api/resume/parse-data`, { method: 'POST', headers, body: fd });
+      const res = await authFetch(`${API_BASE}/api/resume/parse-data`, { method: 'POST', headers, body: fd });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || 'Failed to extract resume data.');
       setExtracted(body.data);

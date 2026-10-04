@@ -171,7 +171,7 @@ export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage,
       fd.append('resume', file);
       const headers: Record<string, string> = {};
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
-      const res = await fetch(`${baseUrl}/api/resume/parse-data`, { method: 'POST', headers, body: fd });
+      const res = await authFetch(`${baseUrl}/api/resume/parse-data`, { method: 'POST', headers, body: fd });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.rawText) throw new Error(data.error || 'Could not read that file.');
       setAttachment({ text: data.rawText, fileName: file.name });

@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Construction, X } from 'lucide-react';
+import { Construction, MailWarning, X } from 'lucide-react';
 import { internalPage, useSiteConfig, useSiteContent } from '../lib/siteContent';
 import type { ContentBlock } from '../lib/siteContent';
 import './SiteBanner.css';
 
 interface SiteBannerProps {
   setCurrentPage: (page: string) => void;
+  // Signed in with an unverified email: the bar asks them to verify (opens the verify screen)
+  onVerifyEmail?: () => void;
 }
 
 const dismissKey = (b: ContentBlock) => `cvmind_banner_dismissed_${b.id}`;
@@ -20,7 +22,7 @@ function wasDismissed(b: ContentBlock) {
 }
 
 // Top-of-page bar: maintenance notice when the site is down, otherwise the admin's announcement
-export default function SiteBanner({ setCurrentPage }: SiteBannerProps) {
+export default function SiteBanner({ setCurrentPage, onVerifyEmail }: SiteBannerProps) {
   const config = useSiteConfig();
   const [announcement] = useSiteContent('announcement');
   const [dismissed, setDismissed] = useState<string | null>(null);
@@ -31,6 +33,21 @@ export default function SiteBanner({ setCurrentPage }: SiteBannerProps) {
         <div className="site-banner warning" role="status">
           <Construction size={16} />
           <span>{config.maintenance.message || 'CVMind is down for maintenance. We will be back shortly.'}</span>
+        </div>
+      </TopBar>
+    );
+  }
+
+  if (onVerifyEmail) {
+    return (
+      <TopBar>
+        <div className="site-banner warning" role="status">
+          <MailWarning size={16} />
+          <span className="site-banner-text">
+            <strong>Verify your email address.</strong>
+            <span className="site-banner-body"> Until you do, resume tools, AI features, downloads and support are locked.</span>
+          </span>
+          <button type="button" className="site-banner-cta" onClick={onVerifyEmail}>Verify now →</button>
         </div>
       </TopBar>
     );

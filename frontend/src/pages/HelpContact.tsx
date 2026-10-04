@@ -1,17 +1,36 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
-import { Send, CheckCircle2, Mail, MessageCircle, Phone } from 'lucide-react';
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { Send, CheckCircle2, Mail, MailWarning, LogIn, MessageCircle, Phone } from 'lucide-react';
 import { SUPPORT_EMAIL, WHATSAPP_DISPLAY, whatsappLink, mailLink, telLink } from '../data/support';
 import { getErrorMessage } from '../utils/errors';
+import { API_BASE } from '../lib/apiBase';
+import { authFetch, AUTH_REQUIRED_EVENT, VERIFY_REQUIRED_EVENT } from '../lib/authFetch';
+import { readUser, USER_CHANGE_EVENT } from '../lib/currentUser';
 
-const EMPTY = { name: '', email: '', subject: '', message: '' };
+const EMPTY = { subject: '', message: '' };
 const FALLBACK_ERROR = 'Unable to send message right now. Please try again, or email us directly.';
 
-// The Help Center's contact view: a message form and the direct support channels
+// The Help Center's contact view: a message form for verified accounts and the direct support channels.
+// Messages become support tickets, so the server only takes them from signed-in, verified accounts
+// and uses the account's name and email.
 export default function HelpContact() {
+  const [user, setUser] = useState(readUser);
   const [form, setForm] = useState(EMPTY);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const sync = () => setUser(readUser());
+    window.addEventListener(USER_CHANGE_EVENT, sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener(USER_CHANGE_EVENT, sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+
+  const signedIn = Boolean(user?.token);
+  const unverified = signedIn && user?.emailVerified === false;
 
   const onChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -21,14 +40,13 @@ export default function HelpContact() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!form.name || !form.email || !form.message) {
-      setError('Please fill in your name, email and message.');
+    if (!form.message.trim()) {
+      setError('Please write your message.');
       return;
     }
     setLoading(true);
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
-      const response = await fetch(`${baseUrl}/api/contact`, {
+      const response = await authFetch(`${API_BASE}/api/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -45,6 +63,56 @@ export default function HelpContact() {
     }
   };
 
+  const renderForm = () => {
+    if (!signedIn) {
+      return (
+        <div className="help-contact-sent" role="status">
+          <LogIn size={40} />
+          <h2>Sign in to message support</h2>
+          <p>Support messages come from CVMind accounts, so we can reply to you and keep spam out. You can also reach us by email or WhatsApp.</p>
+          <button type="button" className="help-article-link" onClick={() => window.dispatchEvent(new Event(AUTH_REQUIRED_EVENT))}>Sign in</button>
+        </div>
+      );
+    }
+    if (unverified) {
+      return (
+        <div className="help-contact-sent help-contact-locked" role="status">
+          <MailWarning size={40} />
+          <h2>Please verify your email before contacting CVMind Support.</h2>
+          <p>Verifying your email helps us protect our support system from spam and abuse.</p>
+          <button type="button" className="help-article-link" onClick={() => window.dispatchEvent(new Event(VERIFY_REQUIRED_EVENT))}>Verify email</button>
+        </div>
+      );
+    }
+    if (sent) {
+      return (
+        <div className="help-contact-sent" role="status">
+          <CheckCircle2 size={40} />
+          <h2>Message sent</h2>
+          <p>Thanks for writing to us. We will reply to {user?.email || 'your email'} within 24 hours.</p>
+          <button type="button" className="help-article-link" onClick={() => setSent(false)}>Send another message</button>
+        </div>
+      );
+    }
+    return (
+      <form onSubmit={onSubmit} noValidate>
+        <p className="help-contact-from">Sending as <strong>{user?.name || 'you'}</strong> ({user?.email})</p>
+        <label className="help-field">
+          <span>Subject</span>
+          <input name="subject" value={form.subject} onChange={onChange} disabled={loading} maxLength={200} placeholder="e.g. Refund request, can't download PDF" />
+        </label>
+        <label className="help-field">
+          <span>Message <em aria-hidden="true">*</em></span>
+          <textarea name="message" rows={6} value={form.message} onChange={onChange} disabled={loading} maxLength={5000} required />
+        </label>
+        {error && <p className="help-contact-error" role="alert">{error}</p>}
+        <button type="submit" className="help-article-link" disabled={loading}>
+          {loading ? 'Sending…' : <>Send message <Send size={15} /></>}
+        </button>
+      </form>
+    );
+  };
+
   return (
     <>
       <header className="help-topic-head">
@@ -54,39 +122,7 @@ export default function HelpContact() {
 
       <div className="help-contact">
         <section className="help-card help-contact-form">
-          {sent ? (
-            <div className="help-contact-sent" role="status">
-              <CheckCircle2 size={40} />
-              <h2>Message sent</h2>
-              <p>Thanks for writing to us. We will reply to your email within 24 hours.</p>
-              <button type="button" className="help-article-link" onClick={() => setSent(false)}>Send another message</button>
-            </div>
-          ) : (
-            <form onSubmit={onSubmit} noValidate>
-              <div className="help-field-row">
-                <label className="help-field">
-                  <span>Name <em aria-hidden="true">*</em></span>
-                  <input name="name" value={form.name} onChange={onChange} disabled={loading} autoComplete="name" required />
-                </label>
-                <label className="help-field">
-                  <span>Email <em aria-hidden="true">*</em></span>
-                  <input type="email" name="email" value={form.email} onChange={onChange} disabled={loading} autoComplete="email" required />
-                </label>
-              </div>
-              <label className="help-field">
-                <span>Subject</span>
-                <input name="subject" value={form.subject} onChange={onChange} disabled={loading} placeholder="e.g. Refund request, can't download PDF" />
-              </label>
-              <label className="help-field">
-                <span>Message <em aria-hidden="true">*</em></span>
-                <textarea name="message" rows={6} value={form.message} onChange={onChange} disabled={loading} required />
-              </label>
-              {error && <p className="help-contact-error" role="alert">{error}</p>}
-              <button type="submit" className="help-article-link" disabled={loading}>
-                {loading ? 'Sending…' : <>Send message <Send size={15} /></>}
-              </button>
-            </form>
-          )}
+          {renderForm()}
         </section>
 
         <aside className="help-contact-channels" aria-label="Other ways to reach us">

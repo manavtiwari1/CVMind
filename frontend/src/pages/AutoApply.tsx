@@ -359,7 +359,7 @@ function AutoApplyAgent({ customApiKey, resumeText: initialResumeText = '', setR
     fd.append('resume', file);
     try {
       setLoading(true); setLoadingMsg('Extracting resume text…');
-      const r = await fetch(`${API}/api/analyze`, { method: 'POST', body: fd, headers: customApiKey ? { 'x-gemini-key': customApiKey } : {} });
+      const r = await authFetch(`${API}/api/analyze`, { method: 'POST', body: fd, headers: customApiKey ? { 'x-gemini-key': customApiKey } : {} });
       const d = await r.json();
       if (d.resumeText) {
         setResumeText(d.resumeText);

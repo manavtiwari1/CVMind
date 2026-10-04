@@ -1,6 +1,8 @@
 import { Resend } from 'resend';
 
-const FROM = 'CV Mind <no-reply@manavtiwari.in>';
+// Sender for every email the app sends. The domain must be verified in Resend.
+// Set EMAIL_FROM in .env to change it, e.g. EMAIL_FROM="CV Mind <hello@manavtiwari.in>"
+export const EMAIL_FROM = process.env.EMAIL_FROM || 'CV Mind <no-reply@manavtiwari.in>';
 // Where customers' replies go, since FROM is a no-reply address
 export const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'cvmindofficial@gmail.com';
 let client = null;
@@ -43,7 +45,7 @@ ${paragraphs}${cta}
 export async function sendEmail({ to, subject, html, replyTo = SUPPORT_EMAIL }) {
   if (!emailConfigured()) throw Object.assign(new Error('Email is not configured on this server (RESEND_API_KEY).'), { status: 503 });
   const { data, error } = await getClient().emails.send({
-    from: FROM,
+    from: EMAIL_FROM,
     to: Array.isArray(to) ? to : [to],
     subject,
     html,

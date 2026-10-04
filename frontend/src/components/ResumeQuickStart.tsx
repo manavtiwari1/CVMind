@@ -4,6 +4,7 @@ import { API_BASE } from '../lib/apiBase';
 import { getErrorMessage } from '../utils/errors';
 import type { ExtractedResume } from '../types/api';
 import './ResumeOnboarding.css';
+import { authFetch } from '../lib/authFetch';
 
 interface ResumeQuickStartProps {
   templateName: string;
@@ -30,7 +31,7 @@ export default function ResumeQuickStart({ templateName, customApiKey, onDone }:
       fd.append('exact', 'true');
       const headers: Record<string, string> = {};
       if (customApiKey) headers['x-gemini-key'] = customApiKey;
-      const res = await fetch(`${API_BASE}/api/resume/parse-data`, { method: 'POST', headers, body: fd });
+      const res = await authFetch(`${API_BASE}/api/resume/parse-data`, { method: 'POST', headers, body: fd });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || 'Failed to read your resume.');
       onDone(body.data);

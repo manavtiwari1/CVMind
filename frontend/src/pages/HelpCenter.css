@@ -424,6 +424,8 @@
 .help-contact-sent { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 24px 0; text-align: center; color: #1f9e72; }
 .help-contact-sent h2 { margin: 0; font-size: 1.3rem; font-weight: 600; color: #111827; }
 .help-contact-sent p { margin: 0 0 8px; color: #374151; }
+.help-contact-locked { color: #b45309; }
+.help-contact-from { margin: 0; font-size: 0.9rem; color: #374151; }
 
 .help-contact-channels { display: flex; flex-direction: column; gap: 12px; }
 .help-channel {
