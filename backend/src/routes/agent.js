@@ -105,6 +105,7 @@ import { createApplicationForUser, pickResume } from '../agent/applications/crea
 import { createExtensionRouter } from './agentExtension.js';
 import { deleteFile, openDownloadStream, BUCKETS } from '../agent/storage/gridfs.js';
 import { importUploadedResume, importCvmindWork, enqueueParse, RESUME_MIME_TYPES } from '../agent/resume/intake.js';
+import { workerStatus } from '../agent/queue/heartbeat.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -279,6 +280,13 @@ export function createAgentRouter({ loadWork = defaultLoadWork, loadLatestResume
   }));
 
   // ── Preferences (Stage 2) ───────────────────────────────────────────────────
+  // Lets a screen that has waited a while say whether its work is queued behind a stopped worker.
+  // Only the yes/no: queue sizes and hosts are for the admin panel.
+  router.get('/worker-status', asyncRoute(async (req, res) => {
+    const { running } = await workerStatus();
+    return res.json({ success: true, data: { running } });
+  }));
+
   router.get('/preferences', asyncRoute(async (req, res) => {
     const preferences = await getPreferences(req.auth.sub);
     return res.json({ success: true, exists: Boolean(preferences), data: preferences ?? structuredClone(DEFAULT_PREFERENCES) });

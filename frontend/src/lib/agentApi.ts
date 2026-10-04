@@ -100,6 +100,11 @@ const PREFERENCE_KEYS: (keyof JobPreferences)[] = [
   'defaultResumeProfileId', 'applyMode', 'minScoreToSuggest', 'dailyApplyCap', 'eeo', 'standardAnswers'
 ];
 
+// Whether anything is processing the agent's queue right now
+export async function getWorkerStatus() {
+  return (await request<Envelope<{ running: boolean }>>('/worker-status')).data;
+}
+
 export async function getPreferences() {
   const body = await request<Envelope<JobPreferences> & { exists: boolean }>('/preferences');
   return { preferences: body.data, exists: body.exists };

@@ -7,6 +7,7 @@ import { handlers } from '../handlers/index.js';
 import { logEvent } from '../events.js';
 import { markFailed } from '../pipeline.js';
 import { startSweeper } from '../sweeper.js';
+import { startHeartbeat } from './heartbeat.js';
 
 async function ensureConnected() {
   const { readyState } = mongoose.connection;
@@ -49,6 +50,8 @@ export async function startWorkers({ queues = QUEUES, logger = console } = {}) {
 
   // Catches applications orphaned by a worker dying between a status change and the next enqueue
   const sweeper = startSweeper({ logger });
+  // Lets the API and the admin panel see that something is processing the queue
+  const heartbeat = startHeartbeat({ workerId, queues, logger });
 
   logger.log(`[agent] workers started (${workerId}) on queues: ${queues.join(', ')}`);
   return {
@@ -56,6 +59,7 @@ export async function startWorkers({ queues = QUEUES, logger = console } = {}) {
     stop: async () => {
       sweeper.stop();
       await Promise.all(runners.map((runner) => runner.stop()));
+      await heartbeat.stop();
     }
   };
 }

@@ -9,6 +9,7 @@ import ScoreCard from './ScoreCard';
 import EventTimeline from './EventTimeline';
 import TailoredPreview from './TailoredPreview';
 import ReviewPanel from './ReviewPanel';
+import SlowWaitNotice from './SlowWaitNotice';
 import './ResumeTab.css';
 import './ApplicationsTab.css';
 
@@ -188,6 +189,7 @@ export default function ApplicationsTab({ onEditResume }: { onEditResume?: (resu
           <div className="aa-empty">
             <RefreshCw size={28} className="aa-spin" />
             <p>{PROGRESS_LABELS[application.progress?.step ?? ''] ?? 'Working on it…'}</p>
+            <SlowWaitNotice key={`${application.id}:${application.progress?.step ?? ''}`} since={application.progress?.updatedAt ?? application.updatedAt} />
           </div>
         )}
 
