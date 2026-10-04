@@ -4,7 +4,7 @@
 // *.lvh.me resolves to 127.0.0.1, so www.lvh.me / app.lvh.me test the split locally.
 
 // Pages that need sign-in; they live on the app host
-export const APP_PAGES = ['prep', 'resume-editor', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'proofreading', 'tailor', 'voice-prep', 'portfolio-gen', 'job-finder', 'career-courses', 'elevator-pitch', 'career-roadmap', 'auto-apply', 'account', 'my-documents'];
+export const APP_PAGES = ['prep', 'resume-editor', 'cover-letter-start', 'cover-letter-generator', 'cover-letter-editor', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'proofreading', 'tailor', 'voice-prep', 'portfolio-gen', 'job-finder', 'career-courses', 'elevator-pitch', 'career-roadmap', 'auto-apply', 'account', 'my-documents'];
 
 // App-host pages that signed-out visitors can still use (the email link may open on another device)
 export const PUBLIC_APP_PAGES = ['code-arena', 'cvmind-code-arena', 'verify-email'];

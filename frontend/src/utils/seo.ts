@@ -10,7 +10,7 @@ interface PageSEO {
 const SITE_URL = 'https://www.cvmind.in';
 
 // Account-only and error pages stay out of search results
-const NO_INDEX_PAGES = ['account', 'my-documents', 'admin', 'dashboard', 'resume-editor', 'not-found'];
+const NO_INDEX_PAGES = ['account', 'my-documents', 'admin', 'dashboard', 'resume-editor', 'cover-letter-start', 'cover-letter-editor', 'not-found'];
 
 const PAGE_SEO: Record<string, PageSEO> = {
   home: {
@@ -167,6 +167,24 @@ const PAGE_SEO: Record<string, PageSEO> = {
     title: 'Recruiter Portal - Post Jobs & Review Candidates | CV Mind',
     description: 'Post openings, review AI-matched applicants and shortlist candidates from one recruiter dashboard on CV Mind.',
     keywords: 'Recruiter Portal, Post Jobs, Candidate Screening, Applicant Tracking, CV Mind for Recruiters',
+  },
+  'cover-letter-generator': {
+    title: 'AI Cover Letter Generator from Your Resume | CV Mind',
+    description: 'Upload your resume, paste the job description and get a tailored, one-page cover letter in under a minute. Edit it or download it as PDF.',
+    keywords: 'AI Cover Letter Generator, Cover Letter from Resume, Free Cover Letter Generator',
+  },
+  'cover-letter-builder': {
+    title: 'Online Cover Letter Builder | CV Mind',
+    description: 'Answer a few questions, start from a cover letter example for your role, customize the design and download it as PDF.',
+    keywords: 'Cover Letter Builder, Online Cover Letter Maker, Cover Letter Templates, Cover Letter Design',
+  },
+  'cover-letter-start': {
+    title: 'Build Your Cover Letter | CV Mind',
+    description: 'Answer a few questions and start from a cover letter example for your role.',
+  },
+  'cover-letter-editor': {
+    title: 'Cover Letter Editor | CV Mind',
+    description: 'Edit your cover letter, fix it with AI and download it as PDF or Word.',
   },
   'resume-editor': {
     title: 'Resume Editor - Edit Your CV with AI | CV Mind',

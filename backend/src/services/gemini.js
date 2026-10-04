@@ -1403,6 +1403,73 @@ export async function generateElevatorPitchWithGemini({ jobTitle, details, resum
   }
 }
 
+// ─── COVER LETTER GENERATOR ──────────────────────────────────────────────────
+const coverLetterSchema = {
+  type: 'object',
+  properties: {
+    name: { type: 'string', description: "Candidate's full name from the resume." },
+    title: { type: 'string', description: "Candidate's professional headline, e.g. 'Frontend Developer'." },
+    email: { type: 'string', description: 'Email from the resume, or "".' },
+    phone: { type: 'string', description: 'Phone from the resume, or "".' },
+    location: { type: 'string', description: 'City and country from the resume, or "".' },
+    linkedin: { type: 'string', description: 'LinkedIn or portfolio URL from the resume, or "".' },
+    jobTitle: { type: 'string', description: 'The role being applied for, from the job description.' },
+    company: { type: 'string', description: 'The hiring company from the job description, or "".' },
+    recipient: { type: 'string', description: 'Hiring manager name if given, otherwise "Hiring Manager".' },
+    greeting: { type: 'string', description: "e.g. 'Dear Ms. Sharma,' or 'Dear Hiring Manager,'." },
+    paragraphs: { type: 'array', items: { type: 'string' }, description: '3 or 4 plain-text paragraphs: hook, 1-2 evidence paragraphs, close with a call to action.' },
+    closing: { type: 'string', description: "Sign-off word, e.g. 'Sincerely,' or 'Best regards,'." }
+  },
+  required: ['name', 'title', 'email', 'phone', 'location', 'linkedin', 'jobTitle', 'company', 'recipient', 'greeting', 'paragraphs', 'closing']
+};
+
+const COVER_TONES = {
+  professional: 'Professional: polished and confident, suits corporate, finance, law and healthcare.',
+  conversational: 'Conversational: warm and direct, plain words, suits startups, product and creative teams.',
+  enthusiastic: 'Enthusiastic: energetic and positive without exaggeration, suits early-career and customer-facing roles.'
+};
+
+export async function generateCoverLetterWithAI({ resumeText, jobDescription, tone = 'professional', length = 'standard', company = '', hiringManager = '', customApiKey = null }) {
+  const words = length === 'short' ? '180 to 250 words in 3 paragraphs' : '250 to 380 words in 3 or 4 paragraphs';
+  const systemPrompt = `You are a senior recruiter who writes cover letters that hiring managers actually read.
+Structure: a one or two sentence hook naming the role and company; one or two paragraphs mapping 2-3 of the candidate's strongest, most relevant achievements to the job's requirements; a short close with a specific call to action.
+Length: ${words}. First person, plain text in each paragraph (no markdown, no bullet characters).
+Tone: ${COVER_TONES[tone] || COVER_TONES.professional}
+Use the job description's own keywords where the resume supports them. Avoid cliches like "I am writing to express my interest", "team player", "passionate", "perfect fit".
+${FACTS_RULE}
+Never output placeholders such as [Company Name] or [X]. If a detail is unknown, leave it out or return "" for that field.`;
+
+  const userPrompt = `Job description:
+"""
+${String(jobDescription || '').slice(0, 8000)}
+"""
+${company ? `Company (given by the candidate): ${company}
+` : ''}${hiringManager ? `Hiring manager (given by the candidate): ${hiringManager}
+` : ''}
+${cvBlock(resumeText)}
+
+Write the cover letter and return the structured JSON now.`;
+
+  try {
+    const result = await callDeepSeek({
+      systemInstruction: systemPrompt,
+      prompt: userPrompt,
+      responseSchema: coverLetterSchema,
+      customApiKey,
+      temperature: 0.45,
+      maxTokens: 2000
+    });
+    const paragraphs = (Array.isArray(result?.paragraphs) ? result.paragraphs : [])
+      .map((p) => String(p || '').trim())
+      .filter(Boolean);
+    if (!paragraphs.length) throw new Error('The AI returned an empty letter.');
+    return { ...result, paragraphs };
+  } catch (error) {
+    console.error('DeepSeek Cover Letter Generate Error:', error);
+    throw new Error('Cover letter generation failed. ' + error.message);
+  }
+}
+
 // ─── JOB FINDER SCHEMA ───────────────────────────────────────────────────────
 const jobFinderSchema = {
   type: 'object',

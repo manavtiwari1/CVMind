@@ -7,19 +7,20 @@ import { useLiveStats, formatStat } from '../utils/stats';
 import TemplatePreview from '../components/TemplatePreview';
 import { TEMPLATES as ALL_TEMPLATES, RESUME_TEMPLATES, type Template } from '../data/resumeTemplates';
 import { pickTemplate } from '../lib/templatePick';
+import { LETTER_DESIGNS } from '../lib/coverLetter';
 import './ResumeBuilderLanding.css';
 
 interface ResumeBuilderLandingProps {
   setCurrentPage: (page: string) => void;
 }
 
-const COVER_LETTER_COUNT = ALL_TEMPLATES.filter(t => t.type === 'cover-letter').length;
+const COVER_LETTER_COUNT = LETTER_DESIGNS.length;
 const byId = (id: string): Template => ALL_TEMPLATES.find(t => t.id === id) ?? RESUME_TEMPLATES[0];
 
 const FREE_TOOLS = [
   { label: 'Resume Checker', page: 'home' },
   { label: 'Tailor Resume', page: 'tailor' },
-  { label: 'Cover Letter', page: 'resume-editor' },
+  { label: 'Cover Letter', page: 'cover-letter-builder' },
   { label: 'Interview Prep', page: 'prep' },
   { label: 'LinkedIn Optimizer', page: 'linkedin' },
 ];
@@ -62,9 +63,9 @@ const FEATURE_SECTIONS: FeatureSection[] = [
   },
   {
     tag: 'Cover letters', title: 'A cover letter that matches your resume', accent: '#e9962b',
-    body: 'Pick a cover letter layout, edit it in the same editor as your resume, and let the AI refine the draft for the job you are applying to.',
-    page: 'resume-editor', cta: 'Write a cover letter',
-    card: { title: 'Cover Letter Builder', sub: 'Pick a layout and edit', lines: [`${COVER_LETTER_COUNT} cover letter layouts`, 'Word-style editor', 'Refine with an AI prompt'] },
+    body: 'Pick a cover letter design or let the AI write one from your resume and the job ad, then edit it and download a PDF.',
+    page: 'cover-letter-builder', cta: 'Write a cover letter',
+    card: { title: 'Cover Letter Builder', sub: 'Pick a layout and edit', lines: [`${COVER_LETTER_COUNT} cover letter designs`, 'Examples for each role', 'AI generator and fixes'] },
     points: [
       { title: 'Layouts to match', text: 'Choose a style that pairs with your resume template.' },
       { title: 'Edit freely', text: 'Fonts, tables, colors and headings, like a word processor.' },
@@ -107,7 +108,7 @@ const LEVELS = [
 const STAGES = [
   { key: 'build', label: 'Resume Builder', page: 'resume-editor', title: 'Build the resume', text: 'Pick from ATS-friendly templates, fill in your details or upload an old resume, and edit everything in a Word-style editor.', points: ['Start from an existing resume or a blank page', 'Import details from a LinkedIn PDF', 'Download as PDF or DOCX'] },
   { key: 'check', label: 'Resume Checker', page: 'home', title: 'Check it', text: 'Get an ATS score, keyword gaps and a fix list before a recruiter or parser sees it.', points: ['Overall score', 'Missing keywords', 'Formatting issues'] },
-  { key: 'cover', label: 'Cover Letter', page: 'resume-editor', title: 'Write the cover letter', text: 'Pair your resume with a cover letter in a matching layout and refine it with AI.', points: ['Matching layouts', 'Edit in the same editor', 'AI refinement prompts'] },
+  { key: 'cover', label: 'Cover Letter', page: 'cover-letter-builder', title: 'Write the cover letter', text: 'Pick a cover letter design that matches your resume, start from an example for your role or let the AI write a first draft, then fix it with AI.', points: ['Designs to match your resume', 'Examples for each role', 'AI generator and fixes'] },
   { key: 'tailor', label: 'Tailor Resume', page: 'tailor', title: 'Tailor it to the job', text: 'Paste a job description and adjust your resume to match what the role asks for.', points: ['Keyword suggestions', 'Per-job versions', 'You approve every change'] },
   { key: 'prep', label: 'Interview Prep', page: 'prep', title: 'Practice for the interview', text: 'Rehearse likely questions for the role and get feedback on your answers.', points: ['Role-specific questions', 'Feedback on answers', 'Voice practice'] },
   { key: 'linkedin', label: 'LinkedIn', page: 'linkedin', title: 'Polish your profile', text: 'Audit your LinkedIn profile and draft a headline, About section and outreach messages.', points: ['Profile audit', 'Headline ideas', 'Outreach drafts'] },

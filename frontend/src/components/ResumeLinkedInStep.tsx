@@ -58,7 +58,7 @@ export default function ResumeLinkedInStep({ customApiKey, onDone }: ResumeLinke
     <div className="ro-page">
       <Stepper active={6} />
       <div className="ro-center ro-stage">
-        <Leo />
+        <Leo pose="linkedin" />
         <h1 className="ro-title">Finally, would you like to save time by importing your LinkedIn?</h1>
 
         <form className="ro-position ro-linkedin" onSubmit={e => { e.preventDefault(); if (url.trim() && !busy) importUrl(); }}>

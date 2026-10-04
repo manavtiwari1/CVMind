@@ -339,7 +339,7 @@ export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage,
     if (t.status === 'building') {
       return (
         <div className="pgx-assistant">
-          <LeoAvatar size={32} className="pgx-leo pgx-leo--busy" />
+          <LeoAvatar size={32} pose="typing" className="pgx-leo pgx-leo--busy" />
           <div className="pgx-assistant-body">
             <p className="pgx-shimmer">Leo is building your portfolio…</p>
             <ol className="pgx-build-steps">
@@ -439,7 +439,7 @@ export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage,
         <section className="pgx-chat">
           {turns.length === 0 ? (
             <div className="pgx-empty">
-              <div className="pgx-empty-leo"><Leo /></div>
+              <div className="pgx-empty-leo"><Leo pose="idea" /></div>
               <h1 className="pgx-greeting">{greeting()}</h1>
               <p className="pgx-empty-sub">I'm Leo. Share your resume and I'll turn it into a portfolio website you can download and host anywhere.</p>
               {composer}

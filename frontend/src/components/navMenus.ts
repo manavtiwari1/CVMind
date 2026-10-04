@@ -1,7 +1,7 @@
 import {
   FileText, ScanSearch, Target, Globe, MessageSquare, Mic, SpellCheck, Code2,
   Briefcase, Send, UserCheck, PenLine, MessagesSquare, GraduationCap, Presentation,
-  Map as MapIcon, Info, LifeBuoy, HelpCircle, BookOpen,
+  Map as MapIcon, Info, LifeBuoy, HelpCircle, BookOpen, Mail,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -39,7 +39,7 @@ export interface NavMenu {
 export const NAV_MENUS: NavMenu[] = [
   {
     label: 'Resume',
-    pages: ['home', 'resume-builder', 'resume-editor', 'tailor', 'portfolio-gen'],
+    pages: ['home', 'resume-builder', 'resume-editor', 'cover-letter-generator', 'cover-letter-builder', 'cover-letter-start', 'tailor', 'portfolio-gen'],
     columns: [
       {
         heading: 'Tools',
@@ -48,6 +48,13 @@ export const NAV_MENUS: NavMenu[] = [
           { page: 'home', title: 'Resume Checker', desc: 'Is your resume good enough?', icon: ScanSearch },
           { page: 'tailor', title: 'Resume Tailorer', desc: 'Match any job description instantly', icon: Target },
           { page: 'portfolio-gen', title: 'Portfolio Generator', desc: 'Build a shareable portfolio site', icon: Globe },
+        ],
+      },
+      {
+        heading: 'Cover Letter',
+        tiles: [
+          { page: 'cover-letter-builder', title: 'Cover Letter Builder', desc: 'Pick a design or start from an example', icon: Mail, badge: 'new' },
+          { page: 'cover-letter-generator', title: 'Cover Letter Generator', desc: 'AI writes one from your resume', icon: PenLine, badge: 'new' },
         ],
       },
       {

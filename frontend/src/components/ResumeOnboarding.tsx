@@ -1,10 +1,11 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Check, Loader2, Lock } from 'lucide-react';
 import { API_BASE } from '../lib/apiBase';
 import { getErrorMessage } from '../utils/errors';
 import type { ExtractedResume } from '../types/api';
 import JobSearchStep, { type LiveJob } from './JobSearchStep';
 import './ResumeOnboarding.css';
+import { LEO_POSES, type LeoPose } from '../lib/leoPoses';
 import { authFetch } from '../lib/authFetch';
 
 export type ResumeGoal = 'recruiters' | 'ats';
@@ -27,73 +28,27 @@ type Step = 'loading' | 'job' | 'existing' | 'upload' | 'position' | 'goal';
 const STEP_INDEX: Record<Exclude<Step, 'loading'>, number> = { job: 1, existing: 2, upload: 3, position: 3, goal: 4 };
 
 
-/** Leo, the CVMind guide — a friendly boy avatar sitting on soft colour blobs. */
-export function Leo() {
+/** Leo, the CVMind guide, in the pose that fits the moment (see lib/leoPoses.ts). */
+export function Leo({ pose = 'hello' }: { pose?: LeoPose }) {
   return (
-    <div className="ro-leo" aria-label="Leo, your CVMind guide" role="img">
-      <svg viewBox="0 0 240 200" width="240" height="200" aria-hidden="true">
-        <path d="M30 70c10-34 52-44 70-26 14 14 6 46-14 62-24 18-66 8-56-36z" fill="#cfe4f5" />
-        <path d="M120 22c26-26 76-10 78 24 2 28-26 36-46 30-30-10-50-30-32-54z" fill="#fde1c4" />
-        <path d="M118 120c18-16 52-6 52 24 0 30-34 48-56 34-20-14-18-40 4-58z" fill="#d3f2e3" />
-        <clipPath id="ro-leo-clip"><circle cx="112" cy="100" r="60" /></clipPath>
-        <circle cx="112" cy="100" r="60" fill="#e9eef5" />
-        <g clipPath="url(#ro-leo-clip)">
-          {/* hoodie */}
-          <path d="M40 176c4-30 30-44 72-44s68 14 72 44z" fill="#2bbf8e" />
-          <path d="M92 134l20 22 20-22" fill="#fff" opacity=".9" />
-          {/* neck */}
-          <rect x="98" y="112" width="28" height="26" rx="10" fill="#e7b48f" />
-          {/* head */}
-          <ellipse cx="112" cy="92" rx="30" ry="34" fill="#f2c4a0" />
-          <ellipse cx="82" cy="96" rx="5" ry="8" fill="#eab08a" />
-          <ellipse cx="142" cy="96" rx="5" ry="8" fill="#eab08a" />
-          {/* hair */}
-          <path d="M80 86c-4-30 16-46 34-46 22 0 38 14 32 46-6-14-14-20-26-22-14 4-30 8-40 22z" fill="#2a2420" />
-          <path d="M84 70c6-14 22-22 38-18-14 2-22 8-26 20z" fill="#3b312b" />
-          {/* eyes */}
-          <ellipse cx="101" cy="94" rx="3.2" ry="4" fill="#2a2420" />
-          <ellipse cx="123" cy="94" rx="3.2" ry="4" fill="#2a2420" />
-          <circle cx="102" cy="92.6" r="1.1" fill="#fff" />
-          <circle cx="124" cy="92.6" r="1.1" fill="#fff" />
-          {/* brows */}
-          <path d="M94 85q7-4 13 0M117 85q7-4 13 0" stroke="#2a2420" strokeWidth="2.2" strokeLinecap="round" fill="none" />
-          {/* smile + cheeks */}
-          <path d="M102 108q10 9 20 0" stroke="#a5513f" strokeWidth="2.6" strokeLinecap="round" fill="none" />
-          <circle cx="94" cy="104" r="4.5" fill="#f19a8a" opacity=".45" />
-          <circle cx="130" cy="104" r="4.5" fill="#f19a8a" opacity=".45" />
-        </g>
-      </svg>
-      <span className="ro-leo-name">Leo</span>
+    <div className="ro-leo" role="img" aria-label="Leo, your CVMind guide">
+      <img src={LEO_POSES[pose]} alt="" width={200} height={200} draggable={false} />
     </div>
   );
 }
 
-/** Leo's face in a circle, for chat messages and other small spots. Same drawing as <Leo />. */
-export function LeoAvatar({ size = 32, className }: { size?: number; className?: string }) {
-  // Each avatar needs its own clip-path id when several are on the page
-  const clipId = `ro-leo-face-${useId().replace(/:/g, '')}`;
+/** Leo in a small circle, for chat messages and other small spots. */
+export function LeoAvatar({ size = 32, className, pose = 'hello' }: { size?: number; className?: string; pose?: LeoPose }) {
   return (
-    <svg className={className} viewBox="70 44 84 84" width={size} height={size} role="img" aria-label="Leo">
-      <clipPath id={clipId}><circle cx="112" cy="86" r="42" /></clipPath>
-      <circle cx="112" cy="86" r="42" fill="#e3f4ec" />
-      <g clipPath={`url(#${clipId})`}>
-        <path d="M40 176c4-30 30-44 72-44s68 14 72 44z" fill="#2bbf8e" />
-        <rect x="98" y="112" width="28" height="26" rx="10" fill="#e7b48f" />
-        <ellipse cx="112" cy="92" rx="30" ry="34" fill="#f2c4a0" />
-        <ellipse cx="82" cy="96" rx="5" ry="8" fill="#eab08a" />
-        <ellipse cx="142" cy="96" rx="5" ry="8" fill="#eab08a" />
-        <path d="M80 86c-4-30 16-46 34-46 22 0 38 14 32 46-6-14-14-20-26-22-14 4-30 8-40 22z" fill="#2a2420" />
-        <path d="M84 70c6-14 22-22 38-18-14 2-22 8-26 20z" fill="#3b312b" />
-        <ellipse cx="101" cy="94" rx="3.2" ry="4" fill="#2a2420" />
-        <ellipse cx="123" cy="94" rx="3.2" ry="4" fill="#2a2420" />
-        <circle cx="102" cy="92.6" r="1.1" fill="#fff" />
-        <circle cx="124" cy="92.6" r="1.1" fill="#fff" />
-        <path d="M94 85q7-4 13 0M117 85q7-4 13 0" stroke="#2a2420" strokeWidth="2.2" strokeLinecap="round" fill="none" />
-        <path d="M102 108q10 9 20 0" stroke="#a5513f" strokeWidth="2.6" strokeLinecap="round" fill="none" />
-        <circle cx="94" cy="104" r="4.5" fill="#f19a8a" opacity=".45" />
-        <circle cx="130" cy="104" r="4.5" fill="#f19a8a" opacity=".45" />
-      </g>
-    </svg>
+    <img
+      className={`ro-leo-avatar${className ? ` ${className}` : ''}`}
+      src={LEO_POSES[pose]}
+      alt="Leo"
+      width={size}
+      height={size}
+      draggable={false}
+      style={{ width: size, height: size }}
+    />
   );
 }
 
@@ -155,7 +110,7 @@ export default function ResumeOnboarding({ customApiKey, onComplete }: ResumeOnb
   if (step === 'loading') {
     return (
       <div className="ro-page ro-center">
-        <Leo />
+        <Leo pose="typing" />
         <p className="ro-loading-text"><Loader2 size={18} className="ro-spin" /> Leo is getting things ready…</p>
       </div>
     );
@@ -172,7 +127,7 @@ export default function ResumeOnboarding({ customApiKey, onComplete }: ResumeOnb
 
       {step === 'existing' && (
         <div className="ro-center ro-stage">
-          <Leo />
+          <Leo pose="thinking" />
           <h1 className="ro-title">Do you have an existing resume to use as a starting point?</h1>
           <div className="ro-actions">
             <button type="button" className="ro-btn ro-btn--green" onClick={() => setStep('upload')}>Yes</button>
@@ -183,7 +138,7 @@ export default function ResumeOnboarding({ customApiKey, onComplete }: ResumeOnb
 
       {step === 'upload' && (
         <div className="ro-center ro-stage">
-          <Leo />
+          <Leo pose="resume" />
           <h1 className="ro-title">Great. Please upload it for a quick start.</h1>
           <div
             className={`ro-drop${dragOver ? ' is-over' : ''}`}
@@ -219,7 +174,7 @@ export default function ResumeOnboarding({ customApiKey, onComplete }: ResumeOnb
 
       {step === 'position' && (
         <div className="ro-center ro-stage">
-          <Leo />
+          <Leo pose="idea" />
           <h1 className="ro-title">Please tell me your position so I can recommend templates.</h1>
           <form className="ro-position" onSubmit={e => { e.preventDefault(); setStep('goal'); }}>
             <input
@@ -237,7 +192,7 @@ export default function ResumeOnboarding({ customApiKey, onComplete }: ResumeOnb
 
       {step === 'goal' && (
         <div className="ro-center ro-stage">
-          <Leo />
+          <Leo pose="thinking" />
           <h1 className="ro-title">Are you primarily concerned with impressing recruiters or passing ATS?</h1>
           <div className="ro-actions">
             <button type="button" className="ro-btn ro-btn--green" onClick={() => finish('recruiters')}>Impress Recruiters</button>

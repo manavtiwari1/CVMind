@@ -385,7 +385,7 @@ export default function InterviewCoach({ mode, customApiKey, resumeText: appResu
 
         {flow === 'cv' && (
           <div className="ro-center ro-stage">
-            <Leo />
+            <Leo pose="support" />
             <h1 className="ro-title">{copy.leoHello}</h1>
             <div className={`tlr-toggle tlr-flow-toggle ivw-cv-toggle${hasAppResume ? ' has-3' : ''}`} role="tablist" aria-label="How to add your CV">
               {hasAppResume && (
@@ -441,7 +441,7 @@ export default function InterviewCoach({ mode, customApiKey, resumeText: appResu
 
         {flow === 'job' && (
           <div className="ro-center ro-stage">
-            <Leo />
+            <Leo pose="thinking" />
             <h1 className="ro-title">Which job are you preparing for?</h1>
             <p className="ro-sub">Add the role. A job description or link makes the questions much closer to the real thing.</p>
             <input
@@ -471,7 +471,7 @@ export default function InterviewCoach({ mode, customApiKey, resumeText: appResu
 
         {flow === 'setup' && (
           <div className="ro-center ro-stage">
-            <Leo />
+            <Leo pose="support" />
             <h1 className="ro-title">How should I run your {settings.role.trim() || 'interview'}{settings.role.trim() ? ' interview' : ''}?</h1>
             <div className="ivw-setup">
               <fieldset>
@@ -519,7 +519,7 @@ export default function InterviewCoach({ mode, customApiKey, resumeText: appResu
 
         {flow === 'working' && (
           <div className="ro-center ro-stage">
-            <Leo />
+            <Leo pose={errorMsg ? 'thinking' : 'typing'} />
             {errorMsg ? (
               <>
                 <h1 className="ro-title">Something went wrong while preparing your interview.</h1>
@@ -586,7 +586,7 @@ export default function InterviewCoach({ mode, customApiKey, resumeText: appResu
           </div>
 
           <div className="tlr-start">
-            <div className="tlr-start-leo"><Leo /></div>
+            <div className="tlr-start-leo"><Leo pose="support" /></div>
             <h2>Leo will interview you</h2>
             <ol className="tlr-start-steps">
               <li><span>1</span>Add your CV, or skip it</li>

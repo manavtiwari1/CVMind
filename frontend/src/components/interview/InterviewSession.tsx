@@ -209,7 +209,7 @@ export default function InterviewSession({
       </div>
 
       <div className="ivw-ask">
-        <div className="ivw-ask-leo"><Leo /></div>
+        <div className="ivw-ask-leo"><Leo pose="support" /></div>
         <div className="ivw-bubble">
           <div className="ivw-q-meta">
             <span className="tlr-tag">{q.category}</span>

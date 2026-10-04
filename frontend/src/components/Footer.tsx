@@ -32,8 +32,13 @@ const TOOLS_RIGHT: FooterLink[] = [
 
 const RESUME: FooterLink[] = [
   { label: 'Resume Builder', page: 'resume-builder' },
-  { label: 'Resume & Cover Letter Templates', page: 'resume-editor' },
+  { label: 'Resume Templates', page: 'resume-editor' },
   { label: 'Pricing', page: 'pricing' },
+];
+
+const COVER_LETTER: FooterLink[] = [
+  { label: 'Cover Letter Builder', page: 'cover-letter-builder' },
+  { label: 'AI Cover Letter Generator', page: 'cover-letter-generator' },
 ];
 
 const GUIDES: FooterLink[] = [
@@ -102,6 +107,8 @@ export default function Footer({ setCurrentPage }: FooterProps) {
           <div className="ft-col">
             <h4 className="ft-heading">Guides</h4>
             <ul className="ft-list">{renderLinks(GUIDES)}</ul>
+            <h4 className="ft-heading ft-heading--spaced">Cover Letter</h4>
+            <ul className="ft-list">{renderLinks(COVER_LETTER)}</ul>
           </div>
         </nav>
 

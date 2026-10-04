@@ -1,0 +1,213 @@
+// Cover letter examples for the Cover Letter Builder (/cover-letter-builder).
+// Each example is plain data; lib/coverLetter.ts lays it out in the chosen design.
+// To add one: append an entry with a unique slug. The list is sorted by role in the picker.
+import type { LetterData } from '../lib/coverLetter';
+
+export interface CoverLetterExample {
+  slug: string;
+  role: string;
+  category: string;
+  design: string;
+  letter: Omit<LetterData, 'date'>;
+}
+
+export const COVER_LETTER_EXAMPLES: CoverLetterExample[] = [
+  {
+    slug: 'software-engineer',
+    role: 'Software Engineer',
+    category: 'Technology',
+    design: 'cl-clean',
+    letter: {
+      name: 'Aarav Mehta',
+      title: 'Software Engineer | Backend & APIs',
+      email: 'aarav.mehta@email.com',
+      phone: '+91 98765 43210',
+      location: 'Bengaluru, India',
+      linkedin: 'linkedin.com/in/aaravmehta',
+      recipient: 'Engineering Hiring Team',
+      company: 'Razorpay',
+      jobTitle: 'Software Engineer II',
+      greeting: 'Dear Engineering Hiring Team,',
+      paragraphs: [
+        'Payments infrastructure is where small engineering decisions show up as real money for real businesses, and that is exactly the kind of work I want to do next. I am applying for the Software Engineer II role on your Payouts team.',
+        'At my current company I own three Node.js services that process around 40,000 transactions a day. Last year I moved our reconciliation job from a nightly batch to an event-driven pipeline on Kafka, which cut settlement mismatches by 60% and gave the finance team same-day reports. I also introduced contract tests between our services, which stopped a class of breaking API changes that had caused two production incidents the quarter before.',
+        'Your job description mentions idempotency, retries and observability. Those are the problems I enjoy most, and I have written about how we designed idempotency keys for our refunds API on our engineering blog.',
+        'I would welcome a conversation about how I could help the Payouts team ship reliably at scale. Thank you for your time.',
+      ],
+      closing: 'Best regards,',
+    },
+  },
+  {
+    slug: 'data-analyst',
+    role: 'Data Analyst',
+    category: 'Technology',
+    design: 'cl-dots',
+    letter: {
+      name: 'Priya Nair',
+      title: 'Data Analyst',
+      email: 'priya.nair@email.com',
+      phone: '+91 99887 76655',
+      location: 'Pune, India',
+      linkedin: 'linkedin.com/in/priyanair',
+      recipient: 'Ms. Kavita Rao',
+      company: 'Swiggy',
+      jobTitle: 'Data Analyst, Growth',
+      greeting: 'Dear Ms. Rao,',
+      paragraphs: [
+        'I am applying for the Data Analyst role on your Growth team because I like questions that end in a decision, not a dashboard nobody opens.',
+        'In two years at a D2C brand, I built the weekly cohort and retention model the marketing team now plans its budget around. An analysis I ran on repeat-purchase timing led us to move our reminder campaign from day 30 to day 21, lifting second orders by 14%. I work daily in SQL and Python, and I rebuilt our reporting in Looker so that leads could answer their own questions instead of filing tickets.',
+        'I would love to bring the same habit of turning data into one clear recommendation to Swiggy. I would be glad to walk you through a recent analysis in a call.',
+      ],
+      closing: 'Sincerely,',
+    },
+  },
+  {
+    slug: 'marketing-intern',
+    role: 'Marketing Intern',
+    category: 'Students & Entry Level',
+    design: 'cl-geo-navy',
+    letter: {
+      name: 'Sneha Kapoor',
+      title: 'BBA Student | Digital Marketing',
+      email: 'sneha.kapoor@email.com',
+      phone: '+91 91234 56789',
+      location: 'New Delhi, India',
+      linkedin: 'linkedin.com/in/snehakapoor',
+      recipient: 'Hiring Manager',
+      company: 'Nykaa',
+      jobTitle: 'Marketing Intern',
+      greeting: 'Dear Hiring Manager,',
+      paragraphs: [
+        'I am a final-year BBA student and I would love to join Nykaa as a Marketing Intern this summer.',
+        'As social media lead for my college fest, I grew our Instagram account from 1,200 to 9,000 followers in three months by running a reels series with student creators. I also ran our first paid campaign on a budget of ₹15,000 and learned to track cost per registration in Meta Ads Manager. During a short internship at a local café chain, I wrote their weekly newsletter and set up their Google Business profile, which brought in a steady stream of new reviews.',
+        'I am a regular Nykaa customer and follow how your content mixes education with shopping. I would be excited to learn from your team and contribute fresh ideas. Thank you for considering my application.',
+      ],
+      closing: 'Warm regards,',
+    },
+  },
+  {
+    slug: 'registered-nurse',
+    role: 'Registered Nurse',
+    category: 'Healthcare',
+    design: 'cl-serif-center',
+    letter: {
+      name: 'Anjali Thomas',
+      title: 'Registered Nurse, BSc Nursing',
+      email: 'anjali.thomas@email.com',
+      phone: '+91 94470 12345',
+      location: 'Kochi, India',
+      linkedin: '',
+      recipient: 'Nursing Superintendent',
+      company: 'Aster Medcity',
+      jobTitle: 'Staff Nurse, ICU',
+      subject: 'Application for Staff Nurse, ICU',
+      greeting: 'Dear Nursing Superintendent,',
+      paragraphs: [
+        'I am writing to apply for the Staff Nurse position in your Intensive Care Unit. I have four years of critical care experience and a strong commitment to safe, compassionate patient care.',
+        'In my current role in a 20-bed medical ICU, I care for ventilated patients, manage central lines and titrate vasoactive drugs under protocol. I helped introduce a bedside checklist for central line care that contributed to our unit going nine months without a line infection. I also mentor newly joined nurses during their first month on the unit.',
+        'Aster Medcity\'s reputation for clinical excellence and teaching is the reason I am applying. I would welcome the opportunity to discuss how I can support your ICU team. Thank you for your consideration.',
+      ],
+      closing: 'Sincerely,',
+    },
+  },
+  {
+    slug: 'sales-executive',
+    role: 'Sales Executive',
+    category: 'Sales & Business',
+    design: 'cl-navy-tan',
+    letter: {
+      name: 'Rohit Sharma',
+      title: 'B2B Sales Executive',
+      email: 'rohit.sharma@email.com',
+      phone: '+91 98111 22334',
+      location: 'Gurugram, India',
+      linkedin: 'linkedin.com/in/rohitsharmasales',
+      recipient: 'Sales Hiring Manager',
+      company: 'Zoho',
+      jobTitle: 'Sales Executive, SMB',
+      greeting: 'Dear Sales Hiring Manager,',
+      paragraphs: [
+        'I closed 118% of my annual quota last year selling SaaS to small businesses, and I would like to do the same for Zoho as a Sales Executive on your SMB team.',
+        'I manage the full cycle, from outbound prospecting to demo, negotiation and handover. I built a referral routine with existing customers that now generates a third of my pipeline, and I shortened my average sales cycle from 34 to 22 days by sending a short, tailored ROI sheet after every first call.',
+        'Many of my customers already use Zoho products, so I know how much small business owners value one suite that simply works. I would welcome a call to discuss your territory and targets.',
+      ],
+      closing: 'Best regards,',
+    },
+  },
+  {
+    slug: 'teacher',
+    role: 'Teacher',
+    category: 'Education',
+    design: 'cl-ornament',
+    letter: {
+      name: 'Meera Iyer',
+      title: 'English Teacher, B.Ed.',
+      email: 'meera.iyer@email.com',
+      phone: '+91 98450 67890',
+      location: 'Chennai, India',
+      linkedin: '',
+      recipient: 'The Principal',
+      company: 'Delhi Public School',
+      jobTitle: 'TGT English',
+      subject: 'Application for the post of TGT English',
+      greeting: 'Dear Principal,',
+      paragraphs: [
+        'I am applying for the post of TGT English. Over six years of teaching classes 6 to 10, I have learned that students read more when they get to choose what they read.',
+        'I started a classroom library and a weekly reading hour that my students now ask for, and my class 10 board results improved from a 71% to an 84% average in English over two years. I plan lessons with clear learning outcomes, use short weekly quizzes to spot who needs help early, and keep parents updated through a simple monthly note.',
+        'I admire your school\'s focus on activity-based learning, and I would be glad to contribute to your English department and co-curricular programmes. Thank you for considering my application.',
+      ],
+      closing: 'Yours sincerely,',
+    },
+  },
+  {
+    slug: 'graphic-designer',
+    role: 'Graphic Designer',
+    category: 'Design & Creative',
+    design: 'cl-bold-bar',
+    letter: {
+      name: 'Kabir Malhotra',
+      title: 'Graphic & Brand Designer',
+      email: 'kabir.design@email.com',
+      phone: '+91 90000 11223',
+      location: 'Mumbai, India',
+      linkedin: 'behance.net/kabirmalhotra',
+      recipient: 'Creative Director',
+      company: 'Ogilvy',
+      jobTitle: 'Graphic Designer',
+      greeting: 'Dear Creative Director,',
+      paragraphs: [
+        'Good design should make a brand easier to recognise from across the street. That idea drives my work, and it is why I am applying for the Graphic Designer role at Ogilvy.',
+        'At a boutique agency I led the identity refresh for a regional snack brand: logo, packaging system and a social template kit. The new packs launched in 400 stores, and the client reported a noticeable lift in shelf pickup during the first quarter. I work across Figma, Illustrator and After Effects, and I am comfortable taking an idea from a rough sketch to print-ready files.',
+        'My portfolio is linked above. I would love to show you how I approach a brief and talk about upcoming projects on your team.',
+      ],
+      closing: 'Thanks,',
+    },
+  },
+  {
+    slug: 'customer-support',
+    role: 'Customer Support Executive',
+    category: 'Customer Service',
+    design: 'cl-wave',
+    letter: {
+      name: 'Fatima Sheikh',
+      title: 'Customer Support Executive',
+      email: 'fatima.sheikh@email.com',
+      phone: '+91 97654 32100',
+      location: 'Hyderabad, India',
+      linkedin: 'linkedin.com/in/fatimasheikh',
+      recipient: 'Hiring Manager',
+      company: 'Freshworks',
+      jobTitle: 'Customer Support Executive',
+      subject: 'Application for Customer Support Executive',
+      greeting: 'Dear Hiring Manager,',
+      paragraphs: [
+        'I am applying for the Customer Support Executive role because I enjoy turning a frustrated customer into a loyal one.',
+        'For the last three years I have handled email, chat and phone support for an e-commerce platform, averaging 60 tickets a day with a 94% satisfaction score. I wrote twelve help-centre articles for our most common questions, which reduced repeat tickets on those topics by about a quarter. I am fluent in English, Hindi and Urdu.',
+        'Having used Freshdesk every day, I would be proud to support the people who rely on it. I look forward to hearing from you.',
+      ],
+      closing: 'Kind regards,',
+    },
+  },
+];
+
+export const EXAMPLE_CATEGORIES = Array.from(new Set(COVER_LETTER_EXAMPLES.map(e => e.category)));

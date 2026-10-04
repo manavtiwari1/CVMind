@@ -489,7 +489,7 @@ export default function Proofreading({ customApiKey, resumeText: appResumeText, 
 
         {flow === 'text' && (
           <div className="ro-center ro-stage">
-            <Leo />
+            <Leo pose="checklist" />
             <h1 className="ro-title">Hi, I'm Leo. I'll proofread your writing. What should I check?</h1>
             <div className={`tlr-toggle tlr-flow-toggle prf-source${hasAppResume ? ' has-4' : ' has-3'}`} role="tablist" aria-label="How to add your text">
               {hasAppResume && (
@@ -562,7 +562,7 @@ export default function Proofreading({ customApiKey, resumeText: appResumeText, 
 
         {flow === 'setup' && (
           <div className="ro-center ro-stage">
-            <Leo />
+            <Leo pose="thinking" />
             <h1 className="ro-title">What is it, and which industry is it for?</h1>
             <p className="ro-sub">I'll match the tone to what you're writing and who will read it.</p>
             <div className="prf-setup">
@@ -586,7 +586,7 @@ export default function Proofreading({ customApiKey, resumeText: appResumeText, 
 
         {flow === 'working' && (
           <div className="ro-center ro-stage">
-            <Leo />
+            <Leo pose={errorMsg ? 'thinking' : 'typing'} />
             {errorMsg ? (
               <>
                 <h1 className="ro-title">Something went wrong while proofreading.</h1>
@@ -639,7 +639,7 @@ export default function Proofreading({ customApiKey, resumeText: appResumeText, 
           )}
 
           <section className="tlr-done">
-            <div className="tlr-done-leo"><Leo /></div>
+            <div className="tlr-done-leo"><Leo pose="typing" /></div>
             <div className="tlr-done-copy">
               <h1>
                 {designBusy ? `I'm putting your proofread resume into ${target.name}…`
@@ -742,7 +742,7 @@ export default function Proofreading({ customApiKey, resumeText: appResumeText, 
           {appBar(<button type="button" className="tlr-back" onClick={reset}><ArrowLeft size={16} /> Proofread something else</button>)}
 
           <section className="tlr-done">
-            <div className="tlr-done-leo"><Leo /></div>
+            <div className="tlr-done-leo"><Leo pose="cheer" /></div>
             <div className="tlr-done-copy">
               <h1>{changes.length ? `Done! I made ${changes.length} ${changes.length === 1 ? 'improvement' : 'improvements'} to your ${what}.` : `Your ${what} already reads well.`}</h1>
               <p>{result.summary || 'Your corrected text and every change are below.'}</p>
@@ -901,7 +901,7 @@ export default function Proofreading({ customApiKey, resumeText: appResumeText, 
           </div>
 
           <div className="tlr-start">
-            <div className="tlr-start-leo"><Leo /></div>
+            <div className="tlr-start-leo"><Leo pose="guide" /></div>
             <h2>Leo will proofread it with you</h2>
             <ol className="tlr-start-steps">
               <li><span>1</span>Paste your text, or add your resume</li>

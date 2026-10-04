@@ -59,8 +59,6 @@ const PROFILES: Record<string, Partial<Profile>> = {
   'cv-studio': { name: 'Leela Rao', title: 'Interior Designer', prevTitle: 'Junior Interior Designer', company: 'Studio Teak', prevCompany: 'Haven Interiors', field: 'Interior Design', university: 'CEPT Ahmedabad', skills: ['Space Planning', '3D Visualisation', 'Material Selection'] },
   'cv-ledger': { name: 'Aarav Singh', title: 'Web Designer', prevTitle: 'UI Designer', company: 'Northwind Digital', prevCompany: 'Pixel & Pine', field: 'Information Technology', university: 'Manipal University', skills: ['UI/UX Design', 'Front-End', 'Accessibility'] },
   'cv-minimal': { name: 'Ananya Iyer', title: 'Data Scientist', prevTitle: 'Data Analyst', company: 'Orbit Analytics', prevCompany: 'Helix Data', field: 'Statistics', university: 'IISc Bangalore', skills: ['Python', 'SQL', 'PyTorch'] },
-  'modern-cl': { name: 'Priya Nair', title: 'Senior Frontend Engineer', company: 'Northwind Payments', prevCompany: 'Kite Commerce', field: 'front-end performance', skills: ['React', 'TypeScript', 'web performance'] },
-  'classic-cl': { name: 'Priya Nair', title: 'Operations Manager', company: 'Northwind Payments', prevCompany: 'Kite Commerce' },
 };
 
 /** Fixed fills for placeholders that do not depend on the person. */

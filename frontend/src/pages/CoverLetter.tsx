@@ -31,7 +31,7 @@ import { splitFooter, withFooter } from '../lib/resumeFooter';
 import { htmlForPdf } from '../lib/printLayout';
 import { getErrorMessage } from '../utils/errors';
 import type { ExtractedResume, LoadedWork, WizardFormData } from '../types/api';
-import { siteOrigin } from '../lib/hosts';
+import { siteOrigin, urlForPage } from '../lib/hosts';
 
 // ─────────────────────────────────────────────────────────────────
 // Toolbar constants
@@ -132,6 +132,11 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
     const t = editorRef.current?.innerText || '';
     setWordCount(t.trim().split(/\s+/).filter(Boolean).length);
   }, []);
+
+  // Cover letters moved to their own pages; old #cover-letter links open the Cover Letter Builder
+  useEffect(() => {
+    if (window.location.hash === '#cover-letter' && !loadedWork) window.location.replace(urlForPage('cover-letter-builder'));
+  }, [loadedWork]);
 
   useEffect(() => {
     const handleHash = () => {
@@ -982,7 +987,7 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
           </button>
           <button 
             className={`cl-tab ${activeTab === 'cover-letter' ? 'active' : ''}`}
-            onClick={() => { window.location.hash = '#cover-letter'; setActiveTab('cover-letter'); }}
+            onClick={() => window.location.assign(urlForPage('cover-letter-builder'))}
           >
             <Sparkles size={14} /> Cover Letters
           </button>

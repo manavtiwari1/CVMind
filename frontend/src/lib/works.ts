@@ -22,6 +22,7 @@ export const WORK_LABELS: Record<string, string> = {
 
 // Pages that reopen a saved work of each type; anything not listed opens in the resume editor
 const WORK_PAGES: Record<string, string> = {
+  'cover-letter': 'cover-letter-editor',
   'resume-check': 'home',
   'resume-optimized': 'home',
   'resume-tailor': 'tailor',

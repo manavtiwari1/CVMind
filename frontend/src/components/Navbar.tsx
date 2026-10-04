@@ -193,6 +193,18 @@ export default function Navbar({
                 AI Resume Tailorer
               </button>
               <button
+                className={`mobile-drawer-link mobile-sub-link${currentPage === 'cover-letter-builder' || currentPage === 'cover-letter-start' ? ' active' : ''}`}
+                onClick={() => go('cover-letter-builder')}
+              >
+                Cover Letter Builder
+              </button>
+              <button
+                className={`mobile-drawer-link mobile-sub-link${currentPage === 'cover-letter-generator' ? ' active' : ''}`}
+                onClick={() => go('cover-letter-generator')}
+              >
+                Cover Letter Generator
+              </button>
+              <button
                 className={`mobile-drawer-link mobile-sub-link${currentPage === 'portfolio-gen' ? ' active' : ''}`}
                 onClick={() => go('portfolio-gen')}
               >

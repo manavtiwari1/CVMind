@@ -22,7 +22,7 @@ export default function ResumeTemplatePicker({ templates, goal, onSelect, onBack
       <Stepper active={5} />
 
       <div className="rtp-head">
-        <Leo />
+        <Leo pose="thumbs" />
         <h1>Please select a template for your resume.<br />You can always change it later.</h1>
         <p>
           {goal === 'ats'

@@ -17,6 +17,8 @@ interface ResumeDownloadProps {
   /** Opens "Check & Tailor" with this job description. Without it the bonus scan step is hidden. */
   onScan?: (jobDescription: string) => void;
   onClose: () => void;
+  /** What is being downloaded, for the dialog's headings. */
+  docLabel?: string;
 }
 
 type Stage = 'choose' | 'working' | 'done' | 'error';
@@ -33,8 +35,8 @@ const saveBlob = (blob: Blob, name: string) => {
   setTimeout(() => URL.revokeObjectURL(url), 30000);
 };
 
-export default function ResumeDownload({ defaultName, paper, getHtml, getText, customApiKey, onWord, onScan, onClose }: ResumeDownloadProps) {
-  const [name, setName] = useState(() => cleanName(defaultName) || 'My Resume');
+export default function ResumeDownload({ defaultName, paper, getHtml, getText, customApiKey, onWord, onScan, onClose, docLabel = 'Resume' }: ResumeDownloadProps) {
+  const [name, setName] = useState(() => cleanName(defaultName) || `My ${docLabel}`);
   const [stage, setStage] = useState<Stage>('choose');
   const [mode, setMode] = useState<'pdf' | 'email'>('pdf');
   const [progress, setProgress] = useState(0);
@@ -47,7 +49,7 @@ export default function ResumeDownload({ defaultName, paper, getHtml, getText, c
   // True when the server couldn't make the PDF and the browser's print dialog was used instead
   const [printed, setPrinted] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
-  const fileName = (name.trim() || 'My Resume');
+  const fileName = (name.trim() || `My ${docLabel}`);
 
   useEffect(() => {
     dialogRef.current?.focus();
@@ -144,7 +146,7 @@ export default function ResumeDownload({ defaultName, paper, getHtml, getText, c
 
         {stage === 'choose' ? (
           <>
-            <h2 id="rd-title">Download Your Resume</h2>
+            <h2 id="rd-title">Download Your {docLabel}</h2>
             <p className="rd-sub">Please select the file format you'd like to download:</p>
             <label className="rd-label" htmlFor="rd-name">File name</label>
             <div className="rd-name">
@@ -166,7 +168,7 @@ export default function ResumeDownload({ defaultName, paper, getHtml, getText, c
           <>
             <h2 id="rd-title">
               {stage === 'working' && 'Preparing the file'}
-              {stage === 'done' && (mode === 'pdf' ? 'Your resume is ready' : 'Sent to your inbox')}
+              {stage === 'done' && (mode === 'pdf' ? `Your ${docLabel.toLowerCase()} is ready` : 'Sent to your inbox')}
               {stage === 'error' && 'Something went wrong'}
             </h2>
             {stage === 'error' ? (

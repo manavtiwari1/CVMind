@@ -12,7 +12,7 @@ import multer from 'multer';
 import bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
 import { parsePdf, parseDocx, parseTxt, fetchResumeFromUrl } from './services/parser.js';
-import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, findJobsWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek, generateInterviewPlan, evaluateInterviewAnswer, generateInterviewReport } from './services/gemini.js';
+import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, generateCoverLetterWithAI, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, findJobsWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek, generateInterviewPlan, evaluateInterviewAnswer, generateInterviewReport } from './services/gemini.js';
 import { getPublicStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, updateUserFields, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveJobFinderLog, saveProofreadLog, savePaymentLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, hasAutoApplyAccess } from './db.js';
 import adminRouter from './admin/router.js';
 import adminPublicRoutes from './admin/publicRoutes.js';
@@ -125,6 +125,8 @@ const AI_ROUTE_PATHS = [
   '/api/prep',
   '/api/interview',
   '/api/cover-letter/refine',
+  '/api/cover-letter/generate',
+  '/api/cover-letter/read-resume',
   '/api/resume/generate',
   '/api/resume/parse-data',
   '/api/resume/import-linkedin',
@@ -1576,7 +1578,7 @@ apiRouter.get('/api/jobs/detail', async (req, res) => {
 });
 
 // ── Resume export: PDF download and "send PDF to my email" ─────────────────────
-const EXPORT_FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Rubik:wght@300;400;500;600;700&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;500;600&family=Open+Sans:wght@400;600;700;800&family=Raleway:wght@300;400;600&family=EB+Garamond:wght@400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&display=swap';
+const EXPORT_FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Rubik:wght@300;400;500;600;700&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;500;600&family=Open+Sans:wght@400;600;700;800&family=Raleway:wght@300;400;600&family=EB+Garamond:wght@400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&family=Great+Vibes&family=Montserrat:wght@400;500;600;700;800&display=swap';
 
 const cleanFileName = (name) => (String(name || '').replace(/[^A-Za-z0-9 _-]/g, '').trim().slice(0, 80) || 'Resume');
 
@@ -1859,6 +1861,46 @@ apiRouter.post('/api/career/courses', optionalUser, upload.single('resume'), asy
     return res.json({ success: true, data: result, work: savedWork });
   } catch (error) {
     return careerError(res, error, 'Career Courses');
+  }
+});
+
+// Cover Letter Generator step 1: reads the uploaded resume's text (no AI), so the page can show real upload progress
+apiRouter.post('/api/cover-letter/read-resume', optionalUser, upload.single('resume'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Choose a PDF or DOCX resume to upload.' });
+    const resumeText = await careerResumeText(req);
+    if (resumeText.length < 50) {
+      return res.status(400).json({ error: 'We could not read text from this file. Try a PDF or DOCX with selectable text.' });
+    }
+    return res.json({ success: true, data: { resumeText: resumeText.slice(0, 20000), fileName: req.file.originalname } });
+  } catch (error) {
+    return careerError(res, error, 'Cover Letter Read Resume');
+  }
+});
+
+// Cover Letter Generator: resume + job description -> structured letter (the page lays it out)
+apiRouter.post('/api/cover-letter/generate', optionalUser, upload.single('resume'), async (req, res) => {
+  try {
+    const jobDescription = careerField(req, 'jobDescription', 10000);
+    const tone = careerField(req, 'tone', 30) || 'professional';
+    const length = careerField(req, 'length', 30) || 'standard';
+    const company = careerField(req, 'company', 120);
+    const hiringManager = careerField(req, 'hiringManager', 120);
+    const customApiKey = req.headers['x-gemini-key'] || null;
+
+    if (jobDescription.length < 40) {
+      return res.status(400).json({ error: 'Paste the job description (at least a few lines) so the letter can match it.' });
+    }
+
+    const resumeText = await careerResumeText(req);
+    if (resumeText.length < 50) {
+      return res.status(400).json({ error: 'We could not read enough text from your resume. Try a PDF or DOCX with selectable text.' });
+    }
+
+    const result = await generateCoverLetterWithAI({ resumeText, jobDescription, tone, length, company, hiringManager, customApiKey });
+    return res.json({ success: true, data: result });
+  } catch (error) {
+    return careerError(res, error, 'Cover Letter Generate');
   }
 });
 

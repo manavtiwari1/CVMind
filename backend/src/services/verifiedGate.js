@@ -31,6 +31,10 @@ const VERIFIED_ONLY = [
   { path: '/api/contact', methods: ['POST'], message: VERIFY_MESSAGES.NOT_VERIFIED }
 ];
 
+// Exceptions inside the paths above: no AI and nothing saved, so anyone can use them
+// (the Cover Letter Generator reads the uploaded resume before asking the visitor to sign in)
+const ALWAYS_OPEN = ['/api/cover-letter/read-resume'];
+
 // Open to signed-out visitors (or other token kinds, e.g. the extension), but closed to signed-in unverified accounts
 const UNVERIFIED_BLOCKED = [
   { path: '/api/analyze', methods: ['POST'], anonymousLimit: 'anonAnalyzePerIpDay' },
@@ -58,6 +62,7 @@ async function isVerified(payload) {
 export async function verifiedGate(req, res, next) {
   if (req.method === 'OPTIONS') return next();
   const path = normalizePath(req.path);
+  if (ALWAYS_OPEN.includes(path)) return next();
   const strict = VERIFIED_ONLY.find((rule) => matches(rule, req, path));
   const soft = !strict && UNVERIFIED_BLOCKED.find((rule) => matches(rule, req, path));
   if (!strict && !soft) return next();

@@ -14,6 +14,10 @@ import AppUpdateGate from './components/AppUpdateGate';
 import Tailor from './pages/Tailor';
 import Prep from './pages/Prep';
 import CoverLetter from './pages/CoverLetter';
+import CoverLetterGenerator from './pages/coverLetter/CoverLetterGenerator';
+import CoverLetterBuilder from './pages/coverLetter/CoverLetterBuilder';
+import CoverLetterStart from './pages/coverLetter/CoverLetterStart';
+import CoverLetterEditor from './pages/coverLetter/CoverLetterEditor';
 import LinkedIn from './pages/linkedin/LinkedIn';
 import LinkedInBio from './pages/linkedin/LinkedInBio';
 import LinkedInOutreach from './pages/linkedin/LinkedInOutreach';
@@ -55,6 +59,7 @@ import { getErrorMessage } from './utils/errors';
 import { APP_PAGES, PUBLIC_APP_PAGES, isAppHost, isCrossHost, isSplitHost, siteOrigin, urlForPage } from './lib/hosts';
 import { clearSession, setSession } from './lib/session';
 import { peekPickedTemplate } from './lib/templatePick';
+import { letterDraftHash } from './lib/coverLetter';
 import { authFetch, AUTH_REQUIRED_EVENT, VERIFY_REQUIRED_EVENT } from './lib/authFetch';
 import { readUser, saveUser, USER_CHANGE_EVENT } from './lib/currentUser';
 import type { LoadedWork, ResumeAnalysis } from './types/api';
@@ -65,10 +70,10 @@ import './styles/skeleton.css';
 // How long the loading screen shows when moving to another page
 const ROUTE_LOADER_MS = 450;
 
-const VALID_PAGES = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'copyright-policy', 'account', 'help-center', 'my-documents', 'verify-email', ...ARTICLES.map(a => a.slug)];
+const VALID_PAGES = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'cover-letter-generator', 'cover-letter-builder', 'cover-letter-start', 'cover-letter-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'copyright-policy', 'account', 'help-center', 'my-documents', 'verify-email', ...ARTICLES.map(a => a.slug)];
 
-// Leo's pages (Resume Tailorer, Interview Prep AI, Voice Prep AI, AI Proofreading) and the Career tools
-const GUIDED_PAGES = ['tailor', 'prep', 'voice-prep', 'proofreading', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'career-courses', 'elevator-pitch', 'career-roadmap'];
+// Leo's pages (Resume Tailorer, Interview Prep AI, Voice Prep AI, AI Proofreading), the Career tools and the cover letter pages
+const GUIDED_PAGES = ['cover-letter-start', 'cover-letter-generator', 'tailor', 'prep', 'voice-prep', 'proofreading', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'career-courses', 'elevator-pitch', 'career-roadmap'];
 
 // Signed-in pages an unverified account can still open (the server enforces the rest)
 const UNVERIFIED_OPEN_PAGES = ['account', 'my-documents'];
@@ -236,7 +241,9 @@ export default function App() {
     if (isCrossHost(page)) {
       // sessionStorage doesn't cross hosts, so a template picked on the site travels in the URL
       const template = page === 'resume-editor' ? peekPickedTemplate() : null;
-      window.location.assign(urlForPage(page, template ? `?template=${encodeURIComponent(template)}` : search));
+      // ...and so does a cover letter on its way to the editor
+      const hash = page === 'cover-letter-editor' ? letterDraftHash() : '';
+      window.location.assign(urlForPage(page, template ? `?template=${encodeURIComponent(template)}` : search) + hash);
       return;
     }
     if (page !== currentPage) setRouteLoading(true);
@@ -573,6 +580,14 @@ export default function App() {
         return <ResumeBuilderLanding setCurrentPage={setCurrentPage} />;
       case 'resume-editor':
         return <CoverLetter customApiKey={customApiKey} loadedWork={loadedWork} setLoadedWork={setLoadedWork} onFocusChange={setBuilderFocus} onExit={() => setCurrentPage(isSplitHost() ? 'my-documents' : 'resume-builder')} />;
+      case 'cover-letter-generator':
+        return <CoverLetterGenerator customApiKey={customApiKey} resumeText={resumeText} setCurrentPage={setCurrentPage} onFocusChange={setBuilderFocus} onExit={() => setCurrentPage(isSplitHost() ? 'my-documents' : 'cover-letter-builder')} />;
+      case 'cover-letter-builder':
+        return <CoverLetterBuilder setCurrentPage={setCurrentPage} />;
+      case 'cover-letter-start':
+        return <CoverLetterStart setCurrentPage={setCurrentPage} onFocusChange={setBuilderFocus} onExit={() => setCurrentPage('cover-letter-builder')} />;
+      case 'cover-letter-editor':
+        return <CoverLetterEditor customApiKey={customApiKey} loadedWork={loadedWork} setLoadedWork={setLoadedWork} setCurrentPage={setCurrentPage} onFocusChange={setBuilderFocus} />;
       case 'pricing':
         if (PRICING_LOCKED) return <PricingSoon setCurrentPage={setCurrentPage} />;
         return <Pricing setCurrentPage={setCurrentPage} isLoggedIn={isLoggedIn} setShowAuthModal={setShowAuthModal} />;
@@ -620,18 +635,18 @@ export default function App() {
 
   const isAdminPage = currentPage === 'admin';
   const isCodePage = currentPage === 'code-arena' || currentPage === 'cvmind-code-arena';
-  // Guided tools: Leo's pages and the Career tools. They keep the site header and footer on their
-  // intro page; the work and the result run full-screen in the app without them.
+  // Guided tools: Leo's pages, the Career tools and the cover letter app. Like every app page they
+  // show no site header or footer; their work and result screens run full-screen.
   const isGuidedPage = GUIDED_PAGES.includes(currentPage);
-  // Full-screen guided flows: the resume builder and the guided tools
-  const isFocusFlow = (currentPage === 'resume-editor' || isGuidedPage) && builderFocus !== false;
+  // Full-screen guided flows: the resume builder, the cover letter editor and the guided tools
+  const isFocusFlow = (currentPage === 'resume-editor' || currentPage === 'cover-letter-editor' || isGuidedPage) && builderFocus !== false;
   // My Documents is a standalone app view with its own top bar
   const isAppPage = currentPage === 'my-documents';
   // The 404 page stands alone, without the site header and footer
   const isNotFound = currentPage === 'not-found';
   // App products (the app.cvmind.in pages) show no site header or footer, just a way back
-  // The guided tools keep the site header and footer (see isGuidedPage)
-  const isProductPage = APP_PAGES.includes(currentPage) && !isGuidedPage;
+  // Signed-in app pages, the guided tools included, never show the site header or footer
+  const isProductPage = APP_PAGES.includes(currentPage);
   // Account and My Documents have their own Back button / top bar; the editor's full-screen flows have Exit
   // The Portfolio Generator is a full-screen chat with its own top bar and Back button
   const isPortfolioStudio = currentPage === 'portfolio-gen';
@@ -639,6 +654,8 @@ export default function App() {
   const isMinimalPage = currentPage === 'admin' || currentPage === 'portfolio' || currentPage === 'verify-email' || isCodePage || isFocusFlow || isAppPage || isPortfolioStudio;
   // The Help Center (and its Contact form) is full-width with its own top bar and footer instead of the site ones
   const isHelpPage = currentPage === 'help-center' || currentPage === 'contact';
+  // Landing pages that run edge to edge under the site navbar
+  const isWidePage = currentPage === 'cover-letter-generator' || currentPage === 'cover-letter-builder' || currentPage === 'resume-builder';
 
   // Unverified accounts see the verify screen over locked app pages, or when the server refused a request
   const unverified = isLoggedIn && emailVerified === false;
@@ -651,7 +668,7 @@ export default function App() {
   }, [isFocusFlow]);
 
   return (
-    <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''} ${isFocusFlow ? 'focus-shell' : ''} ${isHelpPage ? 'help-shell' : ''} ${isAppPage ? 'app-shell' : ''} ${isNotFound ? 'notfound-shell' : ''} ${isProductPage ? 'product-shell' : ''} ${isPortfolioStudio ? 'pgx-shell' : ''}`}>
+    <div className={`app-container ${isAdminPage ? 'admin-shell' : ''} ${isCodePage ? 'code-shell' : ''} ${isFocusFlow ? 'focus-shell' : ''} ${isHelpPage ? 'help-shell' : ''} ${isAppPage ? 'app-shell' : ''} ${isNotFound ? 'notfound-shell' : ''} ${isProductPage ? 'product-shell' : ''} ${isPortfolioStudio ? 'pgx-shell' : ''} ${isWidePage ? 'wide-shell' : ''}`}>
 
       {!isAdminPage && (
         <SiteBanner

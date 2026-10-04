@@ -672,6 +672,9 @@ textarea.form-input {
 
 .usage-badge-text strong { font-weight: 700; }
 
+/* ════ Wide landing pages: full width under the fixed 64px navbar (App adds .wide-shell) ═══ */
+.wide-shell .main-content { max-width: none; width: 100%; padding: 64px 0 0; margin: 0; }
+
 /* ════ Guided resume-builder flow: full-bleed, no navbar/footer ═══ */
 .focus-shell { background: #fafbfc; }
 .focus-shell .main-content {

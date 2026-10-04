@@ -4,6 +4,8 @@ import TemplatePreview from '../TemplatePreview';
 import { TEMPLATES } from '../../data/resumeTemplates';
 import { withSampleData } from '../../data/samplePreview';
 import ScoreCard from './ScoreCard';
+import { COVER_LETTER_EXAMPLES } from '../../data/coverLetterExamples';
+import { LETTER_DESIGNS, renderLetter, todayLong } from '../../lib/coverLetter';
 
 interface JobSearchTabsProps {
   setCurrentPage: (page: string) => void;
@@ -18,6 +20,15 @@ function TemplateVisual({ id }: { id: string }) {
   return (
     <div className="hp-tab-paper">
       <TemplatePreview html={withSampleData(t)} name={t.name} eager aspect="700 / 720" pageWidth={700} />
+    </div>
+  );
+}
+
+function LetterVisual() {
+  const e = COVER_LETTER_EXAMPLES[0];
+  return (
+    <div className="hp-tab-paper">
+      <TemplatePreview html={renderLetter(e.design, { ...e.letter, date: todayLong() })} name={`${e.role} cover letter`} eager aspect="700 / 720" pageWidth={700} />
     </div>
   );
 }
@@ -82,13 +93,13 @@ const TABS: Tab[] = [
     heading: 'A cover letter that matches your resume',
     body: 'Start from a cover letter layout that pairs with your resume design, then let the AI draft the body from the job description.',
     points: [
-      { icon: LayoutTemplate, text: 'Twelve layouts, from classic to creative.' },
+      { icon: LayoutTemplate, text: `${LETTER_DESIGNS.length} designs, from classic to creative.` },
       { icon: Sparkles, text: 'AI drafts a first version from the job description.' },
       { icon: PenLine, text: 'Edit every line in the same editor as your resume.' },
     ],
     cta: 'Write a cover letter',
-    page: 'resume-editor',
-    visual: <TemplateVisual id="modern-cl" />,
+    page: 'cover-letter-builder',
+    visual: <LetterVisual />,
   },
   {
     label: 'Job Finder',

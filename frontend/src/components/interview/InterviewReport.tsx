@@ -82,7 +82,7 @@ export default function InterviewReport(props: ReportProps) {
         </div>
 
         <section className="tlr-done">
-          <div className="tlr-done-leo"><Leo /></div>
+          <div className="tlr-done-leo"><Leo pose="growth" /></div>
           <div className="tlr-done-copy">
             <h1>Done! Here's how your {settings.role ? `${settings.role} ` : ''}interview went.</h1>
             <p>{report.summary || 'Your answers and Leo\'s feedback are below.'}</p>

@@ -37,12 +37,8 @@
 /* Leo */
 .ro-leo { position: relative; width: 240px; height: 200px; animation: ro-float 4s ease-in-out infinite; }
 @keyframes ro-float { 50% { transform: translateY(-6px); } }
-.ro-leo-name {
-  position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%);
-  background: #fff; border: 1px solid var(--ro-line); border-radius: 999px;
-  padding: 2px 12px; font-size: 12px; font-weight: 700; color: var(--ro-green-dark);
-  box-shadow: 0 2px 8px rgba(20, 30, 50, .08);
-}
+.ro-leo img { display: block; width: 200px; height: 200px; margin: 0 auto; object-fit: contain; user-select: none; }
+.ro-leo-avatar { display: inline-block; flex: none; border-radius: 50%; object-fit: cover; object-position: 50% 30%; user-select: none; }
 .ro-loading-text { display: flex; align-items: center; gap: 8px; color: var(--ro-muted); font-size: 15px; margin: 0; }
 
 /* Text + buttons */

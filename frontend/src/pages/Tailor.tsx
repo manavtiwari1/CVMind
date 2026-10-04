@@ -346,7 +346,7 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
 
         {flow === 'cv' && (
           <div className="ro-center ro-stage">
-            <Leo />
+            <Leo pose="resume" />
             <h1 className="ro-title">Hi, I'm Leo. Let's tailor your resume. First, upload your current CV or paste a link to it.</h1>
             <div className="tlr-toggle tlr-flow-toggle" role="tablist" aria-label="How to add your CV">
               <button type="button" role="tab" aria-selected={uploadMode === 'file'} className={uploadMode === 'file' ? 'is-on' : ''} onClick={() => { setUploadMode('file'); setErrorMsg(null); }}>
@@ -391,7 +391,7 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
 
         {flow === 'jd' && (
           <div className="ro-center ro-stage">
-            <Leo />
+            <Leo pose="checklist" />
             <h1 className="ro-title">Got it. Now paste the job description, or a link to the job posting.</h1>
             <p className="ro-sub">The whole posting works best: responsibilities, requirements and skills.</p>
             <textarea
@@ -412,7 +412,7 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
 
         {flow === 'template' && (
           <div className="ro-center ro-stage">
-            <Leo />
+            <Leo pose="thinking" />
             <h1 className="ro-title">Which template should I put your tailored resume in?</h1>
             <div className="tlr-flow-rec">
               <div className="tlr-flow-rec-art"><TemplatePreview html={recommended.html} name={recommended.name} eager aspect="1 / 1.15" /></div>
@@ -448,7 +448,7 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
 
         {flow === 'working' && (
           <div className="ro-center ro-stage">
-            <Leo />
+            <Leo pose={errorMsg ? 'thinking' : 'typing'} />
             {errorMsg ? (
               <>
                 <h1 className="ro-title">Something went wrong while tailoring.</h1>
@@ -492,7 +492,7 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
           </div>
 
           <section className="tlr-done">
-            <div className="tlr-done-leo"><Leo /></div>
+            <div className="tlr-done-leo"><Leo pose="cheer" /></div>
             <div className="tlr-done-copy">
               <h1>{html ? 'Done! Your resume is tailored for this job.' : 'Your tailored resume'}</h1>
               {html && <p>Download it now, or open it in the CVMind resume editor to keep working on it.</p>}
@@ -632,7 +632,7 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
           </div>
 
           <div className="tlr-start">
-            <div className="tlr-start-leo"><Leo /></div>
+            <div className="tlr-start-leo"><Leo pose="hello" /></div>
             <h2>Leo will walk you through it</h2>
             <ol className="tlr-start-steps">
               <li><span>1</span>Upload your CV or paste a link</li>
