@@ -13,13 +13,16 @@ export class ApiError extends Error {
   code?: string;
   // Some errors carry the relevant record, e.g. the existing application on ALREADY_ADDED
   details?: unknown;
+  // Validation errors list what was wrong, field by field
+  issues?: { path?: (string | number)[]; message?: string }[];
 
-  constructor(message: string, status: number, code?: string, details?: unknown) {
+  constructor(message: string, status: number, code?: string, details?: unknown, issues?: ApiError['issues']) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
     this.details = details;
+    this.issues = issues;
   }
 }
 
@@ -38,7 +41,7 @@ async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
   }
   const body = await res.json().catch(() => ({}));
   if (!res.ok || body.success === false) {
-    throw new ApiError(body.error || `Request failed (${res.status}).`, res.status, body.code, body.data);
+    throw new ApiError(body.error || `Request failed (${res.status}).`, res.status, body.code, body.data, Array.isArray(body.issues) ? body.issues : undefined);
   }
   return body as T;
 }

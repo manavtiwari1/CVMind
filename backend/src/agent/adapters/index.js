@@ -4,6 +4,7 @@ import { LeverAdapter } from './lever.js';
 import { WorkdayAdapter } from './workday.js';
 
 export { BaseAdapter };
+export { formUrlFor } from './formUrl.js';
 
 // Workday is listed so it is recognised and explained, not so it can be filled:
 // its canServerSubmit is false, so it always hands off to the extension

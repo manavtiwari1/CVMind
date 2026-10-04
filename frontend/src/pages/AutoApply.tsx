@@ -123,25 +123,39 @@ function CompanyLogo({ domain, company }: { domain: string; company: string }) {
   return <div className="aa-company-avatar" style={{ background: `linear-gradient(135deg,${grad})` }}>{company.charAt(0)}</div>;
 }
 
+const signedInEmail = () => { try { return JSON.parse(localStorage.getItem('cvmind_user') || '{}').email || ''; } catch { return ''; } };
+
 // The agent is still being built: only emails on the admin Auto Apply access list can open it,
 // everyone else sees a Coming Soon screen
 export default function AutoApply(props: AutoApplyProps) {
-  const [access, setAccess] = useState<'checking' | 'granted' | 'denied'>('checking');
+  // Every agent request needs the session token, so a stored email without one cannot use the agent
+  const [access, setAccess] = useState<'checking' | 'granted' | 'denied' | 'error'>(() => (signedInEmail() && getSessionToken() ? 'checking' : 'denied'));
 
   useEffect(() => {
-    const email = (() => { try { return JSON.parse(localStorage.getItem('cvmind_user') || '{}').email || ''; } catch { return ''; } })();
-    if (!email) { setAccess('denied'); return; }
+    if (access !== 'checking') return;
     let cancelled = false;
-    fetch(`${API}/api/auto-apply/check-access?email=${encodeURIComponent(email)}`)
-      .then(r => r.json())
+    fetch(`${API}/api/auto-apply/check-access?email=${encodeURIComponent(signedInEmail())}`)
+      .then(r => { if (!r.ok) throw new Error(`check-access ${r.status}`); return r.json(); })
       .then(d => { if (!cancelled) setAccess(d?.hasAccess ? 'granted' : 'denied'); })
-      .catch(() => { if (!cancelled) setAccess('denied'); });
+      // A failed check is not a "no": offer a retry instead of telling an allowed user it is coming soon
+      .catch(() => { if (!cancelled) setAccess('error'); });
     return () => { cancelled = true; };
-  }, []);
+  }, [access]);
 
   if (access === 'granted') return <AutoApplyAgent {...props} />;
   if (access === 'checking') {
     return <div className="aa-landing"><div className="aa-landing-hero"><RefreshCw size={22} className="aa-spin" /></div></div>;
+  }
+  if (access === 'error') {
+    return (
+      <div className="aa-landing">
+        <div className="aa-landing-hero aa-coming-soon">
+          <h1 className="aa-landing-title">Couldn't check your access</h1>
+          <p className="aa-landing-sub">CVMind could not be reached. Check your connection and try again.</p>
+          <button className="aa-btn-primary" onClick={() => setAccess('checking')}><RefreshCw size={16} /> Try again</button>
+        </div>
+      </div>
+    );
   }
   return (
     <div className="aa-landing">
@@ -177,7 +191,8 @@ function AutoApplyAgent({ customApiKey, resumeText: initialResumeText = '', setR
   const [resumeText, setResumeText] = useState(initialResumeText);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   
-  const userId = (() => { try { return JSON.parse(localStorage.getItem('cvmind_user') || '{}').id || 'demo_user'; } catch { return 'demo_user'; } })();
+  // Empty when no one is signed in; the server reads the account from the token, so never send a placeholder id
+  const userId: string = (() => { try { return JSON.parse(localStorage.getItem('cvmind_user') || '{}').id || ''; } catch { return ''; } })();
 
   // User Profile State
   const [profile, setProfile] = useState<CandidateProfile | null>(() => {
@@ -279,6 +294,8 @@ function AutoApplyAgent({ customApiKey, resumeText: initialResumeText = '', setR
       atsScore: number; atsImprovement: number;
     };
     portalPending?: 'naukri' | 'linkedin';
+    // Set when saving failed: the progress view then explains it and can be closed
+    error?: string;
     realResult?: { success: boolean; steps: string[]; screenshots: string[]; message?: string; error?: string };
   }>(null);
 
@@ -287,6 +304,10 @@ function AutoApplyAgent({ customApiKey, resumeText: initialResumeText = '', setR
   // Fetch persistent profile from backend on mount
   useEffect(() => {
     const fetchSavedProfile = async () => {
+      if (!userId) {
+        if (profile) setProfileForm(profile);
+        return;
+      }
       try {
         const res = await authFetch(`${API}/api/auto-apply/profile/${userId}`);
         const data = await res.json();
@@ -302,6 +323,8 @@ function AutoApplyAgent({ customApiKey, resumeText: initialResumeText = '', setR
       }
     };
     fetchSavedProfile();
+    // Runs once per signed-in user; the profile it falls back to is the one loaded at mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   // Sync profile to localStorage for Chrome Extension
@@ -316,6 +339,7 @@ function AutoApplyAgent({ customApiKey, resumeText: initialResumeText = '', setR
 
   // Called by every button that opens the tracker view
   const loadApplications = async () => {
+    if (!userId) return;
     try {
       const r = await authFetch(`${API}/api/auto-apply/applications/${userId}`);
       const d = await r.json();
@@ -623,9 +647,9 @@ function AutoApplyAgent({ customApiKey, resumeText: initialResumeText = '', setR
           headers: { 'Content-Type': 'application/json', ...(customApiKey ? { 'x-gemini-key': customApiKey } : {}) },
           body: JSON.stringify({ resumeText, job })
         });
-        const td = await tr.json();
-        if (td.success) tailored = td.data;
-        updateModalStep(1, 'done');
+        const td = await tr.json().catch(() => ({}));
+        if (tr.ok && td.success) tailored = td.data;
+        updateModalStep(1, tailored ? 'done' : 'error');
       } catch { updateModalStep(1, 'error'); }
 
       // Step 2 — cover letter
@@ -636,9 +660,9 @@ function AutoApplyAgent({ customApiKey, resumeText: initialResumeText = '', setR
           headers: { 'Content-Type': 'application/json', ...(customApiKey ? { 'x-gemini-key': customApiKey } : {}) },
           body: JSON.stringify({ resumeText, job, candidateProfile: profile || profileForm })
         });
-        const cd = await cr.json();
-        if (cd.success) cover = cd.data;
-        updateModalStep(2, 'done');
+        const cd = await cr.json().catch(() => ({}));
+        if (cr.ok && cd.success) cover = cd.data;
+        updateModalStep(2, cover ? 'done' : 'error');
       } catch { updateModalStep(2, 'error'); }
 
       // Step 3 — fill details (simulated)
@@ -646,28 +670,39 @@ function AutoApplyAgent({ customApiKey, resumeText: initialResumeText = '', setR
       await new Promise(r => setTimeout(r, 600));
       updateModalStep(3, 'done');
 
-      // Step 4 — save application
+      // Step 4 — save application. The receipt only appears once it is really saved.
       updateModalStep(4, 'running');
       const activeProf = profile || profileForm;
-      const ar = await authFetch(`${API}/api/auto-apply/apply`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          candidateName: activeProf?.name || 'Candidate',
-          candidateEmail: activeProf?.email || (String(userId).includes('@') ? userId : 'candidate@cvmind.in'),
-          job,
-          tailoredResume: tailored?.tailoredResume || null,
-          coverLetter: cover?.coverLetter || null,
-          matchScore: job.matchScore,
-          mode: 'Auto'
-        })
-      });
-      const ad = await ar.json();
-      if (ad.success) {
-        app = ad.data;
-        setApplications(prev => [ad.data, ...prev]);
-        setAppliedIds(prev => new Set([...prev, job.id]));
+      let saveError = '';
+      try {
+        const ar = await authFetch(`${API}/api/auto-apply/apply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            candidateName: activeProf?.name || 'Candidate',
+            candidateEmail: activeProf?.email || undefined,
+            job,
+            tailoredResume: tailored?.tailoredResume || null,
+            coverLetter: cover?.coverLetter || null,
+            matchScore: job.matchScore,
+            mode: 'Auto'
+          })
+        });
+        const ad = await ar.json().catch(() => ({}));
+        if (ar.ok && ad.success) {
+          app = ad.data;
+          setApplications(prev => [ad.data, ...prev]);
+          setAppliedIds(prev => new Set([...prev, job.id]));
+        } else {
+          saveError = ad.error || `Could not save the application (${ar.status}).`;
+        }
+      } catch {
+        saveError = 'Could not reach CVMind. Check your connection and try again.';
+      }
+      if (saveError) {
+        updateModalStep(4, 'error');
+        setApplyModal(prev => prev ? { ...prev, error: saveError } : null);
+        return;
       }
       updateModalStep(4, 'done');
 
@@ -678,6 +713,7 @@ function AutoApplyAgent({ customApiKey, resumeText: initialResumeText = '', setR
       setApplyModal(prev => prev ? { ...prev, phase: 'receipt', receipt: { tailored, cover, app, atsScore, atsImprovement } } : null);
     } catch (e) {
       console.error('Auto-apply failed:', e);
+      setApplyModal(prev => prev ? { ...prev, error: getErrorMessage(e) || 'Something went wrong. Please try again.' } : null);
     }
     finally { setApplyingJobId(null); }
   };
@@ -728,22 +764,34 @@ function AutoApplyAgent({ customApiKey, resumeText: initialResumeText = '', setR
     finally { setLoading(false); }
   };
 
-  const updateAppStatus = async (appId: string, status: AppStatus) => {
+  // Tracker changes only show once the server has saved them, so a reload never undoes them
+  const [trackerError, setTrackerError] = useState('');
+  const trackerRequest = async (appId: string, init: RequestInit, failure: string) => {
+    setTrackerError('');
     try {
-      await authFetch(`${API}/api/auto-apply/applications/${appId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
-      });
-      setApplications(prev => prev.map(a => a.id === appId ? { ...a, status, updatedAt: new Date().toISOString() } : a));
-    } catch (e) { console.error('Failed to update application status:', e); }
+      const r = await authFetch(`${API}/api/auto-apply/applications/${appId}`, init);
+      if (r.ok) return true;
+      const d = await r.json().catch(() => ({}));
+      setTrackerError(d.error || failure);
+    } catch {
+      setTrackerError('Could not reach CVMind. Check your connection and try again.');
+    }
+    return false;
+  };
+
+  const updateAppStatus = async (appId: string, status: AppStatus) => {
+    const saved = await trackerRequest(appId, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    }, 'Could not update this application.');
+    if (saved) setApplications(prev => prev.map(a => a.id === appId ? { ...a, status, updatedAt: new Date().toISOString() } : a));
   };
 
   const deleteApp = async (appId: string) => {
-    try {
-      await authFetch(`${API}/api/auto-apply/applications/${appId}`, { method: 'DELETE' });
+    if (await trackerRequest(appId, { method: 'DELETE' }, 'Could not remove this application.')) {
       setApplications(prev => prev.filter(a => a.id !== appId));
-    } catch (e) { console.error('Failed to delete application:', e); }
+    }
   };
 
   const copyToClipboard = (text: string, key: string) => {
@@ -930,7 +978,7 @@ function AutoApplyAgent({ customApiKey, resumeText: initialResumeText = '', setR
               <div className="aa-ext-step-item">
                 <div className="aa-ext-step-num">3</div>
                 <div className="aa-ext-step-text">
-                  Open the <strong>Demo Sandbox</strong> or any real job application page. The floating CVMind Copilot badge will appear with 1-click autofill using your saved profile!
+                  Open a job application on <strong>Greenhouse, Lever or Workday</strong>. The floating CVMind Copilot badge appears there with 1-click autofill from your resume. To try autofill without leaving CVMind, use the <strong>Demo Sandbox</strong>, which has its own built-in autofill.
                 </div>
               </div>
             </div>
@@ -982,7 +1030,16 @@ function AutoApplyAgent({ customApiKey, resumeText: initialResumeText = '', setR
                   </div>
                 ))}
               </div>
-              <p className="aa-modal-hint">CVMind AI is tailoring your application…</p>
+              {applyModal.error ? (
+                <>
+                  <div className="aa-error"><AlertCircle size={14} />{applyModal.error}</div>
+                  <div className="aa-receipt-footer">
+                    <button className="aa-btn-ghost" onClick={() => setApplyModal(null)}>Close</button>
+                  </div>
+                </>
+              ) : (
+                <p className="aa-modal-hint">CVMind AI is tailoring your application…</p>
+              )}
             </>
           )}
 
@@ -1895,6 +1952,7 @@ function AutoApplyAgent({ customApiKey, resumeText: initialResumeText = '', setR
             <button className="aa-btn-primary aa-btn-sm" onClick={() => setView('jobs')}><Search size={14} /> Find More Jobs</button>
           </div>
         </div>
+        {trackerError && <div className="aa-error"><AlertCircle size={14} />{trackerError}</div>}
 
         {applications.length === 0 ? (
           <div className="aa-tracker-empty">

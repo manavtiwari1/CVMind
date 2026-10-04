@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CVMind AI — Auto Apply Copilot",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "description": "Fills job applications from your CVMind profile, flags answers to check, and tracks what you applied to. It never submits for you.",
   "permissions": [
     "activeTab",
@@ -15,7 +15,8 @@
     "https://job-boards.greenhouse.io/*",
     "https://jobs.lever.co/*",
     "https://jobs.eu.lever.co/*",
-    "https://*.myworkdayjobs.com/*"
+    "https://*.myworkdayjobs.com/*",
+    "https://*.myworkdaysite.com/*"
   ],
   "action": {
     "default_popup": "popup/popup.html",
@@ -36,11 +37,13 @@
         "https://job-boards.greenhouse.io/*",
         "https://jobs.lever.co/*",
         "https://jobs.eu.lever.co/*",
-        "https://*.myworkdayjobs.com/*"
+        "https://*.myworkdayjobs.com/*",
+        "https://*.myworkdaysite.com/*"
       ],
       "js": ["shared/formScanner.js", "shared/formFiller.js", "content/content.js"],
       "css": ["content/content.css"],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": true
     }
   ],
   "web_accessible_resources": [
@@ -51,7 +54,8 @@
         "https://job-boards.greenhouse.io/*",
         "https://jobs.lever.co/*",
         "https://jobs.eu.lever.co/*",
-        "https://*.myworkdayjobs.com/*"
+        "https://*.myworkdayjobs.com/*",
+        "https://*.myworkdaysite.com/*"
       ]
     }
   ]

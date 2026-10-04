@@ -3,6 +3,7 @@ import { enqueue } from '../queue/queue.js';
 import { logEvent } from '../events.js';
 import { sha256 } from './derive.js';
 import { uploadBuffer, BUCKETS } from '../storage/gridfs.js';
+import { clearPreferredResume } from '../preferences/service.js';
 
 export const RESUME_MIME_TYPES = [
   'application/pdf',
@@ -25,6 +26,8 @@ async function setDefault(profile) {
   if (!profile.isDefault) {
     profile.isDefault = true;
     await profile.save();
+    // Only a real change of default overrides a resume picked in preferences; re-checking the same one does not
+    await clearPreferredResume(profile.userId);
   }
 }
 

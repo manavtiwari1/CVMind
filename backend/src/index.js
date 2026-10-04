@@ -952,7 +952,8 @@ apiRouter.delete('/api/admin/auto-apply-access/:email', async (req, res) => {
 apiRouter.get('/api/auto-apply/check-access', async (req, res) => {
   const email = req.query.email || '';
   if (!email) return res.json({ hasAccess: false });
-  try { res.json({ hasAccess: await hasAutoApplyAccess(email) }); } catch { res.json({ hasAccess: false }); }
+  // A failed lookup is not a "no": the page offers a retry instead of showing Coming Soon to an allowed user
+  try { res.json({ hasAccess: await hasAutoApplyAccess(email) }); } catch { res.status(503).json({ hasAccess: false, error: 'Could not check access right now.' }); }
 });
 
 // ── Career Copilot Access (Admin) ─────────────────────────────────────────────
@@ -2558,5 +2559,8 @@ app.listen(PORT, () => {
   // Local dev convenience: run agent queue workers in the API process (production uses src/worker.js)
   if (process.env.INLINE_WORKERS === 'true' && !process.env.VERCEL) {
     startWorkers().catch((err) => console.error('[agent] failed to start inline workers:', err.message));
+  } else if (!process.env.VERCEL) {
+    // Without a worker, agent jobs (resume parsing, scoring, tailoring) queue up and never run
+    console.log('[agent] queue workers are not running in this process; start them with "npm run worker" (or INLINE_WORKERS=true for local dev)');
   }
 });

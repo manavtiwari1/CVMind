@@ -298,6 +298,10 @@ const applicationSchema = new mongoose.Schema({
     timestamp: { type: Date, default: Date.now },
     actor: { type: String, default: 'System' }
   }],
+  // The candidate's own tracker view: kept apart from the recruiter's status so neither overwrites the other
+  candidateStatus: { type: String, default: null },
+  candidateNotes: { type: String, default: null },
+  hiddenByCandidate: { type: Boolean, default: false },
   appliedAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
@@ -2053,6 +2057,7 @@ export async function updateApplicationStatus(applicationId, newStatus, actorNam
     let app = await Application.findOne({ id: applicationId });
     if (!app) return null;
     app.status = newStatus;
+    app.candidateStatus = null; // the recruiter's newer status wins in the candidate's tracker
     app.updatedAt = now;
     if (interviewDetails) app.interviewDetails = interviewDetails;
     app.events.push(event);
@@ -2064,10 +2069,42 @@ export async function updateApplicationStatus(applicationId, newStatus, actorNam
   const app = db.centralApplications.find(a => a.id === applicationId);
   if (!app) return null;
   app.status = newStatus;
+  app.candidateStatus = null;
   app.updatedAt = now.toISOString();
   if (interviewDetails) app.interviewDetails = interviewDetails;
   if (!app.events) app.events = [];
   app.events.push({ ...event, timestamp: now.toISOString() });
+  writeDb(db);
+  return app;
+}
+
+// A candidate's applications: by account id, or by email for ones sent with that address
+const candidateMatches = (app, candidateId, cleanEmail) =>
+  (candidateId && String(app.candidateId || '') === candidateId) || (cleanEmail && String(app.candidateEmail || '').toLowerCase() === cleanEmail);
+const candidateFilter = (candidateId, cleanEmail) => ({
+  $or: [candidateId && { candidateId }, cleanEmail && { candidateEmail: cleanEmail }].filter(Boolean)
+});
+
+// Candidate-side tracker edits. Only the candidate's own record can change, and the recruiter's
+// status and events are never touched. Returns null when not found or not theirs.
+export async function updateCandidateApplication(applicationId, { candidateId, candidateEmail } = {}, { status, notes, hidden } = {}) {
+  await ensureMongoConnection();
+  const cleanEmail = String(candidateEmail || '').trim().toLowerCase();
+  const cleanId = candidateId ? String(candidateId) : '';
+  if (!applicationId || (!cleanId && !cleanEmail)) return null;
+  const set = {};
+  if (status !== undefined) set.candidateStatus = status;
+  if (notes !== undefined) set.candidateNotes = notes;
+  if (hidden !== undefined) set.hiddenByCandidate = Boolean(hidden);
+
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    return await Application.findOneAndUpdate({ id: applicationId, ...candidateFilter(cleanId, cleanEmail) }, { $set: set }, { returnDocument: 'after' }).lean();
+  }
+
+  const db = readDb();
+  const app = (db.centralApplications || []).find(a => a.id === applicationId && candidateMatches(a, cleanId, cleanEmail));
+  if (!app) return null;
+  Object.assign(app, set);
   writeDb(db);
   return app;
 }
@@ -2081,14 +2118,17 @@ export async function getJobApplications(jobId) {
   return (db.centralApplications || []).filter(a => a.jobId === jobId);
 }
 
-export async function getCandidateApplications(candidateEmail) {
+// By email, plus (when given) everything sent from the candidate's account under another contact email
+export async function getCandidateApplications(candidateEmail, candidateId = null) {
   await ensureMongoConnection();
   const cleanEmail = String(candidateEmail || '').trim().toLowerCase();
+  const cleanId = candidateId ? String(candidateId) : '';
+  if (!cleanEmail && !cleanId) return [];
   if (mongoURI && mongoose.connection.readyState === 1) {
-    return await Application.find({ candidateEmail: cleanEmail }).sort({ updatedAt: -1 });
+    return await Application.find(candidateFilter(cleanId, cleanEmail)).sort({ updatedAt: -1 });
   }
   const db = readDb();
-  return (db.centralApplications || []).filter(a => String(a.candidateEmail || '').toLowerCase() === cleanEmail);
+  return (db.centralApplications || []).filter(a => candidateMatches(a, cleanId, cleanEmail));
 }
 
 // ─── CVMIND CODE PERSISTENCE FUNCTIONS ──────────────────────────────────────

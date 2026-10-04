@@ -94,6 +94,27 @@ export async function generateStructured({ schema, prompt, contents: baseContent
   throw new FatalError(`Gemini output did not match schema: ${issues}`, { code: 'SCHEMA_MISMATCH' });
 }
 
+// Schema-free JSON generation for the legacy routes: throws on API errors or unusable output instead of returning {}
+export async function generateJson({ prompt, temperature = 0.2, apiKey, client, model }) {
+  const ai = client || getClient(apiKey);
+  let response;
+  try {
+    response = await ai.models.generateContent({
+      model: model || getModel(),
+      contents: prompt,
+      config: { temperature, responseMimeType: 'application/json' }
+    });
+  } catch (err) {
+    throw classifyError(err);
+  }
+
+  const parsed = parseJsonText(response?.text);
+  if (!parsed || typeof parsed !== 'object') {
+    throw new FatalError('Gemini returned no usable JSON.', { code: 'BAD_JSON' });
+  }
+  return parsed;
+}
+
 export function l2normalize(values) {
   const vec = Float32Array.from(values);
   let norm = 0;

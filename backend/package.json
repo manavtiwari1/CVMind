@@ -9,7 +9,7 @@
     "dev": "nodemon src/index.js",
     "worker": "node src/worker.js",
     "migrate:auto-apply": "node scripts/migrate-auto-apply-json.mjs",
-    "test": "node --test \"test/**/*.test.js\""
+    "test": "node scripts/test.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.22.0",

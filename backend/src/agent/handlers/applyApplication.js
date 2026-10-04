@@ -4,13 +4,13 @@ import ResumeProfile from '../models/ResumeProfile.js';
 import { getPreferences } from '../preferences/service.js';
 import { DEFAULT_PREFERENCES } from '../preferences/schema.js';
 import { buildFillPlan } from '../fill/buildFillPlan.js';
-import { pickAdapter, BaseAdapter } from '../adapters/index.js';
+import { pickAdapter, BaseAdapter, formUrlFor } from '../adapters/index.js';
 import { withContext } from '../browser.js';
 import { uploadBuffer, downloadBuffer, BUCKETS } from '../storage/gridfs.js';
 import { consumeOrDefer } from '../rateLimit.js';
 import { transition, markFailed, setProgress } from '../pipeline.js';
 import { logEvent } from '../events.js';
-import { FatalError } from '../errors.js';
+import { FatalError, RateLimitDeferral } from '../errors.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MINUTE_MS = 60 * 1000;
@@ -72,15 +72,15 @@ export function createApplyFillHandler({ buildPlan = buildFillPlan, runInContext
     const base = { applicationId: application._id, userId: application.userId, queueJobId: job._id };
     try {
       const { posting, resume, preferences } = await loadContext(application);
-      const { AdapterClass, enabled, reason } = pickAdapter(posting.applyUrl || posting.url);
+      const { AdapterClass, enabled, reason } = pickAdapter(formUrlFor(posting));
       if (!enabled || !AdapterClass.canServerSubmit) {
         // A known-but-unfillable ATS (Workday) explains itself; otherwise fall back to the picker's reason
         await handOff(application, AdapterClass.handoffReason || reason || 'unsupported_site');
         return;
       }
 
-      // One application per company per day, and a gentle cap per ATS host across all users
-      await consumeOrDefer(`user:${application.userId}:company:${application.companyKey || posting.company?.key || 'unknown'}`, { limit: 1, windowMs: DAY_MS });
+      // A gentle cap per ATS host across all users; the per-company daily limit applies to submits only,
+      // so retrying or refreshing a fill never pushes it to the next day
       await consumeOrDefer(`ats:${AdapterClass.id}`, { limit: 6, windowMs: MINUTE_MS });
 
       await setProgress(application._id, 'filling');
@@ -142,6 +142,8 @@ export function createApplyFillHandler({ buildPlan = buildFillPlan, runInContext
         data: { adapter: outcome.adapterId, filled: outcome.filled.filled, needsReview: outcome.plan.stats.needsReview, unmappedRequired: outcome.plan.unmappedRequired.length, mismatches: outcome.mismatches.length }
       });
     } catch (err) {
+      // The queue re-runs a deferred job later without using an attempt, so it has not failed
+      if (err instanceof RateLimitDeferral) throw err;
       if (err?.code === 'BROWSER_UNAVAILABLE') {
         await handOff(application, 'browser_unavailable');
         return;
@@ -165,18 +167,23 @@ export function createApplySubmitHandler({ runInContext = withContext } = {}) {
     if (!application) throw new FatalError('Application not found.', { code: 'NOT_FOUND' });
     if (application.status !== 'ready_for_review' || application.submission) return;
     if (!application.fill?.plan) throw new FatalError('This application has not been filled yet.', { code: 'NOT_FILLED' });
-    if (application.fill.approvedPlanHash !== application.fill.planHash) {
-      throw new FatalError('The approved answers no longer match the filled form.', { code: 'PLAN_NOT_APPROVED' });
-    }
-
     const base = { applicationId: application._id, userId: application.userId, queueJobId: job._id };
+    // The answers changed after approval: nothing is sent, and the application stays reviewable
+    if (application.fill.approvedPlanHash !== application.fill.planHash) {
+      await setProgress(application._id, 'awaiting_submit');
+      await logEvent({ ...base, type: 'submit.cancelled', message: 'Not submitted: the answers changed after you approved them. Review them and submit again.' });
+      return;
+    }
     try {
       const { posting } = await loadContext(application);
-      const { AdapterClass, enabled } = pickAdapter(posting.applyUrl || posting.url);
+      const { AdapterClass, enabled } = pickAdapter(formUrlFor(posting));
       if (!enabled || !AdapterClass.canServerSubmit) {
         await handOff(application, AdapterClass.handoffReason || 'unsupported_site');
         return;
       }
+
+      // One application per company per day
+      await consumeOrDefer(`user:${application.userId}:company:${application.companyKey || posting.company?.key || 'unknown'}`, { limit: 1, windowMs: DAY_MS });
 
       await setProgress(application._id, 'submitting');
       const resumeFile = await resumeFileFor(application);
@@ -230,6 +237,12 @@ export function createApplySubmitHandler({ runInContext = withContext } = {}) {
       });
       await logEvent({ ...base, type: 'application.submitted', message: 'CVMind submitted this application after your approval.', data: { via: 'server', adapter: AdapterClass.id } });
     } catch (err) {
+      if (err instanceof RateLimitDeferral) {
+        // Not "submitting": the UI would show a spinner until tomorrow
+        await setProgress(application._id, 'submit_scheduled');
+        await logEvent({ ...base, type: 'submit.deferred', message: 'You already applied to this company today, so CVMind will submit this one tomorrow.', data: { retryAt: err.retryAt } });
+        throw err;
+      }
       if (err?.code === 'BROWSER_UNAVAILABLE') {
         await handOff(application, 'browser_unavailable');
         return;

@@ -28,8 +28,14 @@ A powerful Manifest V3 browser extension that brings CVMind's career intelligenc
 
 ## 🎯 Interactive Demo Sandbox
 
-To test the extension immediately in a controlled environment:
+The Demo Sandbox is a page inside the CVMind web app with its own built-in autofill. The extension does not run there; it only runs on Greenhouse, Lever and Workday application pages.
+
+To try the sandbox:
 1. Start CVMind Web App: `npm run dev`
 2. Open: `http://localhost:5173/auto-apply`
-3. Click the **"Launch Live Demo Application Sandbox"** button.
-4. Observe the CVMind Copilot badge float into view, click **Autofill Application**, and review the AI-generated answers!
+3. Click the **"Launch Live Demo Sandbox"** button.
+4. Click **Test CVMind AI Autofill** and review the filled answers.
+
+To test the extension itself, pair it from CVMind and open a job application on Greenhouse, Lever or Workday (including Greenhouse forms embedded in a company's careers page). The CVMind Copilot badge appears on the page.
+
+After you press the site's own submit button, the drawer asks **Did your application go through?** CVMind records the application as submitted only when you click **Yes, mark it submitted**, so a form the site rejected is never counted.
