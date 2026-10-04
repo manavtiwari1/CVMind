@@ -14,7 +14,6 @@ import { OAuth2Client } from 'google-auth-library';
 import { parsePdf, parseDocx, parseTxt, fetchResumeFromUrl } from './services/parser.js';
 import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, findJobsWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek, generateInterviewPlan, evaluateInterviewAnswer, generateInterviewReport } from './services/gemini.js';
 import { getPublicStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, updateUserFields, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveJobFinderLog, saveProofreadLog, savePaymentLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, hasAutoApplyAccess } from './db.js';
-import { Resend } from 'resend';
 import adminRouter from './admin/router.js';
 import adminPublicRoutes from './admin/publicRoutes.js';
 import { featureGate, signupsEnabled, getSettings } from './admin/settings.js';
@@ -30,7 +29,8 @@ import { assessSignupRisk, isHighRisk, RISK_HIGH } from './services/emailRisk.js
 import { hitLimit, clientIp, HOUR_MS, DAY_MS } from './services/limiter.js';
 import { logAuthEvent } from './services/authEvents.js';
 import { CaptchaChallenge } from './admin/models.js';
-import { EMAIL_FROM } from './admin/mailer.js';
+import { sendEmail, emailConfigured } from './admin/mailer.js';
+import { welcomeEmail, passwordResetEmail, resumePdfEmail } from './services/emailTemplates.js';
 import { dbReady } from './admin/auth.js';
 import mongoose from 'mongoose';
 import { importUploadedResume, RESUME_MIME_TYPES } from './agent/resume/intake.js';
@@ -84,79 +84,16 @@ function saveFeatureWork(userId, { title, type, templateId, payload }) {
 }
 
 // Initialize Resend Client
-// Resend throws on an empty key, so without one the client stays null and emails are skipped
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-
-// Helper to send Welcome Email upon sign-up
-const sendWelcomeEmail = async (email, name, origin) => {
-  if (!resend || !process.env.RESEND_API_KEY) {
+// Welcome email for new social-login accounts (email sign-ups get the verification email instead)
+const sendWelcomeEmail = async (email, name) => {
+  if (!emailConfigured()) {
     console.warn('[WELCOME EMAIL] Skipping send - RESEND_API_KEY is not configured.');
     return;
   }
-
-  const isLocal = origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
-  const host = isLocal ? origin : 'https://www.cvmind.in';
-  const createResumeLink = `${host}`;
-
   try {
-    const { data, error } = await resend.emails.send({
-      from: EMAIL_FROM,
-      to: [email],
-      subject: 'Welcome to CV Mind! ✨',
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 30px; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; color: #1e293b; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin: 0 auto;">
-          <div style="text-align: center; margin-bottom: 25px;">
-            <h2 style="color: #2997ff; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.02em;">CV Mind</h2>
-            <span style="font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Your AI-Powered Career Partner</span>
-          </div>
-          
-          <p style="font-size: 16px; line-height: 1.6; margin-bottom: 15px;">Hi <strong>${name}</strong>,</p>
-          
-          <p style="font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
-            Welcome to <strong>CV Mind</strong>! We are absolutely thrilled to have you join us. 
-            CV Mind is a state-of-the-art career suite designed to empower job seekers like you with advanced AI intelligence and ATS optimization tools.
-          </p>
-          
-          <div style="background-color: #f8fafc; border-radius: 12px; padding: 20px; margin-bottom: 25px; border: 1px solid #f1f5f9;">
-            <h3 style="margin-top: 0; color: #0f172a; font-size: 16px;">Here is how CV Mind accelerates your job search:</h3>
-            <ul style="padding-left: 20px; margin: 0; font-size: 14px; line-height: 1.8; color: #334155;">
-              <li><strong>ATS Resume Scanner & Scorecard:</strong> Get instant recruiter-grade scores, structural audits, and missing keyword analyses.</li>
-              <li><strong>AI-Powered Optimizer:</strong> Rewrite weak bullet points and enhance your resume's metrics with one click.</li>
-              <li><strong>Job Tailoring:</strong> Instantly match and adapt your profile to target job descriptions to beat the resume filters.</li>
-              <li><strong>SmartPrep Mock Interviews:</strong> Practice with dynamic AI-generated interview questions and receive instant evaluations.</li>
-              <li><strong>LinkedIn Optimizer:</strong> Elevate your profile, create compelling bios, and write high-impact outreach messages.</li>
-            </ul>
-          </div>
-          
-          <p style="font-size: 15px; line-height: 1.6; margin-bottom: 30px; text-align: center;">
-            Ready to take the next step in your career? Create a standout resume that lands interviews today!
-          </p>
-          
-          <div style="margin: 30px 0; text-align: center;">
-            <a href="${createResumeLink}" style="background: linear-gradient(135deg, #2997ff 0%, #bf5af2 100%); color: #ffffff; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; box-shadow: 0 4px 15px rgba(41, 151, 255, 0.3); font-size: 16px;">Create Beautiful Resume Now</a>
-          </div>
-          
-          <p style="font-size: 14px; color: #64748b; line-height: 1.6; margin-top: 25px;">
-            If you ever have any questions, feedback, or need help with your career tools, simply reply to this email. We're here to help you succeed!
-          </p>
-          
-          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0 20px 0;" />
-          
-          <p style="font-size: 11px; color: #94a3b8; text-align: center; line-height: 1.5; margin: 0;">
-            Designed & engineered by Manav Tiwari.<br />
-            © ${new Date().getFullYear()} CV Mind. Secure applicant tracking systems and resume optimization.
-          </p>
-        </div>
-      `
-    });
-
-    if (error) {
-      console.error('[WELCOME EMAIL] Resend Dispatch Error:', error);
-    } else {
-      console.log(`[WELCOME EMAIL] Sent successfully to: ${email}, ID: ${data?.id}`);
-    }
+    await sendEmail({ to: email, ...welcomeEmail({ name }) });
   } catch (err) {
-    console.error('[WELCOME EMAIL] Exception during dispatch:', err);
+    console.error('[WELCOME EMAIL] Send failed:', err.message);
   }
 };
 
@@ -465,7 +402,7 @@ apiRouter.post('/api/auth/login', async (req, res) => {
         });
 
         // Send welcome email asynchronously for whitelisted user creation
-        sendWelcomeEmail(user.email, user.name, req.headers.origin);
+        sendWelcomeEmail(user.email, user.name);
       } else {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
@@ -559,41 +496,13 @@ apiRouter.post('/api/auth/forgot-password', async (req, res) => {
     // Save reset token in DB with 1 hour expiration
     await saveUserResetToken(user.email, hashToken(resetToken), Date.now() + 3600000);
 
-    // 2. Dispatch email using Resend and user's verified manavtiwari.in domain
-    if (!resend) {
-      return res.status(503).json({ error: 'Failed to send secure reset email. Please contact support.' });
-    }
-    const { data, error } = await resend.emails.send({
-      from: EMAIL_FROM,
-      to: [user.email],
-      subject: 'Reset your CV Mind Password',
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 25px; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1e293b; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-          <div style="text-align: center; margin-bottom: 20px;">
-            <h2 style="color: #2997ff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em;">CV Mind</h2>
-            <span style="font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Password Recovery Portal</span>
-          </div>
-          <p style="font-size: 15px; line-height: 1.6; margin-bottom: 15px;">Hi <strong>${user.name}</strong>,</p>
-          <p style="font-size: 15px; line-height: 1.6; margin-bottom: 20px;">We received a secure request to reset your CV Mind account password. Click the button below to set a new password. This link is valid for **1 hour**:</p>
-          <div style="margin: 30px 0; text-align: center;">
-            <a href="${resetLink}" style="background: linear-gradient(135deg, #2997ff 0%, #bf5af2 100%); color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; box-shadow: 0 4px 15px rgba(41, 151, 255, 0.25);">Reset My Password</a>
-          </div>
-          <p style="font-size: 14px; color: #64748b; line-height: 1.6; margin-top: 25px;">If you did not make this request, you can safely ignore this email. Your account credentials remain completely secure.</p>
-          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0 20px 0;" />
-          <p style="font-size: 11px; color: #94a3b8; text-align: center; line-height: 1.5; margin: 0;">
-            Designed & engineered by Manav Tiwari.<br />
-            © ${new Date().getFullYear()} CV Mind. Secure applicant tracking systems and resume optimization.
-          </p>
-        </div>
-      `
-    });
-
-    if (error) {
-      console.error('Resend API Dispatch Error:', error);
+    // 2. Email the link
+    try {
+      await sendEmail({ to: user.email, ...passwordResetEmail({ name: user.name, link: resetLink }) });
+    } catch (err) {
+      console.error('Password reset email failed:', err.message);
       return res.status(500).json({ error: 'Failed to send secure reset email. Please contact support.' });
     }
-
-    console.log(`[PASSWORD RESET] Live email sent using Resend. ID: ${data?.id} for user: ${user.name}`);
 
     return res.json({
       success: true,
@@ -704,7 +613,7 @@ apiRouter.post('/api/auth/google', async (req, res) => {
       logAuthEvent(req, 'USER_REGISTERED', { userId: user.id || user._id, email: user.email, metadata: { provider: 'google' } });
 
       // Send welcome email asynchronously for Google signup
-      sendWelcomeEmail(user.email, user.name, req.headers.origin);
+      sendWelcomeEmail(user.email, user.name);
     }
 
     const blockError = getAccountBlockError(user);
@@ -967,7 +876,7 @@ async function completeOAuthLogin(req, res, origin, { email, name, avatar, provi
       emailVerified: providerVerified
     });
     logAuthEvent(req, 'USER_REGISTERED', { userId: user.id || user._id, email: user.email, metadata: { provider } });
-    sendWelcomeEmail(user.email, user.name, origin);
+    sendWelcomeEmail(user.email, user.name);
   }
 
   const blockError = getAccountBlockError(user);
@@ -1711,19 +1620,16 @@ apiRouter.post('/api/resume/pdf', requireUser, async (req, res) => {
 apiRouter.post('/api/resume/email-pdf', requireUser, async (req, res) => {
   const body = readExportBody(req, res);
   if (!body) return;
-  if (!process.env.RESEND_API_KEY) return res.status(503).json({ error: 'Email is not configured on this server.' });
+  if (!emailConfigured()) return res.status(503).json({ error: 'Email is not configured on this server.' });
   try {
     const user = await findUserById(req.auth.sub);
     if (!user?.email) return res.status(404).json({ error: 'We could not find the email address for your account.' });
     const pdf = await buildResumePdf(body);
-    const { error } = await resend.emails.send({
-      from: EMAIL_FROM,
-      to: [user.email],
-      subject: `Your resume: ${body.fileName}`,
-      html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#1e293b;line-height:1.6"><p>Hi${user.name ? ` ${user.name}` : ''},</p><p>Your resume <strong>${body.fileName}.pdf</strong> is attached.</p><p>Good luck with your applications!<br>CV Mind</p></div>`,
+    await sendEmail({
+      to: user.email,
+      ...resumePdfEmail({ name: user.name, fileName: body.fileName }),
       attachments: [{ filename: `${body.fileName}.pdf`, content: Buffer.from(pdf).toString('base64') }],
     });
-    if (error) throw new Error(error.message || 'Email provider error');
     return res.json({ success: true, email: user.email });
   } catch (err) {
     console.error('Resume email export error:', err);

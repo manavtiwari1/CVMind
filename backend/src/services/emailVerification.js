@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { updateUserFields, findUserByVerificationHash } from '../db.js';
-import { emailConfigured, renderEmail, sendEmail } from '../admin/mailer.js';
+import { emailConfigured, sendEmail } from '../admin/mailer.js';
+import { verificationEmail } from './emailTemplates.js';
 import { invalidateSessionCache } from '../admin/sessions.js';
 
 export const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
@@ -43,22 +44,7 @@ export async function issueVerification(user) {
     return { sent: false };
   }
   try {
-    await sendEmail({
-      to: user.email,
-      subject: 'Verify your CVMind email address',
-      html: renderEmail({
-        greetingName: user.name,
-        body: [
-          'Welcome to CVMind!',
-          'Please verify your email address to activate your CVMind account.',
-          'This verification link will expire in 24 hours.',
-          `If the button doesn't work, paste this link into your browser:\n${link}`,
-          "If you didn't create this account, you can safely ignore this email."
-        ].join('\n\n'),
-        ctaLabel: 'Verify Email',
-        ctaUrl: link
-      })
-    });
+    await sendEmail({ to: user.email, ...verificationEmail({ name: user.name, link }) });
     return { sent: true };
   } catch (err) {
     console.error('[verify email] send failed:', err.message);

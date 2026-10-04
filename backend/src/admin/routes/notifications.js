@@ -2,7 +2,8 @@ import express from 'express';
 import { requireAdmin, requireDb } from '../auth.js';
 import { audit } from '../audit.js';
 import { Notification } from '../models.js';
-import { renderEmail, sendEmail, emailConfigured } from '../mailer.js';
+import { sendEmail, emailConfigured } from '../mailer.js';
+import { notificationEmail } from '../../services/emailTemplates.js';
 import { FEATURE_LOGS } from './analytics.js';
 import { model, clean, handle, httpError, paging, isEmail } from '../util.js';
 
@@ -93,7 +94,7 @@ router.post('/', requireAdmin('notifications.send'), handle(async (req, res) => 
     let failed = 0;
     for (const user of users) {
       try {
-        await sendEmail({ to: user.email, subject: title, html: renderEmail({ greetingName: user.name, body: body || title, ctaLabel: link ? 'Open CV Mind' : '', ctaUrl }) });
+        await sendEmail({ to: user.email, ...notificationEmail({ name: user.name, title, body, ctaLabel: link ? 'Open CVMind' : '', ctaUrl }) });
         sent++;
       } catch (err) {
         failed++;

@@ -58,7 +58,7 @@ export default function VerifyEmail({ setCurrentPage, openSignIn }: VerifyEmailP
         <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'var(--gradient-brand)' }}>
           <Sparkles size={15} className="text-white" />
         </div>
-        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>CV Mind</span>
+        <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>CVMind</span>
       </div>
 
       <div className="relative z-10 flex flex-1 items-center justify-center" style={{ padding: '0 16px 40px' }}>

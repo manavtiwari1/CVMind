@@ -4,7 +4,8 @@ import { audit } from '../audit.js';
 import { AdminUser, Ticket, TICKET_STATUSES, TICKET_PRIORITIES } from '../models.js';
 import { importLegacyContacts } from '../tickets.js';
 import { inboxConfig, inboxState, syncInbox } from '../inbox.js';
-import { renderEmail, sendEmail, emailConfigured, SUPPORT_EMAIL } from '../mailer.js';
+import { sendEmail, emailConfigured, SUPPORT_EMAIL } from '../mailer.js';
+import { supportReplyEmail } from '../../services/emailTemplates.js';
 import { model, clean, handle, httpError, isId, paging, escapeRegex, dateRange } from '../util.js';
 
 const router = express.Router();
@@ -167,11 +168,7 @@ router.post('/:id/messages', requireAdmin('tickets.manage'), handle(async (req, 
 
   let emailed = false;
   if (kind === 'reply') {
-    await sendEmail({
-      to: ticket.email,
-      subject: `Re: ${ticket.subject} [#${ticket.number}]`,
-      html: renderEmail({ greetingName: ticket.name, body })
-    });
+    await sendEmail({ to: ticket.email, ...supportReplyEmail({ name: ticket.name, subject: ticket.subject, number: ticket.number, body }) });
     emailed = true;
   }
   ticket.messages.push({ kind, authorName: req.admin.name, body, emailed });
