@@ -5,7 +5,8 @@ import { requireAdmin, requireDb } from '../auth.js';
 import { audit } from '../audit.js';
 import { Ticket, Notification, AuthEvent } from '../models.js';
 import { listSessions, revokeSession, revokeAllSessions, toPublicSession, invalidateSessionCache } from '../sessions.js';
-import { renderEmail, sendEmail } from '../mailer.js';
+import { sendEmail } from '../mailer.js';
+import { passwordResetEmail } from '../../services/emailTemplates.js';
 import { issueVerification, hashToken, frontendUrl } from '../../services/emailVerification.js';
 import { logAuthEvent } from '../../services/authEvents.js';
 import { RISK_HIGH } from '../../services/emailRisk.js';
@@ -202,16 +203,7 @@ router.post('/:id/password-reset', requireAdmin('users.manage'), handle(async (r
   // Only the hash is stored, same as the site's forgot-password flow
   await saveUserResetToken(user.email, hashToken(token), Date.now() + 60 * 60 * 1000);
   const link = `${frontendUrl()}/?resetToken=${token}&email=${encodeURIComponent(user.email)}`;
-  await sendEmail({
-    to: user.email,
-    subject: 'Reset your CV Mind password',
-    html: renderEmail({
-      greetingName: user.name,
-      body: 'Our support team sent you a link to set a new password for your CV Mind account.\n\nThe link works for 1 hour. If you did not ask for this, you can ignore this email.',
-      ctaLabel: 'Set a new password',
-      ctaUrl: link
-    })
-  });
+  await sendEmail({ to: user.email, ...passwordResetEmail({ name: user.name, link, byAdmin: true }) });
   await audit(req, 'user.password_reset_sent', { targetType: 'user', targetId: user._id, targetLabel: user.email });
   res.json({ success: true });
 }));

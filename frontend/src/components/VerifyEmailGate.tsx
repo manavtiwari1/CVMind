@@ -21,7 +21,7 @@ export default function VerifyEmailGate({ email, onVerified, onClose, onSignOut 
           <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'var(--gradient-brand)' }}>
             <Sparkles size={15} className="text-white" />
           </div>
-          <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>CV Mind</span>
+          <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>CVMind</span>
         </div>
         <button
           onClick={onClose}
