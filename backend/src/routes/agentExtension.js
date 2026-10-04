@@ -10,7 +10,7 @@ import { DEFAULT_PREFERENCES } from '../agent/preferences/schema.js';
 import { createPairCode, redeemPairCode, refreshDeviceToken, listDevices, revokeDevice } from '../agent/extension/devices.js';
 import { buildFillPlan } from '../agent/fill/buildFillPlan.js';
 import { createApplicationForUser, pickResume } from '../agent/applications/create.js';
-import { normalizeJobUrl } from '../agent/jobs/urlNormalize.js';
+import { normalizeJobUrl, detectAts } from '../agent/jobs/urlNormalize.js';
 import { tailoredResumeHash } from '../agent/resume/pdfArtifacts.js';
 import { openDownloadStream, BUCKETS } from '../agent/storage/gridfs.js';
 import { transition } from '../agent/pipeline.js';
@@ -35,7 +35,18 @@ async function findApplicationForPage({ userId, applicationId, url }) {
   const normalized = normalizeJobUrl(url);
   if (!normalized) return null;
   const posting = await JobPosting.findOne({ urlHash: sha256(normalized) }).select('_id').lean();
-  return posting ? AgentApplication.findOne({ userId, jobPostingId: posting._id }).lean() : null;
+  const byUrl = posting ? await AgentApplication.findOne({ userId, jobPostingId: posting._id }).lean() : null;
+  if (byUrl) return byUrl;
+
+  // The same Greenhouse or Lever job has several URLs (embedded form, job-boards host, apply page),
+  // so fall back to the board's own job id
+  const ats = detectAts(normalized);
+  const idFilter = ats.ats === 'greenhouse' ? { 'atsIds.boardToken': ats.boardToken, 'atsIds.jobId': ats.jobId }
+    : ats.ats === 'lever' ? { 'atsIds.company': ats.company, 'atsIds.postingId': ats.postingId }
+      : null;
+  if (!idFilter) return null;
+  const postingIds = (await JobPosting.find({ ats: ats.ats, ...idFilter }).select('_id').limit(20).lean()).map((p) => p._id);
+  return postingIds.length ? AgentApplication.findOne({ userId, jobPostingId: { $in: postingIds } }).lean() : null;
 }
 
 /**
@@ -75,8 +86,9 @@ export function createExtensionRouter({ buildPlan = buildFillPlan, loadLatestRes
   }));
 
   router.post('/refresh', asyncRoute(requireExtension), asyncRoute(async (req, res) => {
-    const { token, expiresAt } = await refreshDeviceToken(req.auth, req.device);
-    return res.json({ success: true, data: { token, expiresAt } });
+    const refreshed = await refreshDeviceToken(req.auth, req.device);
+    if (!refreshed) return res.status(401).json({ success: false, code: 'DEVICE_REVOKED', error: 'This extension was disconnected. Pair it again from CVMind.' });
+    return res.json({ success: true, data: refreshed });
   }));
 
   // ── Page context ────────────────────────────────────────────────────────────
@@ -193,12 +205,16 @@ export function createExtensionRouter({ buildPlan = buildFillPlan, loadLatestRes
     const application = await findApplicationForPage({ userId, applicationId: req.body?.applicationId, url: req.body?.url });
     if (!application) return res.status(404).json({ success: false, error: 'Application not found.' });
 
-    const updated = await transition(application._id, ['ready_for_review', 'matched', 'tailoring'], 'submitted', {
+    // The user can apply on the site at any stage, even while CVMind is still scoring or after a failed step
+    const updated = await transition(application._id, ['pending', 'matched', 'tailoring', 'ready_for_review', 'failed'], 'submitted', {
       submission: { via: 'extension', submittedAt: new Date() },
       'progress.step': 'submitted'
     });
     if (!updated) {
-      return res.status(409).json({ success: false, code: 'ALREADY_SUBMITTED', error: 'This application is already submitted.' });
+      // Confirming twice is harmless; anything else means the record changed underneath us
+      const current = await AgentApplication.findById(application._id).select('status').lean();
+      if (current?.status === 'submitted') return res.json({ success: true, data: { status: 'submitted', alreadySubmitted: true } });
+      return res.status(409).json({ success: false, code: 'NOT_SUBMITTABLE', error: 'This application could not be marked as submitted. Refresh and try again.' });
     }
     await logEvent({
       applicationId: application._id,

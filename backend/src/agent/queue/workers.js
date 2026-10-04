@@ -17,8 +17,11 @@ async function ensureConnected() {
   await mongoose.connect(process.env.MONGODB_URI);
 }
 
-async function onDead(job, err) {
-  if (job.applicationId) await markFailed(job.applicationId, job.type, err);
+// The PDF is optional (the tailored text is still usable), so a dead render must not fail the application
+const NON_FATAL_TO_APPLICATION = new Set(['app.render_pdf']);
+
+export async function onDead(job, err) {
+  if (job.applicationId && !NON_FATAL_TO_APPLICATION.has(job.type)) await markFailed(job.applicationId, job.type, err);
   if (!job.userId) return;
   await logEvent({
     applicationId: job.applicationId || null,

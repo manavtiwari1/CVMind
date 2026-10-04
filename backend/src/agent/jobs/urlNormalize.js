@@ -1,3 +1,4 @@
+const WORKDAY_HOST = /(\.myworkdayjobs\.com|(^|\.)myworkdaysite\.com)$/;
 const TRACKING_PARAM = /^(utm_.*|gh_src|lever-source|lever-origin|ref|source|src|trk|fbclid|gclid|mc_cid|mc_eid)$/i;
 
 // Canonical form used to dedupe job links: https, no www, no tracking params or fragment, no trailing slash
@@ -19,6 +20,10 @@ export function normalizeJobUrl(raw) {
   url.searchParams.sort();
   // Lever's /apply page is the same posting as its description page
   url.pathname = url.pathname.replace(/\/+$/, '').replace(/^(\/[^/]+\/[0-9a-f-]{36})\/apply$/i, '$1') || '/';
+  // So are Workday's apply steps (/job/<location>/<Title_R123>/apply/applyManually etc.)
+  if (WORKDAY_HOST.test(url.hostname)) {
+    url.pathname = url.pathname.replace(/(\/job\/.+)\/apply(\/(applyManually|autofillWithResume|useMyLastApplication))?$/i, '$1');
+  }
   return url.toString();
 }
 

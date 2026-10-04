@@ -2,12 +2,16 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
+import { formUrlFor } from './formUrl.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // The extension and the server fill forms with exactly the same code, so behaviour cannot drift apart
 const SHARED_DIR = path.resolve(__dirname, '../../../../extension/shared');
-const SHARED_SCRIPTS = ['formScanner.js', 'formFiller.js']
-  .map((file) => fs.readFileSync(path.join(SHARED_DIR, file), 'utf8'));
+// Read on first use, not at import: the API imports this module too, and a deploy without the
+// extension folder must only break server filling, never every route
+let sharedScripts = null;
+const loadSharedScripts = () => (sharedScripts ??= ['formScanner.js', 'formFiller.js']
+  .map((file) => fs.readFileSync(path.join(SHARED_DIR, file), 'utf8')));
 
 const CAPTCHA_SELECTORS = [
   'iframe[src*="recaptcha"]',
@@ -30,11 +34,11 @@ export class BaseAdapter {
   }
 
   static async prepare(context) {
-    for (const source of SHARED_SCRIPTS) await context.addInitScript({ content: source });
+    for (const source of loadSharedScripts()) await context.addInitScript({ content: source });
   }
 
   get applyUrl() {
-    return this.job?.applyUrl || this.job?.url;
+    return formUrlFor(this.job);
   }
 
   // Selectors this ATS is known to use, merged over the generic keyword rules

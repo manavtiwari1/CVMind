@@ -1,7 +1,7 @@
 /**
  * CVMind AI Auto Apply Copilot — Content Script
  * Detects application forms, fills them from the user's CVMind profile, and flags what to check.
- * It never presses submit: the user does that, and the extension records it afterwards.
+ * It never presses submit: the user does that, then confirms in the drawer so CVMind can record it.
  */
 (function () {
   if (window.__CVMIND_INJECTED__) return;
@@ -11,9 +11,42 @@
   let pageContext = null;
   let currentPlan = null;
   let submissionRecorded = false;
+  let watchingSubmission = false;
+  let contextUrl = null;
 
+  // A submit that loads a new page (Lever's /thanks, classic Greenhouse) would lose the question,
+  // so it is kept for this tab until the user answers it
+  const PENDING_KEY = 'cvmind_pending_submit';
+  const PENDING_TTL_MS = 30 * 60 * 1000;
+  const readPending = () => {
+    try {
+      const pending = JSON.parse(sessionStorage.getItem(PENDING_KEY) || 'null');
+      return pending?.applicationId && Date.now() - pending.at < PENDING_TTL_MS ? pending : null;
+    } catch {
+      return null;
+    }
+  };
+  const writePending = (pending) => {
+    try {
+      if (pending) sessionStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+      else sessionStorage.removeItem(PENDING_KEY);
+    } catch { /* storage blocked: the card still works on this page */ }
+  };
+  // Fragment-only changes (#section) are the same page
+  const pageUrl = () => window.location.href.split('#')[0];
+
+  // After the extension is updated or reloaded, scripts already in open tabs lose their connection
+  // and sendMessage throws; answer with a message instead of leaving buttons stuck
+  const RELOAD_MESSAGE = 'CVMind was updated. Reload this page to keep using it.';
   const send = (type, payload = {}) => new Promise((resolve) => {
-    chrome.runtime.sendMessage({ type, payload }, (response) => resolve(response || { success: false, error: 'The extension is not responding.' }));
+    try {
+      chrome.runtime.sendMessage({ type, payload }, (response) => {
+        if (chrome.runtime.lastError) return resolve({ success: false, error: RELOAD_MESSAGE });
+        resolve(response || { success: false, error: 'The extension is not responding.' });
+      });
+    } catch {
+      resolve({ success: false, error: RELOAD_MESSAGE });
+    }
   });
 
   const $ = (id) => document.getElementById(id);
@@ -63,6 +96,13 @@
         </div>
 
         <div class="cvmind-drawer-body">
+          <div class="cvmind-section-card cvmind-sensitive-card" id="cvmind-submit-card" style="display:none;">
+            <div class="cvmind-card-header"><span class="cvmind-card-title">📨 Did your application go through?</span></div>
+            <p class="cvmind-card-desc" id="cvmind-submit-text">If the site accepted it, mark it as submitted so CVMind tracks it. If the site showed errors, fix them and submit again.</p>
+            <button id="cvmind-btn-confirm-submit" class="cvmind-primary-btn"><span>✓ Yes, mark it submitted</span></button>
+            <button id="cvmind-btn-dismiss-submit" class="cvmind-secondary-btn"><span>Not yet</span></button>
+          </div>
+
           <div class="cvmind-section-card" id="cvmind-pair-card" style="display:none;">
             <div class="cvmind-card-header"><span class="cvmind-card-title">🔗 Connect to CVMind</span></div>
             <p class="cvmind-card-desc">Open CVMind, go to Job Preferences and create a connection code, then enter it in the extension popup.</p>
@@ -96,6 +136,10 @@
     document.body.appendChild(root);
 
     const drawer = $('cvmind-copilot-drawer');
+    root.openDrawer = () => {
+      drawer.classList.remove('cvmind-drawer-closed');
+      drawer.classList.add('cvmind-drawer-open');
+    };
     $('cvmind-floating-badge').addEventListener('click', () => {
       drawer.classList.toggle('cvmind-drawer-closed');
       drawer.classList.toggle('cvmind-drawer-open');
@@ -106,17 +150,42 @@
     });
     $('cvmind-btn-autofill').addEventListener('click', fillApplication);
     $('cvmind-btn-track').addEventListener('click', trackJob);
+    $('cvmind-btn-confirm-submit').addEventListener('click', confirmSubmission);
+    $('cvmind-btn-dismiss-submit').addEventListener('click', () => {
+      writePending(null);
+      $('cvmind-submit-card').style.display = 'none';
+    });
   }
 
   const setStatus = (text) => { const el = $('cvmind-status-line'); if (el) el.innerText = text; };
   const setFieldStats = (text) => { const el = $('cvmind-field-stats'); if (el) el.innerText = text; };
 
   // ── Page context ────────────────────────────────────────────────────────────
+  // Single-page boards (Workday) change the URL without reloading, so the panel starts over per page
+  function resetPanel() {
+    pageContext = null;
+    currentPlan = null;
+    submissionRecorded = false;
+    for (const id of ['cvmind-match-banner', 'cvmind-track-card', 'cvmind-review-box', 'cvmind-pair-card']) $(id).style.display = 'none';
+    // Single-page sites often change the URL after a submit; an unanswered question stays
+    if (!readPending()) $('cvmind-submit-card').style.display = 'none';
+    $('cvmind-fill-card').style.display = 'block';
+    const fill = $('cvmind-btn-autofill');
+    fill.disabled = false;
+    fill.innerHTML = '<span>⚡ Fill application</span>';
+    const track = $('cvmind-btn-track');
+    track.disabled = false;
+    track.innerHTML = '<span>✓ Add to CVMind</span>';
+    $('cvmind-badge-score').innerText = 'Ready';
+  }
+
   async function loadContext() {
+    contextUrl = pageUrl();
     const fields = CVMindScanner.scan();
     setFieldStats(`${fields.length} fields found`);
 
     const response = await send('GET_CONTEXT', { url: window.location.href });
+    if (contextUrl !== pageUrl()) return; // the page moved on while this was loading
     if (!response.success) {
       if (response.needsPairing) {
         $('cvmind-pair-card').style.display = 'block';
@@ -226,40 +295,83 @@
     pageContext = { ...pageContext, application: { id: response.data.applicationId, status: response.data.status }, canTrack: false };
   }
 
-  // The user submits; we only notice that it happened and tell CVMind
+  // A click on a submit button does not mean the site accepted the form (it may show errors),
+  // so nothing is recorded until the user confirms it went through
   function watchForSubmission() {
-    if (submissionRecorded) return;
-    document.addEventListener('submit', onSubmitted, true);
+    if (watchingSubmission) return;
+    watchingSubmission = true;
+    document.addEventListener('submit', (event) => {
+      if (!event.target.closest?.('#cvmind-copilot-root')) onSubmitAttempt();
+    }, true);
     document.addEventListener('click', (event) => {
-      const button = event.target.closest('button, input[type="submit"]');
+      const button = event.target.closest?.('button, input[type="submit"]');
       if (!button || button.closest('#cvmind-copilot-root')) return;
       const label = `${button.innerText || button.value || ''}`.toLowerCase();
-      if (/submit|send application|apply now|finish/.test(label)) onSubmitted();
+      if (/submit|send application|apply now|finish/.test(label)) onSubmitAttempt();
     }, true);
   }
 
-  async function onSubmitted() {
+  function onSubmitAttempt() {
     if (submissionRecorded || !pageContext?.application?.id) return;
-    submissionRecorded = true;
-    const response = await send('CONFIRM_SUBMITTED', { applicationId: pageContext.application.id, url: window.location.href });
-    if (response.success) {
-      setStatus('Recorded as submitted in CVMind.');
-      $('cvmind-badge-score').innerText = 'Submitted';
+    writePending({ applicationId: pageContext.application.id, url: window.location.href, at: Date.now() });
+    showSubmitQuestion();
+  }
+
+  function showSubmitQuestion() {
+    const card = $('cvmind-submit-card');
+    if (!card || card.style.display === 'block') return;
+    card.style.display = 'block';
+    $('cvmind-submit-text').innerText = 'If the site accepted it, mark it as submitted so CVMind tracks it. If the site showed errors, fix them and submit again.';
+    $('cvmind-badge-score').innerText = 'Submitted?';
+    // Give the site a moment to show its own result before the drawer slides in
+    setTimeout(() => $('cvmind-copilot-root')?.openDrawer?.(), 1500);
+  }
+
+  async function confirmSubmission() {
+    const pending = readPending();
+    const applicationId = pending?.applicationId || pageContext?.application?.id;
+    if (submissionRecorded || !applicationId) return;
+    const button = $('cvmind-btn-confirm-submit');
+    button.disabled = true;
+    const response = await send('CONFIRM_SUBMITTED', { applicationId, url: pending?.url || window.location.href });
+    button.disabled = false;
+    if (!response.success) {
+      $('cvmind-submit-text').innerText = response.error || 'Could not record it. Try again.';
+      if (response.needsPairing) $('cvmind-pair-card').style.display = 'block';
+      return;
     }
+    submissionRecorded = true;
+    writePending(null);
+    $('cvmind-submit-card').style.display = 'none';
+    setStatus('Recorded as submitted in CVMind.');
+    $('cvmind-badge-score').innerText = 'Submitted';
   }
 
   // ── Boot ────────────────────────────────────────────────────────────────────
-  if (isApplicationPage()) {
+  function start() {
+    if ($('cvmind-copilot-root')) return;
     initWidget();
     loadContext();
+    // Back from a submit that loaded a new page: ask the question the old page could not
+    if (readPending()) showSubmitQuestion();
   }
+
+  // A careers page that embeds the ATS form gets the panel inside that frame, not a second empty one on top
+  const embedsAtsForm = () => window === window.top
+    && Boolean(document.querySelector('iframe[src*="greenhouse.io"], iframe[src*="lever.co"], iframe[src*="myworkday"]'));
+
+  // The popup can start the panel on a page that does not look like an application
+  window.__CVMIND_START__ = start;
+  if (isApplicationPage() && !embedsAtsForm()) start();
 
   let rescanTimer = null;
   new MutationObserver(() => {
     if (rescanTimer) clearTimeout(rescanTimer);
     rescanTimer = setTimeout(() => {
-      if (!$('cvmind-copilot-root') && isApplicationPage()) {
-        initWidget();
+      if (!$('cvmind-copilot-root')) {
+        if (isApplicationPage() && !embedsAtsForm()) start();
+      } else if (contextUrl !== pageUrl()) {
+        resetPanel();
         loadContext();
       }
     }, 1200);

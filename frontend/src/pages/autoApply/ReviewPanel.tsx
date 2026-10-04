@@ -89,6 +89,8 @@ export default function ReviewPanel({ application, busy, onChanged }: ReviewPane
     act('submit', async () => {
       try {
         await submitApplication(application.id, review.planHash);
+        // The list polls while a step is running, which is how the result reaches this page
+        onChanged({ ...application, progress: { step: 'submitting', updatedAt: new Date().toISOString() } });
         setMessage({ tone: 'ok', text: 'Submitting. The result will appear here in a moment.' });
       } catch (e) {
         if (e instanceof ApiError && e.code === 'PLAN_CHANGED') {
@@ -101,12 +103,19 @@ export default function ReviewPanel({ application, busy, onChanged }: ReviewPane
     });
   };
 
-  const disabled = busy || !!working;
+  const step = application.progress?.step;
+  // A scheduled submit is locked in too: its approved answers must not change before it runs
+  const running = step === 'filling' || step === 'submitting' || step === 'submit_scheduled';
+  const disabled = busy || !!working || running;
   const fill = application.fill;
   const dirty = Object.keys(edits).length > 0;
+  const scheduledNote = step === 'submit_scheduled' && (
+    <div className="aa-resume-notice"><CheckCircle2 size={16} /> You already applied to this company today, so CVMind will submit this one tomorrow.</div>
+  );
 
-  // Nothing filled yet: offer it, unless the site already went to the extension
+  // Nothing filled yet: offer it, unless the site already went to the extension or it is already submitted
   if (!fill?.planHash) {
+    if (application.status !== 'ready_for_review' && !fill?.handoff) return null;
     return (
       <section className="aa-review">
         <h4 className="aa-score-subtitle"><MonitorPlay size={15} /> Let CVMind fill the form</h4>
@@ -147,6 +156,7 @@ export default function ReviewPanel({ application, busy, onChanged }: ReviewPane
       </div>
 
       {message && <div className={message.tone === 'ok' ? 'aa-resume-notice' : 'aa-error'}>{message.tone === 'ok' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />} {message.text}</div>}
+      {scheduledNote}
 
       {!!review?.unmappedRequired.length && (
         <div className="aa-resume-warning">
@@ -181,7 +191,7 @@ export default function ReviewPanel({ application, busy, onChanged }: ReviewPane
                     <input
                       className="aa-input"
                       value={edits[item.selector] ?? item.value}
-                      readOnly={application.status !== 'ready_for_review'}
+                      readOnly={application.status !== 'ready_for_review' || running}
                       onChange={e => setEdits(current => ({ ...current, [item.selector]: e.target.value }))}
                     />
                   )}

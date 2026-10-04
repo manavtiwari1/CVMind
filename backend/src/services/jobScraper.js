@@ -3,6 +3,8 @@
  * Extracts structured job schema from job URLs or raw HTML.
  */
 
+import { generateJson } from '../agent/ai/geminiClient.js';
+
 // Basic HTML stripping / cleaning helper
 function cleanText(htmlOrText) {
   if (!htmlOrText) return '';
@@ -93,29 +95,13 @@ Schema:
 Page Content:
 ${rawText.substring(0, 4500)}`;
 
-      const apiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 1024, responseMimeType: 'application/json' }
-          })
-        }
-      );
-
-      if (apiRes.ok) {
-        const data = await apiRes.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-        const parsed = JSON.parse(text.replace(/```json\n?|```\n?/g, '').trim());
-        return {
-          ...parsed,
-          source: 'ai_scraper',
-          apply_url: sourceUrl || parsed.apply_url || '',
-          scraped_at: new Date().toISOString()
-        };
-      }
+      const parsed = await generateJson({ prompt, temperature: 0.2, apiKey: customApiKey });
+      return {
+        ...parsed,
+        source: 'ai_scraper',
+        apply_url: sourceUrl || parsed.apply_url || '',
+        scraped_at: new Date().toISOString()
+      };
     } catch (aiErr) {
       console.warn('AI job parser fallback to regex:', aiErr.message);
     }

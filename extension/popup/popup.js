@@ -4,7 +4,14 @@
 
 const $ = (id) => document.getElementById(id);
 const send = (type, payload = {}) => new Promise((resolve) => {
-  chrome.runtime.sendMessage({ type, payload }, (response) => resolve(response || { success: false, error: 'The extension is not responding.' }));
+  try {
+    chrome.runtime.sendMessage({ type, payload }, (response) => {
+      if (chrome.runtime.lastError) return resolve({ success: false, error: 'The extension is not responding. Reload it from chrome://extensions.' });
+      resolve(response || { success: false, error: 'The extension is not responding.' });
+    });
+  } catch {
+    resolve({ success: false, error: 'The extension is not responding. Reload it from chrome://extensions.' });
+  }
 });
 
 const STATUS_LABELS = {
@@ -142,14 +149,24 @@ $('btn-popup-autofill').addEventListener('click', async () => {
   $('btn-popup-autofill').disabled = true;
   showError('action-error', '');
   try {
+    // Every frame: many company career pages embed the Greenhouse form in an iframe
     await chrome.scripting.executeScript({
-      target: { tabId: activeTab.id },
+      target: { tabId: activeTab.id, allFrames: true },
       files: ['shared/formScanner.js', 'shared/formFiller.js', 'content/content.js']
     });
-    await chrome.scripting.executeScript({
-      target: { tabId: activeTab.id },
-      func: () => document.getElementById('cvmind-btn-autofill')?.click()
-    });
+    const clickFill = () => {
+      const button = document.getElementById('cvmind-btn-autofill');
+      if (!button) return false;
+      button.click();
+      return true;
+    };
+    let results = await chrome.scripting.executeScript({ target: { tabId: activeTab.id, allFrames: true }, func: clickFill });
+    if (!results.some((result) => result.result)) {
+      // The page did not look like an application form, so start the panel on it anyway
+      await chrome.scripting.executeScript({ target: { tabId: activeTab.id }, func: () => window.__CVMIND_START__?.() });
+      results = await chrome.scripting.executeScript({ target: { tabId: activeTab.id }, func: clickFill });
+    }
+    if (!results.some((result) => result.result)) throw new Error('no form found');
     window.close();
   } catch (err) {
     showError('action-error', `Could not run on this page: ${err.message}`);

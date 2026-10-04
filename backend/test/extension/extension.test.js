@@ -150,8 +150,74 @@ test('the extension confirms a submission, and only once', async () => {
   assert.equal(stored.submission.via, 'extension');
   assert.ok((await ApplicationEvent.find({ applicationId, type: 'application.submitted' }).lean()).length);
 
-  assert.equal((await ext('/extension/confirm-submitted', token, { method: 'POST', json: { applicationId } })).body.code, 'ALREADY_SUBMITTED');
+  // A second click is harmless: it reports success and records nothing new
+  const again = await ext('/extension/confirm-submitted', token, { method: 'POST', json: { applicationId } });
+  assert.equal(again.status, 200);
+  assert.equal(again.body.data.alreadySubmitted, true);
+  assert.equal(await ApplicationEvent.countDocuments({ applicationId, type: 'application.submitted' }), 1);
+  assert.deepEqual((await AgentApplication.findById(applicationId).lean()).submission.submittedAt, stored.submission.submittedAt);
   assert.equal((await ext('/extension/confirm-submitted', token, { method: 'POST', json: { url: 'https://nope.test/job' } })).status, 404);
+});
+
+test('the extension can confirm a submission while CVMind is still scoring or after a failure', async () => {
+  await createReadyResume();
+  const { token } = await pairExtension();
+
+  // Tracked but not parsed or scored yet: the user applied straight away
+  const tracked = await ext('/extension/track', token, { method: 'POST', json: { url: JOB_URL } });
+  const applicationId = tracked.body.data.applicationId;
+  assert.equal((await AgentApplication.findById(applicationId).lean()).status, 'pending');
+  const confirmed = await ext('/extension/confirm-submitted', token, { method: 'POST', json: { applicationId } });
+  assert.equal(confirmed.status, 200, JSON.stringify(confirmed.body));
+  assert.equal(confirmed.body.data.status, 'submitted');
+
+  await AgentApplication.updateOne({ _id: applicationId }, { $set: { status: 'failed', submission: null } });
+  const afterFailure = await ext('/extension/confirm-submitted', token, { method: 'POST', json: { applicationId } });
+  assert.equal(afterFailure.status, 200);
+  assert.equal((await AgentApplication.findById(applicationId).lean()).status, 'submitted');
+});
+
+test('refreshing a device token never unpairs the browser, and revoking still cuts off every token', async () => {
+  await createReadyResume();
+  const { token: first, deviceId } = await pairExtension();
+
+  const refreshed = await ext('/extension/refresh', first, { method: 'POST' });
+  assert.equal(refreshed.status, 200);
+  const second = refreshed.body.data.token;
+  assert.ok(second && second !== first);
+  assert.ok(Date.parse(refreshed.body.data.expiresAt) > Date.now());
+  assert.equal((await ext('/extension/context?url=https://x.test', second)).status, 200);
+
+  // The refresh response was lost: the old token still works, and refreshing it again joins the
+  // current device id instead of rotating it away from the token that did arrive
+  assert.equal((await ext('/extension/context?url=https://x.test', first)).status, 200);
+  const retried = await ext('/extension/refresh', first, { method: 'POST' });
+  assert.equal(retried.status, 200);
+  assert.equal((await ext('/extension/context?url=https://x.test', second)).status, 200);
+  assert.equal((await ext('/extension/context?url=https://x.test', retried.body.data.token)).status, 200);
+  assert.equal(await ExtensionDevice.countDocuments({}), 1);
+
+  assert.equal((await api(`/extension/devices/${deviceId}`, { method: 'DELETE' })).status, 200);
+  for (const token of [first, second, retried.body.data.token]) {
+    assert.equal((await ext('/extension/context?url=https://x.test', token)).body.code, 'DEVICE_REVOKED');
+    assert.equal((await ext('/extension/refresh', token, { method: 'POST' })).status, 401);
+  }
+});
+
+test('a tracked Greenhouse job is recognised from its embedded form and other board URLs', async () => {
+  await createReadyResume();
+  const { token } = await pairExtension();
+  const applicationId = await trackedApplication(token);
+
+  for (const pageUrl of [
+    'https://boards.greenhouse.io/embed/job_app?for=acmepay&token=12345&gh_src=abc',
+    'https://job-boards.greenhouse.io/acmepay/jobs/12345'
+  ]) {
+    const context = await ext(`/extension/context?url=${encodeURIComponent(pageUrl)}`, token);
+    assert.equal(context.body.data.application?.id, applicationId, pageUrl);
+  }
+  const other = await ext(`/extension/context?url=${encodeURIComponent('https://boards.greenhouse.io/acmepay/jobs/99999')}`, token);
+  assert.equal(other.body.data.application, null);
 });
 
 test('fill plans need a ready resume', async () => {

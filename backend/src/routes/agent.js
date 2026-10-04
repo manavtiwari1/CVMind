@@ -7,12 +7,13 @@ import { getModel, getEmbedModel, getEmbedDims } from '../agent/ai/geminiClient.
 import { ResumeStructured } from '../agent/ai/schemas.js';
 import ResumeProfile from '../agent/models/ResumeProfile.js';
 import { PreferencesInput, DEFAULT_PREFERENCES } from '../agent/preferences/schema.js';
-import { getPreferences, savePreferences } from '../agent/preferences/service.js';
+import { getPreferences, savePreferences, clearPreferredResume } from '../agent/preferences/service.js';
 import AgentApplication, { APPLICATION_STATUSES } from '../agent/models/AgentApplication.js';
 import JobPosting from '../agent/models/JobPosting.js';
+import QueueJob from '../agent/models/QueueJob.js';
 import { JOB_PARSE_VERSION } from '../agent/jobs/jobData.js';
 import { enqueueMatch, enqueueJobParse, enqueueTailor, enqueueRenderPdf, enqueueServerFill, enqueueServerSubmit, transition } from '../agent/pipeline.js';
-import { pickAdapter } from '../agent/adapters/index.js';
+import { pickAdapter, formUrlFor } from '../agent/adapters/index.js';
 import { planHashOf } from '../agent/fill/buildFillPlan.js';
 import { TailoredEdit, applyTailoredEdits } from '../agent/tailoring/edits.js';
 import { tailoredResumeHash } from '../agent/resume/pdfArtifacts.js';
@@ -246,6 +247,7 @@ export function createAgentRouter({ loadWork = defaultLoadWork, loadLatestResume
     await ResumeProfile.updateMany({ userId: profile.userId, _id: { $ne: profile._id } }, { $set: { isDefault: false } });
     profile.isDefault = true;
     await profile.save();
+    await clearPreferredResume(profile.userId);
     return res.json({ success: true, data: toClient(profile) });
   }));
 
@@ -267,6 +269,7 @@ export function createAgentRouter({ loadWork = defaultLoadWork, loadLatestResume
 
     if (profile.originalFileRef?.gridFsId) await deleteFile(BUCKETS.resumeFiles, profile.originalFileRef.gridFsId);
     await profile.deleteOne();
+    await clearPreferredResume(profile.userId, profile._id);
     if (profile.isDefault) {
       const next = await ResumeProfile.findOne({ userId: profile.userId }).sort({ updatedAt: -1 });
       if (next) await ResumeProfile.updateOne({ _id: next._id }, { $set: { isDefault: true } });
@@ -501,14 +504,21 @@ export function createAgentRouter({ loadWork = defaultLoadWork, loadLatestResume
     if (application.decision?.state !== 'approved') return res.status(409).json({ success: false, code: 'NOT_APPROVED', error: 'Approve this job first.' });
 
     const posting = await loadPosting(application.jobPostingId);
-    const { AdapterClass, enabled, reason } = pickAdapter(posting?.applyUrl || posting?.url);
+    const { AdapterClass, enabled, reason } = pickAdapter(posting ? formUrlFor(posting) : null);
     if (!enabled || !AdapterClass.canServerSubmit) {
       return res.status(409).json({ success: false, code: 'UNSUPPORTED_SITE', error: 'CVMind cannot fill this site for you. Use the browser extension instead.', data: { reason } });
     }
 
+    // A re-fill would replace the answers a queued submit was approved for
+    const submitting = await QueueJob.exists({ applicationId: application._id, type: 'apply.submit', status: { $in: ['queued', 'running'] } });
+    if (submitting) return res.status(409).json({ success: false, code: 'IN_PROGRESS', error: 'This application is being submitted.' });
+
+    // Saved before queuing so the UI keeps polling until the worker picks the job up
+    const progress = { step: 'filling', updatedAt: new Date() };
+    await AgentApplication.updateOne({ _id: application._id }, { $set: { 'progress.step': progress.step, 'progress.updatedAt': progress.updatedAt } });
     await enqueueServerFill(application);
     await logEvent({ applicationId: application._id, userId: application.userId, type: 'fill.requested', actor: 'user', data: { adapter: AdapterClass.id } });
-    return res.status(202).json({ success: true, data: toClientApplication({ ...application, progress: { step: 'filling', updatedAt: new Date() } }, posting) });
+    return res.status(202).json({ success: true, data: toClientApplication({ ...application, progress }, posting) });
   }));
 
   router.get('/applications/:id/review', asyncRoute(async (req, res) => {
@@ -543,6 +553,10 @@ export function createAgentRouter({ loadWork = defaultLoadWork, loadLatestResume
       return res.status(409).json({ success: false, code: 'NOT_EDITABLE', error: 'The filled form can only be edited before it is submitted.' });
     }
 
+    // A queued submit was approved for the current answers; editing them now would cancel it
+    const submitting = await QueueJob.exists({ applicationId: application._id, type: 'apply.submit', status: { $in: ['queued', 'running'] } });
+    if (submitting) return res.status(409).json({ success: false, code: 'IN_PROGRESS', error: 'This application is already scheduled for submission, so its answers can no longer change.' });
+
     const edits = Array.isArray(req.body?.items) ? req.body.items : null;
     if (!edits) return res.status(400).json({ success: false, code: 'INVALID_EDIT', error: 'Send the fields you changed.' });
 
@@ -567,16 +581,24 @@ export function createAgentRouter({ loadWork = defaultLoadWork, loadLatestResume
     const application = await findOwnedApplication(req.params.id, req.auth.sub);
     if (!application) return res.status(404).json({ success: false, error: 'Application not found.' });
     if (application.submission) return res.status(409).json({ success: false, code: 'ALREADY_SUBMITTED', error: 'This application is already submitted.' });
+    if (application.status !== 'ready_for_review') return res.status(409).json({ success: false, code: 'NOT_READY', error: 'Only applications that are ready for review can be submitted.' });
     if (!application.fill?.plan) return res.status(409).json({ success: false, code: 'NOT_FILLED', error: 'Fill this application before submitting it.' });
     if (application.fill.handoff) return res.status(409).json({ success: false, code: 'HANDOFF', error: 'This form needs the browser extension. CVMind cannot submit it for you.' });
+    const busy = await QueueJob.exists({ applicationId: application._id, type: { $in: ['apply.fill', 'apply.submit'] }, status: { $in: ['queued', 'running'] } });
+    if (busy) return res.status(409).json({ success: false, code: 'IN_PROGRESS', error: 'CVMind is still working on this form. Wait for it to finish.' });
 
-    // Approval is tied to the exact answers the user saw
-    if (req.body?.planHash !== application.fill.planHash) {
+    // Approval is tied to the exact answers the user saw; the filter makes an edit saved at the same moment win
+    const planHash = req.body?.planHash;
+    const approved = planHash && planHash === application.fill.planHash && await AgentApplication.findOneAndUpdate(
+      { _id: application._id, status: 'ready_for_review', submission: null, 'fill.planHash': planHash },
+      { $set: { 'fill.approvedPlanHash': planHash, 'progress.step': 'submitting', 'progress.updatedAt': new Date() } },
+      { returnDocument: 'after' }
+    ).lean();
+    if (!approved) {
       return res.status(409).json({ success: false, code: 'PLAN_CHANGED', error: 'These answers changed since you reviewed them. Check them again.' });
     }
 
-    await AgentApplication.updateOne({ _id: application._id }, { $set: { 'fill.approvedPlanHash': application.fill.planHash, 'progress.step': 'submitting', 'progress.updatedAt': new Date() } });
-    await enqueueServerSubmit(application, application.fill.planHash);
+    await enqueueServerSubmit(approved, planHash);
     await logEvent({ applicationId: application._id, userId: application.userId, type: 'submit.requested', actor: 'user', message: 'You approved the filled form for submission.', data: { adapter: application.fill.adapter } });
     return res.status(202).json({ success: true });
   }));

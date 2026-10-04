@@ -2,9 +2,10 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getCentralJobs, saveCentralApplication, getCandidateApplications } from '../db.js';
+import { getCentralJobs, saveCentralApplication, getCandidateApplications, updateCandidateApplication } from '../db.js';
 import { requireUser, requireSelf } from '../services/authToken.js';
 import { requireAgentAccess } from '../agent/auth.js';
+import { generateJson } from '../agent/ai/geminiClient.js';
 import { scrapeJobFromUrl, parseJobContent } from '../services/jobScraper.js';
 import { fetchLiveAtsJobs } from '../services/atsCrawler.js';
 
@@ -85,23 +86,18 @@ function computeMatchScore(jobSkills, candidateSkills) {
   return Math.max(20, Math.min(99, base + variance));
 }
 
-function callGemini(prompt, apiKey) {
-  const key = apiKey || process.env.GEMINI_API_KEY;
-  if (!key) throw new Error('Gemini API key not configured.');
-
-  return fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.4, maxOutputTokens: 2048, responseMimeType: 'application/json' }
-    })
-  })
-    .then(r => r.json())
-    .then(d => {
-      const text = d?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-      return JSON.parse(text.replace(/```json\n?|```\n?/g, '').trim());
-    });
+async function callGemini(prompt, apiKey) {
+  if (!apiKey && !process.env.GEMINI_API_KEY) throw new Error('Gemini API key not configured.');
+  try {
+    return await generateJson({ prompt, temperature: 0.4, apiKey });
+  } catch (err) {
+    // The raw Gemini error is a JSON blob; log it and give the UI a readable message
+    console.error('[auto-apply] Gemini error:', err.message);
+    // Google answers a bad key with 400 "API key not valid", but 400 also covers other bad requests
+    const keyRejected = /^HTTP_40[13]$/.test(err.code || '') || (err.code === 'HTTP_400' && /api[ _-]?key/i.test(err.message || ''));
+    if (apiKey && keyRejected) throw new Error('Your Gemini API key was rejected. Check it in settings.');
+    throw new Error('The AI service could not process this request. Please try again.');
+  }
 }
 
 // ── POST /api/auto-apply/profile ───────────────────────────────────────────────
@@ -149,7 +145,7 @@ ${resumeText.substring(0, 4000)}`;
 });
 
 // ── GET /api/auto-apply/profile/:userId ───────────────────────────────────────
-router.get('/profile/:userId', requireSelf(), (req, res) => {
+router.get('/profile/:userId', requireSelf(), requireAgentAccess(), (req, res) => {
   const { userId } = req.params;
   const profiles = readProfiles();
   const userProfile = profiles[userId] || null;
@@ -157,7 +153,7 @@ router.get('/profile/:userId', requireSelf(), (req, res) => {
 });
 
 // ── POST /api/auto-apply/profile/save ─────────────────────────────────────────
-router.post('/profile/save', requireUser, (req, res) => {
+router.post('/profile/save', requireUser, requireAgentAccess(), (req, res) => {
   const { profile } = req.body || {};
   const userId = req.auth.sub;
   if (!profile) return res.status(400).json({ error: 'profile is required.' });
@@ -171,7 +167,7 @@ router.post('/profile/save', requireUser, (req, res) => {
 });
 
 // ── GET /api/auto-apply/live-ats-jobs ─────────────────────────────────────────
-router.get('/live-ats-jobs', async (req, res) => {
+router.get('/live-ats-jobs', requireUser, requireAgentAccess(), async (req, res) => {
   const { companyId, limit } = req.query;
   try {
     const jobs = await fetchLiveAtsJobs(companyId || null, Number(limit) || 8);
@@ -263,7 +259,7 @@ router.post('/jobs', async (req, res) => {
 });
 
 // ── POST /api/auto-apply/tailor-for-job ───────────────────────────────────────
-router.post('/tailor-for-job', requireUser, async (req, res) => {
+router.post('/tailor-for-job', requireUser, requireAgentAccess(), async (req, res) => {
   const { resumeText, job } = req.body || {};
   const apiKey = req.headers['x-gemini-key'] || null;
   if (!resumeText || !job)
@@ -297,7 +293,7 @@ Return ONLY valid JSON:
 });
 
 // ── POST /api/auto-apply/cover-letter ─────────────────────────────────────────
-router.post('/cover-letter', requireUser, async (req, res) => {
+router.post('/cover-letter', requireUser, requireAgentAccess(), async (req, res) => {
   const { resumeText, job, candidateProfile } = req.body || {};
   const apiKey = req.headers['x-gemini-key'] || null;
   if (!job) return res.status(400).json({ error: 'Job details are required.' });
@@ -332,7 +328,7 @@ Return ONLY valid JSON:
 });
 
 // ── POST /api/auto-apply/answer ───────────────────────────────────────────────
-router.post('/answer', requireUser, async (req, res) => {
+router.post('/answer', requireUser, requireAgentAccess(), async (req, res) => {
   const { question, candidateProfile, job } = req.body || {};
   const apiKey = req.headers['x-gemini-key'] || null;
   if (!question) return res.status(400).json({ error: 'Question is required.' });
@@ -423,52 +419,86 @@ router.post('/apply', requireUser, requireAgentAccess(), async (req, res) => {
 });
 
 // ── PATCH /api/auto-apply/applications/:appId ──────────────────────────────────
-router.patch('/applications/:appId', requireUser, async (req, res) => {
+const TRACKER_STATUSES = ['Saved', 'Applied', 'Pending', 'Interview', 'Assessment', 'Offer', 'Rejected'];
+
+// Applications live in the central store (what recruiters see) and, for older ones, only in the local
+// JSON file. The candidate's changes go to both so they survive a reload either way.
+router.patch('/applications/:appId', requireUser, requireAgentAccess(), async (req, res) => {
   const { appId } = req.params;
   const { status, notes } = req.body || {};
+  if (status !== undefined && !TRACKER_STATUSES.includes(status)) return res.status(400).json({ error: 'Unknown status.' });
+  if (notes !== undefined && typeof notes !== 'string') return res.status(400).json({ error: 'Notes must be text.' });
+
+  let central = null;
+  try {
+    central = await updateCandidateApplication(appId, { candidateId: req.auth.sub, candidateEmail: req.auth.email }, { status, notes: notes?.slice(0, 5000) });
+  } catch (err) {
+    console.error('Update central application error:', err);
+    return res.status(500).json({ error: 'Could not save this change. Please try again.' });
+  }
+
   const apps = readApps();
-  const idx = apps.findIndex(a => a.id === appId && a.userId === req.auth.sub);
-  if (idx === -1) return res.status(404).json({ error: 'Application not found.' });
-  if (status) apps[idx].status = status;
-  if (notes !== undefined) apps[idx].notes = notes;
-  apps[idx].updatedAt = new Date().toISOString();
-  writeApps(apps);
-  return res.json({ success: true, data: apps[idx] });
+  const idx = apps.findIndex(a => a.id === appId && a.userId === String(req.auth.sub));
+  if (idx !== -1) {
+    if (status) apps[idx].status = status;
+    if (notes !== undefined) apps[idx].notes = notes;
+    apps[idx].updatedAt = new Date().toISOString();
+    writeApps(apps);
+  }
+  if (!central && idx === -1) return res.status(404).json({ error: 'Application not found.' });
+  return res.json({ success: true, data: idx !== -1 ? apps[idx] : { id: appId, status: status ?? central.candidateStatus ?? central.status, notes: central.candidateNotes ?? '' } });
 });
 
 // ── DELETE /api/auto-apply/applications/:appId ─────────────────────────────────
-router.delete('/applications/:appId', requireUser, async (req, res) => {
+// Removing only hides it from the candidate's tracker; the employer keeps the application they received
+router.delete('/applications/:appId', requireUser, requireAgentAccess(), async (req, res) => {
   const { appId } = req.params;
+  let central = null;
+  try {
+    central = await updateCandidateApplication(appId, { candidateId: req.auth.sub, candidateEmail: req.auth.email }, { hidden: true });
+  } catch (err) {
+    console.error('Hide central application error:', err);
+    return res.status(500).json({ error: 'Could not remove this application. Please try again.' });
+  }
+
   const apps = readApps();
-  const idx = apps.findIndex(a => a.id === appId && a.userId === req.auth.sub);
-  if (idx === -1) return res.status(404).json({ error: 'Application not found.' });
-  apps.splice(idx, 1);
-  writeApps(apps);
+  const idx = apps.findIndex(a => a.id === appId && a.userId === String(req.auth.sub));
+  if (idx !== -1) {
+    apps.splice(idx, 1);
+    writeApps(apps);
+  }
+  if (!central && idx === -1) return res.status(404).json({ error: 'Application not found.' });
   return res.json({ success: true });
 });
 
 // ── GET /api/auto-apply/applications/:userId ───────────────────────────────────
-router.get('/applications/:userId', requireSelf(), async (req, res) => {
+router.get('/applications/:userId', requireSelf(), requireAgentAccess(), async (req, res) => {
   const { userId } = req.params;
   
   let centralApps = [];
   try {
-    centralApps = await getCandidateApplications(req.auth.email);
+    centralApps = await getCandidateApplications(req.auth.email, req.auth.sub);
   } catch (err) {
     console.error('Fetch central candidate apps error:', err);
   }
 
   const localApps = readApps().filter(a => a.userId === userId);
   
-  // Merge central status updates into local apps list
+  // Merge central status updates into local apps list. The candidate's own status wins until the
+  // recruiter changes theirs (which clears it); applications the candidate removed stay hidden.
   const mergedMap = new Map();
   localApps.forEach(a => mergedMap.set(a.id, a));
   centralApps.forEach(ca => {
+    if (ca.hiddenByCandidate) {
+      mergedMap.delete(ca.id);
+      return;
+    }
     const existing = mergedMap.get(ca.id);
     if (existing) {
       mergedMap.set(ca.id, {
         ...existing,
-        status: ca.status,
+        status: ca.candidateStatus || ca.status,
+        notes: ca.candidateNotes ?? existing.notes,
         events: ca.events,
         interviewDetails: ca.interviewDetails,
         updatedAt: ca.updatedAt
@@ -489,7 +519,8 @@ router.get('/applications/:userId', requireSelf(), async (req, res) => {
         },
         matchScore: ca.matchScore,
         matchBreakdown: ca.matchBreakdown,
-        status: ca.status,
+        status: ca.candidateStatus || ca.status,
+        notes: ca.candidateNotes || '',
         events: ca.events,
         interviewDetails: ca.interviewDetails,
         appliedAt: ca.appliedAt,
@@ -503,7 +534,7 @@ router.get('/applications/:userId', requireSelf(), async (req, res) => {
 });
 
 // ── POST /api/auto-apply/scrape-job ───────────────────────────────────────────
-router.post('/scrape-job', requireUser, async (req, res) => {
+router.post('/scrape-job', requireUser, requireAgentAccess(), async (req, res) => {
   const { url } = req.body || {};
   const apiKey = req.headers['x-gemini-key'] || null;
 
@@ -521,7 +552,7 @@ router.post('/scrape-job', requireUser, async (req, res) => {
 });
 
 // ── POST /api/auto-apply/analyze-page ───────────────────────────────────────────
-router.post('/analyze-page', requireUser, async (req, res) => {
+router.post('/analyze-page', requireUser, requireAgentAccess(), async (req, res) => {
   const { url = '', pageTitle = '', textContent = '', profile = null } = req.body || {};
   const apiKey = req.headers['x-gemini-key'] || null;
 
@@ -573,7 +604,7 @@ router.post('/analyze-page', requireUser, async (req, res) => {
 });
 
 // ── POST /api/auto-apply/map-fields ─────────────────────────────────────────────
-router.post('/map-fields', requireUser, async (req, res) => {
+router.post('/map-fields', requireUser, requireAgentAccess(), async (req, res) => {
   const { fields = [], profile = {}, job = {} } = req.body || {};
   const apiKey = req.headers['x-gemini-key'] || null;
 
@@ -719,7 +750,7 @@ Return ONLY valid JSON:
 });
 
 // ── POST /api/auto-apply/extension-sync ─────────────────────────────────────────
-router.post('/extension-sync', requireUser, async (req, res) => {
+router.post('/extension-sync', requireUser, requireAgentAccess(), async (req, res) => {
   try {
     const recentApps = readApps().filter(a => a.userId === String(req.auth.sub)).slice(-5);
     return res.json({

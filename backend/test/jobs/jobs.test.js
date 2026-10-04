@@ -19,6 +19,18 @@ test('normalizeJobUrl strips tracking, www, fragments and trailing slashes', () 
   assert.equal(normalizeJobUrl('not a url'), null);
 });
 
+test('normalizeJobUrl maps Workday apply steps to the job page they belong to', () => {
+  const job = 'https://acme.wd5.myworkdayjobs.com/en-US/careers/job/Bengaluru/Backend-Engineer_R123';
+  assert.equal(normalizeJobUrl(`${job}/apply`), job);
+  assert.equal(normalizeJobUrl(`${job}/apply/applyManually`), job);
+  assert.equal(normalizeJobUrl(`${job}/apply/autofillWithResume?source=li`), job);
+  assert.equal(normalizeJobUrl('https://wd3.myworkdaysite.com/recruiting/acme/careers/job/Pune/QA_R9/apply/useMyLastApplication'),
+    'https://wd3.myworkdaysite.com/recruiting/acme/careers/job/Pune/QA_R9');
+  // Only Workday hosts, and only after a /job/ path
+  assert.equal(normalizeJobUrl('https://careers.example.com/job/1/apply'), 'https://careers.example.com/job/1/apply');
+  assert.equal(normalizeJobUrl('https://acme.wd5.myworkdayjobs.com/careers/apply'), 'https://acme.wd5.myworkdayjobs.com/careers/apply');
+});
+
 test('detectAts recognises Greenhouse, Lever and Workday links', () => {
   assert.deepEqual(detectAts('https://boards.greenhouse.io/acme/jobs/123'), { ats: 'greenhouse', boardToken: 'acme', jobId: '123' });
   assert.deepEqual(detectAts('https://job-boards.greenhouse.io/acme/jobs/456'), { ats: 'greenhouse', boardToken: 'acme', jobId: '456' });

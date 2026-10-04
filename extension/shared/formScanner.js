@@ -25,10 +25,14 @@
     // and an index would only make the selector brittle
     if (el.type === 'radio' && el.name) return `input[type="radio"][name="${CSS.escape(el.name)}"]`;
     if (el.name) {
-      const sameName = document.querySelectorAll(`${tag}[name="${CSS.escape(el.name)}"]`);
-      if (sameName.length === 1) return `${tag}[name="${CSS.escape(el.name)}"]`;
-      const index = Array.from(sameName).indexOf(el);
-      if (index >= 0) return `${tag}[name="${CSS.escape(el.name)}"]:nth-of-type(${index + 1})`;
+      const byName = `${tag}[name="${CSS.escape(el.name)}"]`;
+      if (document.querySelectorAll(byName).length === 1) return byName;
+      // :nth-of-type counts siblings with the same tag, not same-name fields across the form,
+      // so the candidate is only used when it really points at this one element
+      const position = Array.from(el.parentElement?.children || []).filter((child) => child.tagName === el.tagName).indexOf(el) + 1;
+      const candidate = `${byName}:nth-of-type(${position})`;
+      const matches = position > 0 ? document.querySelectorAll(candidate) : [];
+      if (matches.length === 1 && matches[0] === el) return candidate;
     }
     const path = [];
     let node = el;

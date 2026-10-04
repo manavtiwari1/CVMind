@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, Plus, RefreshCw, Save, X } from 'lucide-react';
 import type { ApplyMode, EmploymentType, JobPreferences, ResumeProfile, SalaryPeriod, Seniority, WorkMode } from '../../types/agent';
-import { getPreferences, listResumes, savePreferences } from '../../lib/agentApi';
+import { ApiError, getPreferences, listResumes, savePreferences } from '../../lib/agentApi';
 import ExtensionPairing from './ExtensionPairing';
 import './ResumeTab.css';
 import './PreferencesTab.css';
@@ -36,6 +36,31 @@ const APPLY_MODE_OPTIONS: { value: ApplyMode; label: string }[] = [
 const EEO_FIELDS: { key: keyof JobPreferences['eeo']; label: string }[] = [
   { key: 'gender', label: 'Gender' }, { key: 'race', label: 'Race / ethnicity' }, { key: 'veteran', label: 'Veteran status' }, { key: 'disability', label: 'Disability' }
 ];
+
+const FIELD_LABELS: Record<string, string> = {
+  targetTitles: 'Job titles', locations: 'Locations', minSalary: 'Minimum salary', workAuthorization: 'Work authorization',
+  noticePeriod: 'Notice period', standardAnswers: 'Saved answers', excludedCompanies: 'Excluded companies',
+  includeIndustries: 'Industries', excludeIndustries: 'Excluded industries', eeo: 'Voluntary disclosures'
+};
+
+// Names the fields the server rejected instead of a bare "Some preferences are invalid."
+function describeSaveError(e: unknown) {
+  if (!(e instanceof Error)) return 'Could not save preferences.';
+  const issues = e instanceof ApiError ? e.issues ?? [] : [];
+  if (!issues.length) return e.message;
+  const details = [...new Set(issues.map(issue => {
+    const field = String(issue.path?.[0] ?? '');
+    return `${FIELD_LABELS[field] ?? field}: ${issue.message ?? 'invalid'}`;
+  }))].slice(0, 3);
+  return `${e.message} ${details.join('; ')}`;
+}
+
+// Rows added but never filled in would fail validation, so they are dropped rather than sent
+const withoutEmptyRows = (prefs: JobPreferences): JobPreferences => ({
+  ...prefs,
+  workAuthorization: prefs.workAuthorization.filter(auth => auth.country.trim()),
+  standardAnswers: prefs.standardAnswers.filter(item => item.question.trim() || item.answer.trim())
+});
 
 const joinList = (list: string[]) => list.join(',');
 const splitList = (value: string) => value.split(',');
@@ -87,13 +112,19 @@ export default function PreferencesTab({ seed }: { seed?: LegacyPreferences }) {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([getPreferences(), listResumes().catch(() => [] as ResumeProfile[])])
-      .then(([{ preferences, exists }, resumeList]) => {
+    // null when the list could not be loaded, which must not look like "every resume was deleted"
+    Promise.all([getPreferences(), listResumes().catch(() => null)])
+      .then(([{ preferences, exists }, loadedResumes]) => {
         if (cancelled) return;
-        const initial = exists ? preferences : seedFromLegacy(preferences, seed);
+        const resumeList = loadedResumes ?? [];
+        const loaded = exists ? preferences : seedFromLegacy(preferences, seed);
+        // A preferred resume that was deleted would make every save fail validation
+        const initial = loadedResumes && loaded.defaultResumeProfileId && !resumeList.some(r => r.id === loaded.defaultResumeProfileId)
+          ? { ...loaded, defaultResumeProfileId: null }
+          : loaded;
         setPrefs(initial);
         setResumes(resumeList.filter(r => r.status === 'ready'));
-        if (!exists && initial !== preferences) {
+        if (!exists && loaded !== preferences) {
           setDirty(true);
           setNotice('We prefilled this from your earlier job search. Review and save to keep it.');
         } else if (!exists && resumeList.some(r => r.status !== 'failed')) {
@@ -116,11 +147,11 @@ export default function PreferencesTab({ seed }: { seed?: LegacyPreferences }) {
     if (!prefs) return;
     setSaving(true); setError(''); setNotice('');
     try {
-      setPrefs(await savePreferences(prefs));
+      setPrefs(await savePreferences(withoutEmptyRows(prefs)));
       setDirty(false);
       setNotice('Preferences saved. The agent will use them to score and filter jobs.');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save preferences.');
+      setError(describeSaveError(e));
     } finally {
       setSaving(false);
     }

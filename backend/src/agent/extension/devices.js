@@ -49,7 +49,10 @@ export async function redeemPairCode(code, deviceName) {
 
 export async function findActiveDevice(jti) {
   if (!jti) return null;
-  return ExtensionDevice.findOne({ jti, revokedAt: null }).lean();
+  return ExtensionDevice.findOne({
+    revokedAt: null,
+    $or: [{ jti }, { prevJti: jti, prevJtiUntil: { $gt: new Date() } }]
+  }).lean();
 }
 
 export function touchDevice(device) {
@@ -57,13 +60,28 @@ export function touchDevice(device) {
   ExtensionDevice.updateOne({ _id: device._id }, { $set: { lastSeenAt: new Date() } }).catch(() => {});
 }
 
+const issueDeviceToken = (auth, jti) => ({
+  token: signToken({ sub: auth.sub, kind: 'extension', email: auth.email, ttlMs: DEVICE_TOKEN_TTL_MS, jti }),
+  expiresAt: new Date(Date.now() + DEVICE_TOKEN_TTL_MS)
+});
+
+// Rotates the device id. The replaced id keeps working until its token would have expired anyway
+// (no weaker than not rotating), so a refresh whose response was lost never unpairs the browser:
+// its retry, or a concurrent refresh, gets a token for the current id instead of rotating again.
+// Revoking the device still cuts off both ids at once.
 export async function refreshDeviceToken(auth, device) {
+  if (auth.jti !== device.jti) return issueDeviceToken(auth, device.jti);
+
   const jti = crypto.randomUUID();
-  await ExtensionDevice.updateOne({ _id: device._id }, { $set: { jti, lastSeenAt: new Date() } });
-  return {
-    token: signToken({ sub: auth.sub, kind: 'extension', email: auth.email, ttlMs: DEVICE_TOKEN_TTL_MS, jti }),
-    expiresAt: new Date(Date.now() + DEVICE_TOKEN_TTL_MS)
-  };
+  const rotated = await ExtensionDevice.updateOne(
+    { _id: device._id, jti: auth.jti, revokedAt: null },
+    { $set: { jti, prevJti: auth.jti, prevJtiUntil: new Date(auth.exp), lastSeenAt: new Date() } }
+  );
+  if (rotated.matchedCount === 1) return issueDeviceToken(auth, jti);
+
+  const current = await findActiveDevice(auth.jti);
+  if (!current) return null;
+  return issueDeviceToken(auth, current.jti);
 }
 
 export const listDevices = (userId) => ExtensionDevice.find({ userId: String(userId), revokedAt: null }).sort({ createdAt: -1 }).lean();

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { z } from 'zod';
 import {
-  generateStructured, embedTexts, classifyError, toGeminiJsonSchema, l2normalize, cosine,
+  generateStructured, generateJson, embedTexts, classifyError, toGeminiJsonSchema, l2normalize, cosine,
   RetryableError, FatalError
 } from '../../src/agent/ai/geminiClient.js';
 
@@ -66,6 +66,31 @@ test('generateStructured throws FatalError after two invalid responses', async (
 test('generateStructured surfaces rate limits as retryable', async () => {
   const client = fakeClient({ texts: [Object.assign(new Error('quota'), { status: 429 })] });
   await assert.rejects(generateStructured({ schema: Person, prompt: 'p', client, model: 'm' }), RetryableError);
+});
+
+test('generateJson returns parsed JSON and asks for a JSON response', async () => {
+  const client = fakeClient({ texts: ['```json\n{"title":"Engineer"}\n```'] });
+  const out = await generateJson({ prompt: 'parse', client, model: 'm' });
+  assert.deepEqual(out, { title: 'Engineer' });
+  assert.equal(client.calls.generate[0].config.responseMimeType, 'application/json');
+  assert.equal(client.calls.generate[0].model, 'm');
+});
+
+test('generateJson throws instead of returning {} on empty or invalid output', async () => {
+  for (const text of [undefined, '', 'not json', 'null', '42']) {
+    const client = fakeClient({ texts: [text] });
+    await assert.rejects(
+      generateJson({ prompt: 'p', client, model: 'm' }),
+      (err) => err instanceof FatalError && err.code === 'BAD_JSON'
+    );
+  }
+});
+
+test('generateJson surfaces API errors through classifyError', async () => {
+  const limited = fakeClient({ texts: [Object.assign(new Error('quota'), { status: 429 })] });
+  await assert.rejects(generateJson({ prompt: 'p', client: limited, model: 'm' }), RetryableError);
+  const retired = fakeClient({ texts: [Object.assign(new Error('model not found'), { status: 404 })] });
+  await assert.rejects(generateJson({ prompt: 'p', client: retired, model: 'm' }), FatalError);
 });
 
 test('classifyError splits retryable from fatal failures', () => {

@@ -23,6 +23,7 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
 };
 const PROGRESS_LABELS: Record<string, string> = {
   parsing_job: 'Reading the job posting…',
+  parsing_resume: 'Waiting for your resume to be read…',
   scoring: 'Comparing the job with your resume…',
   tailoring_resume: 'Tailoring your resume for this job…',
   writing_cover_letter: 'Writing your cover letter…',
@@ -30,9 +31,16 @@ const PROGRESS_LABELS: Record<string, string> = {
   filling: 'Opening the application and filling it…',
   submitting: 'Submitting your application…'
 };
-const IN_PROGRESS: ApplicationStatus[] = ['pending', 'tailoring'];
-// These run while the status stays ready_for_review, so polling follows the step instead
-const IN_PROGRESS_STEPS = ['filling', 'submitting'];
+// Some work runs while the status stays put (re-scoring a scored job, filling a reviewed one), so
+// the step counts too, but only for the status it belongs to: a failed application can keep its last
+// step and must not poll or spin forever
+const WORKING_STEPS: Partial<Record<ApplicationStatus, string[]>> = {
+  matched: ['parsing_job', 'parsing_resume', 'scoring'],
+  ready_for_review: ['filling', 'submitting']
+};
+const isWorking = (application: AgentApplication) =>
+  application.status === 'pending' || application.status === 'tailoring'
+  || (WORKING_STEPS[application.status] ?? []).includes(application.progress?.step ?? '');
 
 const jobTitle = (application: AgentApplication) =>
   application.job?.title || (application.status === 'pending' ? 'Reading job…' : 'Untitled role');
@@ -69,7 +77,7 @@ export default function ApplicationsTab({ onEditResume }: { onEditResume?: (resu
     loadResumes();
   }, [applyList, loadResumes]);
 
-  const inFlight = applications.some(a => IN_PROGRESS.includes(a.status) || IN_PROGRESS_STEPS.includes(a.progress?.step ?? ''));
+  const inFlight = applications.some(isWorking);
   useEffect(() => {
     if (!inFlight) return;
     const timer = setInterval(() => { refresh().catch(() => {}); }, POLL_MS);
@@ -176,7 +184,7 @@ export default function ApplicationsTab({ onEditResume }: { onEditResume?: (resu
           </div>
         </div>
 
-        {(IN_PROGRESS.includes(application.status) || IN_PROGRESS_STEPS.includes(application.progress?.step ?? '')) && (
+        {isWorking(application) && (
           <div className="aa-empty">
             <RefreshCw size={28} className="aa-spin" />
             <p>{PROGRESS_LABELS[application.progress?.step ?? ''] ?? 'Working on it…'}</p>

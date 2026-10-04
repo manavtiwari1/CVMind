@@ -8,6 +8,7 @@ import {
   updateApplicationStatus 
 } from '../db.js';
 import { requireCompany } from '../services/authToken.js';
+import { generateJson } from '../agent/ai/geminiClient.js';
 
 const router = express.Router();
 
@@ -48,17 +49,7 @@ ${jobDescription.substring(0, 3000)}
 """`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 1024, responseMimeType: 'application/json' }
-      })
-    });
-    const data = await res.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-    return JSON.parse(rawText.replace(/```json\n?|```\n?/g, '').trim());
+    return await generateJson({ prompt, temperature: 0.2, apiKey });
   } catch (err) {
     console.error('[AI JOB PARSER] Error:', err.message);
     return {

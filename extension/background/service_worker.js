@@ -5,6 +5,10 @@
 
 const DEFAULT_API_BASE = 'http://localhost:5000';
 const TOKEN_KEY = 'cvmind_device_token';
+const EXPIRES_KEY = 'cvmind_token_expires_at';
+// Device tokens last 30 days; swap for a new one during the last week so an active extension never has to re-pair
+const REFRESH_WITHIN_MS = 7 * 24 * 60 * 60 * 1000;
+const REFRESH_RETRY_MS = 10 * 60 * 1000;
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.local.get(['cvmind_api_base'], (res) => {
@@ -28,23 +32,84 @@ class PairingRequired extends Error {
   }
 }
 
-// Every agent call carries the device token; a revoked or expired one clears local state
-async function apiFetch(path, { method = 'GET', body } = {}) {
-  const [base, stored] = await Promise.all([apiBase(), storage([TOKEN_KEY])]);
+// Removes the token only if it is still the one that was rejected; a newer one means a refresh already replaced it
+async function clearToken(rejectedToken) {
+  const stored = await storage([TOKEN_KEY]);
+  if (stored[TOKEN_KEY] !== rejectedToken) return false;
+  await chrome.storage.local.remove([TOKEN_KEY, EXPIRES_KEY]);
+  return true;
+}
+
+// Refreshing rotates the device id on the server; all callers share one in-flight refresh so a
+// burst of calls near expiry swaps the token once (the server also tolerates the old token until it expires)
+let refreshing = null;
+let refreshFailedAt = 0;
+
+async function ensureFreshToken() {
+  const stored = await storage([TOKEN_KEY, EXPIRES_KEY]);
   const token = stored[TOKEN_KEY];
   if (!token) throw new PairingRequired();
 
-  const res = await fetch(`${base}/api/agent/extension${path}`, {
-    method,
-    headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
-    body: body ? JSON.stringify(body) : undefined
-  });
+  // Tokens paired before expiry tracking have no stored expiry, so they refresh once to learn it
+  const expiresAt = Date.parse(stored[EXPIRES_KEY] || '');
+  if (expiresAt && expiresAt - Date.now() > REFRESH_WITHIN_MS) return token;
+  if (refreshing) return refreshing;
+  if (Date.now() - refreshFailedAt < REFRESH_RETRY_MS) return token;
 
+  refreshing = refreshToken(token).finally(() => { refreshing = null; });
+  return refreshing;
+}
+
+async function refreshToken(token) {
+  const base = await apiBase();
+  let res;
+  try {
+    res = await fetch(`${base}/api/agent/extension/refresh`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+  } catch {
+    refreshFailedAt = Date.now(); // offline: keep using the current token until it actually expires
+    return token;
+  }
+
+  const payload = await res.json().catch(() => ({}));
   if (res.status === 401) {
-    await chrome.storage.local.remove(TOKEN_KEY);
-    const payload = await res.json().catch(() => ({}));
+    await clearToken(token);
     throw new PairingRequired(payload.error);
   }
+  if (!res.ok || !payload.success || !payload.data?.token) {
+    refreshFailedAt = Date.now();
+    return token;
+  }
+  // The user may have unpaired or paired another account while this was in flight; don't overwrite that
+  const current = await storage([TOKEN_KEY]);
+  if (current[TOKEN_KEY] !== token) {
+    if (!current[TOKEN_KEY]) throw new PairingRequired();
+    return current[TOKEN_KEY];
+  }
+  await chrome.storage.local.set({ [TOKEN_KEY]: payload.data.token, [EXPIRES_KEY]: payload.data.expiresAt });
+  return payload.data.token;
+}
+
+// Every agent call carries the device token; a revoked or expired one clears local state
+async function authedFetch(path, init = {}, retried = false) {
+  const [base, token] = await Promise.all([apiBase(), ensureFreshToken()]);
+  const res = await fetch(`${base}/api/agent/extension${path}`, {
+    ...init,
+    headers: { ...init.headers, Authorization: `Bearer ${token}` }
+  });
+  if (res.status !== 401) return res;
+
+  const payload = await res.json().catch(() => ({}));
+  // Rejected only because a refresh swapped the token mid-flight: retry once with the new one
+  if (!(await clearToken(token)) && !retried) return authedFetch(path, init, true);
+  throw new PairingRequired(payload.error);
+}
+
+async function apiFetch(path, { method = 'GET', body } = {}) {
+  const res = await authedFetch(path, {
+    method,
+    headers: body ? { 'Content-Type': 'application/json' } : {},
+    body: body ? JSON.stringify(body) : undefined
+  });
   const payload = await res.json().catch(() => ({}));
   if (!res.ok || payload.success === false) throw new Error(payload.error || `Request failed (${res.status}).`);
   return payload.data;
@@ -59,18 +124,17 @@ async function pair({ code, deviceName }) {
   });
   const payload = await res.json().catch(() => ({}));
   if (!res.ok || !payload.success) throw new Error(payload.error || 'Pairing failed.');
-  await chrome.storage.local.set({ [TOKEN_KEY]: payload.data.token, cvmind_device_name: payload.data.device.name });
+  await chrome.storage.local.set({
+    [TOKEN_KEY]: payload.data.token,
+    [EXPIRES_KEY]: payload.data.expiresAt,
+    cvmind_device_name: payload.data.device.name
+  });
   return { device: payload.data.device };
 }
 
 // The resume PDF is fetched here (where the token lives) and handed to the page as a data URL
 async function fetchResumeFile({ applicationId }) {
-  const [base, stored] = await Promise.all([apiBase(), storage([TOKEN_KEY])]);
-  if (!stored[TOKEN_KEY]) throw new PairingRequired();
-
-  const res = await fetch(`${base}/api/agent/extension/resume.pdf?applicationId=${encodeURIComponent(applicationId)}`, {
-    headers: { Authorization: `Bearer ${stored[TOKEN_KEY]}` }
-  });
+  const res = await authedFetch(`/resume.pdf?applicationId=${encodeURIComponent(applicationId)}`);
   if (!res.ok) throw new Error('The tailored PDF is not ready yet.');
 
   const buffer = await res.arrayBuffer();
@@ -88,7 +152,7 @@ const HANDLERS = {
   },
   PAIR: (payload) => pair(payload),
   UNPAIR: async () => {
-    await chrome.storage.local.remove([TOKEN_KEY, 'cvmind_device_name']);
+    await chrome.storage.local.remove([TOKEN_KEY, EXPIRES_KEY, 'cvmind_device_name']);
     return { paired: false };
   },
   SET_API_BASE: async ({ apiBase: base }) => {

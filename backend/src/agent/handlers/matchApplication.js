@@ -8,7 +8,7 @@ import { embedProfileBullets, vectorFromStored } from '../resume/embeddings.js';
 import { computeScore } from '../scoring/score.js';
 import { transition, markFailed, setProgress } from '../pipeline.js';
 import { logEvent } from '../events.js';
-import { FatalError, RetryableError } from '../errors.js';
+import { FatalError, RateLimitDeferral } from '../errors.js';
 
 // Best similarity between the job title and the titles the user wants or recently held
 async function titleSimilarity(posting, resume, preferences, client) {
@@ -21,6 +21,18 @@ async function titleSimilarity(posting, resume, preferences, client) {
   const jobVector = vectorFromStored(posting.embeddings.title);
   const vectors = await embedTexts(titles, { client });
   return Math.max(...vectors.map((vector) => cosine(jobVector, vector)));
+}
+
+const WAIT_RECHECK_MS = 15 * 1000;
+// Parsing normally takes seconds; an hour of waiting means the parse is lost, not slow
+const MAX_WAIT_CHECKS = 240;
+
+// Parsing can outlast the retry backoff (a slow or rate-limited Gemini call), so waiting for it
+// must not use up attempts: defer and check again, failing only after a long wait
+async function waitFor(application, job, step, message, code) {
+  if ((job.deferrals || 0) >= MAX_WAIT_CHECKS) throw new FatalError(`${message} It is taking too long, so try again.`, { code });
+  await setProgress(application._id, step);
+  throw new RateLimitDeferral(new Date(Date.now() + WAIT_RECHECK_MS), message);
 }
 
 export function createMatchHandler({ ai = {} } = {}) {
@@ -38,9 +50,9 @@ export function createMatchHandler({ ai = {} } = {}) {
       ]);
       if (!posting) throw new FatalError('The job posting no longer exists.', { code: 'JOB_MISSING' });
       if (posting.status === 'failed') throw new FatalError(posting.parseError || 'The job posting could not be read.', { code: 'JOB_FAILED' });
-      if (posting.status !== 'ready') throw new RetryableError('The job posting is still being read.', { code: 'JOB_NOT_READY' });
       if (!resumeDoc || resumeDoc.status === 'failed') throw new FatalError('The resume for this application is not available.', { code: 'RESUME_UNAVAILABLE' });
-      if (resumeDoc.status !== 'ready') throw new RetryableError('The resume is still being parsed.', { code: 'RESUME_NOT_READY' });
+      if (posting.status !== 'ready') await waitFor(application, job, 'parsing_job', 'The job posting is still being read.', 'JOB_NOT_READY');
+      if (resumeDoc.status !== 'ready') await waitFor(application, job, 'parsing_resume', 'The resume is still being parsed.', 'RESUME_NOT_READY');
 
       await setProgress(application._id, 'scoring');
 
@@ -80,6 +92,7 @@ export function createMatchHandler({ ai = {} } = {}) {
         durationMs: Date.now() - startedAt
       });
     } catch (err) {
+      if (err instanceof RateLimitDeferral) throw err;
       if (err?.retryable === false || job.attempts >= job.maxAttempts) {
         await markFailed(application._id, 'match', err);
         await logEvent({ applicationId: application._id, userId: application.userId, type: 'score.failed', message: err.message, data: { code: err.code || null }, queueJobId: job._id });
