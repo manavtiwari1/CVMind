@@ -127,6 +127,10 @@ Questions? Just reply to this email or write to <a href="mailto:${escapeHtml(SUP
 </body></html>`;
 }
 
+const providerError = (error) => Object.assign(new Error(error.message || 'Email provider error'), { status: error.statusCode, code: error.name });
+const isRateLimited = (error) => error?.statusCode === 429 || error?.name === 'rate_limit_exceeded';
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export async function sendEmail({ to, subject, html, replyTo = SUPPORT_EMAIL, attachments }) {
   if (!emailConfigured()) throw Object.assign(new Error('Email is not configured on this server (RESEND_API_KEY).'), { status: 503 });
   const { data, error } = await getClient().emails.send({
@@ -137,6 +141,45 @@ export async function sendEmail({ to, subject, html, replyTo = SUPPORT_EMAIL, at
     ...(replyTo ? { replyTo } : {}),
     ...(attachments ? { attachments } : {})
   });
-  if (error) throw new Error(error.message || 'Email provider error');
+  if (error) throw providerError(error);
   return data;
+}
+
+// Resend's batch API takes up to 100 emails per request, and its default rate limit is 2 requests a second
+export const BATCH_SIZE = 100;
+const BATCH_GAP_MS = 600;
+
+// Sends many emails (each { to, subject, html }) in batches. One bad address doesn't sink its batch
+// (permissive validation), and a rate-limited batch is retried once. Never throws for a provider
+// error: returns { sent, failed, errors } so the caller can record the outcome.
+export async function sendEmailBatch(messages, { replyTo = SUPPORT_EMAIL } = {}) {
+  if (!emailConfigured()) throw Object.assign(new Error('Email is not configured on this server (RESEND_API_KEY).'), { status: 503 });
+  let sent = 0;
+  let failed = 0;
+  const errors = [];
+  for (let i = 0; i < messages.length; i += BATCH_SIZE) {
+    if (i > 0) await sleep(BATCH_GAP_MS);
+    const chunk = messages.slice(i, i + BATCH_SIZE);
+    const payload = chunk.map((m) => ({ from: EMAIL_FROM, to: [m.to], subject: m.subject, html: m.html, ...(replyTo ? { replyTo } : {}) }));
+    let result;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        result = await getClient().batch.send(payload, { batchValidation: 'permissive' });
+      } catch (err) {
+        result = { error: { message: err.message } };
+      }
+      if (!isRateLimited(result.error) || attempt === 1) break;
+      await sleep(1500);
+    }
+    if (result.error) {
+      failed += chunk.length;
+      errors.push({ to: chunk.map((m) => m.to), message: result.error.message });
+      continue;
+    }
+    const rejected = result.data?.errors || [];
+    failed += rejected.length;
+    sent += chunk.length - rejected.length;
+    for (const r of rejected) errors.push({ to: [chunk[r.index]?.to], message: r.message });
+  }
+  return { sent, failed, errors };
 }

@@ -17,6 +17,7 @@ interface Sent {
   readCount: number;
   emailSent: number;
   emailFailed: number;
+  emailSkipped: number;
   createdBy: string;
   createdAt: string;
 }
@@ -31,6 +32,15 @@ interface Segment {
 }
 
 const EMPTY_SEGMENT: Segment = { status: '', provider: '', signedUpFrom: '', signedUpTo: '', usedFeature: '', emails: '' };
+
+// /notifications/preview: count is the whole audience, emailCount the part with a verified email
+interface Preview {
+  count: number;
+  emailCount: number;
+  sample: Array<{ name: string; email: string; emailVerified: boolean }>;
+  emailConfigured: boolean;
+  maxEmailRecipients: number;
+}
 
 export default function Notifications() {
   const [page, setPage] = useState(1);
@@ -51,18 +61,18 @@ export default function Notifications() {
     emails: segment.emails.split(/[\s,;]+/).map((e) => e.trim()).filter(Boolean)
   };
   const debouncedSegment = useDebounced(JSON.stringify(segmentBody), 400);
-  const [preview, setPreview] = useState<{ count: number; sample: Array<{ name: string; email: string }>; emailConfigured: boolean; maxEmailRecipients: number } | null>(null);
+  const [preview, setPreview] = useState<Preview | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    api<{ data: { count: number; sample: Array<{ name: string; email: string }>; emailConfigured: boolean; maxEmailRecipients: number } }>('/notifications/preview', { method: 'POST', body: { segment: JSON.parse(debouncedSegment) } })
+    api<{ data: Preview }>('/notifications/preview', { method: 'POST', body: { segment: JSON.parse(debouncedSegment) } })
       .then((r) => { if (!cancelled) setPreview(r.data); })
       .catch(() => { if (!cancelled) setPreview(null); });
     return () => { cancelled = true; };
   }, [debouncedSegment]);
 
   const channels = [inApp && 'in-app', email && 'email'].filter(Boolean) as string[];
-  const tooManyForEmail = email && preview && preview.count > preview.maxEmailRecipients;
+  const tooManyForEmail = email && preview && preview.emailCount > preview.maxEmailRecipients;
   const canSend = title.trim() && channels.length && preview && preview.count > 0 && !tooManyForEmail && !(email && !preview.emailConfigured);
   const everyone = Object.values(segment).every((v) => !v);
 
@@ -158,8 +168,14 @@ export default function Notifications() {
                 </div>
                 {preview.sample.length > 0 && (
                   <ul className="ad-list" style={{ marginTop: 12 }}>
-                    {preview.sample.map((u) => <li key={u.email}><span className="ad-small">{u.name || u.email}</span><span className="ad-muted ad-small">{u.email}</span></li>)}
+                    {preview.sample.map((u) => <li key={u.email}><span className="ad-small">{u.name || u.email}</span><span className="ad-muted ad-small">{u.email}{email && !u.emailVerified && ' · not verified'}</span></li>)}
                   </ul>
+                )}
+                {email && (
+                  <p className="ad-small ad-muted" style={{ marginTop: 10 }}>
+                    Email goes to the <strong>{count(preview.emailCount)}</strong> with a verified address.
+                    {preview.count > preview.emailCount && <> The other {count(preview.count - preview.emailCount)} only see it in the app{inApp ? '' : ', so tick In-app to reach them'}.</>}
+                  </p>
                 )}
                 {email && !preview.emailConfigured && <div style={{ marginTop: 12 }}><Notice tone="amber">Email isn't set up on the server (RESEND_API_KEY).</Notice></div>}
                 {tooManyForEmail && <div style={{ marginTop: 12 }}><Notice tone="amber">Email goes to at most {count(preview.maxEmailRecipients)} people at once. Narrow the audience or send in-app only.</Notice></div>}
@@ -195,7 +211,7 @@ export default function Notifications() {
             { key: 'channels', header: 'Channels', render: (n) => <div className="ad-chips">{n.channels.map((c) => <Badge key={c} tone="gray">{c === 'in-app' ? 'In-app' : 'Email'}</Badge>)}</div> },
             { key: 'recipients', header: 'Recipients', className: 'num', render: (n) => count(n.recipientCount) },
             { key: 'read', header: 'Read in app', className: 'num', render: (n) => n.channels.includes('in-app') ? count(n.readCount) : '—' },
-            { key: 'email', header: 'Emails', className: 'num', render: (n) => n.channels.includes('email') ? <>{count(n.emailSent)}{n.emailFailed ? <span style={{ color: '#dc2626' }}> ({n.emailFailed} failed)</span> : ''}</> : '—' },
+            { key: 'email', header: 'Emails', className: 'num', render: (n) => n.channels.includes('email') ? <span title={n.emailSkipped ? `${n.emailSkipped} not emailed (unverified address)` : undefined}>{count(n.emailSent)}{n.emailFailed ? <span style={{ color: '#dc2626' }}> ({n.emailFailed} failed)</span> : ''}{n.emailSkipped ? <span className="ad-muted"> · {n.emailSkipped} skipped</span> : ''}</span> : '—' },
             { key: 'sent', header: 'Sent', render: (n) => <div><div className="muted">{dateTime(n.createdAt)}</div><div className="ad-cell-sub">by {n.createdBy}</div></div> },
             { key: 'actions', header: '', className: 'actions', render: (n) => n.channels.includes('in-app') && (
               <button type="button" className="ad-btn sm icon" title="Withdraw from the app" aria-label="Withdraw" onClick={() => setWithdrawing(n)}><Trash2 size={14} /></button>
@@ -208,7 +224,7 @@ export default function Notifications() {
       {confirming && preview && (
         <ConfirmDialog
           title={`Send to ${count(preview.count)} ${preview.count === 1 ? 'user' : 'users'}?`}
-          description={<>"{title}" goes out {channels.map((c) => (c === 'in-app' ? 'in the app' : 'by email')).join(' and ')}. {email && 'Emails can’t be unsent.'}</>}
+          description={<>"{title}" goes out {channels.map((c) => (c === 'in-app' ? 'in the app' : `by email to the ${count(preview.emailCount)} with a verified address`)).join(' and ')}. {email && 'Emails can’t be unsent.'}</>}
           confirmLabel="Send now"
           busy={busy === 'send'}
           onClose={() => setConfirming(false)}

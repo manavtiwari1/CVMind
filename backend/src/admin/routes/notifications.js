@@ -2,7 +2,7 @@ import express from 'express';
 import { requireAdmin, requireDb } from '../auth.js';
 import { audit } from '../audit.js';
 import { Notification } from '../models.js';
-import { sendEmail, emailConfigured } from '../mailer.js';
+import { sendEmailBatch, emailConfigured } from '../mailer.js';
 import { notificationEmail } from '../../services/emailTemplates.js';
 import { FEATURE_LOGS } from './analytics.js';
 import { model, clean, handle, httpError, paging, isEmail } from '../util.js';
@@ -10,8 +10,11 @@ import { model, clean, handle, httpError, paging, isEmail } from '../util.js';
 const router = express.Router();
 router.use(requireDb);
 
-// Emails go out one by one through Resend, so a single send is capped
+// Emails go out in Resend batches of 100; a single send is still capped
 const MAX_EMAIL_RECIPIENTS = 500;
+// Email only reaches verified addresses: fake or disposable ones bounce and hurt cvmind.in's sender
+// reputation. Unverified users still get the in-app notification.
+const VERIFIED = { emailVerified: true };
 
 // Segment → Mongo filter on User. An empty segment means everyone.
 async function segmentFilter(segment = {}) {
@@ -50,11 +53,12 @@ const isEmptySegment = (segment) => !segment || Object.values(segment).every((v)
 router.post('/preview', requireAdmin('notifications.send'), handle(async (req, res) => {
   const filter = await segmentFilter(req.body?.segment);
   const User = model('User');
-  const [count, sample] = await Promise.all([
+  const [count, emailCount, sample] = await Promise.all([
     User.countDocuments(filter),
-    User.find(filter).sort({ createdAt: -1 }).limit(5).select('name email').lean()
+    User.countDocuments({ $and: [filter, VERIFIED] }),
+    User.find(filter).sort({ createdAt: -1 }).limit(5).select('name email emailVerified').lean()
   ]);
-  res.json({ success: true, data: { count, sample: sample.map((u) => ({ name: u.name, email: u.email })), emailConfigured: emailConfigured(), maxEmailRecipients: MAX_EMAIL_RECIPIENTS } });
+  res.json({ success: true, data: { count, emailCount, sample: sample.map((u) => ({ name: u.name, email: u.email, emailVerified: !!u.emailVerified })), emailConfigured: emailConfigured(), maxEmailRecipients: MAX_EMAIL_RECIPIENTS } });
 }));
 
 router.post('/', requireAdmin('notifications.send'), handle(async (req, res) => {
@@ -70,9 +74,10 @@ router.post('/', requireAdmin('notifications.send'), handle(async (req, res) => 
 
   const everyone = isEmptySegment(segment);
   const filter = await segmentFilter(segment);
-  const users = await model('User').find(filter).select('name email').lean();
+  const users = await model('User').find(filter).select('name email emailVerified').lean();
   if (!users.length) throw httpError(400, 'No users match this audience.');
-  if (channels.includes('email') && users.length > MAX_EMAIL_RECIPIENTS) {
+  const emailUsers = users.filter((u) => u.emailVerified);
+  if (channels.includes('email') && emailUsers.length > MAX_EMAIL_RECIPIENTS) {
     throw httpError(400, `Email can go to at most ${MAX_EMAIL_RECIPIENTS} people at a time. Narrow the audience or send in-app only.`);
   }
 
@@ -90,25 +95,18 @@ router.post('/', requireAdmin('notifications.send'), handle(async (req, res) => 
 
   if (channels.includes('email')) {
     const ctaUrl = link.startsWith('/') ? `${(process.env.FRONTEND_URL || 'https://www.cvmind.in').replace(/\/$/, '')}${link}` : link;
-    let sent = 0;
-    let failed = 0;
-    for (const user of users) {
-      try {
-        await sendEmail({ to: user.email, ...notificationEmail({ name: user.name, title, body, ctaLabel: link ? 'Open CVMind' : '', ctaUrl }) });
-        sent++;
-      } catch (err) {
-        failed++;
-        console.error('[notifications] email failed for', user.email, err.message);
-      }
-    }
+    const messages = emailUsers.map((user) => ({ to: user.email, ...notificationEmail({ name: user.name, title, body, ctaLabel: link ? 'Open CVMind' : '', ctaUrl }) }));
+    const { sent, failed, errors } = messages.length ? await sendEmailBatch(messages) : { sent: 0, failed: 0, errors: [] };
+    for (const e of errors) console.error('[notifications] email failed for', e.to.join(', '), e.message);
     notification.emailSent = sent;
     notification.emailFailed = failed;
+    notification.emailSkipped = users.length - emailUsers.length;
     await notification.save();
   }
 
   await audit(req, 'notification.sent', {
     targetType: 'notification', targetId: notification._id, targetLabel: title,
-    details: { channels, audience: notification.audience, recipients: users.length, emailSent: notification.emailSent, emailFailed: notification.emailFailed }
+    details: { channels, audience: notification.audience, recipients: users.length, emailSent: notification.emailSent, emailFailed: notification.emailFailed, emailSkipped: notification.emailSkipped }
   });
   res.json({ success: true, data: toNotification(notification.toObject()) });
 }));
@@ -125,6 +123,7 @@ const toNotification = (n) => ({
   readCount: (n.readBy || []).length,
   emailSent: n.emailSent,
   emailFailed: n.emailFailed,
+  emailSkipped: n.emailSkipped || 0,
   createdBy: n.createdBy,
   createdAt: n.createdAt
 });

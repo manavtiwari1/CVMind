@@ -91,6 +91,8 @@ const notificationSchema = new Schema({
   recipientCount: { type: Number, default: 0 },
   emailSent: { type: Number, default: 0 },
   emailFailed: { type: Number, default: 0 },
+  // In the audience but not emailed because their address isn't verified
+  emailSkipped: { type: Number, default: 0 },
   readBy: { type: [String], default: [] },
   createdBy: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now, index: true }
