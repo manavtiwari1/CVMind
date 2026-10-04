@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════
-   CV Mind — Enhancv-Style Clean White Navbar
+   CV Mind — Clean White Navbar
    ════════════════════════════════════════════════════════════ */
 
 .navbar-header {
@@ -206,7 +206,7 @@
   color: #0d0d0d;
 }
 
-/* Outlined Sign In button (Enhancv style) */
+/* Outlined Sign In button */
 .navbar-login-link.navbar-signin {
   padding: 0.5rem 1rem;
   font-weight: 600;

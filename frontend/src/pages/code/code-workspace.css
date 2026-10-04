@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════
-   CVMind Code: problem workspace (LeetCode-style split layout)
+   CVMind Code: problem workspace (split layout)
    ════════════════════════════════════════════════════════════ */
 .cx-ws { display: flex; flex-direction: column; height: calc(100vh - 56px); min-height: 520px; background: var(--cx-bg); }
 .cx-ws:fullscreen { height: 100vh; }

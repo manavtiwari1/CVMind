@@ -10,7 +10,7 @@ interface NavMegaMenuProps {
   onNavigate: (page: string) => void;
 }
 
-/** One top-level navbar item with an Enhancv-style mega menu: icon tiles plus plain "Learning" links. */
+/** One top-level navbar item with a mega menu: icon tiles plus plain "Learning" links. */
 export default function NavMegaMenu({ menu, currentPage, onNavigate }: NavMegaMenuProps) {
   return (
     <NavigationMenuItem>

@@ -41,14 +41,14 @@ const avatar = (size: number, extra = '') =>
 const T = {
   NAME: 'YOUR NAME',
   Name: 'Your Name',
-  ROLE: 'The role you are applying for?',
-  SUMMARY: "Briefly explain why you're a great fit for the role - use the AI assistant to tailor this summary for each job posting.",
-  BULLET: 'Highlight your accomplishments, using numbers if possible.',
-  ACH: 'Your Achievement',
-  ACH_D: 'Describe what you did and the impact it had.',
+  ROLE: 'Target Job Title',
+  SUMMARY: "Sum up in two or three lines what you would bring to this job. Rewrite it for each application.",
+  BULLET: 'Start with an action verb and end with a result you can measure.',
+  ACH: 'Key Win',
+  ACH_D: 'One line on the result of your work.',
 };
-const SKILLS = ['Your Skill', 'Another Skill', 'One More Skill'];
-const CONTACTS: [string, string][] = [['phone', 'Phone'], ['at', 'Email'], ['link', 'LinkedIn/Portfolio'], ['pin', 'Location']];
+const SKILLS = ['Skill One', 'Skill Two', 'Skill Three'];
+const CONTACTS: [string, string][] = [['phone', 'Phone'], ['at', 'Email'], ['link', 'Portfolio Link'], ['pin', 'Location']];
 
 const times = (n: number, fn: (i: number) => string) => Array.from({ length: n }, (_, i) => fn(i)).join('\n');
 
@@ -85,7 +85,7 @@ const doubleColumn = (): string => {
   const job = `<div style="padding:6px 0;border-bottom:1px dashed #cfd5df;">
 <div style="font-size:13px;font-weight:700;color:#111;">Title</div>
 <div style="font-size:12.5px;font-weight:700;color:${A};">Company Name</div>
-${meta('#6b7280', [['cal', 'Date period', '#9aa3b2'], ['pin', 'Location', '#4b5563']])}
+${meta('#6b7280', [['cal', 'Start – End', '#9aa3b2'], ['pin', 'Location', '#4b5563']])}
 <ul style="margin:3px 0 0;padding-left:16px;"><li>${T.BULLET}</li></ul>
 </div>`;
   const ach = `<div style="padding:5px 0;border-bottom:1px dashed #cfd5df;"><div style="font-size:12.5px;font-weight:700;color:#111;">${T.ACH}</div><div style="color:#4b5563;">${T.ACH_D}</div></div>`;
@@ -104,8 +104,8 @@ ${sec('Experience', times(4, () => job))}
 <div style="flex:1;min-width:0;">
 ${sec('Key Achievements', times(4, () => ach))}
 ${sec('Skills', `<div>${SKILLS.map(chip).join('')}</div>`)}
-${sec('Education', `<div style="padding:4px 0;"><div style="font-size:13px;font-weight:700;color:#111;">Degree and Field of Study</div><div style="font-size:12.5px;font-weight:700;color:${A};">School or University</div>${meta('#6b7280', [['cal', 'Date period', '#9aa3b2'], ['pin', 'Location', '#4b5563']])}</div>`)}
-${sec('Training / Courses', `<div style="padding:4px 0;"><div style="font-size:12.5px;font-weight:700;color:#111;">Course Title</div><div style="color:#4b5563;">Which institution provided the course?</div></div>`)}
+${sec('Education', `<div style="padding:4px 0;"><div style="font-size:13px;font-weight:700;color:#111;">Degree and Major</div><div style="font-size:12.5px;font-weight:700;color:${A};">Institution Name</div>${meta('#6b7280', [['cal', 'Start – End', '#9aa3b2'], ['pin', 'Location', '#4b5563']])}</div>`)}
+${sec('Training / Courses', `<div style="padding:4px 0;"><div style="font-size:12.5px;font-weight:700;color:#111;">Course or Certificate</div><div style="color:#4b5563;">Issued by · Year</div></div>`)}
 </div>
 </div>`, footer({ left: '42px', right: '42px' }));
 };
@@ -117,7 +117,7 @@ const ivyLeague = (): string => {
   const row = (l: string, r: string, ls: string, rs: string) => `<div style="display:flex;justify-content:space-between;gap:12px;"><span style="${ls}">${l}</span><span style="${rs}">${r}</span></div>`;
   const job = `<div style="margin-bottom:9px;">
 ${row('Company Name', 'Location', 'font-size:14px;color:#6b7280;', 'font-size:11.5px;color:#111;')}
-${row('Title', 'Date period', 'font-size:12px;color:#111;', 'font-size:11.5px;color:#9ca3af;')}
+${row('Title', 'Start – End', 'font-size:12px;color:#111;', 'font-size:11.5px;color:#9ca3af;')}
 <ul style="margin:3px 0 0;padding-left:16px;font-size:11.5px;"><li>${T.BULLET}</li></ul>
 </div>`;
   const ach = `<div><div style="font-size:12px;color:#111;">${T.ACH}</div><div style="font-size:11px;color:#4b5563;">${T.ACH_D}</div></div>`;
@@ -125,13 +125,13 @@ ${row('Title', 'Date period', 'font-size:12px;color:#111;', 'font-size:11.5px;co
 <div style="text-align:center;margin-bottom:12px;">
 <div style="font-family:${serif};font-size:19px;font-weight:700;color:#111;">${T.NAME}</div>
 <div style="font-size:15px;color:#6b7280;margin:2px 0;">${T.ROLE}</div>
-<div style="font-size:11px;color:#374151;">Phone &nbsp;•&nbsp; Email &nbsp;•&nbsp; LinkedIn/Portfolio &nbsp;•&nbsp; Location</div>
+<div style="font-size:11px;color:#374151;">Phone &nbsp;•&nbsp; Email &nbsp;•&nbsp; Portfolio Link &nbsp;•&nbsp; Location</div>
 </div>
 ${sec('SUMMARY', `<p style="margin:0 0 6px;">${T.SUMMARY}</p>`)}
 ${sec('Experience', times(4, () => job))}
 ${sec('KEY ACHIEVEMENTS', `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px 18px;">${times(4, () => ach)}</div>`)}
 ${sec('Skills', `<div>${SKILLS.map(s => `<span style="display:inline-block;border-bottom:1px solid #e5e7eb;padding:2px 0;margin-right:14px;">${s}</span>`).join('')}</div>`)}
-${sec('Education', `<div>${row('School or University', 'Location', 'font-size:14px;color:#6b7280;', 'font-size:11.5px;color:#111;')}${row('Degree and Field of Study', 'Date period', 'font-size:12px;color:#111;', 'font-size:11.5px;color:#9ca3af;')}</div>`)}
+${sec('Education', `<div>${row('Institution Name', 'Location', 'font-size:14px;color:#6b7280;', 'font-size:11.5px;color:#111;')}${row('Degree and Major', 'Start – End', 'font-size:12px;color:#111;', 'font-size:11.5px;color:#9ca3af;')}</div>`)}
 `, footer());
 };
 
@@ -142,7 +142,7 @@ const elegant = (): string => {
   const Hs = (t: string) => `<div style="font-size:15px;font-weight:400;text-transform:uppercase;color:#fff;border-bottom:1px solid #fff;padding-bottom:4px;margin:0 0 8px;">${t}</div>`;
   const row = (l: string, r: string, ls: string, rs: string) => `<div style="display:flex;justify-content:space-between;gap:10px;"><span style="${ls}">${l}</span><span style="${rs}">${r}</span></div>`;
   const job = `<div style="margin-bottom:9px;">
-${row('Title', 'Date period', 'font-size:13.5px;color:#333;', 'font-size:11px;color:#9ca3af;')}
+${row('Title', 'Start – End', 'font-size:13.5px;color:#333;', 'font-size:11px;color:#9ca3af;')}
 ${row('Company Name', 'Location', `font-size:13px;color:${A};`, 'font-size:11px;color:#333;')}
 <ul style="margin:3px 0 0;padding-left:16px;font-size:11px;"><li>${T.BULLET}</li></ul>
 </div>`;
@@ -172,7 +172,7 @@ ${Hs('Skills')}
 </div>
 <div style="margin-bottom:18px;">
 ${Hs('Education')}
-<div><div style="font-size:13px;font-weight:700;">Degree and Field of Study</div><div style="font-size:11.5px;">School or University</div>${row('Date period', 'Location', 'font-size:11px;color:#9fb3c8;', 'font-size:11px;color:#fff;')}</div>
+<div><div style="font-size:13px;font-weight:700;">Degree and Major</div><div style="font-size:11.5px;">Institution Name</div>${row('Start – End', 'Location', 'font-size:11px;color:#9fb3c8;', 'font-size:11px;color:#fff;')}</div>
 </div>
 </div>`, footer({ left: '40px', right: 'calc(35% + 34px)' }));
 };
@@ -183,7 +183,7 @@ const crest = (): string => {
   const H = (t: string) => `<div style="font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:#4a4136;margin:0 0 12px;">${t}</div>`;
   const sec = (h: string, body: string) => `<div style="border-top:1px solid #e7e0d2;padding-top:18px;margin-top:18px;">\n${H(h)}\n${body}\n</div>`;
   const job = `<div style="margin-bottom:14px;">
-<div style="display:flex;justify-content:space-between;"><span style="font-size:15.5px;color:${INK};">Title</span><span style="font-size:13px;color:#9a9182;">Date period</span></div>
+<div style="display:flex;justify-content:space-between;"><span style="font-size:15.5px;color:${INK};">Title</span><span style="font-size:13px;color:#9a9182;">Start – End</span></div>
 <div style="font-size:13px;color:#8b8172;">Company Name — Location</div>
 <ul style="list-style:none;margin:6px 0 0;padding:0;font-size:13px;"><li>— &nbsp;${T.BULLET}</li></ul>
 </div>`;
@@ -192,7 +192,7 @@ const crest = (): string => {
 <div style="text-align:center;">
 <div style="font-size:40px;color:${INK};line-height:1.15;">${T.Name}</div>
 <div style="font-size:11.5px;letter-spacing:3px;text-transform:uppercase;color:#8b8172;margin:8px 0 14px;">${T.ROLE}</div>
-<div style="border-top:1px solid #e7e0d2;border-bottom:1px solid #e7e0d2;padding:9px 0;font-size:13px;">Phone &nbsp;·&nbsp; Email &nbsp;·&nbsp; LinkedIn/Portfolio &nbsp;·&nbsp; Location</div>
+<div style="border-top:1px solid #e7e0d2;border-bottom:1px solid #e7e0d2;padding:9px 0;font-size:13px;">Phone &nbsp;·&nbsp; Email &nbsp;·&nbsp; Portfolio Link &nbsp;·&nbsp; Location</div>
 </div>
 <div style="text-align:center;padding:18px 40px 0;">
 <p style="margin:0 0 14px;font-size:15px;">${T.SUMMARY}</p>
@@ -200,7 +200,7 @@ const crest = (): string => {
 ${sec('Experience', times(4, () => job))}
 ${sec('Key Achievements', times(2, () => ach))}
 ${sec('Skills', `<div>${SKILLS.map(s => `<span style="display:inline-block;border-bottom:1px solid #e7e0d2;margin-right:16px;">${s}</span>`).join('')}</div>`)}
-${sec('Education', `<div><div style="display:flex;justify-content:space-between;"><span style="font-size:15.5px;color:${INK};">Degree and Field of Study</span><span style="font-size:13px;color:#9a9182;">Date period</span></div><div style="font-size:13px;color:#8b8172;">School or University — Location</div></div>`)}
+${sec('Education', `<div><div style="display:flex;justify-content:space-between;"><span style="font-size:15.5px;color:${INK};">Degree and Major</span><span style="font-size:13px;color:#9a9182;">Start – End</span></div><div style="font-size:13px;color:#8b8172;">Institution Name — Location</div></div>`)}
 `, footer({ left: '56px', right: '56px', color: '#8b8172', strong: INK }));
 };
 
@@ -210,7 +210,7 @@ const serifMinimal = (): string => {
   const H = (t: string) => `<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#333;font-weight:500;margin:0 0 8px;">${t}</div>`;
   const sec = (h: string, body: string) => `<div style="margin-top:16px;">\n${H(h)}\n${body}\n</div>`;
   const job = `<div style="margin-bottom:10px;">
-<div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-family:${serif};font-size:18px;color:#777;">Title</span><span style="font-family:${serif};font-size:17px;color:#bbb;">Date period</span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-family:${serif};font-size:18px;color:#777;">Title</span><span style="font-family:${serif};font-size:17px;color:#bbb;">Start – End</span></div>
 <div style="font-size:12px;color:${INK};">Company Name — Location</div>
 <ul style="margin:4px 0 0;padding-left:16px;font-size:12px;"><li>${T.BULLET}</li></ul>
 </div>`;
@@ -218,12 +218,12 @@ const serifMinimal = (): string => {
   return page(`font-family:'Inter',Arial,sans-serif;color:${INK};font-size:12px;line-height:1.5;background:#fff;padding:46px 56px 72px;`, `
 <div style="font-family:${serif};font-size:48px;font-weight:400;color:${INK};line-height:1.1;">${T.Name}</div>
 <div style="font-size:13px;color:#777;margin:10px 0 8px;">${T.ROLE}</div>
-<div style="font-size:12.5px;color:#333;padding-bottom:14px;border-bottom:1px solid #ececec;">Phone &nbsp;·&nbsp; Email &nbsp;·&nbsp; LinkedIn/Portfolio &nbsp;·&nbsp; Location</div>
+<div style="font-size:12.5px;color:#333;padding-bottom:14px;border-bottom:1px solid #ececec;">Phone &nbsp;·&nbsp; Email &nbsp;·&nbsp; Portfolio Link &nbsp;·&nbsp; Location</div>
 <div style="padding:14px 0;border-bottom:1px solid #ececec;"><p style="margin:0;font-family:${serif};font-style:italic;font-size:18px;color:#777;">${T.SUMMARY}</p></div>
 ${sec('Experience', times(4, () => job))}
 ${sec('Key Achievements', times(4, ach))}
 ${sec('Skills', `<div>${SKILLS.map(s => `<span style="display:inline-block;border-bottom:1px solid #ececec;margin-right:14px;">${s}</span>`).join('')}</div>`)}
-${sec('Education', `<div><div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-family:${serif};font-size:18px;color:#777;">Degree and Field of Study</span><span style="font-family:${serif};font-size:17px;color:#bbb;">Date period</span></div><div style="font-size:12px;">School or University — Location</div></div>`)}
+${sec('Education', `<div><div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-family:${serif};font-size:18px;color:#777;">Degree and Major</span><span style="font-family:${serif};font-size:17px;color:#bbb;">Start – End</span></div><div style="font-size:12px;">Institution Name — Location</div></div>`)}
 `, footer({ left: '56px', right: '56px' }));
 };
 
@@ -233,7 +233,7 @@ const modern = (): string => {
   const sec = (h: string, body: string) => `<div style="margin-bottom:16px;">\n${H(h)}\n${body}\n</div>`;
   const job = `<div style="margin-bottom:10px;">
 <div style="font-size:15px;color:#333;">Title</div>
-<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><span style="font-size:13px;color:${A};">Company Name</span>${meta('#777', [['cal', 'Date period', '#9ca3af'], ['pin', 'Location', '#444']])}</div>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><span style="font-size:13px;color:${A};">Company Name</span>${meta('#777', [['cal', 'Start – End', '#9ca3af'], ['pin', 'Location', '#444']])}</div>
 <ul style="margin:3px 0 0;padding-left:16px;font-size:11.5px;"><li>${T.BULLET}</li></ul>
 </div>`;
   const ach = (i: number) => `<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;"><span style="width:38px;height:38px;border-radius:50%;background:#f1f1f1;display:inline-flex;align-items:center;justify-content:center;flex:none;">${icon(ACH_ICONS[i], A, 15)}</span><div><div style="font-size:14px;color:#333;">${T.ACH}</div><div style="font-size:11.5px;color:#555;">${T.ACH_D}</div></div></div>`;
@@ -254,7 +254,7 @@ ${sec('Experience', times(4, () => job))}
 <div style="flex:1;min-width:0;">
 ${sec('Key Achievements', times(4, ach))}
 ${sec('Skills', `<div>${SKILLS.map(s => `<span style="display:inline-block;font-size:12.5px;color:#333;border-bottom:1px solid #b8b8b8;padding:3px 8px;margin:0 6px 6px 0;">${s}</span>`).join('')}</div>`)}
-${sec('Education', `<div><div style="font-size:15px;color:#333;">Degree and Field of Study</div><div style="font-size:13px;color:${A};">School or University</div>${meta('#777', [['cal', 'Date period', '#9ca3af'], ['pin', 'Location', '#444']])}</div>`)}
+${sec('Education', `<div><div style="font-size:15px;color:#333;">Degree and Major</div><div style="font-size:13px;color:${A};">Institution Name</div>${meta('#777', [['cal', 'Start – End', '#9ca3af'], ['pin', 'Location', '#444']])}</div>`)}
 </div>
 </div>`, footer({ left: '44px', right: '44px' }));
 };
@@ -266,7 +266,7 @@ const tealSidebar = (): string => {
   const Hm = (t: string) => `<div style="font-size:19px;font-weight:400;text-transform:uppercase;color:#444;border-bottom:1px solid #bdbdbd;padding-bottom:5px;margin:0 0 10px;">${t}</div>`;
   const row = (l: string, r: string, ls: string, rs: string) => `<div style="display:flex;justify-content:space-between;gap:10px;"><span style="${ls}">${l}</span><span style="${rs}">${r}</span></div>`;
   const job = `<div style="margin-bottom:10px;">
-${row('Title', 'Date period', 'font-size:15px;color:#444;', 'font-size:11.5px;color:#9ca3af;')}
+${row('Title', 'Start – End', 'font-size:15px;color:#444;', 'font-size:11.5px;color:#9ca3af;')}
 ${row('Company Name', 'Location', `font-size:14px;color:${A};`, 'font-size:11.5px;color:#444;')}
 <ul style="margin:3px 0 0;padding-left:16px;font-size:11px;"><li>${T.BULLET}</li></ul>
 </div>`;
@@ -284,7 +284,7 @@ ${Hs('Skills')}
 </div>
 <div style="margin-bottom:18px;">
 ${Hs('Education')}
-<div><div style="font-size:14px;font-weight:700;">Degree and Field of Study</div><div style="font-size:12px;margin:2px 0;">School or University</div>${row('Date period', 'Location', 'font-size:11px;color:#9fd3cd;', 'font-size:11px;color:#fff;')}</div>
+<div><div style="font-size:14px;font-weight:700;">Degree and Major</div><div style="font-size:12px;margin:2px 0;">Institution Name</div>${row('Start – End', 'Location', 'font-size:11px;color:#9fd3cd;', 'font-size:11px;color:#fff;')}</div>
 </div>
 </div>
 <div style="width:65%;box-sizing:border-box;padding:56px 44px 0 26px;">
@@ -308,7 +308,7 @@ const greenFresh = (): string => {
   const row = (l: string, r: string, ls: string, rs: string) => `<div style="display:flex;justify-content:space-between;gap:10px;"><span style="${ls}">${l}</span><span style="${rs}">${r}</span></div>`;
   const job = `<div style="margin-bottom:10px;">
 ${row('Company Name', 'Location', 'font-size:13.5px;font-weight:700;color:#333;', 'font-size:12.5px;color:#444;')}
-${row('Title', 'Date period', 'font-size:13.5px;color:#444;', 'font-size:12.5px;color:#b3b3b3;')}
+${row('Title', 'Start – End', 'font-size:13.5px;color:#444;', 'font-size:12.5px;color:#b3b3b3;')}
 <ul style="margin:2px 0 0;padding-left:16px;font-size:11.5px;"><li>${T.BULLET}</li></ul>
 </div>`;
   const ach = `<div style="display:flex;gap:12px;margin-bottom:10px;"><span style="width:7px;height:7px;border-radius:50%;background:${DARK};margin-top:6px;flex:none;"></span><div><div style="font-size:13.5px;font-weight:700;color:#333;">${T.ACH}</div><div style="font-size:11.5px;color:#555;">${T.ACH_D}</div></div></div>`;
@@ -321,7 +321,7 @@ ${avatar(160, 'position:absolute;left:12px;top:12px;')}
 </div>
 <div style="margin-bottom:18px;">
 ${H('mail', 'Contacts')}
-${contact('phone', 'Phone')}${contact('at', 'Email')}${contact('link', 'LinkedIn/Portfolio')}${contact('pin', 'Location')}
+${contact('phone', 'Phone')}${contact('at', 'Email')}${contact('link', 'Portfolio Link')}${contact('pin', 'Location')}
 </div>
 <div style="margin-bottom:18px;">
 ${H('flag', 'Key Achievements')}
@@ -333,7 +333,7 @@ ${H('rocket', 'Skills')}
 </div>
 <div style="margin-bottom:18px;">
 ${H('cap', 'Education')}
-<div><div style="font-size:13.5px;font-weight:700;color:#333;">School or University</div><div style="font-size:13.5px;">Degree and Field of Study</div>${row('Location', 'Date period', 'font-size:12px;', 'font-size:12px;color:#b3b3b3;')}</div>
+<div><div style="font-size:13.5px;font-weight:700;color:#333;">Institution Name</div><div style="font-size:13.5px;">Degree and Major</div>${row('Location', 'Start – End', 'font-size:12px;', 'font-size:12px;color:#b3b3b3;')}</div>
 </div>
 </div>
 <div style="flex:1;min-width:0;">
@@ -356,7 +356,7 @@ const timeline = (): string => {
   const H = (t: string) => `<div style="font-size:17px;font-weight:800;text-transform:uppercase;color:${NAVY};margin:0 0 10px;">${t}</div>`;
   const sec = (h: string, body: string) => `<div style="margin-bottom:18px;">\n${H(h)}\n${body}\n</div>`;
   const tl = (title: string, sub: string, bullet: boolean) => `<div style="display:flex;">
-<div style="width:96px;flex:none;"><div style="font-size:12px;font-weight:700;color:#8ea2c9;">Date period</div><div style="font-size:11.5px;color:#555;margin-top:6px;">Location</div></div>
+<div style="width:96px;flex:none;"><div style="font-size:12px;font-weight:700;color:#8ea2c9;">Start – End</div><div style="font-size:11.5px;color:#555;margin-top:6px;">Location</div></div>
 <div style="position:relative;flex:1;border-left:1px solid #555;padding:0 0 12px 22px;"><span style="position:absolute;left:-4px;top:5px;width:7px;height:7px;border-radius:50%;background:#111;"></span>
 <div style="font-size:14px;color:${NAVY};">${title}</div><div style="font-size:13.5px;font-weight:700;color:${OR};">${sub}</div>${bullet ? `<ul style="margin:3px 0 0;padding-left:14px;font-size:11.5px;color:#444;"><li>${T.BULLET}</li></ul>` : ''}</div>
 </div>`;
@@ -374,7 +374,7 @@ ${sec('Summary', `<p style="margin:0 0 8px;">${T.SUMMARY}</p>`)}
 ${sec('Experience', times(4, () => tl('Title', 'Company Name', true)))}
 ${sec('Key Achievements', `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 30px;">${times(4, ach)}</div>`)}
 ${sec('Skills', `<div>${SKILLS.map(s => `<span style="display:inline-block;font-weight:700;font-size:12px;border-bottom:1px solid #cfd5df;padding:3px 8px;margin:0 6px 6px 0;">${s}</span>`).join('')}</div>`)}
-${sec('Education', tl('Degree and Field of Study', 'School or University', false))}
+${sec('Education', tl('Degree and Major', 'Institution Name', false))}
 `, footer({ left: '48px', right: '48px' }));
 };
 
@@ -384,7 +384,7 @@ const compact = (): string => {
   const sec = (h: string, body: string) => `<div style="margin-bottom:16px;">\n${H(h)}\n${body}\n</div>`;
   const job = `<div style="margin-bottom:10px;">
 <div style="font-size:16px;color:#222;">Title</div>
-<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><span style="font-size:13.5px;color:${A};">Company Name</span>${meta('#555', [['cal', 'Date period', '#aaa'], ['pin', 'Location', '#333']])}</div>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><span style="font-size:13.5px;color:${A};">Company Name</span>${meta('#555', [['cal', 'Start – End', '#aaa'], ['pin', 'Location', '#333']])}</div>
 <ul style="margin:3px 0 0;padding-left:16px;font-size:11.5px;"><li>${T.BULLET}</li></ul>
 </div>`;
   const ach = (i: number) => `<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;"><span style="width:38px;height:38px;border-radius:50%;background:#f1f1f1;display:inline-flex;align-items:center;justify-content:center;flex:none;">${icon(ACH_ICONS[i], A, 15)}</span><div><div style="font-size:13.5px;color:#222;">${T.ACH}</div><div style="font-size:11.5px;color:#444;">${T.ACH_D}</div></div></div>`;
@@ -401,7 +401,7 @@ ${avatar(108)}
 <div style="width:34%;flex:none;">
 ${sec('Key Achievements', times(4, ach))}
 ${sec('Skills', `<div>${SKILLS.map(s => `<span style="display:inline-block;font-size:12.5px;color:#222;border-bottom:1px solid #b8b8b8;padding:3px 8px;margin:0 6px 6px 0;">${s}</span>`).join('')}</div>`)}
-${sec('Education', `<div><div style="font-size:15px;color:#222;">Degree and Field of Study</div><div style="font-size:13.5px;color:${A};">School or University</div>${meta('#555', [['cal', 'Date period', '#aaa'], ['pin', 'Location', '#333']])}</div>`)}
+${sec('Education', `<div><div style="font-size:15px;color:#222;">Degree and Major</div><div style="font-size:13.5px;color:${A};">Institution Name</div>${meta('#555', [['cal', 'Start – End', '#aaa'], ['pin', 'Location', '#333']])}</div>`)}
 </div>
 <div style="flex:1;min-width:0;">
 ${sec('Summary', `<p style="margin:0 0 8px;">${T.SUMMARY}</p>`)}
@@ -418,7 +418,7 @@ const bold = (): string => {
   const job = `<div style="padding:6px 0;border-bottom:1px dashed #d1d5db;">
 <div style="font-size:14px;font-weight:700;color:${INK};">Title</div>
 <div style="font-size:13.5px;font-weight:700;color:${A};">Company Name</div>
-${meta('#6b7280', [['cal', 'Date period', '#9ca3af'], ['pin', 'Location', '#4b5563']])}
+${meta('#6b7280', [['cal', 'Start – End', '#9ca3af'], ['pin', 'Location', '#4b5563']])}
 <ul style="margin:2px 0 0;padding-left:16px;font-size:11.5px;"><li>${T.BULLET}</li></ul>
 </div>`;
   const ach = (i: number) => `<div style="display:flex;gap:12px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed #d1d5db;">${icon(ACH_ICONS[i], A, 17)}<div><div style="font-size:13.5px;font-weight:700;color:${INK};">${T.ACH}</div><div style="font-size:11.5px;color:#4b5563;">${T.ACH_D}</div></div></div>`;
@@ -435,7 +435,7 @@ ${sec('Summary', `<p style="margin:0;padding:4px 0;border-bottom:1px dashed #d1d
 ${sec('Experience', times(4, () => job))}
 ${sec('Key Achievements', `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 30px;">${times(4, ach)}</div>`)}
 ${sec('Skills', `<div>${SKILLS.map(s => `<span style="display:inline-block;font-weight:700;font-size:12.5px;color:#4b5563;border-bottom:1px solid #b8c0cc;padding:3px 8px;margin:0 6px 6px 0;">${s}</span>`).join('')}</div>`)}
-${sec('Education', `<div><div style="font-size:14px;font-weight:700;">Degree and Field of Study</div><div style="font-size:13.5px;font-weight:700;color:${A};">School or University</div>${meta('#6b7280', [['cal', 'Date period', '#9ca3af'], ['pin', 'Location', '#4b5563']])}</div>`)}
+${sec('Education', `<div><div style="font-size:14px;font-weight:700;">Degree and Major</div><div style="font-size:13.5px;font-weight:700;color:${A};">Institution Name</div>${meta('#6b7280', [['cal', 'Start – End', '#9ca3af'], ['pin', 'Location', '#4b5563']])}</div>`)}
 `, footer({ left: '48px', right: '48px' }));
 };
 
@@ -446,7 +446,7 @@ const wave = (): string => {
   const sec = (h: string, body: string) => `<div style="margin-bottom:18px;">\n${H(h)}\n${body}\n</div>`;
   const job = `<div style="margin-bottom:10px;">
 <div style="font-size:16px;color:${NAVY};">Title</div>
-<div style="display:flex;gap:14px;font-size:12px;"><span style="color:#333;">Company Name</span><span style="color:#b3b3b3;">Date period</span><span style="color:#444;">Location</span></div>
+<div style="display:flex;gap:14px;font-size:12px;"><span style="color:#333;">Company Name</span><span style="color:#b3b3b3;">Start – End</span><span style="color:#444;">Location</span></div>
 <ul style="margin:2px 0 0;padding-left:16px;font-size:12px;"><li>${T.BULLET}</li></ul>
 </div>`;
   const ach = (i: number) => `<div style="margin-bottom:10px;"><div style="display:flex;align-items:center;gap:8px;font-size:14px;color:${NAVY};">${icon(ACH_ICONS[i], A, 14)}${T.ACH}</div><div style="font-size:12px;color:#333;">${T.ACH_D}</div></div>`;
@@ -471,7 +471,7 @@ ${sec('Experience', times(4, () => job))}
 <div style="flex:1;min-width:0;">
 ${sec('Key Achievements', times(4, ach))}
 ${sec('Skills', `<div>${SKILLS.map(s => `<span style="display:inline-block;font-weight:700;font-size:12.5px;color:${NAVY};border-bottom:1px solid #b8c7e0;padding:3px 8px;margin:0 6px 6px 0;">${s}</span>`).join('')}</div>`)}
-${sec('Education', `<div><div style="font-size:16px;color:${NAVY};">Degree and Field of Study</div><div style="font-size:13px;color:${A};">School or University</div><div style="display:flex;gap:14px;font-size:12px;"><span style="color:#b3b3b3;">Date period</span><span>Location</span></div></div>`)}
+${sec('Education', `<div><div style="font-size:16px;color:${NAVY};">Degree and Major</div><div style="font-size:13px;color:${A};">Institution Name</div><div style="display:flex;gap:14px;font-size:12px;"><span style="color:#b3b3b3;">Start – End</span><span>Location</span></div></div>`)}
 </div>
 </div>`, footer({ left: '48px', right: '48px' }));
 };
@@ -483,7 +483,7 @@ const narrow = (): string => {
   const job = `<div style="margin-bottom:10px;">
 <div style="font-size:14px;color:#111;">Title</div>
 <div style="font-size:12.5px;color:${A};">Company Name</div>
-${meta('#555', [['cal', 'Date period', '#aaa'], ['pin', 'Location', '#333']])}
+${meta('#555', [['cal', 'Start – End', '#aaa'], ['pin', 'Location', '#333']])}
 <ul style="margin:2px 0 0;padding-left:16px;font-size:11.5px;"><li>${T.BULLET}</li></ul>
 </div>`;
   const ach = (i: number) => `<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;"><span style="width:38px;height:38px;border-radius:50%;background:#f1f1f1;display:inline-flex;align-items:center;justify-content:center;flex:none;">${icon(ACH_ICONS[i], A, 15)}</span><div><div style="font-size:14px;color:#111;">${T.ACH}</div><div style="font-size:11.5px;color:#444;">${T.ACH_D}</div></div></div>`;
@@ -504,7 +504,7 @@ ${sec('Experience', times(4, () => job))}
 <div style="width:320px;flex:none;">
 ${sec('Key Achievements', times(4, ach))}
 ${sec('Skills', `<div>${SKILLS.map(s => `<span style="display:inline-block;font-weight:700;font-size:12px;border-bottom:1px solid #cfd5df;padding:3px 8px;margin:0 6px 6px 0;">${s}</span>`).join('')}</div>`)}
-${sec('Education', `<div><div style="font-size:14px;color:#111;">Degree and Field of Study</div><div style="font-size:12.5px;color:${A};">School or University</div>${meta('#555', [['cal', 'Date period', '#aaa'], ['pin', 'Location', '#333']])}</div>`)}
+${sec('Education', `<div><div style="font-size:14px;color:#111;">Degree and Major</div><div style="font-size:12.5px;color:${A};">Institution Name</div>${meta('#555', [['cal', 'Start – End', '#aaa'], ['pin', 'Location', '#333']])}</div>`)}
 </div>
 </div>`, footer({ left: '44px', right: '44px' }));
 };
@@ -516,7 +516,7 @@ const simple = (): string => {
   const row = (l: string, r: string, ls: string, rs: string) => `<div style="display:flex;justify-content:space-between;gap:10px;"><span style="${ls}">${l}</span><span style="${rs}">${r}</span></div>`;
   const job = `<div style="margin-bottom:8px;">
 ${row('Title', 'Location', 'font-size:17px;color:#111;', 'font-size:11.5px;color:#333;')}
-${row('Company Name', 'Date period', `font-size:13.5px;color:${A};`, 'font-size:11.5px;color:#aaa;')}
+${row('Company Name', 'Start – End', `font-size:13.5px;color:${A};`, 'font-size:11.5px;color:#aaa;')}
 <ul style="margin:2px 0 0;padding-left:16px;font-size:11.5px;"><li>${T.BULLET}</li></ul>
 </div>`;
   const ach = `<div><div style="font-size:13.5px;font-weight:700;color:${A};">${T.ACH}</div><div style="font-size:11.5px;color:#333;">${T.ACH_D}</div></div>`;
@@ -525,7 +525,7 @@ ${row('Company Name', 'Date period', `font-size:13.5px;color:${A};`, 'font-size:
 <div>
 <div style="font-size:34px;font-weight:800;color:#111;line-height:1.1;">${T.Name}</div>
 <div style="font-size:17px;color:#333;margin:4px 0 6px;">${T.ROLE}</div>
-<div style="font-size:12px;color:#111;">Phone &nbsp;&nbsp; Email &nbsp;&nbsp; LinkedIn/Portfolio &nbsp;&nbsp; Location</div>
+<div style="font-size:12px;color:#111;">Phone &nbsp;&nbsp; Email &nbsp;&nbsp; Portfolio Link &nbsp;&nbsp; Location</div>
 </div>
 ${avatar(90)}
 </div>
@@ -533,7 +533,7 @@ ${sec('Summary', `<p style="margin:0 0 6px;">${T.SUMMARY}</p>`)}
 ${sec('Experience', times(4, () => job))}
 ${sec('Key Achievements', `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 36px;">${times(4, () => ach)}</div>`)}
 ${sec('Skills', `<div>${SKILLS.map(s => `<span style="display:inline-block;border-bottom:1px solid #e5e7eb;padding:2px 0;margin-right:16px;">${s}</span>`).join('')}</div>`)}
-${sec('Education', `<div>${row('Degree and Field of Study', 'Location', 'font-size:17px;color:#111;', 'font-size:11.5px;color:#333;')}${row('School or University', 'Date period', 'font-size:13.5px;color:#333;', 'font-size:11.5px;color:#aaa;')}</div>`)}
+${sec('Education', `<div>${row('Degree and Major', 'Location', 'font-size:17px;color:#111;', 'font-size:11.5px;color:#333;')}${row('Institution Name', 'Start – End', 'font-size:13.5px;color:#333;', 'font-size:11.5px;color:#aaa;')}</div>`)}
 `, footer());
 };
 
@@ -545,7 +545,7 @@ const projects = (): string => {
   const cell = 'border:1px solid #e5e7eb;padding:5px 8px;text-align:left;';
   const job = `<div style="margin-bottom:12px;">
 <div style="font-family:${raleway};font-size:15px;color:#333;">Title</div>
-<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><span style="font-size:13px;color:${A};">Company Name</span>${meta('#555', [['cal', 'Date period', '#aaa'], ['pin', 'Location', '#333']])}</div>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><span style="font-size:13px;color:${A};">Company Name</span>${meta('#555', [['cal', 'Start – End', '#aaa'], ['pin', 'Location', '#333']])}</div>
 <ul style="margin:2px 0 8px;padding-left:16px;font-size:11.5px;"><li>${T.BULLET}</li></ul>
 <table style="width:100%;border-collapse:collapse;font-size:11.5px;"><tr><th style="${cell}background:#f3f4f6;color:${A};font-weight:700;">Project name</th><th style="${cell}background:#f3f4f6;color:${A};font-weight:700;">Description</th></tr><tr><td style="${cell}">Text</td><td style="${cell}">Text</td></tr></table>
 </div>`;
@@ -567,7 +567,7 @@ ${sec('Experience', times(4, () => job))}
 <div style="flex:1;min-width:0;">
 ${sec('Key Achievements', times(4, ach))}
 ${sec('Skills', `<div>${SKILLS.map(s => `<span style="display:inline-block;font-weight:700;font-size:12px;border-bottom:1px solid #cfd5df;padding:3px 8px;margin:0 6px 6px 0;">${s}</span>`).join('')}</div>`)}
-${sec('Education', `<div><div style="font-family:${raleway};font-size:15px;color:#333;">Degree and Field of Study</div><div style="font-size:13px;color:${A};">School or University</div>${meta('#555', [['cal', 'Date period', '#aaa'], ['pin', 'Location', '#333']])}</div>`)}
+${sec('Education', `<div><div style="font-family:${raleway};font-size:15px;color:#333;">Degree and Major</div><div style="font-size:13px;color:${A};">Institution Name</div>${meta('#555', [['cal', 'Start – End', '#aaa'], ['pin', 'Location', '#333']])}</div>`)}
 </div>
 </div>`, footer({ left: '44px', right: '44px' }));
 };
@@ -578,7 +578,7 @@ const mint = (): string => {
   const sec = (h: string, body: string) => `<div style="margin-bottom:22px;">\n${H(h)}\n${body}\n</div>`;
   const job = `<div style="margin-bottom:12px;">
 <div style="font-size:15px;color:#111;">Title</div>
-<div style="display:flex;gap:14px;align-items:baseline;"><span style="font-size:13.5px;color:#333;">Company Name</span><span style="font-size:11.5px;color:#b3b3b3;">Date period</span><span style="font-size:11.5px;color:#333;">Location</span></div>
+<div style="display:flex;gap:14px;align-items:baseline;"><span style="font-size:13.5px;color:#333;">Company Name</span><span style="font-size:11.5px;color:#b3b3b3;">Start – End</span><span style="font-size:11.5px;color:#333;">Location</span></div>
 <ul style="margin:3px 0 0;padding-left:16px;font-size:11.5px;"><li>${T.BULLET}</li></ul>
 </div>`;
   const ach = `<div style="margin-bottom:12px;"><div style="font-size:13px;color:#111;">${T.ACH}</div><div style="font-size:11.5px;color:#333;">${T.ACH_D}</div></div>`;
@@ -599,7 +599,7 @@ ${sec('Experience', times(4, () => job))}
 <div style="flex:1;min-width:0;">
 ${sec('Key Achievements', times(4, () => ach))}
 ${sec('Skills', `<div>${SKILLS.map(s => `<span style="display:inline-block;font-weight:700;font-size:12px;color:#333;border-bottom:1px solid #eee;margin:0 12px 6px 0;">${s}</span>`).join('')}</div>`)}
-${sec('Education', `<div><div style="font-size:15px;color:#111;">Degree and Field of Study</div><div style="font-size:13px;color:#333;">School or University</div><div style="display:flex;gap:14px;font-size:11.5px;"><span style="color:#b3b3b3;">Date period</span><span>Location</span></div></div>`)}
+${sec('Education', `<div><div style="font-size:15px;color:#111;">Degree and Major</div><div style="font-size:13px;color:#333;">Institution Name</div><div style="display:flex;gap:14px;font-size:11.5px;"><span style="color:#b3b3b3;">Start – End</span><span>Location</span></div></div>`)}
 </div>
 </div>`, footer());
 };
@@ -613,8 +613,8 @@ const portrait = (): string => {
   const row = (l: string, r: string) => `<div style="display:flex;justify-content:space-between;gap:12px;font-size:11.5px;font-weight:600;color:#111;"><span>${l}</span><span>${r}</span></div>`;
   const bullets = (n: number) => `<ul style="margin:5px 0 0;padding-left:16px;">${times(n, () => `<li>${T.BULLET}</li>`)}</ul>`;
   const grid = (items: string[]) => `<ul style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px 20px;margin:0;padding:0;list-style-position:inside;">${items.map(s => `<li>${s}</li>`).join('')}</ul>`;
-  const edu = `<div>\n${row('School or University', 'Date period')}\n<div style="color:#444;">Degree and Field of Study</div>\n${bullets(1)}\n</div>`;
-  const job = `<div style="margin-bottom:12px;">\n${row('<span>Company Name</span> – <span>Title</span>', 'Date period')}\n${bullets(2)}\n</div>`;
+  const edu = `<div>\n${row('Institution Name', 'Start – End')}\n<div style="color:#444;">Degree and Major</div>\n${bullets(1)}\n</div>`;
+  const job = `<div style="margin-bottom:12px;">\n${row('<span>Company Name</span> – <span>Title</span>', 'Start – End')}\n${bullets(2)}\n</div>`;
   return page("font-family:'Poppins',Arial,sans-serif;color:#333;font-size:11px;line-height:1.55;background:#fff;padding:44px 48px 72px;", `
 <div contenteditable="false" aria-hidden="true" style="position:absolute;top:0;right:48px;width:120px;height:24px;background:${NAVY};pointer-events:none;"></div>
 <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin:8px 0 22px;">
@@ -640,18 +640,18 @@ const classicSerif = (): string => {
   const row = (l: string, r: string, ls: string, rs: string) => `<div style="display:flex;justify-content:space-between;gap:12px;"><span style="${ls}">${l}</span><span style="${rs}">${r}</span></div>`;
   const job = `<div style="margin-bottom:12px;">
 ${row('Company Name', 'Location', 'font-size:13px;font-weight:700;', 'font-size:12px;')}
-${row('Title', 'Date period', 'font-size:12px;', 'font-size:12px;')}
+${row('Title', 'Start – End', 'font-size:12px;', 'font-size:12px;')}
 <ul style="margin:6px 0 0;padding-left:20px;">${times(3, () => `<li>${T.BULLET}</li>`)}</ul>
 </div>`;
   return page(`font-family:'Times New Roman',Times,Georgia,serif;color:${INK};font-size:12.5px;line-height:1.5;background:#fff;padding:44px 54px 72px;`, `
 <div style="text-align:center;margin-bottom:20px;">
 <div style="font-size:30px;font-weight:700;line-height:1.2;">${T.Name}</div>
-<div style="font-size:14px;margin-top:4px;">Phone &nbsp;|&nbsp; Email &nbsp;|&nbsp; LinkedIn/Portfolio &nbsp;|&nbsp; Location</div>
+<div style="font-size:14px;margin-top:4px;">Phone &nbsp;|&nbsp; Email &nbsp;|&nbsp; Portfolio Link &nbsp;|&nbsp; Location</div>
 </div>
 ${sec('Profile', `<p style="margin:0;text-align:justify;">${T.SUMMARY}</p>`)}
-${sec('Education', `<div>${row('School or University', 'Location', 'font-size:13px;font-weight:700;', 'font-size:12px;')}${row('Degree and Field of Study', 'Date period', 'font-size:12px;', 'font-size:12px;')}<div style="font-size:12px;">GPA / Grade</div></div>`)}
+${sec('Education', `<div>${row('Institution Name', 'Location', 'font-size:13px;font-weight:700;', 'font-size:12px;')}${row('Degree and Major', 'Start – End', 'font-size:12px;', 'font-size:12px;')}<div style="font-size:12px;">GPA / Grade</div></div>`)}
 ${sec('Work Experience', times(2, () => job))}
-${sec('Skills', `<ul style="margin:0;padding-left:20px;"><li><b>Technical skills:</b> Your Skill, Another Skill</li><li><b>Soft skills:</b> One More Skill</li><li><b>Languages:</b> Language</li></ul>`)}
+${sec('Skills', `<ul style="margin:0;padding-left:20px;"><li><b>Technical skills:</b> Skill One, Skill Two</li><li><b>Soft skills:</b> Skill Three</li><li><b>Languages:</b> Language</li></ul>`)}
 `, footer({ left: '54px', right: '54px' }));
 };
 
@@ -660,7 +660,7 @@ const headline = (): string => {
   const H = (t: string) => `<div style="font-size:15px;font-weight:800;text-transform:uppercase;color:${NAVY};border-top:1px solid #8b95a5;padding-top:8px;margin:0 0 6px;">${t}</div>`;
   const sec = (h: string, body: string) => `<div style="margin-bottom:12px;">\n${H(h)}\n${body}\n</div>`;
   const job = `<div style="margin-bottom:9px;">
-<div style="display:flex;justify-content:space-between;gap:12px;font-size:12.5px;font-weight:700;color:${NAVY};"><span>Title</span><span><span>Company Name</span> | <span>Date period</span></span></div>
+<div style="display:flex;justify-content:space-between;gap:12px;font-size:12.5px;font-weight:700;color:${NAVY};"><span>Title</span><span><span>Company Name</span> | <span>Start – End</span></span></div>
 <ul style="margin:3px 0 0;padding-left:18px;">${times(3, () => `<li>${T.BULLET}</li>`)}</ul>
 </div>`;
   const group = (label: string) => `<div style="margin-bottom:5px;"><div style="font-weight:700;color:${NAVY};">${label}</div><div>${SKILLS.join(', ')}</div></div>`;
@@ -668,12 +668,12 @@ const headline = (): string => {
 <div style="text-align:center;">
 <div style="font-size:34px;font-weight:800;letter-spacing:1px;color:${NAVY};line-height:1.15;">${T.NAME}</div>
 <div style="margin:2px 0 12px;"><span style="font-size:17px;font-weight:700;text-transform:uppercase;color:${NAVY};">${T.ROLE}</span></div>
-<div style="font-size:12px;color:#333;">Phone &nbsp;|&nbsp; Email &nbsp;|&nbsp; LinkedIn/Portfolio &nbsp;|&nbsp; Location</div>
+<div style="font-size:12px;color:#333;">Phone &nbsp;|&nbsp; Email &nbsp;|&nbsp; Portfolio Link &nbsp;|&nbsp; Location</div>
 </div>
 <div style="height:7px;background:${NAVY};margin:14px 0 12px;"></div>
 ${sec('Profile Summary', `<p style="margin:0;text-align:justify;">${T.SUMMARY}</p>`)}
 ${sec('Experience', times(2, () => job))}
-${sec('Education', `<div><div style="font-size:12.5px;font-weight:700;color:${NAVY};">Degree and Field of Study</div><div>School or University, Date period</div></div>`)}
+${sec('Education', `<div><div style="font-size:12.5px;font-weight:700;color:${NAVY};">Degree and Major</div><div>Institution Name, Start – End</div></div>`)}
 ${sec('Skills', `${group('Core Skills')}\n${group('Tools')}\n${group('Soft Skills')}`)}
 ${sec('Achievements', `<ul style="margin:0;padding-left:18px;">${times(2, () => `<li><b>${T.ACH}</b> – ${T.ACH_D}</li>`)}</ul>`)}
 `, footer({ left: '48px', right: '48px' }));
@@ -691,8 +691,8 @@ const terracotta = (): string => {
 </div>`;
   const row = (l: string, r: string) => `<div style="display:flex;justify-content:space-between;gap:12px;font-size:11.5px;font-weight:600;color:#111;"><span>${l}</span><span>${r}</span></div>`;
   const bullets = (n: number) => `<ul style="margin:5px 0 0;padding-left:16px;">${times(n, () => `<li>${T.BULLET}</li>`)}</ul>`;
-  const edu = `<div>\n${row('School or University', 'Date period')}\n<div style="color:#555;">Degree and Field of Study</div>\n${bullets(1)}\n</div>`;
-  const job = `<div style="margin-bottom:12px;">\n${row('<span>Company Name</span> – <span>Title</span>', 'Date period')}\n${bullets(2)}\n</div>`;
+  const edu = `<div>\n${row('Institution Name', 'Start – End')}\n<div style="color:#555;">Degree and Major</div>\n${bullets(1)}\n</div>`;
+  const job = `<div style="margin-bottom:12px;">\n${row('<span>Company Name</span> – <span>Title</span>', 'Start – End')}\n${bullets(2)}\n</div>`;
   return page("font-family:'Poppins',Arial,sans-serif;color:#333;font-size:11px;line-height:1.55;background:#f5ede6;padding:30px 30px 72px;display:flex;flex-direction:column;", `
 <div style="flex:1;background:#fff;padding:34px 36px 24px;">
 <div style="display:flex;align-items:center;gap:26px;">
@@ -720,9 +720,9 @@ const spotlight = (): string => {
   const sec = (H: (t: string) => string, h: string, body: string) => `<div style="margin-bottom:18px;">\n${H(h)}\n${body}\n</div>`;
   const list = (items: string[]) => `<ul style="margin:0;padding-left:16px;font-weight:600;">${items.map(s => `<li>${s}</li>`).join('')}</ul>`;
   const contact = (i: string, l: string) => `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">${icon(i, '#222', 13)}${l}</div>`;
-  const edu = `<div style="margin-bottom:8px;"><div style="font-weight:700;">Date period</div><div style="font-weight:700;">School or University</div><ul style="margin:2px 0 0;padding-left:16px;"><li>Degree and Field of Study</li></ul></div>`;
+  const edu = `<div style="margin-bottom:8px;"><div style="font-weight:700;">Start – End</div><div style="font-weight:700;">Institution Name</div><ul style="margin:2px 0 0;padding-left:16px;"><li>Degree and Major</li></ul></div>`;
   const job = `<div style="position:relative;border-left:1.5px solid #c9c9c9;padding:0 0 12px 18px;"><span style="position:absolute;left:-5px;top:5px;width:8px;height:8px;border-radius:50%;background:${DARK};"></span>
-<div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-size:14px;font-weight:600;color:#222;">Company Name</span><span style="font-size:11.5px;color:#444;">Date period</span></div>
+<div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-size:14px;font-weight:600;color:#222;">Company Name</span><span style="font-size:11.5px;color:#444;">Start – End</span></div>
 <div style="font-size:12px;color:#444;">Title</div>
 <ul style="margin:4px 0 0;padding-left:16px;">${times(2, () => `<li>${T.BULLET}</li>`)}</ul>
 </div>`;
@@ -733,7 +733,7 @@ const spotlight = (): string => {
 ${avatar(170, 'height:196px;border-radius:85px 85px 8px 8px;border:5px solid #fff;margin:0 auto 22px;')}
 <div style="margin-bottom:18px;">
 ${Hs('Contact')}
-${contact('phone', 'Phone')}${contact('at', 'Email')}${contact('link', 'LinkedIn/Portfolio')}${contact('pin', 'Location')}
+${contact('phone', 'Phone')}${contact('at', 'Email')}${contact('link', 'Portfolio Link')}${contact('pin', 'Location')}
 </div>
 ${sec(Hs, 'Education', times(2, () => edu))}
 ${sec(Hs, 'Skills', list(SKILLS))}
@@ -760,7 +760,7 @@ const studio = (): string => {
   const job = `<div style="margin-bottom:12px;">
 <div style="font-size:13px;font-weight:600;color:${INK};">Title</div>
 <div><span>Company Name</span>, <span>Location</span></div>
-<div style="font-style:italic;color:#555;">Date period</div>
+<div style="font-style:italic;color:#555;">Start – End</div>
 <ul style="margin:4px 0 0;padding-left:16px;">${times(3, () => `<li>${T.BULLET}</li>`)}</ul>
 </div>`;
   return page(`font-family:'Poppins',Arial,sans-serif;color:#333;font-size:11.5px;line-height:1.5;background:#fff;padding:0 0 72px;`, `
@@ -772,7 +772,7 @@ const studio = (): string => {
 <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:0 44px;margin-top:-66px;">
 <div style="flex:1;min-width:0;">${contact('at', 'Email')}${contact('phone', 'Phone')}</div>
 ${avatar(132, `border:6px solid #fff;box-shadow:0 0 0 1px ${BAND};`)}
-<div style="flex:1;min-width:0;padding-left:30px;">${contact('link', 'LinkedIn/Portfolio')}${contact('pin', 'Location')}</div>
+<div style="flex:1;min-width:0;padding-left:30px;">${contact('link', 'Portfolio Link')}${contact('pin', 'Location')}</div>
 </div>
 <div style="display:flex;gap:34px;padding:22px 44px 0;">
 <div style="width:36%;flex:none;">
@@ -783,7 +783,7 @@ ${sec('Achievements', list([T.ACH, T.ACH]))}
 </div>
 <div style="flex:1;min-width:0;">
 ${sec('Experience', times(2, () => job))}
-${sec('Education', `<div><div style="font-size:13px;font-weight:600;color:${INK};">Degree and Field of Study</div><div>School or University</div><div style="font-style:italic;color:#555;">Date period</div></div>`)}
+${sec('Education', `<div><div style="font-size:13px;font-weight:600;color:${INK};">Degree and Major</div><div>Institution Name</div><div style="font-style:italic;color:#555;">Start – End</div></div>`)}
 </div>
 </div>`, footer({ left: '44px', right: '44px', bottom: '20px', color: '#555' }));
 };
@@ -793,7 +793,7 @@ const ledger = (): string => {
   const H = (t: string) => `<div style="font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:${INK};border-bottom:1.5px solid ${INK};padding-bottom:4px;margin:0 0 10px;">${t}</div>`;
   const sec = (h: string, body: string) => `<div style="margin-bottom:18px;">\n${H(h)}\n${body}\n</div>`;
   const entry = (where: string, what: string, detail: string) => `<div style="display:flex;gap:20px;margin-bottom:10px;">
-<div style="width:150px;flex:none;color:#333;"><div>Date period</div><div>${where}</div></div>
+<div style="width:150px;flex:none;color:#333;"><div>Start – End</div><div>${where}</div></div>
 <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:${INK};">${what}</div><div style="color:#555;">${detail}</div></div>
 </div>`;
   const ref = `<div style="display:flex;justify-content:space-between;gap:12px;"><div><div style="font-size:13px;font-weight:700;color:${INK};">Reference Name</div><div>Position, Company</div></div><div style="font-size:11px;"><div><b>Phone:</b> <span>Phone</span></div><div><b>Email:</b> <span>Email</span></div></div></div>`;
@@ -808,7 +808,7 @@ ${contactRow(INK, 'font-size:11.5px;color:#333;', 18)}
 </div>
 </div>
 ${sec('About Me', `<p style="margin:0;">${T.SUMMARY}</p>`)}
-${sec('Education', times(2, () => entry('School or University', 'Degree and Field of Study', 'Briefly describe your coursework, projects or honours.')))}
+${sec('Education', times(2, () => entry('Institution Name', 'Degree and Major', 'Briefly describe your coursework, projects or honours.')))}
 ${sec('Experience', times(2, () => entry('Company Name', 'Title', T.BULLET)))}
 ${sec('Skills', `<ul style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px 16px;margin:0;padding:0;list-style-position:inside;">${SKILLS.map(s => `<li>${s}</li>`).join('')}</ul>`)}
 ${sec('References', `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 36px;">${times(2, () => ref)}</div>`)}
@@ -822,24 +822,24 @@ const make = (id: string, name: string, tag: string, color: string, description:
 });
 
 export const CV_TEMPLATES: Template[] = [
-  make('cv-double-column', 'Double Column', 'Modern · ATS-friendly', '#1e88e5', 'Two columns with bold section rules: experience on the left, achievements and skills on the right.', ['Two columns', 'Achievements', 'Training'], doubleColumn()),
-  make('cv-ivy-league', 'Ivy League', 'Classic · ATS-friendly', '#111111', 'Centered serif headings and a single column, the traditional format recruiters know.', ['Single column', 'Serif headings', 'ATS safe'], ivyLeague()),
-  make('cv-elegant', 'Elegant', 'Professional · Sidebar', '#1a91f0', 'Clean main column with a navy sidebar for achievements, skills and education.', ['Navy sidebar', 'Two columns', 'Photo-free'], elegant()),
+  make('cv-double-column', 'Meridian', 'Modern · ATS-friendly', '#1e88e5', 'Two columns with bold section rules: experience on the left, achievements and skills on the right.', ['Two columns', 'Achievements', 'Training'], doubleColumn()),
+  make('cv-ivy-league', 'Heritage', 'Classic · ATS-friendly', '#111111', 'Centered serif headings and a single column, the traditional format recruiters know.', ['Single column', 'Serif headings', 'ATS safe'], ivyLeague()),
+  make('cv-elegant', 'Harbor', 'Professional · Sidebar', '#1a91f0', 'Clean main column with a navy sidebar for achievements, skills and education.', ['Navy sidebar', 'Two columns', 'Photo-free'], elegant()),
   make('cv-crest', 'Crest', 'Creative · Serif', '#3b2f1e', 'Warm cream page, centered serif header and letter-spaced section titles.', ['Serif', 'Cream page', 'Single column'], crest()),
   make('cv-serif-minimal', 'Serif Minimal', 'Elegant · Minimal', '#2b2b2b', 'Large serif name, italic summary and outline icons for achievements.', ['Serif name', 'Minimal', 'Icons'], serifMinimal()),
-  make('cv-modern', 'Modern', 'Modern · Photo', '#00b5d8', 'Two columns with a photo, icon achievements and a fresh cyan accent.', ['Photo', 'Icons', 'Two columns'], modern()),
-  make('cv-polished', 'Polished', 'Creative · Sidebar', '#00675f', 'Teal sidebar with your name, achievements and skills; experience on the right.', ['Teal sidebar', 'Two columns', 'Bold header'], tealSidebar()),
-  make('cv-contemporary', 'Contemporary', 'Creative · Photo', '#2f9e6e', 'Photo with soft shapes, icon section titles and a highlighted role badge.', ['Photo', 'Icon headings', 'Two columns'], greenFresh()),
-  make('cv-timeline', 'Timeline', 'Creative · Timeline', '#f68b1e', 'Experience on a timeline with dates on the left, navy and orange accents.', ['Timeline', 'Photo', 'Bold colors'], timeline()),
-  make('cv-compact', 'Compact', 'Modern · Photo', '#1a91f0', 'Achievements, skills and education in a left column; summary and experience on the right.', ['Left column', 'Photo', 'Icons'], compact()),
-  make('cv-bold', 'Bold', 'Modern · ATS-friendly', '#3b6ef5', 'Strong underlined headings, dashed dividers and a two-column achievements grid.', ['Bold headings', 'Photo', 'Single column'], bold()),
+  make('cv-modern', 'Aqua', 'Modern · Photo', '#00b5d8', 'Two columns with a photo, icon achievements and a fresh cyan accent.', ['Photo', 'Icons', 'Two columns'], modern()),
+  make('cv-polished', 'Evergreen', 'Creative · Sidebar', '#00675f', 'Teal sidebar with your name, achievements and skills; experience on the right.', ['Teal sidebar', 'Two columns', 'Bold header'], tealSidebar()),
+  make('cv-contemporary', 'Meadow', 'Creative · Photo', '#2f9e6e', 'Photo with soft shapes, icon section titles and a highlighted role badge.', ['Photo', 'Icon headings', 'Two columns'], greenFresh()),
+  make('cv-timeline', 'Milestone', 'Creative · Timeline', '#f68b1e', 'Experience on a timeline with dates on the left, navy and orange accents.', ['Timeline', 'Photo', 'Bold colors'], timeline()),
+  make('cv-compact', 'Cobalt', 'Modern · Photo', '#1a91f0', 'Achievements, skills and education in a left column; summary and experience on the right.', ['Left column', 'Photo', 'Icons'], compact()),
+  make('cv-bold', 'Anchor', 'Modern · ATS-friendly', '#3b6ef5', 'Strong underlined headings, dashed dividers and a two-column achievements grid.', ['Bold headings', 'Photo', 'Single column'], bold()),
   make('cv-wave', 'Wave', 'Creative · Design', '#4aa3f0', 'Soft blue wave shapes framing a clean two-column layout.', ['Decorative', 'Photo', 'Two columns'], wave()),
-  make('cv-stylish', 'Stylish', 'Modern · Compact', '#1a91f0', 'A narrow experience column next to a wider achievements column.', ['Compact', 'Photo', 'Icons'], narrow()),
-  make('cv-simple', 'Simple', 'Minimal · ATS-friendly', '#1e88e5', 'Single column with right-aligned dates and locations. Easy for parsers to read.', ['Single column', 'ATS safe', 'Photo'], simple()),
-  make('cv-hybrid', 'Hybrid', 'Technical · Projects', '#00acc1', 'Each job comes with a small projects table, ideal for technical roles.', ['Projects table', 'Photo', 'Two columns'], projects()),
-  make('cv-minimal', 'Minimal', 'Minimal · Light', '#2bb673', 'Light typography, small green section titles and plenty of white space.', ['Minimal', 'Photo', 'Two columns'], mint()),
+  make('cv-stylish', 'Gallery', 'Modern · Compact', '#1a91f0', 'A narrow experience column next to a wider achievements column.', ['Compact', 'Photo', 'Icons'], narrow()),
+  make('cv-simple', 'Plainline', 'Minimal · ATS-friendly', '#1e88e5', 'Single column with right-aligned dates and locations. Easy for parsers to read.', ['Single column', 'ATS safe', 'Photo'], simple()),
+  make('cv-hybrid', 'Builder', 'Technical · Projects', '#00acc1', 'Each job comes with a small projects table, ideal for technical roles.', ['Projects table', 'Photo', 'Two columns'], projects()),
+  make('cv-minimal', 'Mint', 'Minimal · Light', '#2bb673', 'Light typography, small green section titles and plenty of white space.', ['Minimal', 'Photo', 'Two columns'], mint()),
   make('cv-portrait', 'Portrait', 'Modern · Photo', '#1d3557', 'Square photo beside a navy name, with education side by side and skills in a three-column list.', ['Photo', 'Single column', 'Languages'], portrait()),
-  make('cv-classic', 'Classic', 'Traditional · ATS-friendly', '#111111', 'Plain serif type, a centered name and ruled section titles. Nothing for a parser to trip on.', ['Serif', 'ATS safe', 'No photo'], classicSerif()),
+  make('cv-classic', 'Inkwell', 'Traditional · ATS-friendly', '#111111', 'Plain serif type, a centered name and ruled section titles. Nothing for a parser to trip on.', ['Serif', 'ATS safe', 'No photo'], classicSerif()),
   make('cv-headline', 'Headline', 'Professional · ATS-friendly', '#203a5c', 'Bold centered navy header over a thick rule, with grouped skills and achievements.', ['Centered header', 'Skill groups', 'No photo'], headline()),
   make('cv-terracotta', 'Terracotta', 'Elegant · Photo', '#9a5b3e', 'Warm cream frame, terracotta accents and side-labelled skills and languages.', ['Photo', 'Warm tones', 'Framed page'], terracotta()),
   make('cv-spotlight', 'Spotlight', 'Creative · Sidebar', '#4a4a4a', 'Arched photo and contact sidebar, a bold name banner and a timeline of experience.', ['Arched photo', 'Timeline', 'References'], spotlight()),

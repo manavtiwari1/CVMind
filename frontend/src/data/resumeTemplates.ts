@@ -31,7 +31,7 @@ const BASE_TEMPLATES: Template[] = [
   <!-- HEADER -->
   <div style="margin-bottom:20px;">
     <div style="font-size:28px;font-weight:800;letter-spacing:0.5px;color:#2d3748;text-transform:uppercase;margin:0 0 2px 0;line-height:1.2;">YOUR NAME</div>
-    <div style="font-size:15px;font-weight:700;color:#2563eb;margin-bottom:12px;letter-spacing:-0.2px;">The role you are applying for?</div>
+    <div style="font-size:15px;font-weight:700;color:#2563eb;margin-bottom:12px;letter-spacing:-0.2px;">Target Job Title</div>
     
     <!-- Contact Info Row with Icons -->
     <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center;font-size:12px;color:#64748b;">
@@ -41,7 +41,7 @@ const BASE_TEMPLATES: Template[] = [
       </span>
       <span style="display:inline-flex;align-items:center;gap:5px;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        <span>LinkedIn/Portfolio</span>
+        <span>Portfolio Link</span>
       </span>
       <span style="display:inline-flex;align-items:center;gap:5px;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
@@ -65,7 +65,7 @@ const BASE_TEMPLATES: Template[] = [
           <div style="display:flex;gap:14px;font-size:11.5px;color:#64748b;margin-bottom:6px;">
             <span style="display:inline-flex;align-items:center;gap:4px;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-              <span>Date period</span>
+              <span>Start – End</span>
             </span>
             <span style="display:inline-flex;align-items:center;gap:4px;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
@@ -73,7 +73,7 @@ const BASE_TEMPLATES: Template[] = [
             </span>
           </div>
           <ul style="margin:0;padding-left:16px;font-size:12.5px;color:#334155;line-height:1.5;">
-            <li>Highlight your accomplishments, using numbers if possible.</li>
+            <li>Start with an action verb and end with a result you can measure.</li>
           </ul>
         </div>
         <div style="border-bottom:1px dashed #cbd5e1;margin:12px 0;"></div>
@@ -84,7 +84,7 @@ const BASE_TEMPLATES: Template[] = [
           <div style="display:flex;gap:14px;font-size:11.5px;color:#64748b;margin-bottom:6px;">
             <span style="display:inline-flex;align-items:center;gap:4px;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-              <span>Date period</span>
+              <span>Start – End</span>
             </span>
             <span style="display:inline-flex;align-items:center;gap:4px;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
@@ -92,7 +92,7 @@ const BASE_TEMPLATES: Template[] = [
             </span>
           </div>
           <ul style="margin:0;padding-left:16px;font-size:12.5px;color:#334155;line-height:1.5;">
-            <li>Highlight your accomplishments, using numbers if possible.</li>
+            <li>Start with an action verb and end with a result you can measure.</li>
           </ul>
         </div>
         <div style="border-bottom:1px dashed #cbd5e1;margin:12px 0;"></div>
@@ -103,7 +103,7 @@ const BASE_TEMPLATES: Template[] = [
           <div style="display:flex;gap:14px;font-size:11.5px;color:#64748b;margin-bottom:6px;">
             <span style="display:inline-flex;align-items:center;gap:4px;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-              <span>Date period</span>
+              <span>Start – End</span>
             </span>
             <span style="display:inline-flex;align-items:center;gap:4px;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
@@ -111,7 +111,7 @@ const BASE_TEMPLATES: Template[] = [
             </span>
           </div>
           <ul style="margin:0;padding-left:16px;font-size:12.5px;color:#334155;line-height:1.5;">
-            <li>Highlight your accomplishments, using numbers if possible.</li>
+            <li>Start with an action verb and end with a result you can measure.</li>
           </ul>
         </div>
         <div style="border-bottom:1px dashed #cbd5e1;margin:12px 0;"></div>
@@ -122,7 +122,7 @@ const BASE_TEMPLATES: Template[] = [
           <div style="display:flex;gap:14px;font-size:11.5px;color:#64748b;margin-bottom:6px;">
             <span style="display:inline-flex;align-items:center;gap:4px;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-              <span>Date period</span>
+              <span>Start – End</span>
             </span>
             <span style="display:inline-flex;align-items:center;gap:4px;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
@@ -130,7 +130,7 @@ const BASE_TEMPLATES: Template[] = [
             </span>
           </div>
           <ul style="margin:0;padding-left:16px;font-size:12.5px;color:#334155;line-height:1.5;">
-            <li>Highlight your accomplishments, using numbers if possible.</li>
+            <li>Start with an action verb and end with a result you can measure.</li>
           </ul>
         </div>
 
@@ -138,12 +138,12 @@ const BASE_TEMPLATES: Template[] = [
         <div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:2.5px solid #0f172a;padding-bottom:3px;margin:20px 0 12px;">EDUCATION</div>
         
         <div style="margin-bottom:12px;">
-          <div style="font-size:13.5px;font-weight:700;color:#0f172a;">Degree and Field of Study</div>
-          <div style="font-size:13px;font-weight:700;color:#2563eb;margin:1px 0 3px;">School or University</div>
+          <div style="font-size:13.5px;font-weight:700;color:#0f172a;">Degree and Major</div>
+          <div style="font-size:13px;font-weight:700;color:#2563eb;margin:1px 0 3px;">Institution Name</div>
           <div style="display:flex;gap:14px;font-size:11.5px;color:#64748b;">
             <span style="display:inline-flex;align-items:center;gap:4px;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-              <span>Date period</span>
+              <span>Start – End</span>
             </span>
             <span style="display:inline-flex;align-items:center;gap:4px;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
@@ -154,12 +154,12 @@ const BASE_TEMPLATES: Template[] = [
         <div style="border-bottom:1px dashed #cbd5e1;margin:12px 0;"></div>
 
         <div style="margin-bottom:14px;">
-          <div style="font-size:13.5px;font-weight:700;color:#0f172a;">Degree and Field of Study</div>
-          <div style="font-size:13px;font-weight:700;color:#2563eb;margin:1px 0 3px;">School or University</div>
+          <div style="font-size:13.5px;font-weight:700;color:#0f172a;">Degree and Major</div>
+          <div style="font-size:13px;font-weight:700;color:#2563eb;margin:1px 0 3px;">Institution Name</div>
           <div style="display:flex;gap:14px;font-size:11.5px;color:#64748b;">
             <span style="display:inline-flex;align-items:center;gap:4px;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-              <span>Date period</span>
+              <span>Start – End</span>
             </span>
             <span style="display:inline-flex;align-items:center;gap:4px;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
@@ -199,12 +199,12 @@ const BASE_TEMPLATES: Template[] = [
         <div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:2.5px solid #0f172a;padding-bottom:3px;margin:20px 0 12px;">CERTIFICATION</div>
         <div style="display:flex;gap:20px;">
           <div style="flex:1;">
-            <div style="font-size:12.5px;font-weight:700;color:#0f172a;">Course Title</div>
-            <div style="font-size:11px;color:#64748b;line-height:1.4;">Which institution provided the course?</div>
+            <div style="font-size:12.5px;font-weight:700;color:#0f172a;">Course or Certificate</div>
+            <div style="font-size:11px;color:#64748b;line-height:1.4;">Issued by · Year</div>
           </div>
           <div style="flex:1;">
-            <div style="font-size:12.5px;font-weight:700;color:#0f172a;">Course Title</div>
-            <div style="font-size:11px;color:#64748b;line-height:1.4;">Which institution provided the course?</div>
+            <div style="font-size:12.5px;font-weight:700;color:#0f172a;">Course or Certificate</div>
+            <div style="font-size:11px;color:#64748b;line-height:1.4;">Issued by · Year</div>
           </div>
         </div>
 
@@ -215,7 +215,7 @@ const BASE_TEMPLATES: Template[] = [
         
         <!-- SUMMARY SECTION -->
         <div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:2.5px solid #0f172a;padding-bottom:3px;margin-bottom:10px;">SUMMARY</div>
-        <p style="font-size:12px;color:#64748b;line-height:1.55;margin:0 0 18px 0;">Briefly explain why you're a great fit for the role - use the AI assistant to tailor this summary for each job posting.</p>
+        <p style="font-size:12px;color:#64748b;line-height:1.55;margin:0 0 18px 0;">Sum up in two or three lines what you would bring to this job. Rewrite it for each application.</p>
 
         <!-- KEY ACHIEVEMENTS SECTION -->
         <div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:2.5px solid #0f172a;padding-bottom:3px;margin:18px 0 12px;">KEY ACHIEVEMENTS</div>
@@ -225,8 +225,8 @@ const BASE_TEMPLATES: Template[] = [
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 12L2 9Z"/><path d="M11 3 8 9l4 12 4-12-3-6"/><path d="M2 9h20"/></svg>
           </div>
           <div>
-            <div style="font-size:12.5px;font-weight:700;color:#0f172a;">Your Achievement</div>
-            <div style="font-size:11.5px;color:#64748b;line-height:1.45;">Describe what you did and the impact it had.</div>
+            <div style="font-size:12.5px;font-weight:700;color:#0f172a;">Key Win</div>
+            <div style="font-size:11.5px;color:#64748b;line-height:1.45;">One line on the result of your work.</div>
           </div>
         </div>
         <div style="border-bottom:1px dashed #cbd5e1;margin:10px 0;"></div>
@@ -236,8 +236,8 @@ const BASE_TEMPLATES: Template[] = [
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           </div>
           <div>
-            <div style="font-size:12.5px;font-weight:700;color:#0f172a;">Your Achievement</div>
-            <div style="font-size:11.5px;color:#64748b;line-height:1.45;">Describe what you did and the impact it had.</div>
+            <div style="font-size:12.5px;font-weight:700;color:#0f172a;">Key Win</div>
+            <div style="font-size:11.5px;color:#64748b;line-height:1.45;">One line on the result of your work.</div>
           </div>
         </div>
         <div style="border-bottom:1px dashed #cbd5e1;margin:10px 0;"></div>
@@ -247,15 +247,15 @@ const BASE_TEMPLATES: Template[] = [
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>
           </div>
           <div>
-            <div style="font-size:12.5px;font-weight:700;color:#0f172a;">Your Achievement</div>
-            <div style="font-size:11.5px;color:#64748b;line-height:1.45;">Describe what you did and the impact it had.</div>
+            <div style="font-size:12.5px;font-weight:700;color:#0f172a;">Key Win</div>
+            <div style="font-size:11.5px;color:#64748b;line-height:1.45;">One line on the result of your work.</div>
           </div>
         </div>
 
         <!-- SKILLS SECTION -->
         <div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:2.5px solid #0f172a;padding-bottom:3px;margin:18px 0 10px;">SKILLS</div>
         <div style="margin-bottom:18px;">
-          <span style="display:inline-block;border-bottom:2px solid #94a3b8;font-weight:600;font-size:12px;color:#334155;padding-bottom:2px;margin:3px 10px 4px 0;">Your Skill</span>
+          <span style="display:inline-block;border-bottom:2px solid #94a3b8;font-weight:600;font-size:12px;color:#334155;padding-bottom:2px;margin:3px 10px 4px 0;">Skill One</span>
           <span style="display:inline-block;border-bottom:2px solid #94a3b8;font-weight:600;font-size:12px;color:#334155;padding-bottom:2px;margin:3px 10px 4px 0;">Problem Solving</span>
           <span style="display:inline-block;border-bottom:2px solid #94a3b8;font-weight:600;font-size:12px;color:#334155;padding-bottom:2px;margin:3px 10px 4px 0;">Project Management</span>
         </div>
@@ -305,7 +305,7 @@ const BASE_TEMPLATES: Template[] = [
     icon: '📄',
     color: '#2997ff',
     accent: 'rgba(41,151,255,0.12)',
-    description: 'Timeless black & white format trusted by Fortune 500 recruiters worldwide.',
+    description: 'Timeless black & white format that reads cleanly in every ATS.',
     highlights: ['ATS Proven', 'Universal Format', 'Clean Layout'],
     html: `<div style="font-family:'Times New Roman',serif;max-width:720px;margin:0 auto;padding:36px;color:#111;line-height:1.55;">
 <div style="text-align:center;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:16px;">
@@ -720,7 +720,7 @@ const BASE_TEMPLATES: Template[] = [
 <div style="width:34%;background:#0f172a;color:#fff;padding:30px 20px;">
 <div data-photo-placeholder="true" title="Click to add your photo" style="width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:16px;cursor:pointer;overflow:hidden;">👤</div>
 <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#7dd3fc;margin-bottom:8px;">Contact</div>
-<div style="font-size:11.5px;line-height:2;color:#cbd5e1;">📞 Phone<br>✉️ Email<br>🔗 LinkedIn/Portfolio<br>📍 Location</div>
+<div style="font-size:11.5px;line-height:2;color:#cbd5e1;">📞 Phone<br>✉️ Email<br>🔗 Portfolio Link<br>📍 Location</div>
 <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#7dd3fc;margin:18px 0 8px;">Key Achievements</div>
 <div style="font-size:11.5px;line-height:1.9;color:#cbd5e1;">★ Led [Initiative] driving 35% growth<br>🚀 Scaled team from 5 to 40+<br>⚡ Cut operational costs by 28%</div>
 <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#7dd3fc;margin:18px 0 8px;">Skills</div>
@@ -734,11 +734,11 @@ const BASE_TEMPLATES: Template[] = [
 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:3px;margin-bottom:6px;">Summary</div>
 <p style="font-size:12.5px;margin:0 0 14px;color:#334155;">Senior leader with 10+ years building and scaling high-performing teams. Proven record driving revenue growth, operational efficiency, and cross-functional alignment at enterprise scale.</p>
 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:3px;margin-bottom:8px;">Experience</div>
-<div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;"><b style="font-size:13px;">Title</b><span style="font-size:11.5px;color:#64748b;">Date period</span></div><div style="font-size:12px;color:#0f172a;font-weight:600;margin-bottom:3px;">Company Name</div><ul style="margin:0;padding-left:16px;font-size:12.5px;color:#334155;"><li>Highlight your accomplishments, using numbers if possible.</li></ul></div>
-<div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;"><b style="font-size:13px;">Title</b><span style="font-size:11.5px;color:#64748b;">Date period</span></div><div style="font-size:12px;color:#0f172a;font-weight:600;margin-bottom:3px;">Company Name</div><ul style="margin:0;padding-left:16px;font-size:12.5px;color:#334155;"><li>Highlight your accomplishments, using numbers if possible.</li></ul></div>
+<div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;"><b style="font-size:13px;">Title</b><span style="font-size:11.5px;color:#64748b;">Start – End</span></div><div style="font-size:12px;color:#0f172a;font-weight:600;margin-bottom:3px;">Company Name</div><ul style="margin:0;padding-left:16px;font-size:12.5px;color:#334155;"><li>Start with an action verb and end with a result you can measure.</li></ul></div>
+<div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;"><b style="font-size:13px;">Title</b><span style="font-size:11.5px;color:#64748b;">Start – End</span></div><div style="font-size:12px;color:#0f172a;font-weight:600;margin-bottom:3px;">Company Name</div><ul style="margin:0;padding-left:16px;font-size:12.5px;color:#334155;"><li>Start with an action verb and end with a result you can measure.</li></ul></div>
 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:3px;margin-bottom:6px;">Education</div>
-<div style="display:flex;justify-content:space-between;font-size:12.5px;"><b>Degree and Field of Study</b><span style="color:#64748b;">Date period</span></div>
-<div style="font-size:12px;color:#64748b;">School or University</div>
+<div style="display:flex;justify-content:space-between;font-size:12.5px;"><b>Degree and Major</b><span style="color:#64748b;">Start – End</span></div>
+<div style="font-size:12px;color:#64748b;">Institution Name</div>
 </div>
 </div>`
   },

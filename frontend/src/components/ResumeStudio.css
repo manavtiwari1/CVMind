@@ -1,4 +1,4 @@
-/* Simple, Enhancv-style resume editor chrome */
+/* Simple resume editor chrome */
 /* Shared tokens; the floating bars and preview are portalled to <body>, so they need them too. */
 .rs-page, .rs-entry, .rs-entry-box, .rs-sel, .rs-preview { --rs-green: #2bbf8e; --rs-green-dark: #1fa97a; --rs-ink: #1c2330; --rs-muted: #667085; --rs-line: #e4e8f0; }
 .rs-page { min-height: 100vh; background: #f4f6fa; color: var(--rs-ink); }

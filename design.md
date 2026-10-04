@@ -76,7 +76,7 @@ graph TD
 | Layer | Technologies / Libraries | Purpose & Key Highlights |
 | :--- | :--- | :--- |
 | **Frontend Framework** | React 19, TypeScript, Vite 8 | Ultra-fast HMR, strict type safety, modern concurrent rendering. |
-| **Styling & Design** | Tailwind CSS v4, Vanilla CSS Custom Properties | Light-first Enhancv/Apple aesthetic, dynamic dark mode, glassmorphism tokens. |
+| **Styling & Design** | Tailwind CSS v4, Vanilla CSS Custom Properties | Light-first aesthetic, dynamic dark mode, glassmorphism tokens. |
 | **Animation & Motion** | Framer Motion 12, Canvas Confetti | Smooth spring transitions, card hover physics, scan progress rings, celebratory triggers. |
 | **UI Components & Icons**| Lucide React, Radix UI Slot, Base UI | Accessible, clean primitive components and iconography. |
 | **Data Visualization** | Recharts 3.x | ATS score breakdown radars, category score bars, analytics gauges. |
@@ -92,7 +92,7 @@ graph TD
 
 ## 4. UI/UX Design System & Aesthetics
 
-CVMind-AI implements a **Light-first, Apple & Enhancv-inspired** design language featuring clean typography, glassmorphism surfaces, subtle glow gradients, and snappy micro-interactions.
+CVMind-AI implements a **light-first** design language featuring clean typography, glassmorphism surfaces, subtle glow gradients, and snappy micro-interactions.
 
 ### 4.1 Color Palette & Tokens
 

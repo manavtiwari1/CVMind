@@ -89,7 +89,7 @@ export function withSampleData(t: Template): string {
     .replace(/John Doe|Your Name/g, p.name);
 
   // role the resume is written for
-  html = html.replace(/The role you are applying for\?|The Role You Are Applying For/gi, p.title);
+  html = html.replace(/Target Job Title|The role you are applying for\?|The Role You Are Applying For/gi, p.title);
 
   // sequential fills: first occurrence is the current job, the next is the previous one, and so on
   const alternate = (pattern: RegExp, a: string, b: string) => {
@@ -100,7 +100,7 @@ export function withSampleData(t: Template): string {
   alternate(/\[Company Name\]|Company Name|\[Company\]|\[Firm Name\]/g, p.company, p.prevCompany);
   html = html.replace(/\[Previous Company\]/g, p.prevCompany);
   html = html.replace(/\[University Name\]|University Name|\[Institution\]/g, p.university);
-  html = html.replace(/\[Branch\]|\[Field\]|\[Specialization\]|\[specialization\]|Degree and Field of Study/g, p.field);
+  html = html.replace(/\[Branch\]|\[Field\]|\[Specialization\]|\[specialization\]|Degree and Major/g, p.field);
 
   let s = 0;
   html = html.replace(/\[Skill [A-C]\]|\[Skill\]|\[Key Skill\]|Skill (?:One|Two|Three|Four|Five|Six|[1-9])\b|Your Skill|Another Skill|One More Skill/g, () => p.skills[s++ % p.skills.length]);
@@ -117,7 +117,7 @@ export function withSampleData(t: Template): string {
   const email = `${parts[0]}.${parts[parts.length - 1]}@example.com`;
   let d = 0;
   const DATES = ['2022 – Present', '2019 – 2022', '2017 – 2019', '2015 – 2017', '2011 – 2015'];
-  html = html.replace(/Date period/g, () => DATES[d++ % DATES.length]);
+  html = html.replace(/Start – End/g, () => DATES[d++ % DATES.length]);
   const ACH = [
     ['Launched a flagship product', 'Took the launch from idea to 40k users in six months.'],
     ['Cut costs by 22%', 'Renegotiated vendors and removed duplicate tools.'],
@@ -125,11 +125,11 @@ export function withSampleData(t: Template): string {
     ['Recognised for impact', 'Received the annual excellence award for cross-team work.'],
   ];
   let a = 0;
-  html = html.replace(/Your Achievement/g, () => ACH[a++ % ACH.length][0]);
+  html = html.replace(/Key Win/g, () => ACH[a++ % ACH.length][0]);
   let b = 0;
-  html = html.replace(/Describe what you did and the impact it had\./g, () => ACH[b++ % ACH.length][1]);
+  html = html.replace(/One line on the result of your work\./g, () => ACH[b++ % ACH.length][1]);
   html = html
-    .replace(/Briefly explain why you're a great fit for the role - use the AI assistant to tailor this summary for each job posting\./g,
+    .replace(/Sum up in two or three lines what you would bring to this job\. Rewrite it for each application\./g,
       `${p.title} with 7+ years of experience turning goals into measurable results. Known for clear communication, steady delivery and helping teams do their best work.`)
     .replace(/(>|<\/svg>)Phone</g, '$1+91 98765 43210<')
     .replace(/(>|<\/svg>)Email</g, `$1${email}<`)
@@ -137,11 +137,11 @@ export function withSampleData(t: Template): string {
     .replace(/\bPhone(?= &nbsp;)/g, '+91 98765 43210')
     .replace(/&nbsp; Email(?= &nbsp;)/g, `&nbsp; ${email}`)
     .replace(/&nbsp; Location</g, '&nbsp; Bengaluru, India<')
-    .replace(/LinkedIn\/Portfolio/g, `linkedin.com/in/${parts.join('')}`)
+    .replace(/Portfolio Link/g, `linkedin.com/in/${parts.join('')}`)
     .replace(/— Location/g, '— Bengaluru')
     .replace(/>Location</g, '>Bengaluru<')
-    .replace(/Course Title/g, 'Product Management Certificate')
-    .replace(/Which institution provided the course\?/g, 'Coursera · 2023');
+    .replace(/Course or Certificate/g, 'Product Management Certificate')
+    .replace(/Issued by · Year/g, 'Coursera · 2023');
 
   let ti = 0;
   html = html.replace(/>Title</g, () => `>${ti++ === 0 ? p.title : p.prevTitle}<`);
@@ -160,8 +160,8 @@ export function withSampleData(t: Template): string {
 
   // plain-text placeholders used by the newer layouts
   html = html
-    .replace(/Highlight your accomplishments[^<]*/g, 'Led a cross-functional team and delivered the programme 15% ahead of plan.')
-    .replace(/School or University/g, p.university)
+    .replace(/Start with an action verb[^<]*/g, 'Led a cross-functional team and delivered the programme 15% ahead of plan.')
+    .replace(/Institution Name/g, p.university)
     .replace(/IIT\/NIT/g, p.university)
     .replace(/Tech Company/g, p.company);
   return html;

@@ -85,7 +85,7 @@ export default function Navbar({
           <span className="navbar-brand-name">CVMind</span>
         </button>
 
-        {/* Center Navigation — Enhancv style: 4 clean items */}
+        {/* Center Navigation: 4 clean items */}
         <div className="navbar-nav" style={{ display: 'flex', alignItems: 'center' }}>
           <NavigationMenu viewport={false}>
             <NavigationMenuList>

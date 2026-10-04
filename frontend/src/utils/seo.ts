@@ -193,12 +193,12 @@ const PAGE_SEO: Record<string, PageSEO> = {
   code: {
     title: 'CVmind Code - AI Coding Judge, Practice & Career Assessments | CV Mind',
     description: 'Master Data Structures & Algorithms with an in-browser isolated code judge, 6-tier progressive AI assistance, contests, and standardized skill scores that recruiters verify.',
-    keywords: 'Coding Practice, LeetCode Alternative, Coding Judge, AI Code Assistant, DSA Practice, Coding Assessments, Interview Preparation, Coding Profile',
+    keywords: 'Coding Practice, Coding Judge, AI Code Assistant, DSA Practice, Coding Assessments, Interview Preparation, Coding Profile',
   },
   'cvmind-code': {
     title: 'CVmind Code - AI Coding Judge, Practice & Career Assessments | CV Mind',
     description: 'Master Data Structures & Algorithms with an in-browser isolated code judge, 6-tier progressive AI assistance, contests, and standardized skill scores that recruiters verify.',
-    keywords: 'Coding Practice, LeetCode Alternative, Coding Judge, AI Code Assistant, DSA Practice, Coding Assessments, Interview Preparation, Coding Profile',
+    keywords: 'Coding Practice, Coding Judge, AI Code Assistant, DSA Practice, Coding Assessments, Interview Preparation, Coding Profile',
   },
   'code-arena': {
     title: 'CVMind Code Arena - Live In-Browser Code Judge & Editor | CV Mind',

@@ -884,7 +884,7 @@ Your task is to take a raw HTML resume template and populate it with beautifully
 
 CRITICAL RULES:
 1. You MUST preserve the exact HTML structure, tags, CSS inline styles, wrappers, tables, columns, divisions, fonts, and colors of the template. Do NOT add new main wrapper containers, outer boundaries, or alter layout structure.
-2. Only replace the placeholder values (such as "YOUR NAME", "The role you are applying for?", "john.doe@email.com", job titles, dates, locations, bullet points, school names, university names, skill lists, professional summaries, key achievements, languages, etc.) with the user's actual information.
+2. Only replace the placeholder values (such as "YOUR NAME", "Target Job Title", "john.doe@email.com", job titles, dates, locations, bullet points, school names, university names, skill lists, professional summaries, key achievements, languages, etc.) with the user's actual information.
 ${contentRule}
 4. If the template contains a KEY ACHIEVEMENTS section, populate it with the user's top achievements or high-impact projects, keeping all SVG icons and dashed borders intact.
 5. If the template contains a LANGUAGES section with visual dot indicators, keep the dot indicators and populate with the user's languages.

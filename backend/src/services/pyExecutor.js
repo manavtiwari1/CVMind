@@ -50,7 +50,7 @@ class _TN:
         self.left = left
         self.right = right
 
-# names LeetCode-style solutions expect; user code may redefine them
+# names class-based solutions expect; user code may redefine them
 ListNode = _LN
 TreeNode = _TN
 
