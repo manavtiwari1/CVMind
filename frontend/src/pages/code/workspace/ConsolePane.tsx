@@ -152,7 +152,7 @@ export default function ConsolePane(props: ConsolePaneProps) {
                       <AlertTriangle size={16} />
                       <div>
                         <b>This was not judged.</b> {data.error || 'The server cannot run this language right now.'}{' '}
-                        It is not recorded as solved. Switch to another language to get a real result.
+                        It is not recorded as solved. Pick another language from CVMind Code home to get a real result.
                       </div>
                     </div>
                   )}

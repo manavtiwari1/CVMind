@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Circle, Clock, Play, RotateCcw, Square } from 'lucide-react';
 import { TOPICS, type CodingProblem } from '../../data/codingProblems';
 import Workspace from './Workspace';
+import type { Language } from './codeApi';
 import { useProgress } from './codeStore';
 import './code-pages.css';
 
 interface PracticePageProps {
   problems: CodingProblem[];
+  language: Language;
   theme: 'light' | 'dark';
   customApiKey?: string;
 }
@@ -53,7 +55,7 @@ function clock(total: number) {
   return `${h ? `${h}:` : ''}${String(m).padStart(h ? 2 : 1, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-export default function PracticePage({ problems, theme, customApiKey }: PracticePageProps) {
+export default function PracticePage({ problems, language, theme, customApiKey }: PracticePageProps) {
   const progress = useProgress();
   const [session, setSession] = useState<Session | null>(loadSession);
   const [now, setNow] = useState(() => Date.now());
@@ -142,6 +144,7 @@ export default function PracticePage({ problems, theme, customApiKey }: Practice
           key={current.id}
           problem={current}
           problems={sessionProblems}
+          language={language}
           theme={theme}
           customApiKey={customApiKey}
           onOpen={(p) => setActive(Math.max(0, sessionProblems.findIndex((x) => x.id === p.id)))}

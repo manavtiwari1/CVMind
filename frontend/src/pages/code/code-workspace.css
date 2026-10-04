@@ -98,7 +98,12 @@
 
 /* ── Editor pane ──────────────────────────────────────────── */
 .cx-editor-bar { display: flex; align-items: center; gap: 0.6rem; flex: none; height: 42px; padding: 0 0.6rem; background: var(--cx-surface-2); border-bottom: 1px solid var(--cx-border); }
-.cx-select--lang { height: 30px; font-size: 0.82rem; }
+.cx-lang-lock {
+  display: inline-flex; align-items: center; gap: 0.35rem; height: 30px; padding: 0 0.7rem;
+  font-size: 0.82rem; font-weight: 700; color: var(--cx-text);
+  background: var(--cx-surface-2); border: 1px solid var(--cx-border); border-radius: 8px;
+}
+.cx-lang-lock svg { color: var(--cx-faint); }
 .cx-tag--warn { color: var(--cx-medium); background: var(--cx-medium-bg); }
 .cx-editor-actions { display: flex; align-items: center; gap: 0.15rem; margin-left: auto; }
 .cx-icon-btn.is-danger { color: var(--cx-hard); background: var(--cx-hard-bg); }

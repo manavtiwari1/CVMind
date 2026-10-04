@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Editor, { type OnMount } from '@monaco-editor/react';
 import confetti from 'canvas-confetti';
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Clock, Copy, Maximize2, Minimize2, Play, RotateCcw, Send, Settings2 } from 'lucide-react';
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Clock, Copy, Lock, Maximize2, Minimize2, Play, RotateCcw, Send, Settings2 } from 'lucide-react';
 import type { CodingProblem } from '../../data/codingProblems';
 import { getErrorMessage } from '../../utils/errors';
 import {
@@ -16,6 +16,8 @@ import './code-workspace.css';
 interface WorkspaceProps {
   problem: CodingProblem;
   problems: CodingProblem[];
+  /** The language track the user picked; the editor is locked to it. */
+  language: Language;
   theme: 'light' | 'dark';
   customApiKey?: string;
   onOpen: (problem: CodingProblem) => void;
@@ -31,7 +33,6 @@ interface LayoutPrefs { left: number; console: number }
 
 const PREFS_KEY = 'cvmind_code_editor';
 const LAYOUT_KEY = 'cvmind_code_layout';
-const LANG_KEY = 'cvmind_code_lang';
 
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 
@@ -42,14 +43,6 @@ function readJson<T>(key: string, fallback: T): T {
   } catch {
     return fallback;
   }
-}
-
-function initialLanguage(): Language {
-  try {
-    const saved = localStorage.getItem(LANG_KEY) as Language | null;
-    if (saved && LANGUAGES.some((l) => l.id === saved)) return saved;
-  } catch { /* ignore */ }
-  return 'javascript';
 }
 
 /** Parameter names of the solution function, so inputs can be shown as "nums = [...]". */
@@ -74,14 +67,13 @@ function formatClock(total: number) {
 
 const idleAi = <T,>(): AiState<T> => ({ loading: false, data: null, error: '' });
 
-export default function Workspace({ problem, problems, theme, customApiKey = '', onOpen, onBack, backLabel = 'Problems', barExtra }: WorkspaceProps) {
+export default function Workspace({ problem, problems, language, theme, customApiKey = '', onOpen, onBack, backLabel = 'Problems', barExtra }: WorkspaceProps) {
   const progress = useProgress();
   const rootRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const rightRef = useRef<HTMLDivElement>(null);
 
-  const [language, setLanguage] = useState<Language>(initialLanguage);
-  const [code, setCode] = useState<string>(() => loadDraft(problem.id, initialLanguage()) ?? problem.starterCode[initialLanguage()] ?? '');
+  const [code, setCode] = useState<string>(() => loadDraft(problem.id, language) ?? problem.starterCode[language] ?? '');
 
   const [leftTab, setLeftTab] = useState<LeftTab>('description');
   const [consoleTab, setConsoleTab] = useState<ConsoleTab>('testcase');
@@ -157,15 +149,6 @@ export default function Workspace({ problem, problems, theme, customApiKey = '',
     document.addEventListener('fullscreenchange', onFs);
     return () => document.removeEventListener('fullscreenchange', onFs);
   }, []);
-
-  const changeLanguage = (next: Language) => {
-    if (next === language) return;
-    saveDraft(problem.id, language, code);
-    setLanguage(next);
-    try { localStorage.setItem(LANG_KEY, next); } catch { /* ignore */ }
-    setCode(loadDraft(problem.id, next) ?? problem.starterCode[next] ?? '');
-    setResult(null);
-  };
 
   const resetCode = () => {
     if (!confirmReset) {
@@ -366,7 +349,7 @@ export default function Workspace({ problem, problems, theme, customApiKey = '',
           onTab={setLeftTab}
           submissions={mySubmissions}
           onRestore={(c, lang) => {
-            if (LANGUAGES.some((l) => l.id === lang)) { setLanguage(lang as Language); }
+            if (lang !== language) return;
             setCode(c);
             setMobilePane('code');
           }}
@@ -393,9 +376,9 @@ export default function Workspace({ problem, problems, theme, customApiKey = '',
         <div className="cx-right" ref={rightRef}>
           <div className="cx-pane cx-editor-pane">
             <div className="cx-editor-bar">
-              <select className="cx-select cx-select--lang" value={language} onChange={(e) => changeLanguage(e.target.value as Language)} aria-label="Language">
-                {LANGUAGES.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
-              </select>
+              <span className="cx-lang-lock" title="To use another language, go back to CVMind Code home and pick it there">
+                <Lock size={12} /> {currentLang.label}
+              </span>
               {!currentLang.judged && <span className="cx-tag cx-tag--warn" title="This language is not executed on the server yet">Not judged</span>}
               <div className="cx-editor-actions">
                 <button type="button" className="cx-icon-btn" onClick={() => void copyCode()} aria-label="Copy code" title="Copy code">

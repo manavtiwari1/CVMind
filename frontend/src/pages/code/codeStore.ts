@@ -96,8 +96,54 @@ const subscribe = (cb: () => void) => {
   return () => { listeners.delete(cb); };
 };
 
-/** Subscribe a component to the progress store. */
+// ── Language tracks: each language you practise in keeps its own solved list ──
+
+/** Progress as seen from one language: only that language's submissions and solves count. Activity stays shared. */
+export function progressForLanguage(p: ProgressState, language: string): ProgressState {
+  const submissions = p.submissions.filter((s) => s.language === language);
+  const solved: Record<string, SolvedInfo> = {};
+  for (const [id, info] of Object.entries(p.solved)) if (info.language === language) solved[id] = info;
+  const attempted: Record<string, number> = {};
+  // oldest first, so the solve time is the first accepted submission
+  for (let i = submissions.length - 1; i >= 0; i--) {
+    const s = submissions[i];
+    attempted[s.problemId] = (attempted[s.problemId] || 0) + 1;
+    if (s.verdict === 'Accepted' && !solved[s.problemId]) solved[s.problemId] = { at: s.at, language };
+  }
+  return { ...p, solved, submissions, attempted };
+}
+
+/** Problems that have starter code in this language. */
+export function problemsFor(problems: CodingProblem[], language: 'javascript' | 'python' | 'cpp'): CodingProblem[] {
+  return problems.filter((p) => (p.starterCode?.[language] ?? '').trim() !== '');
+}
+
+let track: string | null = null;
+let trackCache: { from: ProgressState; track: string; view: ProgressState } | null = null;
+
+function snapshot(): ProgressState {
+  if (!track) return state;
+  if (!trackCache || trackCache.from !== state || trackCache.track !== track) {
+    trackCache = { from: state, track, view: progressForLanguage(state, track) };
+  }
+  return trackCache.view;
+}
+
+/**
+ * Choose which language's progress useProgress() returns; null shows everything.
+ * Called while CVMind Code renders, so it does not notify: every reader sits under that render and re-reads anyway.
+ */
+export function setTrack(language: string | null) {
+  track = language;
+}
+
+/** Subscribe a component to the progress store, seen through the chosen language track. */
 export function useProgress(): ProgressState {
+  return useSyncExternalStore(subscribe, snapshot, snapshot);
+}
+
+/** The whole store across every language, for the language picker. */
+export function useAllProgress(): ProgressState {
   return useSyncExternalStore(subscribe, () => state, () => state);
 }
 

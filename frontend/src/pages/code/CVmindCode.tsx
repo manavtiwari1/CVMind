@@ -8,7 +8,9 @@ import ProfilePage from './ProfilePage';
 import RoadmapPage from './RoadmapPage';
 import PracticePage from './PracticePage';
 import AIGenerator from './AIGenerator';
-import { computeStreak, summarize, syncProgress, useProgress } from './codeStore';
+import LanguageHome from './LanguageHome';
+import { LANGUAGES, type Language } from './codeApi';
+import { computeStreak, problemsFor, setTrack, summarize, syncProgress, useProgress } from './codeStore';
 
 interface CVmindCodeProps {
   customApiKey?: string;
@@ -17,6 +19,24 @@ interface CVmindCodeProps {
 
 const THEME_KEY = 'cvmind_code_theme';
 const CUSTOM_KEY = 'cvmind_custom_problems';
+const TRACK_KEY = 'cvmind_code_track';
+
+const isLanguage = (v: string | null): v is Language => !!v && LANGUAGES.some((l) => l.id === v);
+
+/** The track comes from the address bar only, so a fresh visit always starts on the language picker. */
+function initialTrack(): Language | null {
+  try {
+    const lang = new URLSearchParams(window.location.search).get('lang');
+    return isLanguage(lang) ? lang : null;
+  } catch { return null; }
+}
+
+function lastTrack(): Language | null {
+  try {
+    const saved = localStorage.getItem(TRACK_KEY);
+    return isLanguage(saved) ? saved : null;
+  } catch { return null; }
+}
 
 // Older links used different tab names; keep them working.
 const LEGACY_TABS: Record<string, CodeView> = {
@@ -50,6 +70,9 @@ function initialTheme(): 'light' | 'dark' {
 }
 
 export default function CVmindCode({ customApiKey = '', initialTab = 'problems' }: CVmindCodeProps) {
+  const [language, setLanguage] = useState<Language | null>(initialTrack);
+  // set during render so the very first read of the store already sees the chosen track
+  setTrack(language);
   const progress = useProgress();
 
   // Pull the account's progress from MongoDB on open and whenever the tab regains focus
@@ -61,7 +84,9 @@ export default function CVmindCode({ customApiKey = '', initialTab = 'problems' 
   }, []);
 
   const [custom, setCustom] = useState<CodingProblem[]>(loadCustomProblems);
-  const problems = useMemo(() => [...CODING_PROBLEMS, ...custom], [custom]);
+  const allProblems = useMemo(() => [...CODING_PROBLEMS, ...custom], [custom]);
+  // only problems that can be written in the chosen language
+  const problems = useMemo(() => (language ? problemsFor(allProblems, language) : allProblems), [allProblems, language]);
   const [theme, setTheme] = useState<'light' | 'dark'>(initialTheme);
 
   const [view, setView] = useState<CodeView>(() => {
@@ -86,15 +111,34 @@ export default function CVmindCode({ customApiKey = '', initialTab = 'problems' 
   useEffect(() => {
     try {
       const params = new URLSearchParams();
-      if (activeView === 'workspace' && selected) params.set('problem', selected.slug || selected.id);
-      else params.set('tab', activeView);
-      window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+      if (language) {
+        params.set('lang', language);
+        if (activeView === 'workspace' && selected) params.set('problem', selected.slug || selected.id);
+        else params.set('tab', activeView);
+      } else if (problemId) {
+        params.set('problem', problemId); // a shared problem link survives the language picker
+      }
+      const qs = params.toString();
+      window.history.replaceState(null, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`);
     } catch { /* history unavailable */ }
-  }, [activeView, selected]);
+  }, [activeView, selected, language, problemId]);
 
   useEffect(() => {
-    document.title = activeView === 'workspace' && selected ? `${selected.title} - CVMind Code` : 'CVMind Code';
-  }, [activeView, selected]);
+    document.title = language && activeView === 'workspace' && selected ? `${selected.title} - CVMind Code` : 'CVMind Code';
+  }, [activeView, selected, language]);
+
+  const pickLanguage = useCallback((l: Language) => {
+    setLanguage(l);
+    try { localStorage.setItem(TRACK_KEY, l); } catch { /* ignore */ }
+    window.scrollTo(0, 0);
+  }, []);
+
+  const leaveLanguage = useCallback(() => {
+    setLanguage(null);
+    setProblemId(null);
+    setView('problems');
+    window.scrollTo(0, 0);
+  }, []);
 
   const openProblem = useCallback((p: CodingProblem) => { setProblemId(p.id); setView('workspace'); window.scrollTo(0, 0); }, []);
   const changeView = useCallback((v: CodeView) => { setView(v); window.scrollTo(0, 0); }, []);
@@ -121,8 +165,20 @@ export default function CVmindCode({ customApiKey = '', initialTab = 'problems' 
 
   return (
     <div className="cx-app" data-cx-theme={theme}>
-      <CodeTopBar view={activeView} onView={changeView} streak={streak} solved={summary.solved} total={summary.total} theme={theme} onToggleTheme={toggleTheme} />
+      <CodeTopBar
+        view={activeView}
+        onView={changeView}
+        streak={streak}
+        solved={summary.solved}
+        total={summary.total}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        language={language}
+        onChangeLanguage={leaveLanguage}
+      />
       <main className="cx-main">
+        {!language && <LanguageHome problems={allProblems} lastUsed={lastTrack()} onPick={pickLanguage} />}
+        {language && <>
         {activeView === 'problems' && (
           <ProblemSet problems={problems} onOpen={openProblem} onOpenAi={() => changeView('ai')} onOpenPractice={() => changeView('practice')} />
         )}
@@ -131,6 +187,7 @@ export default function CVmindCode({ customApiKey = '', initialTab = 'problems' 
             key={selected.id}
             problem={selected}
             problems={problems}
+            language={language}
             theme={theme}
             customApiKey={customApiKey}
             onOpen={openProblem}
@@ -138,9 +195,10 @@ export default function CVmindCode({ customApiKey = '', initialTab = 'problems' 
           />
         )}
         {activeView === 'roadmap' && <RoadmapPage problems={problems} onOpen={openProblem} />}
-        {activeView === 'practice' && <PracticePage problems={problems} theme={theme} customApiKey={customApiKey} />}
+        {activeView === 'practice' && <PracticePage problems={problems} language={language} theme={theme} customApiKey={customApiKey} />}
         {activeView === 'profile' && <ProfilePage problems={problems} onOpen={openProblem} />}
         {activeView === 'ai' && <AIGenerator onUse={useGenerated} customApiKey={customApiKey} />}
+        </>}
       </main>
     </div>
   );
