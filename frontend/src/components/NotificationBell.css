@@ -146,6 +146,29 @@
   overflow: hidden;
 }
 
+.nb-item.expanded .nb-body {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+.nb-open {
+  margin: -4px 16px 12px 28px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #1a8a63;
+  color: #fff;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nb-open:hover {
+  background: #157352;
+}
+
 .nb-time {
   margin-top: 2px;
   font-size: 0.75rem;

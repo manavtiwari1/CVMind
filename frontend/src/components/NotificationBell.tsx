@@ -28,6 +28,7 @@ export default function NotificationBell({ setCurrentPage }: { setCurrentPage: (
   const [items, setItems] = useState<Item[]>([]);
   const [open, setOpen] = useState(false);
   const [tick, setTick] = useState(0);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const unread = items.filter((i) => !i.read).length;
 
   useEffect(() => {
@@ -61,9 +62,13 @@ export default function NotificationBell({ setCurrentPage }: { setCurrentPage: (
     }).catch(() => {});
   }, []);
 
-  const openItem = (item: Item) => {
+  // Clicking a notification opens it in place so the whole message can be read; its link gets its own button
+  const toggleItem = (item: Item) => {
     if (!item.read) markRead([item.id]);
-    if (!item.link) return;
+    setExpanded((id) => (id === item.id ? null : item.id));
+  };
+
+  const openLink = (item: Item) => {
     setOpen(false);
     const page = internalPage(item.link);
     if (page) setCurrentPage(page);
@@ -94,11 +99,19 @@ export default function NotificationBell({ setCurrentPage }: { setCurrentPage: (
             <ul className="nb-list">
               {items.map((item) => (
                 <li key={item.id}>
-                  <button type="button" className={`nb-item${item.read ? '' : ' unread'}`} onClick={() => openItem(item)}>
+                  <button
+                    type="button"
+                    className={`nb-item${item.read ? '' : ' unread'}${expanded === item.id ? ' expanded' : ''}`}
+                    onClick={() => toggleItem(item)}
+                    aria-expanded={expanded === item.id}
+                  >
                     <span className="nb-title">{item.title}</span>
                     {item.body && <span className="nb-body">{item.body}</span>}
                     <span className="nb-time">{ago(item.createdAt)}</span>
                   </button>
+                  {expanded === item.id && item.link && (
+                    <button type="button" className="nb-open" onClick={() => openLink(item)}>Open</button>
+                  )}
                 </li>
               ))}
             </ul>
