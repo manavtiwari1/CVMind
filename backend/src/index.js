@@ -24,11 +24,11 @@ import { startInboxPolling } from './admin/inbox.js';
 import { evaluateCoupon, redeemCoupon } from './admin/coupons.js';
 import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser, userSessionStatus } from './services/authToken.js';
 import { verifiedGate } from './services/verifiedGate.js';
-import { issueVerification, verifyEmailToken, resendCooldown, hashToken, frontendUrl, markEmailVerified, VERIFY_MESSAGES } from './services/emailVerification.js';
+import { issueVerification, verifyEmailToken, resendCooldown, hashToken, frontendUrl, markEmailVerified, verifyThroughProvider, VERIFY_MESSAGES } from './services/emailVerification.js';
 import { assessSignupRisk, isHighRisk, RISK_HIGH } from './services/emailRisk.js';
-import { hitLimit, clientIp, HOUR_MS, DAY_MS } from './services/limiter.js';
+import { hitLimit, checkLimit, clientIp, HOUR_MS, DAY_MS } from './services/limiter.js';
 import { logAuthEvent } from './services/authEvents.js';
-import { CaptchaChallenge } from './admin/models.js';
+import { CaptchaChallenge, OAuthHandoff } from './admin/models.js';
 import { sendEmail, emailConfigured } from './admin/mailer.js';
 import { welcomeEmail, passwordResetEmail, resumePdfEmail } from './services/emailTemplates.js';
 import { dbReady } from './admin/auth.js';
@@ -363,6 +363,19 @@ function getAccountBlockError(user) {
   return null;
 }
 
+// Password guessing: every attempt counts against the network, wrong passwords against the account
+const LOGIN_ATTEMPTS_PER_IP = 30;
+const LOGIN_IP_WINDOW_MS = 15 * 60 * 1000;
+// Wrong passwords count per account and network (stops guessing), and per account overall with a much
+// higher limit (stops spreading guesses across networks) so one person can't easily lock someone else out
+const LOGIN_FAILURES_PER_ACCOUNT_IP_HOUR = 10;
+const LOGIN_FAILURES_PER_ACCOUNT_HOUR = 50;
+const loginFailureLimits = (email, req) => [
+  [`login-fail:${email}:ip:${clientIp(req)}`, LOGIN_FAILURES_PER_ACCOUNT_IP_HOUR],
+  [`login-fail:${email}`, LOGIN_FAILURES_PER_ACCOUNT_HOUR]
+];
+const countLoginFailure = (email, req) => Promise.all(loginFailureLimits(email, req).map(([key, limit]) => hitLimit(key, limit, HOUR_MS)));
+
 // User Sign In Route
 apiRouter.post('/api/auth/login', async (req, res) => {
   const { email, password, captchaId, captchaAnswer } = req.body || {};
@@ -371,11 +384,22 @@ apiRouter.post('/api/auth/login', async (req, res) => {
     return res.status(400).json({ error: 'Email and password are required.' });
   }
 
+  const ipLimit = await hitLimit(`login:ip:${clientIp(req)}`, LOGIN_ATTEMPTS_PER_IP, LOGIN_IP_WINDOW_MS);
+  if (!ipLimit.ok) {
+    return rateLimited(req, res, { limit: 'loginPerIp', retryAfter: ipLimit.retryAfter, error: 'Too many sign-in attempts from this network. Please wait a few minutes and try again.' });
+  }
+
   if (!(await verifyCaptcha(captchaId, captchaAnswer))) {
     return res.status(400).json({ error: 'Captcha verification failed. Please try the new code.', captchaFailed: true });
   }
 
   const cleanEmail = String(email || '').trim().toLowerCase();
+  for (const [key, limit] of loginFailureLimits(cleanEmail, req)) {
+    const accountLimit = await checkLimit(key, limit, HOUR_MS);
+    if (!accountLimit.ok) {
+      return rateLimited(req, res, { limit: 'loginFailures', retryAfter: accountLimit.retryAfter, email: cleanEmail, error: 'Too many wrong passwords for this account. Please wait and try again, or reset your password.' });
+    }
+  }
   let WHITELISTED_USERS = {};
   let WHITELISTED_NAMES = {};
   try {
@@ -421,6 +445,8 @@ apiRouter.post('/api/auth/login', async (req, res) => {
   try {
     const user = await findUserByEmail(email);
     if (!user) {
+      // Counted like a wrong password, so the limit doesn't reveal which addresses have accounts
+      await countLoginFailure(cleanEmail, req);
       logAuthEvent(req, 'LOGIN_FAILED', { email: cleanEmail, metadata: { reason: 'unknown_email' } });
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
@@ -428,6 +454,7 @@ apiRouter.post('/api/auth/login', async (req, res) => {
     // Compare bcrypt hashes
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      await countLoginFailure(cleanEmail, req);
       logAuthEvent(req, 'LOGIN_FAILED', { userId: user.id || user._id, email: user.email, metadata: { reason: 'wrong_password' } });
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
@@ -568,8 +595,9 @@ apiRouter.post('/api/auth/reset-password', async (req, res) => {
 async function verifyByProvider(req, user, providerVerified, provider) {
   if (user.emailVerified) return true;
   if (!providerVerified) return false;
-  await markEmailVerified(user);
-  logAuthEvent(req, 'EMAIL_VERIFIED', { userId: user.id || user._id, email: user.email, metadata: { via: provider } });
+  // Clears a password someone else may have set on this address before handing the account over
+  const { passwordCleared } = await verifyThroughProvider(user);
+  logAuthEvent(req, 'EMAIL_VERIFIED', { userId: user.id || user._id, email: user.email, metadata: { via: provider, passwordCleared } });
   return true;
 }
 
@@ -598,6 +626,11 @@ apiRouter.post('/api/auth/google', async (req, res) => {
     const googleVerified = payload.email_verified === true;
 
     let user = await findUserByEmail(email);
+    // Google hasn't confirmed this address belongs to whoever signed in, so it can't open an existing account
+    if (user && !googleVerified) {
+      logAuthEvent(req, 'LOGIN_FAILED', { userId: user.id || user._id, email: user.email, metadata: { reason: 'provider_email_unverified', provider: 'google' } });
+      return res.status(403).json({ error: 'Google has not confirmed this email address yet. Confirm it with Google, or sign in another way.' });
+    }
     if (!user && !(await signupsEnabled())) {
       return res.status(503).json({ error: 'New sign-ups are paused right now. Please try again later.' });
     }
@@ -656,11 +689,15 @@ apiRouter.post('/api/auth/google', async (req, res) => {
 
 // Lightweight session validity check — lets the SPA kick out banned/suspended
 // (or deleted) users who still hold a localStorage session from before.
+// Only answers about the account in the caller's own token (the ?email= the site still sends is ignored),
+// so it can't be used to find out whether an address is registered, suspended or banned.
 apiRouter.get('/api/auth/account-status', async (req, res) => {
-  const email = String(req.query.email || '').trim().toLowerCase();
-  if (!email) return res.status(400).json({ error: 'Email is required.' });
+  const payload = verifyToken((req.headers.authorization || '').replace(/^Bearer /, ''));
+  if (!payload || payload.kind !== 'user') {
+    return res.status(401).json({ status: 'signed-out', active: false, message: 'Your session has expired. Please sign in again.' });
+  }
   try {
-    const user = await findUserByEmail(email);
+    const user = await findUserById(payload.sub);
     if (!user) {
       return res.json({ status: 'deleted', active: false, message: 'This account no longer exists.' });
     }
@@ -673,10 +710,7 @@ apiRouter.get('/api/auth/account-status', async (req, res) => {
     if (session && !session.ok) {
       return res.json({ status: 'signed-out', active: false, message: session.error });
     }
-    // Only the account's own session learns its verification state
-    const payload = verifyToken((req.headers.authorization || '').replace(/^Bearer /, ''));
-    const ownSession = payload?.kind === 'user' && String(payload.sub) === String(user.id || user._id);
-    return res.json({ status: 'active', active: true, ...(ownSession ? { emailVerified: !!user.emailVerified } : {}) });
+    return res.json({ status: 'active', active: true, emailVerified: !!user.emailVerified });
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Status check failed.' });
   }
@@ -820,25 +854,63 @@ function isAllowedOAuthOrigin(origin) {
   }
 }
 
-// Short-lived anti-CSRF state store: state -> { origin, expires }
-const oauthStateStore = new Map();
+// The OAuth state is signed rather than kept in memory, so the callback works on whichever server
+// instance it reaches (serverless hosts run many). It carries the origin to return to and expires in 10 minutes.
+const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 
-function createOAuthState(origin) {
-  // Purge expired states opportunistically
-  for (const [key, entry] of oauthStateStore) {
-    if (Date.now() > entry.expires) oauthStateStore.delete(key);
-  }
-  const state = crypto.randomBytes(24).toString('hex');
-  oauthStateStore.set(state, { origin, expires: Date.now() + 10 * 60 * 1000 });
-  return state;
+// The site keeps a random nonce in the tab that starts the sign-in; it rides along in the state and the
+// sign-in code only works together with it, so a code from someone else's sign-in can't be planted on a victim
+const OAUTH_NONCE_RE = /^[A-Za-z0-9_-]{16,128}$/;
+const readOAuthNonce = (req) => {
+  const nonce = String(req.query.nonce || '');
+  return OAUTH_NONCE_RE.test(nonce) ? nonce : null;
+};
+
+function createOAuthState(origin, nonce) {
+  return signToken({ sub: origin, kind: 'oauth-state', ttlMs: OAUTH_STATE_TTL_MS, jti: nonce });
 }
 
 function consumeOAuthState(state) {
-  const entry = oauthStateStore.get(state || '');
-  if (!entry) return null;
-  oauthStateStore.delete(state);
-  if (Date.now() > entry.expires) return null;
-  return entry;
+  const payload = verifyToken(String(state || ''));
+  if (!payload || payload.kind !== 'oauth-state' || !OAUTH_NONCE_RE.test(payload.jti || '')) return null;
+  return { origin: payload.sub, nonce: payload.jti };
+}
+
+// The finished sign-in goes back to the site as a single-use code, never as the session token itself
+// (an address bar ends up in history, logs and referrers). The site exchanges the code with a POST.
+const OAUTH_HANDOFF_TTL_MS = 2 * 60 * 1000;
+const oauthHandoffMemory = new Map(); // without MongoDB: hash -> { user, expires }
+
+async function createOAuthHandoff(user, nonce) {
+  const code = crypto.randomBytes(32).toString('base64url');
+  const id = hashToken(code);
+  const nonceHash = hashToken(nonce);
+  const expires = Date.now() + OAUTH_HANDOFF_TTL_MS;
+  if (await dbReady(2000)) {
+    await OAuthHandoff.create({ _id: id, user, nonceHash, expiresAt: new Date(expires) });
+  } else {
+    for (const [key, entry] of oauthHandoffMemory) if (Date.now() > entry.expires) oauthHandoffMemory.delete(key);
+    oauthHandoffMemory.set(id, { user, nonceHash, expires });
+  }
+  return code;
+}
+
+// Used up on the first try, right or wrong, so a code can't be retried with guessed nonces
+async function takeOAuthHandoff(code, nonce) {
+  const clean = String(code || '');
+  if (!clean || clean.length > 100) return null;
+  const id = hashToken(clean);
+  let entry = null;
+  if (await dbReady(0)) {
+    const row = await OAuthHandoff.findOneAndDelete({ _id: id }).lean();
+    if (row) entry = { user: row.user, nonceHash: row.nonceHash, expires: new Date(row.expiresAt).getTime() };
+  } else {
+    entry = oauthHandoffMemory.get(id) || null;
+    oauthHandoffMemory.delete(id);
+  }
+  if (!entry || Date.now() > entry.expires) return null;
+  if (!OAUTH_NONCE_RE.test(String(nonce || '')) || hashToken(nonce) !== entry.nonceHash) return null;
+  return entry.user;
 }
 
 function resolveOAuthOrigin(req) {
@@ -857,12 +929,17 @@ function redirectWithAuthError(res, origin, message) {
 
 // Shared: find/create the user, enforce moderation status, log the login,
 // then hand the session payload back to the SPA via a query param.
-async function completeOAuthLogin(req, res, origin, { email, name, avatar, provider, emailVerified: providerVerified = false }) {
+async function completeOAuthLogin(req, res, origin, { email, name, avatar, provider, emailVerified: providerVerified = false, nonce }) {
   if (!email) {
     return redirectWithAuthError(res, origin, `Your ${provider} account has no verified email address.`);
   }
 
   let user = await findUserByEmail(email);
+  // The provider hasn't confirmed this address belongs to whoever signed in, so it can't open an existing account
+  if (user && !providerVerified) {
+    logAuthEvent(req, 'LOGIN_FAILED', { userId: user.id || user._id, email: user.email, metadata: { reason: 'provider_email_unverified', provider } });
+    return redirectWithAuthError(res, origin, `Your ${provider} account has not confirmed this email address. Confirm it there, or sign in another way.`);
+  }
   if (!user && !(await signupsEnabled())) {
     return redirectWithAuthError(res, origin, 'New sign-ups are paused right now. Please try again later.');
   }
@@ -906,9 +983,23 @@ async function completeOAuthLogin(req, res, origin, { email, name, avatar, provi
     userPayload.isPaid = true;
   }
 
-  const encoded = Buffer.from(JSON.stringify(withSessionToken(userPayload, req, provider))).toString('base64url');
-  return res.redirect(`${origin}/?oauthUser=${encoded}`);
+  const code = await createOAuthHandoff(withSessionToken(userPayload, req, provider), nonce);
+  return res.redirect(`${origin}/?oauthCode=${encodeURIComponent(code)}`);
 }
+
+// Step 3 (GitHub & LinkedIn): the site swaps the single-use code from the redirect for the signed-in user
+apiRouter.post('/api/auth/oauth/exchange', async (req, res) => {
+  try {
+    const ipLimit = await hitLimit(`oauth-exchange:ip:${clientIp(req)}`, 30, HOUR_MS);
+    if (!ipLimit.ok) return rateLimited(req, res, { limit: 'oauthExchangePerIp', retryAfter: ipLimit.retryAfter, error: 'Too many sign-in attempts. Please try again later.' });
+    const user = await takeOAuthHandoff(req.body?.code, req.body?.nonce);
+    if (!user) return res.status(400).json({ error: 'This sign-in link has expired or was already used. Please sign in again.' });
+    return res.json({ success: true, user });
+  } catch (err) {
+    console.error('OAuth exchange error:', err);
+    return res.status(500).json({ error: 'Sign-in failed. Please try again.' });
+  }
+});
 
 // Step 1 (GitHub): send the user to GitHub's consent screen
 apiRouter.get('/api/auth/github', (req, res) => {
@@ -917,7 +1008,9 @@ apiRouter.get('/api/auth/github', (req, res) => {
   if (!clientId || !process.env.GITHUB_CLIENT_SECRET) {
     return redirectWithAuthError(res, origin, 'GitHub login is not configured yet.');
   }
-  const state = createOAuthState(origin);
+  const nonce = readOAuthNonce(req);
+  if (!nonce) return redirectWithAuthError(res, origin, 'Please reload the page and try signing in with GitHub again.');
+  const state = createOAuthState(origin, nonce);
   const redirectUri = `${getBackendBaseUrl(req)}/api/auth/github/callback`;
   const url = `https://github.com/login/oauth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent('read:user user:email')}&state=${state}`;
   return res.redirect(url);
@@ -963,7 +1056,8 @@ apiRouter.get('/api/auth/github/callback', async (req, res) => {
       name: profile.name || profile.login,
       avatar: profile.avatar_url || '',
       provider: 'github',
-      emailVerified: !!email
+      emailVerified: !!email,
+      nonce: stateEntry.nonce
     });
   } catch (err) {
     console.error('GitHub OAuth Error:', err);
@@ -978,7 +1072,9 @@ apiRouter.get('/api/auth/linkedin', (req, res) => {
   if (!clientId || !process.env.LINKEDIN_CLIENT_SECRET) {
     return redirectWithAuthError(res, origin, 'LinkedIn login is not configured yet.');
   }
-  const state = createOAuthState(origin);
+  const nonce = readOAuthNonce(req);
+  if (!nonce) return redirectWithAuthError(res, origin, 'Please reload the page and try signing in with LinkedIn again.');
+  const state = createOAuthState(origin, nonce);
   const redirectUri = `${getBackendBaseUrl(req)}/api/auth/linkedin/callback`;
   const url = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent('openid profile email')}&state=${state}`;
   return res.redirect(url);
@@ -1019,7 +1115,8 @@ apiRouter.get('/api/auth/linkedin/callback', async (req, res) => {
       name: profile.name || '',
       avatar: profile.picture || '',
       provider: 'linkedin',
-      emailVerified: profile.email_verified === true
+      emailVerified: profile.email_verified === true,
+      nonce: stateEntry.nonce
     });
   } catch (err) {
     console.error('LinkedIn OAuth Error:', err);
@@ -2803,8 +2900,17 @@ apiRouter.post('/api/job-finder', optionalUser, upload.single('resume'), async (
 });
 
 // Checkout simulated payment route. An optional coupon from the admin panel lowers the price.
-apiRouter.post('/api/payments/checkout', async (req, res) => {
-  const { email, amount, paymentMethod, couponCode, plan } = req.body || {};
+// There is no payment provider yet: this records a payment without charging anyone. It stays off unless
+// PAYMENTS_MOCK=true (local testing), so nobody can log fake payments or use up coupons in production.
+apiRouter.post('/api/payments/checkout', async (req, res, next) => {
+  if (process.env.PAYMENTS_MOCK !== 'true') {
+    return res.status(503).json({ error: 'Online payments are not available yet.' });
+  }
+  return requireUser(req, res, next);
+}, async (req, res) => {
+  const { amount, paymentMethod, couponCode, plan } = req.body || {};
+  // Always the signed-in account's address, never one from the request
+  const email = req.auth.email;
 
   if (!email) {
     return res.status(400).json({ error: 'Email address is required to process payment.' });

@@ -1,5 +1,6 @@
 import express from 'express';
-import { runJudgeSubmission } from '../services/codeJudge.js';
+import { runJudgeSubmission, notJudged, nativeRunnersEnabled, NATIVE_LANGUAGES } from '../services/codeJudge.js';
+import { getSettings } from '../admin/settings.js';
 import { 
   generateCodeHint, 
   generateCodeReview, 
@@ -22,6 +23,20 @@ import { CURATED_PROBLEMS } from '../data/curatedProblems.js';
 import { optionalUser, requireSelf, requireUser } from '../services/authToken.js';
 
 const router = express.Router();
+
+// Python and C++ are not sandboxed (see codeJudge.js): when they are switched on they still need a
+// signed-in account, and a verified one when verification is required. JavaScript stays open to everyone.
+// Returns null to go ahead, { result } for a not-judged answer, or { status, error } to refuse.
+async function nativeLanguageCheck(req, language, totalTests) {
+  const lang = String(language || 'javascript').toLowerCase();
+  if (!NATIVE_LANGUAGES.includes(lang)) return null;
+  const label = lang.startsWith('py') ? 'Python' : 'C++';
+  if (!nativeRunnersEnabled()) return { result: notJudged(label, totalTests, `${label} is turned off on this server for now. Use JavaScript to get a real result.`) };
+  if (!req.auth) return { status: 401, error: `Sign in to run ${label} code.` };
+  const { security } = await getSettings();
+  if (security.requireEmailVerification && req.auth.emailVerified === false) return { status: 403, error: `Verify your email to run ${label} code.` };
+  return null;
+}
 
 // ─── ROUTES ──────────────────────────────────────────────────────────────────
 
@@ -109,6 +124,10 @@ router.post('/run', optionalUser, async (req, res) => {
       : (problem ? problem.sampleTestCases : []);
 
     const fnName = problem ? problem.functionName : 'solution';
+    const blocked = await nativeLanguageCheck(req, language, testCasesToRun.length);
+    if (blocked?.status) return res.status(blocked.status).json({ success: false, error: blocked.error });
+    if (blocked) return res.json({ success: true, result: blocked.result });
+
     const result = await runJudgeSubmission({
       code,
       language: language || 'javascript',
@@ -160,7 +179,9 @@ router.post('/submit', optionalUser, async (req, res) => {
 
     const samples = problem.sampleTestCases || [];
     const fullTestCases = [...samples, ...(problem.hiddenTestCases || [])];
-    const result = await runJudgeSubmission({
+    const blocked = await nativeLanguageCheck(req, language, fullTestCases.length);
+    if (blocked?.status) return res.status(blocked.status).json({ success: false, error: blocked.error });
+    const result = blocked ? blocked.result : await runJudgeSubmission({
       code,
       language: language || 'javascript',
       testCases: fullTestCases,

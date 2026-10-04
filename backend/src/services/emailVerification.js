@@ -1,8 +1,10 @@
 import crypto from 'crypto';
-import { updateUserFields, findUserByVerificationHash } from '../db.js';
+import bcrypt from 'bcryptjs';
+import { updateUserFields, findUserByVerificationHash, updateUserPassword, saveUserResetToken } from '../db.js';
 import { emailConfigured, sendEmail } from '../admin/mailer.js';
 import { verificationEmail } from './emailTemplates.js';
-import { invalidateSessionCache } from '../admin/sessions.js';
+import { invalidateSessionCache, revokeAllSessions } from '../admin/sessions.js';
+import { dbReady } from '../admin/auth.js';
 
 export const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 export const RESEND_COOLDOWN_MS = 60 * 1000;
@@ -69,6 +71,21 @@ export async function markEmailVerified(user) {
     verificationFailures: 0
   });
   invalidateSessionCache(userId(user));
+}
+
+// A Google, GitHub or LinkedIn sign-in proves the person owns the address. An unverified account may have
+// been opened by someone else using this address (with a password, or through a provider that had not
+// confirmed it), so before it is handed over every session is signed out, any reset link is cancelled, and
+// a password stops working. The owner can set a new password with "Forgot password". Returns { passwordCleared }.
+export async function verifyThroughProvider(user) {
+  const passwordAccount = !user.isGoogleUser;
+  if (passwordAccount) {
+    await updateUserPassword(userId(user), await bcrypt.hash(`claimed-${crypto.randomBytes(32).toString('hex')}`, 10));
+  }
+  await saveUserResetToken(user.email, '', Date.now() - 1);
+  if (await dbReady(0)) await revokeAllSessions(userId(user), 'email-claimed-by-provider');
+  await markEmailVerified(user);
+  return { passwordCleared: passwordAccount };
 }
 
 // Checks a link token: { ok: true, user } or { ok: false, code, user? }

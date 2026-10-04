@@ -8,7 +8,7 @@ export { executeJavaScript, executePython, executeCpp };
  * A language this server cannot execute. It reports that plainly instead of inventing a verdict:
  * `simulated: true` tells clients the code was NOT run, and there are no per-test results.
  */
-function notJudged(language, totalTests, reason) {
+export function notJudged(language, totalTests, reason) {
   return {
     verdict: 'Not Judged',
     simulated: true,
@@ -19,6 +19,14 @@ function notJudged(language, totalTests, reason) {
     results: [],
   };
 }
+
+/**
+ * Python and C++ run as ordinary processes on the server, not in a sandbox, so user code could reach
+ * the machine. They stay off until the judge runs inside an isolated container; set
+ * CODE_NATIVE_RUNNERS=true only on a machine where that is acceptable (e.g. local development).
+ */
+export const NATIVE_LANGUAGES = ['python', 'py', 'cpp', 'c++'];
+export const nativeRunnersEnabled = () => process.env.CODE_NATIVE_RUNNERS === 'true';
 
 /**
  * Main entry point for running code in any supported language.

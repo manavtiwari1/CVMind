@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { buildCppSource } from './cppHarness.js';
-import { computeFinalVerdict, valuesMatch } from './judgeShared.js';
+import { childEnv, computeFinalVerdict, valuesMatch } from './judgeShared.js';
 
 /**
  * Compiles and runs C++ solutions with the local g++ (or clang++).
@@ -51,7 +51,7 @@ function release() {
 
 function run(cmd, args, options, limitBytes = 4_000_000) {
   return new Promise((resolve) => {
-    const child = spawn(cmd, args, { ...options, windowsHide: true });
+    const child = spawn(cmd, args, { cwd: options.cwd, env: childEnv(), windowsHide: true });
     let stdout = '';
     let stderr = '';
     let timedOut = false;

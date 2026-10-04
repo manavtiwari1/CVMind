@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
-import { verifyToken } from '../services/authToken.js';
-import { findActiveDevice, touchDevice } from './extension/devices.js';
+import { verifyToken, checkAccount } from '../services/authToken.js';
+import { findActiveDevice, touchDevice, DEVICE_TOKEN_TTL_MS } from './extension/devices.js';
 
 const CONNECTING = 2;
 const CONNECTED = 1;
@@ -15,6 +15,12 @@ export async function requireExtension(req, res, next) {
   const device = await findActiveDevice(payload.jti);
   if (!device) {
     return res.status(401).json({ success: false, code: 'DEVICE_REVOKED', error: 'This extension was disconnected. Pair it again from CVMind.' });
+  }
+  // Banning, deleting or signing the account out everywhere also cuts off its paired extensions.
+  // Device tokens from before tokens carried iat are dated from their own 30-day lifetime.
+  const account = await checkAccount({ ...payload, iat: payload.iat ?? payload.exp - DEVICE_TOKEN_TTL_MS });
+  if (!account.ok) {
+    return res.status(401).json({ success: false, code: 'ACCOUNT_BLOCKED', error: account.error || 'This account can no longer use the extension.' });
   }
   req.auth = payload;
   req.device = device;

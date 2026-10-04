@@ -56,7 +56,7 @@ export function hostRedirectTarget(signedIn: boolean): string | null {
   if (isAppHost()) {
     // Sign-in screens and OAuth/password-reset returns are handled on the app host
     const params = new URLSearchParams(search);
-    if (AUTH_PATHS.includes(pathname) || params.has('oauthUser') || params.has('authError') || params.has('resetToken') || hash.includes('id_token')) return null;
+    if (AUTH_PATHS.includes(pathname) || params.has('oauthCode') || params.has('authError') || params.has('resetToken') || hash.includes('id_token')) return null;
     if (pathname === '/') return signedIn ? `${appOrigin()}/my-documents` : `${appOrigin()}/sign-in`;
     if (isAppPage(page)) return null;
     return `${siteOrigin()}${pathname}${search}${hash}`;
@@ -65,3 +65,6 @@ export function hostRedirectTarget(signedIn: boolean): string | null {
   if (isAppPage(page)) return `${appOrigin()}${pathname}${search}${hash}`;
   return null;
 }
+
+// sessionStorage key for the GitHub/LinkedIn sign-in nonce: AuthModal sets it, App sends it back with the code
+export const OAUTH_NONCE_KEY = 'cvmind_oauth_nonce';

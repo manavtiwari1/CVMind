@@ -4,6 +4,14 @@
 
 const IDENT = /^[A-Za-z_$][\w$]*$/;
 
+// Python and C++ run as separate processes. They get only what a compiler or interpreter needs to
+// start, never the server's own variables (AUTH_SECRET, MONGODB_URI, API keys).
+const CHILD_ENV_KEYS = ['PATH', 'PATHEXT', 'SystemRoot', 'SYSTEMROOT', 'COMSPEC', 'TEMP', 'TMP', 'TMPDIR', 'HOME', 'USERPROFILE', 'LANG', 'LC_ALL'];
+
+export function childEnv() {
+  return Object.fromEntries(CHILD_ENV_KEYS.filter((key) => process.env[key] !== undefined).map((key) => [key, process.env[key]]));
+}
+
 /** A function or class name coming from problem data is interpolated into generated source, so it must be a plain identifier. */
 export function assertIdentifier(name) {
   if (typeof name !== 'string' || !IDENT.test(name)) throw new Error(`Invalid function name: ${String(name).slice(0, 40)}`);

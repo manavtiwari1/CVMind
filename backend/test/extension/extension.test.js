@@ -6,6 +6,7 @@ import ApplicationEvent from '../../src/agent/models/ApplicationEvent.js';
 import { createParseJobHandler } from '../../src/agent/handlers/parseJob.js';
 import { createMatchHandler } from '../../src/agent/handlers/matchApplication.js';
 import { buildFillPlan } from '../../src/agent/fill/buildFillPlan.js';
+import { setUserSessionValidator } from '../../src/services/authToken.js';
 import { DESCRIPTION, fakeAi, createReadyResume, runQueued, startAgentTestApp, tokenB } from '../helpers/agentFixtures.js';
 
 const JOB_URL = 'https://boards.greenhouse.io/acmepay/jobs/12345';
@@ -218,6 +219,24 @@ test('a tracked Greenhouse job is recognised from its embedded form and other bo
   }
   const other = await ext(`/extension/context?url=${encodeURIComponent('https://boards.greenhouse.io/acmepay/jobs/99999')}`, token);
   assert.equal(other.body.data.application, null);
+});
+
+test('a banned, deleted or signed-out-everywhere account loses its paired extension', async () => {
+  await createReadyResume();
+  const { token } = await pairExtension();
+  assert.equal((await ext('/extension/context?url=https://x.test', token)).status, 200);
+
+  // The admin module installs this check in the real app; here it stands in for a banned account
+  setUserSessionValidator(async (payload) => (payload.sub === 'user-a' ? { ok: false, error: 'Your account access has been restricted.' } : { ok: true }));
+  try {
+    const blocked = await ext('/extension/context?url=https://x.test', token);
+    assert.equal(blocked.status, 401);
+    assert.equal(blocked.body.code, 'ACCOUNT_BLOCKED');
+    assert.equal((await ext('/extension/refresh', token, { method: 'POST' })).status, 401, 'it cannot renew its token either');
+  } finally {
+    setUserSessionValidator(null);
+  }
+  assert.equal((await ext('/extension/context?url=https://x.test', token)).status, 200);
 });
 
 test('fill plans need a ready resume', async () => {
