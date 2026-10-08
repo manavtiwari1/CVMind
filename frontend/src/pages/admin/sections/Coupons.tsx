@@ -14,6 +14,7 @@ interface Coupon {
   value: number;
   maxUses: number;
   perUserLimit: number;
+  allowedCount: number;
   minAmount: number;
   validFrom: string | null;
   validTo: string | null;
@@ -56,6 +57,7 @@ export default function Coupons() {
               <div>
                 <div className="ad-cell-title ad-mono" style={{ fontSize: '0.86rem' }}>{c.code}</div>
                 {c.description && <div className="ad-cell-sub">{c.description}</div>}
+                {c.allowedCount > 0 && <div className="ad-cell-sub">Only for {c.allowedCount} {c.allowedCount === 1 ? 'account' : 'accounts'}</div>}
               </div>
             ) },
             { key: 'discount', header: 'Discount', render: (c) => <strong>{c.type === 'percent' ? `${c.value}% off` : `${money(c.value)} off`}</strong> },

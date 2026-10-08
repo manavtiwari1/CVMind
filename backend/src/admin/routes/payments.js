@@ -128,6 +128,7 @@ const toCoupon = (c) => {
     value: c.value,
     maxUses: c.maxUses,
     perUserLimit: c.perUserLimit,
+    allowedCount: (c.allowedEmails || []).length,
     minAmount: c.minAmount,
     validFrom: c.validFrom,
     validTo: c.validTo,

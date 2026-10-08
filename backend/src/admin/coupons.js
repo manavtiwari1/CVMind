@@ -13,6 +13,7 @@ export async function evaluateCoupon(code, { email, amount }) {
   const price = Number(amount) || 0;
   if (coupon.minAmount && price < coupon.minAmount) return { ok: false, error: `This coupon needs a purchase of at least ₹${coupon.minAmount}.` };
   const cleanEmail = String(email || '').trim().toLowerCase();
+  if (coupon.allowedEmails?.length && !coupon.allowedEmails.includes(cleanEmail)) return { ok: false, error: "That coupon isn't available for your account." };
   if (coupon.perUserLimit && cleanEmail) {
     const used = (coupon.redemptions || []).filter((r) => r.email === cleanEmail).length;
     if (used >= coupon.perUserLimit) return { ok: false, error: 'You have already used this coupon.' };

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Activity, CreditCard, LifeBuoy, RefreshCw, Sparkles, UserPlus, Users } from 'lucide-react';
+import { Activity, Coins, CreditCard, LifeBuoy, RefreshCw, Sparkles, UserPlus, Users } from 'lucide-react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAdmin, useApi } from '../hooks';
 import { ago, change, count, date, money, providerLabel } from '../format';
@@ -15,6 +15,7 @@ interface Overview {
     activeUsers: { today: number; range: number; prev: number };
     aiRequests: { today: number; yesterday: number; range: number; prev: number };
     revenue: { today: number; yesterday: number; range: number; prev: number; payments: number };
+    aiTokens: { today: number; range: number; prev: number; accounts: number };
     openTickets: number;
   };
   userStatus: Record<string, number>;
@@ -81,10 +82,11 @@ export default function Dashboard() {
         }
       />
 
-      <div className="ad-grid cols-4">
+      <div className="ad-grid cols-5">
         <StatCard label="New sign-ups" icon={<UserPlus size={16} />} loading={!o} value={count(o?.kpis.signups.range)} delta={o ? change(o.kpis.signups.range, o.kpis.signups.prev) : undefined} foot={`vs previous ${range} days`} />
         <StatCard label="Active users" tone="blue" icon={<Users size={16} />} loading={!o} value={count(o?.kpis.activeUsers.range)} delta={o ? change(o.kpis.activeUsers.range, o.kpis.activeUsers.prev) : undefined} foot={`vs previous ${range} days`} />
         <StatCard label="AI requests" tone="purple" icon={<Sparkles size={16} />} loading={!o} value={count(o?.kpis.aiRequests.range)} delta={o ? change(o.kpis.aiRequests.range, o.kpis.aiRequests.prev) : undefined} foot={`vs previous ${range} days`} />
+        <StatCard label="AI tokens used" tone="purple" icon={<Coins size={16} />} loading={!o} value={count(o?.kpis.aiTokens.range)} delta={o ? change(o.kpis.aiTokens.range, o.kpis.aiTokens.prev) : undefined} foot={`${count(o?.kpis.aiTokens.today)} today · ${count(o?.kpis.aiTokens.accounts)} ${o?.kpis.aiTokens.accounts === 1 ? 'account' : 'accounts'}`} />
         <StatCard label="Revenue" tone="amber" icon={<CreditCard size={16} />} loading={!o} value={money(o?.kpis.revenue.range)} delta={o ? change(o.kpis.revenue.range, o.kpis.revenue.prev) : undefined} foot={`${count(o?.kpis.revenue.payments)} payments`} />
       </div>
 

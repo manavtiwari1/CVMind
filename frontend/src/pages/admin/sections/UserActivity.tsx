@@ -66,13 +66,13 @@ export default function UserActivity() {
   const toggleAll = () => setSelected(allOn ? new Set() : new Set((rows || []).map((r) => r.id)));
   const stats = data?.stats;
 
-  const bulk = async (body: Record<string, unknown>, success: (d: Record<string, number>) => string) => {
-    const result = await run('bulk', () => api<{ data: Record<string, number> }>('/user-activity/bulk', { method: 'POST', body: { ids: picked.map((r) => r.id), ...body } }));
+  const bulk = async (body: object, success: (d: Record<string, number>, coupon: string | null) => string) => {
+    const result = await run('bulk', () => api<{ data: Record<string, number>; coupon?: string | null }>('/user-activity/bulk', { method: 'POST', body: { ids: picked.map((r) => r.id), ...body } }));
     if (result === undefined) return;
     setAction(null);
     setSelected(new Set());
     reload();
-    toast(success(result.data));
+    toast(success(result.data, result.coupon || null));
   };
 
   return (
@@ -182,7 +182,7 @@ export default function UserActivity() {
           emailConfigured={!!data?.emailConfigured}
           busy={busy === 'bulk'}
           onClose={() => setAction(null)}
-          onSend={(body) => bulk({ action: 'email', ...body }, (d) => `Email sent to ${count(d.sent)}${d.failed ? `, ${count(d.failed)} failed` : ''}${d.skipped ? `, ${count(d.skipped)} skipped (not verified)` : ''}`)}
+          onSend={(body) => bulk({ action: 'email', ...body }, (d, coupon) => `Email sent to ${count(d.sent)}${d.failed ? `, ${count(d.failed)} failed` : ''}${d.skipped ? `, ${count(d.skipped)} skipped (not verified)` : ''}${coupon ? ` with code ${coupon}` : ''}`)}
         />
       )}
     </>
@@ -190,22 +190,59 @@ export default function UserActivity() {
 }
 
 
+type Template = 'reminder' | 'discount' | 'custom';
+interface EmailBody { subject: string; body: string; link: string; offer?: { percent: number; days: number } }
+
+// {code}, {discount} and {expires} are filled in by the server once the coupon exists
+const TEMPLATES: Record<Template, { subject: string; body: string; link: string }> = {
+  reminder: {
+    subject: 'Your CVMind account is waiting',
+    body: "It's been a while since you last used CVMind. Your resumes and saved work are still in your account.\n\nIf you're applying for jobs, you can check your resume against a job description in about a minute and see exactly what to fix.",
+    link: '/'
+  },
+  discount: {
+    subject: '{discount} off CVMind Pro for you',
+    body: "You haven't used CVMind in a while, so here's {discount} off any CVMind Pro plan.\n\nUse code {code} at checkout. It works once on your account and expires on {expires}.\n\nPro gives you every resume template, unlimited Resume Tailor and interview practice, and more AI tokens.",
+    link: '/pricing'
+  },
+  custom: { subject: '', body: '', link: '/' }
+};
+
 function EmailModal({ users, emailConfigured, busy, onClose, onSend }: {
   users: Row[];
   emailConfigured: boolean;
   busy: boolean;
   onClose: () => void;
-  onSend: (body: { subject: string; body: string; link: string }) => void;
+  onSend: (body: EmailBody) => void;
 }) {
-  const [subject, setSubject] = useState('We miss you at CVMind');
-  const [body, setBody] = useState("It's been a while since you last used CVMind. Your resumes and saved work are still here.\n\nCheck your resume against a job in a minute, or try the new templates.");
-  const [link, setLink] = useState('/');
+  const { can } = useAdmin();
+  const canOffer = can('coupons.manage');
+  const [template, setTemplate] = useState<Template>('reminder');
+  const [subject, setSubject] = useState(TEMPLATES.reminder.subject);
+  const [body, setBody] = useState(TEMPLATES.reminder.body);
+  const [link, setLink] = useState(TEMPLATES.reminder.link);
+  const [percent, setPercent] = useState('30');
+  const [days, setDays] = useState('7');
   const reachable = users.filter((u) => u.emailVerified).length;
-  const ready = emailConfigured && reachable > 0 && subject.trim() && body.trim();
+  const offer = template === 'discount';
+  const pct = Number(percent);
+  const len = Number(days);
+  const offerOk = !offer || (Number.isInteger(pct) && pct >= 5 && pct <= 90 && Number.isInteger(len) && len >= 1 && len <= 60);
+  const ready = emailConfigured && reachable > 0 && subject.trim() && body.trim() && offerOk;
+  const [openedAt] = useState(() => Date.now());
+  const expires = new Date(openedAt + (len || 0) * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  const preview = (text: string) => offer ? text.replaceAll('{code}', 'COMEBACK••••••').replaceAll('{discount}', `${pct || 0}%`).replaceAll('{expires}', expires) : text;
+
+  const pick = (t: Template) => {
+    setTemplate(t);
+    setSubject(TEMPLATES[t].subject);
+    setBody(TEMPLATES[t].body);
+    setLink(TEMPLATES[t].link);
+  };
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (ready) onSend({ subject: subject.trim(), body: body.trim(), link: link.trim() });
+    if (ready) onSend({ subject: subject.trim(), body: body.trim(), link: link.trim(), ...(offer ? { offer: { percent: pct, days: len } } : {}) });
   };
 
   return (
@@ -226,6 +263,35 @@ function EmailModal({ users, emailConfigured, busy, onClose, onSend }: {
       {!emailConfigured && <Notice tone="red">Email isn't set up on this server (RESEND_API_KEY is missing).</Notice>}
       <form id="ad-ua-email" onSubmit={submit}>
         <div className="ad-field">
+          <label>Type of email</label>
+          <Segment<Template> value={template} onChange={pick} options={[
+            { value: 'reminder', label: 'Inactivity reminder' },
+            ...(canOffer ? [{ value: 'discount' as Template, label: 'Special discount' }] : []),
+            { value: 'custom', label: 'Custom' }
+          ]} />
+          {!canOffer && <p className="ad-hint">Discount emails need the coupons permission.</p>}
+        </div>
+
+        {offer && (
+          <div className="ad-form-row" style={{ marginTop: 14 }}>
+            <div className="ad-field">
+              <label htmlFor="ua-pct">Discount on any Pro plan (%)</label>
+              <input id="ua-pct" className="ad-input" type="number" min={5} max={90} value={percent} onChange={(e) => setPercent(e.target.value)} />
+            </div>
+            <div className="ad-field">
+              <label htmlFor="ua-days">Offer lasts (days)</label>
+              <input id="ua-days" className="ad-input" type="number" min={1} max={60} value={days} onChange={(e) => setDays(e.target.value)} />
+            </div>
+          </div>
+        )}
+        {offer && (
+          <p className="ad-hint" style={{ marginTop: 8 }}>
+            A new code is created when you send. Only these {count(reachable)} {reachable === 1 ? 'person' : 'people'} can use it, once each, until {expires}. It appears under Coupons, where you can retire it early.
+            Use {'{code}'}, {'{discount}'} and {'{expires}'} in the text; they're filled in for you.
+          </p>
+        )}
+
+        <div className="ad-field" style={{ marginTop: 14 }}>
           <label htmlFor="ua-subject">Subject</label>
           <input id="ua-subject" className="ad-input" value={subject} maxLength={120} onChange={(e) => setSubject(e.target.value)} />
         </div>
@@ -239,6 +305,16 @@ function EmailModal({ users, emailConfigured, busy, onClose, onSend }: {
           <input id="ua-link" className="ad-input" value={link} onChange={(e) => setLink(e.target.value)} placeholder="/pricing or https://…" />
           <p className="ad-hint">Adds an "Open CVMind" button. Leave empty for no button.</p>
         </div>
+
+        {subject.trim() && body.trim() && (
+          <div className="ad-email-preview" aria-label="Preview">
+            <div className="ad-section-title">Preview</div>
+            <strong>{preview(subject)}</strong>
+            <p>Hi {users.find((u) => u.emailVerified)?.name || 'there'},</p>
+            {preview(body).split(/\n{2,}/).map((para, i) => <p key={i}>{para}</p>)}
+            {link.trim() && <span className="ad-email-preview-btn">Open CVMind</span>}
+          </div>
+        )}
       </form>
     </Modal>
   );

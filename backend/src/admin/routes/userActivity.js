@@ -1,7 +1,8 @@
 import express from 'express';
+import crypto from 'crypto';
 import { requireAdmin, requireDb } from '../auth.js';
 import { audit } from '../audit.js';
-import { AuthEvent, Notification, UserSession } from '../models.js';
+import { AuthEvent, Coupon, Notification, UserSession } from '../models.js';
 import { invalidateSessionCache, revokeAllSessions } from '../sessions.js';
 import { sendEmailBatch, emailConfigured } from '../mailer.js';
 import { notificationEmail } from '../../services/emailTemplates.js';
@@ -116,8 +117,8 @@ router.post('/bulk', requireAdmin(), handle(async (req, res) => {
   if (!users.length) throw httpError(404, 'None of the selected users exist any more.');
 
   if (action === 'email') {
-    const title = clean(req.body?.subject, 120);
-    const body = String(req.body?.body || '').trim().slice(0, 4000);
+    let title = clean(req.body?.subject, 120);
+    let body = String(req.body?.body || '').trim().slice(0, 4000);
     const link = clean(req.body?.link, 500);
     if (!title) throw httpError(400, 'Add a subject.');
     if (!body) throw httpError(400, 'Write a message.');
@@ -127,6 +128,34 @@ router.post('/bulk', requireAdmin(), handle(async (req, res) => {
     const to = users.filter((u) => u.emailVerified);
     if (!to.length) throw httpError(400, 'None of the selected users have a verified email address.');
     if (to.length > MAX_EMAIL) throw httpError(400, `Email can go to at most ${MAX_EMAIL} people at a time.`);
+
+    // A discount offer gets its own coupon that only these recipients can use, once each
+    let coupon = null;
+    if (req.body?.offer) {
+      if (!req.admin.permissions.includes('coupons.manage')) throw httpError(403, 'Your role does not allow creating coupons.');
+      const percent = Number(req.body.offer.percent);
+      const days = Number(req.body.offer.days);
+      if (!Number.isInteger(percent) || percent < 5 || percent > 90) throw httpError(400, 'The discount must be a whole number from 5 to 90 percent.');
+      if (!Number.isInteger(days) || days < 1 || days > 60) throw httpError(400, 'The offer must last from 1 to 60 days.');
+      let code;
+      do code = `COMEBACK${crypto.randomBytes(3).toString('hex').toUpperCase()}`; while (await Coupon.exists({ code }));
+      coupon = await Coupon.create({
+        code, type: 'percent', value: percent, perUserLimit: 1, maxUses: 0,
+        validFrom: new Date(), validTo: new Date(Date.now() + days * DAY_MS), active: true,
+        allowedEmails: to.map((u) => u.email.toLowerCase()),
+        description: `Win-back offer emailed to ${to.length} inactive ${to.length === 1 ? 'user' : 'users'}`,
+        createdBy: req.admin.username
+      });
+      await audit(req, 'coupon.created', { targetType: 'coupon', targetId: coupon._id, targetLabel: code, details: { percent, days, recipients: to.length, via: 'user-activity' } });
+      const fill = (text) => text
+        .replaceAll('{code}', code)
+        .replaceAll('{discount}', `${percent}%`)
+        .replaceAll('{expires}', coupon.validTo.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' }));
+      title = fill(title).slice(0, 120);
+      if (!body.includes('{code}')) body += '\n\nUse code {code} at checkout for {discount} off. It expires on {expires}.';
+      body = fill(body);
+    }
+
     const ctaUrl = link.startsWith('/') ? `${(process.env.FRONTEND_URL || 'https://www.cvmind.in').replace(/\/$/, '')}${link}` : link;
     const { sent, failed, errors } = await sendEmailBatch(to.map((u) => ({ to: u.email, ...notificationEmail({ name: u.name, title, body, ctaLabel: link ? 'Open CVMind' : '', ctaUrl }) })));
     for (const e of errors) console.error('[user-activity] email failed for', e.to.join(', '), e.message);
@@ -138,9 +167,9 @@ router.post('/bulk', requireAdmin(), handle(async (req, res) => {
     });
     await audit(req, 'users.bulk_emailed', {
       targetType: 'notification', targetId: notification._id, targetLabel: title,
-      details: { selected: users.length, sent, failed, skippedUnverified: users.length - to.length }
+      details: { selected: users.length, sent, failed, skippedUnverified: users.length - to.length, coupon: coupon?.code || '' }
     });
-    return res.json({ success: true, data: { sent, failed, skipped: users.length - to.length } });
+    return res.json({ success: true, data: { sent, failed, skipped: users.length - to.length }, coupon: coupon?.code || null });
   }
 
   if (action === 'delete') {

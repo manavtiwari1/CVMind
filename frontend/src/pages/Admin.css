@@ -390,6 +390,7 @@
   margin-top: 0 !important;
 }
 
+.ad-grid.cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .ad-grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .ad-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .ad-grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -752,6 +753,31 @@
 .ad-bulkbar-gap { flex: 1; }
 
 .ad-table .ad-col-check { width: 40px; }
+
+/* Roughly how a notification email will read */
+.ad-email-preview {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--ad-border);
+  border-radius: 12px;
+  background: var(--ad-surface-2);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--ad-text-2);
+}
+
+.ad-email-preview strong { display: block; margin-bottom: 10px; color: var(--ad-text); }
+.ad-email-preview p { margin: 0 0 10px; white-space: pre-line; }
+
+.ad-email-preview-btn {
+  display: inline-block;
+  padding: 7px 14px;
+  border-radius: 8px;
+  background: var(--ad-green);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
 
 .ad-table .ad-col-check input {
   width: 16px;
@@ -1717,7 +1743,12 @@
 }
 
 /* ── Responsive ────────────────────────────────────────────────── */
+@media (max-width: 1440px) {
+  .ad-grid.cols-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 @media (max-width: 1180px) {
+  .ad-grid.cols-5,
   .ad-grid.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ad-grid.wide-left { grid-template-columns: minmax(0, 1fr); }
 }
@@ -1775,6 +1806,7 @@
     padding: 20px 16px 48px;
   }
 
+  .ad-grid.cols-5,
   .ad-grid.cols-4,
   .ad-grid.cols-3,
   .ad-grid.cols-2 {

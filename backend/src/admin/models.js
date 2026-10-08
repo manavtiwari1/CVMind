@@ -110,6 +110,8 @@ const couponSchema = new Schema({
   validFrom: { type: Date, default: null },
   validTo: { type: Date, default: null },
   active: { type: Boolean, default: true },
+  // When set, only these accounts can use the code (e.g. a win-back offer emailed to inactive users)
+  allowedEmails: { type: [String], default: [] },
   usedCount: { type: Number, default: 0 },
   redemptions: [{
     email: String,

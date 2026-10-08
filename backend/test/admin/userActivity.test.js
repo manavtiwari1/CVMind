@@ -118,3 +118,23 @@ test('bulk email refuses to send when email is not configured, and bad input is 
   assert.equal((await admin('/bulk', { method: 'POST', body: { action: 'ban', ids: [], reason: 'x' } })).status, 400);
   assert.equal((await call('/api/admin/user-activity/bulk', { method: 'POST', body: { action: 'ban', ids, reason: 'x' } })).status, 401);
 });
+
+test('a win-back coupon only works for the accounts it was sent to', async () => {
+  const { evaluateCoupon } = await import('../../src/admin/coupons.js');
+  const { Coupon } = await import('../../src/admin/models.js');
+  await Coupon.create({ code: 'COMEBACKTEST', type: 'percent', value: 30, perUserLimit: 1, allowedEmails: ['invited@example.com'] });
+  const invited = await evaluateCoupon('comebacktest', { email: 'Invited@example.com', amount: 189 });
+  assert.equal(invited.ok, true);
+  assert.equal(invited.discount, 56.7);
+  const stranger = await evaluateCoupon('COMEBACKTEST', { email: 'someone-else@example.com', amount: 189 });
+  assert.equal(stranger.ok, false);
+});
+
+test('no coupon is created when the offer email cannot be sent', async () => {
+  const { Coupon } = await import('../../src/admin/models.js');
+  const u = await User.create({ email: 'offer@example.com', name: 'Offer', password: 'x', emailVerified: true });
+  const before = await Coupon.countDocuments();
+  const res = await admin('/bulk', { method: 'POST', body: { action: 'email', ids: [String(u._id)], subject: '{discount} off', body: 'Code {code}', offer: { percent: 30, days: 7 } } });
+  assert.equal(res.status, 503);
+  assert.equal(await Coupon.countDocuments(), before);
+});

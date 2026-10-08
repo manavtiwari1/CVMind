@@ -2,6 +2,7 @@ import express from 'express';
 import { requireAdmin, requireDb } from '../auth.js';
 import { Ticket, UserSession } from '../models.js';
 import { model, handle, paging, clean, escapeRegex } from '../util.js';
+import { AiUsage } from '../../billing/models.js';
 
 const router = express.Router();
 const TZ = 'Asia/Kolkata';
@@ -48,6 +49,15 @@ async function revenueSum(match) {
   return { total: row?.total || 0, count: row?.count || 0 };
 }
 
+// AI tokens charged to signed-in accounts, and how many accounts spent them
+async function tokenSum(match) {
+  const [row] = await AiUsage.aggregate([
+    { $match: match },
+    { $group: { _id: null, total: { $sum: '$tokens' }, emails: { $addToSet: '$email' } } }
+  ]);
+  return { total: row?.total || 0, accounts: row?.emails.length || 0 };
+}
+
 async function dailySeries(Model, from, { match = {}, sumField = null, field = 'createdAt' } = {}) {
   const rows = await Model.aggregate([
     { $match: { [field]: { $gte: from }, ...match } },
@@ -82,7 +92,8 @@ router.get('/overview', requireAdmin('dashboard.view'), requireDb, handle(async 
     aiToday, aiYesterday, aiRange, aiPrev,
     revToday, revYesterday, revRange, revPrev,
     activeToday, activeRange, activePrev,
-    openTickets, statusCounts
+    openTickets, statusCounts,
+    tokensToday, tokensRange, tokensPrev
   ] = await Promise.all([
     User.countDocuments(),
     User.countDocuments({ createdAt: between(today, tomorrow) }),
@@ -101,7 +112,10 @@ router.get('/overview', requireAdmin('dashboard.view'), requireDb, handle(async 
     activeUserCount(rangeFrom, tomorrow),
     activeUserCount(prevFrom, rangeFrom),
     Ticket.countDocuments({ status: { $ne: 'resolved' } }),
-    User.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }])
+    User.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+    tokenSum({ createdAt: between(today, tomorrow) }),
+    tokenSum({ createdAt: between(rangeFrom, tomorrow) }),
+    tokenSum({ createdAt: between(prevFrom, rangeFrom) })
   ]);
 
   // Day-by-day series for the chart
@@ -174,6 +188,7 @@ router.get('/overview', requireAdmin('dashboard.view'), requireDb, handle(async 
         activeUsers: { today: activeToday, range: activeRange, prev: activePrev },
         aiRequests: { today: aiToday, yesterday: aiYesterday, range: aiRange, prev: aiPrev },
         revenue: { today: revToday.total, yesterday: revYesterday.total, range: revRange.total, prev: revPrev.total, payments: revRange.count },
+        aiTokens: { today: tokensToday.total, range: tokensRange.total, prev: tokensPrev.total, accounts: tokensRange.accounts },
         openTickets
       },
       userStatus: Object.fromEntries(statusCounts.map((s) => [s._id || 'active', s.count])),

@@ -42,7 +42,9 @@ const paymentOrderSchema = new Schema({
 paymentOrderSchema.index({ email: 1, createdAt: -1 });
 export const PaymentOrder = mongoose.models.PaymentOrder || mongoose.model('PaymentOrder', paymentOrderSchema);
 
-// AI tokens spent per request, for the rolling 3-day budget. Old rows clean themselves up.
+// AI tokens spent per request, for the rolling 3-day budget and the admin dashboard totals.
+// Kept long enough for the dashboard's 90-day view and the 90 days before it; older rows clean themselves up.
+const AI_USAGE_KEEP_SECONDS = 400 * 24 * 60 * 60;
 const aiUsageSchema = new Schema({
   email: { type: String, required: true },
   tokens: { type: Number, required: true },
@@ -50,8 +52,16 @@ const aiUsageSchema = new Schema({
   createdAt: { type: Date, default: Date.now }
 });
 aiUsageSchema.index({ email: 1, createdAt: -1 });
-aiUsageSchema.index({ createdAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
+aiUsageSchema.index({ createdAt: 1 }, { expireAfterSeconds: AI_USAGE_KEEP_SECONDS });
 export const AiUsage = mongoose.models.AiUsage || mongoose.model('AiUsage', aiUsageSchema);
+
+// MongoDB keeps an existing TTL index's old expiry when the schema's value changes, so update it in place.
+// Fails quietly when the collection doesn't exist yet: the index is then created with the new value.
+const syncAiUsageTtl = () => mongoose.connection.db
+  .command({ collMod: AiUsage.collection.collectionName, index: { keyPattern: { createdAt: 1 }, expireAfterSeconds: AI_USAGE_KEEP_SECONDS } })
+  .catch(() => {});
+if (mongoose.connection.readyState === 1) syncAiUsageTtl();
+else mongoose.connection.once('open', syncAiUsageTtl);
 
 // Extra AI tokens an admin gave an account. Raises its 3-day limit until expiresAt.
 const tokenGrantSchema = new Schema({
