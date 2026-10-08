@@ -158,21 +158,29 @@ export async function invoiceForOrder(orderId) {
   return { data, pdf: await renderInvoicePdf(data) };
 }
 
-// Emails the invoice once per order. On a failed send it can be tried again.
+export const invoiceFileName = (number) => `CVMind-Invoice-${number}.pdf`;
+
+// Emails a paid order's invoice to the buyer, every time it's called (Admin → Invoices can resend)
+export async function emailInvoice(orderId) {
+  const invoice = await invoiceForOrder(orderId);
+  if (!invoice) return false;
+  const { data, pdf } = invoice;
+  await sendEmail({
+    to: data.buyer.email,
+    ...invoiceEmail({ name: data.buyer.name, number: data.number, plan: data.plan, amount: inr(data.amount), until: data.period ? day(data.period.to) : '' }),
+    attachments: [{ filename: invoiceFileName(data.number), content: pdf.toString('base64') }]
+  });
+  await PaymentOrder.updateOne({ orderId }, { invoiceSentAt: new Date() });
+  return true;
+}
+
+// Emails the invoice once per order, after payment. On a failed send it can be tried again.
 export async function sendInvoice(orderId) {
   if (!emailConfigured()) return false;
   const claimed = await PaymentOrder.findOneAndUpdate({ orderId, status: 'paid', amount: { $gt: 0 }, invoiceSentAt: null }, { invoiceSentAt: new Date() }).lean();
   if (!claimed) return false;
   try {
-    const invoice = await invoiceForOrder(orderId);
-    if (!invoice) return false;
-    const { data, pdf } = invoice;
-    await sendEmail({
-      to: data.buyer.email,
-      ...invoiceEmail({ name: data.buyer.name, number: data.number, plan: data.plan, amount: inr(data.amount), until: data.period ? day(data.period.to) : '' }),
-      attachments: [{ filename: `CVMind-Invoice-${data.number}.pdf`, content: pdf.toString('base64') }]
-    });
-    return true;
+    return await emailInvoice(orderId);
   } catch (err) {
     await PaymentOrder.updateOne({ orderId }, { invoiceSentAt: null }).catch(() => {});
     throw err;

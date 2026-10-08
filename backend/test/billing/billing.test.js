@@ -418,6 +418,37 @@ test('an admin rejects or approves a refund request; approving refunds and ends 
   }
 });
 
+test('Admin → Invoices lists paid orders, serves the PDF and resends the email', async () => {
+  const { orderId } = await paidOrder('invoice-admin@example.com');
+  const list = await call('/api/admin/invoices?q=invoice-admin', { token: ownerToken });
+  assert.equal(list.status, 200);
+  const row = list.body.data.find((i) => i.orderId === orderId);
+  assert.ok(row);
+  assert.equal(row.amount, 189);
+  assert.equal(row.refunded, false);
+
+  // Email is off in this test, so the order has no number until its PDF is made
+  const pdf = await realFetch(`${base}/api/admin/invoices/${orderId}/pdf`, { headers: { Authorization: `Bearer ${ownerToken}` } });
+  assert.equal(pdf.status, 200);
+  assert.equal(pdf.headers.get('content-type'), 'application/pdf');
+  assert.equal(Buffer.from(await pdf.arrayBuffer()).subarray(0, 5).toString(), '%PDF-');
+  const number = (await models.PaymentOrder.findOne({ orderId }).lean()).invoiceNumber;
+  assert.match(number, /^CVM-\d{4}-\d{4}$/);
+  assert.match(pdf.headers.get('content-disposition'), new RegExp(`CVMind-Invoice-${number}\\.pdf`));
+  assert.equal((await call('/api/admin/invoices/bad id!/pdf', { token: ownerToken })).status, 404);
+
+  assert.equal((await call(`/api/admin/invoices/${orderId}/send`, { method: 'POST', token: ownerToken })).status, 503);
+  process.env.RESEND_API_KEY = 're_test';
+  try {
+    const sent = await call(`/api/admin/invoices/${orderId}/send`, { method: 'POST', token: ownerToken });
+    assert.equal(sent.status, 200);
+    assert.equal(sent.body.number, number);
+    assert.ok(await waitForMail('invoice-admin@example.com', `Your CVMind invoice ${number}`));
+  } finally {
+    process.env.RESEND_API_KEY = '';
+  }
+});
+
 test('refunding from Payments answers a waiting refund request', async () => {
   const { token, logId, orderId } = await paidOrder('payments-page@example.com');
   await call('/api/billing/refund-request', { method: 'POST', token, body: GOOD_REASON });

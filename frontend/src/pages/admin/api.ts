@@ -107,6 +107,30 @@ export async function api<T = unknown>(path: string, options: { method?: string;
 }
 
 // Streams an export from the server and saves it with the filename the server picked
+// Saves a file the server sends (e.g. an invoice PDF), using its Content-Disposition name
+export async function downloadFile(path: string, fallbackName: string) {
+  const res = await request(path);
+  if (!res.ok) {
+    let message = `Download failed (${res.status}).`;
+    try {
+      message = (await res.json()).error || message;
+    } catch {
+      /* not JSON */
+    }
+    throw new ApiError(message, res.status);
+  }
+  const blob = await res.blob();
+  const filename = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') || '')?.[1] || fallbackName;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export async function downloadExport(type: string, query: Query = {}) {
   const res = await request(`/export/${type}${qs(query)}`);
   if (!res.ok) {
