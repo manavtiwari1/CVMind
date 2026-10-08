@@ -1,13 +1,13 @@
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import AgentApplication from '../../src/agent/models/AgentApplication.js';
-import JobPosting from '../../src/agent/models/JobPosting.js';
-import ResumeProfile from '../../src/agent/models/ResumeProfile.js';
-import ApplicationEvent from '../../src/agent/models/ApplicationEvent.js';
-import Preferences from '../../src/agent/models/Preferences.js';
-import RateBucket from '../../src/agent/models/RateBucket.js';
-import { createApplyFillHandler } from '../../src/agent/handlers/applyApplication.js';
-import { buildProfileData } from '../../src/agent/resume/derive.js';
+import AgentApplication from '@cvmind/auto-apply-agent/models/AgentApplication.js';
+import JobPosting from '@cvmind/auto-apply-agent/models/JobPosting.js';
+import ResumeProfile from '@cvmind/auto-apply-agent/models/ResumeProfile.js';
+import ApplicationEvent from '@cvmind/auto-apply-agent/models/ApplicationEvent.js';
+import Preferences from '@cvmind/auto-apply-agent/models/Preferences.js';
+import RateBucket from '@cvmind/auto-apply-agent/models/RateBucket.js';
+import { createApplyFillHandler } from '@cvmind/auto-apply-agent/handlers/applyApplication.js';
+import { buildProfileData } from '@cvmind/auto-apply-agent/resume/derive.js';
 import { startTestMongo } from '../helpers/mongo.js';
 import { RESUME, jobRun } from '../helpers/agentFixtures.js';
 

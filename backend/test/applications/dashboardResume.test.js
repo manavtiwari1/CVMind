@@ -1,8 +1,8 @@
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import ResumeProfile from '../../src/agent/models/ResumeProfile.js';
-import QueueJob from '../../src/agent/models/QueueJob.js';
-import AgentApplication from '../../src/agent/models/AgentApplication.js';
+import ResumeProfile from '@cvmind/auto-apply-agent/models/ResumeProfile.js';
+import QueueJob from '@cvmind/auto-apply-agent/models/QueueJob.js';
+import AgentApplication from '@cvmind/auto-apply-agent/models/AgentApplication.js';
 import { DESCRIPTION, createReadyResume, startAgentTestApp } from '../helpers/agentFixtures.js';
 
 // Stands in for the user's CVMind dashboard (My Works); tests swap in what each user has saved

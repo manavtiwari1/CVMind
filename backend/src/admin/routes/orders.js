@@ -4,10 +4,10 @@ import { requireAdmin, requireDb } from '../auth.js';
 import { audit } from '../audit.js';
 import { model, clean, handle, httpError, isId, paging, escapeRegex } from '../util.js';
 import { updateApplicationStatus } from '../../db.js';
-import { APPLICATION_STATUSES } from '../../agent/models/AgentApplication.js';
-import '../../agent/models/JobPosting.js';
-import '../../agent/models/QueueJob.js';
-import '../../agent/models/ExtensionDevice.js';
+import { APPLICATION_STATUSES } from '@cvmind/auto-apply-agent/models/AgentApplication.js';
+import '@cvmind/auto-apply-agent/models/JobPosting.js';
+import '@cvmind/auto-apply-agent/models/QueueJob.js';
+import '@cvmind/auto-apply-agent/models/ExtensionDevice.js';
 
 const router = express.Router();
 router.use(requireDb);

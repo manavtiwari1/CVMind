@@ -1,16 +1,16 @@
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import AgentApplication from '../../src/agent/models/AgentApplication.js';
-import JobPosting from '../../src/agent/models/JobPosting.js';
-import ResumeProfile from '../../src/agent/models/ResumeProfile.js';
-import QueueJob from '../../src/agent/models/QueueJob.js';
-import RateBucket from '../../src/agent/models/RateBucket.js';
-import Preferences from '../../src/agent/models/Preferences.js';
-import { createMatchHandler } from '../../src/agent/handlers/matchApplication.js';
-import { createApplyFillHandler, createApplySubmitHandler } from '../../src/agent/handlers/applyApplication.js';
-import { onDead } from '../../src/agent/queue/workers.js';
-import { formUrlFor } from '../../src/agent/adapters/index.js';
-import { RateLimitDeferral, FatalError } from '../../src/agent/errors.js';
+import AgentApplication from '@cvmind/auto-apply-agent/models/AgentApplication.js';
+import JobPosting from '@cvmind/auto-apply-agent/models/JobPosting.js';
+import ResumeProfile from '@cvmind/auto-apply-agent/models/ResumeProfile.js';
+import QueueJob from '@cvmind/auto-apply-agent/models/QueueJob.js';
+import RateBucket from '@cvmind/auto-apply-agent/models/RateBucket.js';
+import Preferences from '@cvmind/auto-apply-agent/models/Preferences.js';
+import { createMatchHandler } from '@cvmind/auto-apply-agent/handlers/matchApplication.js';
+import { createApplyFillHandler, createApplySubmitHandler } from '@cvmind/auto-apply-agent/handlers/applyApplication.js';
+import { onDead } from '@cvmind/auto-apply-agent/queue/workers.js';
+import { formUrlFor } from '@cvmind/auto-apply-agent/adapters/index.js';
+import { RateLimitDeferral, FatalError } from '@cvmind/auto-apply-agent/errors.js';
 import { createReadyResume, fakeAi, jobRun, startAgentTestApp } from '../helpers/agentFixtures.js';
 
 let testApp;

@@ -4,7 +4,7 @@ import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 import autoApplyRouter from './routes/autoApply.js';
 import agentRouter from './routes/agent.js';
-import { startWorkers } from './agent/queue/workers.js';
+import { startWorkers } from '@cvmind/auto-apply-agent/queue/workers.js';
 import companyRouter from './routes/company.js';
 import codeRouter from './routes/code.js';
 import cors from 'cors';
@@ -37,8 +37,8 @@ import { sendEmail, emailConfigured } from './admin/mailer.js';
 import { welcomeEmail, passwordResetEmail, resumePdfEmail } from './services/emailTemplates.js';
 import { dbReady } from './admin/auth.js';
 import mongoose from 'mongoose';
-import { importUploadedResume, RESUME_MIME_TYPES } from './agent/resume/intake.js';
-import { renderResumePdf } from './agent/resume/pdf.js';
+import { importUploadedResume, RESUME_MIME_TYPES } from '@cvmind/auto-apply-agent/resume/intake.js';
+import { renderResumePdf } from '@cvmind/auto-apply-agent/resume/pdf.js';
 import { searchJobs, getJobDetail, warmJobSearch, JOB_SEARCH_COMPANIES } from './services/jobSearch.js';
 
 const app = express();
@@ -3106,7 +3106,7 @@ if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
   // Fill the live job-search cache so the first search in the resume builder is quick.
   if (!process.env.VERCEL) warmJobSearch();
-  // Local dev convenience: run agent queue workers in the API process (production uses src/worker.js)
+  // Local dev convenience: run agent queue workers in the API process (production runs auto-apply-agent/src/worker.js)
   // Pull the support inbox into tickets every 2 minutes (serverless hosts sync when Support is opened)
   if (!process.env.VERCEL) startInboxPolling();
   if (process.env.INLINE_WORKERS === 'true' && !process.env.VERCEL) {

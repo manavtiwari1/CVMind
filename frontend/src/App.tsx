@@ -42,7 +42,7 @@ import Terms from './pages/Terms';
 import RefundPolicy from './pages/RefundPolicy';
 import Disclaimer from './pages/Disclaimer';
 import Proofreading from './pages/Proofreading';
-import AutoApply from './pages/AutoApply';
+import AutoApply from './autoApply/AutoApply';
 import CompanyPortal from './pages/CompanyPortal';
 import ArticleAtsResume from './pages/ArticleAtsResume';
 import CopyrightPolicy from './pages/CopyrightPolicy';

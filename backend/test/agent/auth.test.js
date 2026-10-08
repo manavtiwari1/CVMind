@@ -1,6 +1,6 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { requireMongo, requireAgentAccess } from '../../src/agent/auth.js';
+import { requireMongo, requireAgentAccess } from '../../src/middleware/agentAuth.js';
 import { signToken } from '../../src/services/authToken.js';
 
 const originalUri = process.env.MONGODB_URI;

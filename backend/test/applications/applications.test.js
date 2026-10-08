@@ -1,14 +1,14 @@
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import ResumeProfile from '../../src/agent/models/ResumeProfile.js';
-import QueueJob from '../../src/agent/models/QueueJob.js';
-import JobPosting from '../../src/agent/models/JobPosting.js';
-import AgentApplication from '../../src/agent/models/AgentApplication.js';
-import Preferences from '../../src/agent/models/Preferences.js';
-import { createParseJobHandler } from '../../src/agent/handlers/parseJob.js';
-import { createMatchHandler } from '../../src/agent/handlers/matchApplication.js';
-import { migrateLegacyApplications } from '../../src/agent/migrations/legacyApplications.js';
-import { FatalError } from '../../src/agent/errors.js';
+import ResumeProfile from '@cvmind/auto-apply-agent/models/ResumeProfile.js';
+import QueueJob from '@cvmind/auto-apply-agent/models/QueueJob.js';
+import JobPosting from '@cvmind/auto-apply-agent/models/JobPosting.js';
+import AgentApplication from '@cvmind/auto-apply-agent/models/AgentApplication.js';
+import Preferences from '@cvmind/auto-apply-agent/models/Preferences.js';
+import { createParseJobHandler } from '@cvmind/auto-apply-agent/handlers/parseJob.js';
+import { createMatchHandler } from '@cvmind/auto-apply-agent/handlers/matchApplication.js';
+import { migrateLegacyApplications } from '@cvmind/auto-apply-agent/migrations/legacyApplications.js';
+import { FatalError } from '@cvmind/auto-apply-agent/errors.js';
 import { DESCRIPTION, fakeAi, createReadyResume, runQueued, startAgentTestApp, tokenB } from '../helpers/agentFixtures.js';
 
 let testApp;

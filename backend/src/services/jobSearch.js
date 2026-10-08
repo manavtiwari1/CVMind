@@ -4,7 +4,7 @@
 // exactly this kind of listing. Everything is cached in memory so a search never hits those APIs
 // directly, and results are ranked by how well they match the query (no unrelated filler results).
 import { htmlToStructuredText } from './parser.js';
-import { fetchGreenhouseJob } from '../agent/jobs/fetchers/greenhouse.js';
+import { fetchGreenhouseJob } from '@cvmind/auto-apply-agent/jobs/fetchers/greenhouse.js';
 
 const GREENHOUSE = [
   ['stripe', 'Stripe', 'stripe.com'], ['mongodb', 'MongoDB', 'mongodb.com'], ['figma', 'Figma', 'figma.com'],

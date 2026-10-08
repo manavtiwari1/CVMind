@@ -1,11 +1,11 @@
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import AgentApplication from '../../src/agent/models/AgentApplication.js';
-import JobPosting from '../../src/agent/models/JobPosting.js';
-import QueueJob from '../../src/agent/models/QueueJob.js';
-import ApplicationEvent from '../../src/agent/models/ApplicationEvent.js';
-import { sweepStuckApplications } from '../../src/agent/sweeper.js';
-import { JOB_PARSE_VERSION } from '../../src/agent/jobs/jobData.js';
+import AgentApplication from '@cvmind/auto-apply-agent/models/AgentApplication.js';
+import JobPosting from '@cvmind/auto-apply-agent/models/JobPosting.js';
+import QueueJob from '@cvmind/auto-apply-agent/models/QueueJob.js';
+import ApplicationEvent from '@cvmind/auto-apply-agent/models/ApplicationEvent.js';
+import { sweepStuckApplications } from '@cvmind/auto-apply-agent/sweeper.js';
+import { JOB_PARSE_VERSION } from '@cvmind/auto-apply-agent/jobs/jobData.js';
 import { startTestMongo } from '../helpers/mongo.js';
 
 let mongo;

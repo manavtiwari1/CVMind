@@ -117,7 +117,7 @@ export default function SystemHealth() {
             </dl>
           )}
           {h?.worker && !h.worker.running && h.worker.dueJobs > 0 && (
-            <Notice tone="amber">Jobs are waiting and nothing is processing them. Set INLINE_WORKERS=true on the API, or start the worker (npm run worker / backend/Dockerfile.worker).</Notice>
+            <Notice tone="amber">Jobs are waiting and nothing is processing them. Set INLINE_WORKERS=true on the API, or start the worker (npm run worker / auto-apply-agent/Dockerfile).</Notice>
           )}
           {h?.queue && Object.keys(h.queue).length ? (
             <div className="ad-table-wrap">

@@ -1,8 +1,8 @@
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import WorkerHeartbeat from '../../src/agent/models/WorkerHeartbeat.js';
-import QueueJob from '../../src/agent/models/QueueJob.js';
-import { startHeartbeat, workerStatus, STALE_AFTER_MS } from '../../src/agent/queue/heartbeat.js';
+import WorkerHeartbeat from '@cvmind/auto-apply-agent/models/WorkerHeartbeat.js';
+import QueueJob from '@cvmind/auto-apply-agent/models/QueueJob.js';
+import { startHeartbeat, workerStatus, STALE_AFTER_MS } from '@cvmind/auto-apply-agent/queue/heartbeat.js';
 import { startAgentTestApp, AGENT_MODELS } from '../helpers/agentFixtures.js';
 
 let testApp;

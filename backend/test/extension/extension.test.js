@@ -1,11 +1,11 @@
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import ExtensionDevice from '../../src/agent/models/ExtensionDevice.js';
-import AgentApplication from '../../src/agent/models/AgentApplication.js';
-import ApplicationEvent from '../../src/agent/models/ApplicationEvent.js';
-import { createParseJobHandler } from '../../src/agent/handlers/parseJob.js';
-import { createMatchHandler } from '../../src/agent/handlers/matchApplication.js';
-import { buildFillPlan } from '../../src/agent/fill/buildFillPlan.js';
+import ExtensionDevice from '@cvmind/auto-apply-agent/models/ExtensionDevice.js';
+import AgentApplication from '@cvmind/auto-apply-agent/models/AgentApplication.js';
+import ApplicationEvent from '@cvmind/auto-apply-agent/models/ApplicationEvent.js';
+import { createParseJobHandler } from '@cvmind/auto-apply-agent/handlers/parseJob.js';
+import { createMatchHandler } from '@cvmind/auto-apply-agent/handlers/matchApplication.js';
+import { buildFillPlan } from '@cvmind/auto-apply-agent/fill/buildFillPlan.js';
 import { setUserSessionValidator } from '../../src/services/authToken.js';
 import { DESCRIPTION, fakeAi, createReadyResume, runQueued, startAgentTestApp, tokenB } from '../helpers/agentFixtures.js';
 

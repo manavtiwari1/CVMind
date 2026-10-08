@@ -41,8 +41,8 @@ GEMINI_API_KEY=your_gemini_or_openrouter_api_key
 From the root workspace, run:
 
 #### Start Backend:
+The backend and the auto-apply agent (`auto-apply-agent/`) are npm workspaces, so install them once from the repository root:
 ```bash
-cd backend
 npm install
 npm run dev
 ```
