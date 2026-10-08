@@ -128,7 +128,7 @@ const GROUPS: Group[] = [
     items: [
       {
         q: 'What is included in the Free plan?',
-        a: 'The Resume Builder with all templates, the Resume Checker, Interview Prep AI, the LinkedIn tools and 15,000 AI tokens that reset every 48 hours. Free resumes carry CV Mind branding and allow up to 12 items per section.',
+        a: "The Resume Checker, the Resume Builder with its free templates and cover letter designs, AI Proofreading, the LinkedIn and career tools, and CVMind Code's concept, approach, algorithm and pseudocode hints. Each week you also get 1 AI cover letter, 2 Resume Tailor runs, 2 portfolios, 1 interview prep session, 1 voice interview, and 2 code explanations and 2 full solutions. Free accounts get 10,000 AI tokens every 3 days, and free resumes and cover letters carry a small CVMind footer.",
         ...(PRICING_LOCKED ? {} : { link: { label: 'Compare plans', page: 'pricing' } }),
       },
       PRICING_LOCKED
@@ -138,7 +138,7 @@ const GROUPS: Group[] = [
           }
         : {
             q: 'How much does Pro cost?',
-            a: 'Pro is ₹250 a month, ₹800 every 3 months or ₹1,300 a year. It removes branding, unlocks Pro sections and unlimited items, and adds tools like the Resume Tailorer, Portfolio Generator and Voice Prep AI.',
+            a: "Pro is ₹39 for 3 days, ₹79 for 7 days, ₹189 a month, ₹600 for 6 months or ₹1,099 a year. It unlocks every resume template and cover letter design, removes the CVMind footer, lifts the weekly limits and raises your AI tokens to 25,000 every 3 days. You pay once through Cashfree (UPI, cards or netbanking) and it doesn't renew on its own.",
             link: { label: 'See pricing', page: 'pricing' },
           },
       {
@@ -148,7 +148,7 @@ const GROUPS: Group[] = [
       },
       {
         q: 'How do I cancel Pro?',
-        a: 'Send us a message from the Help Desk with your registered email and we will cancel it. You keep Pro until the end of the period you have paid for, and you will not be charged again.',
+        a: "Pro doesn't renew automatically, so there is nothing to cancel: it simply ends on the date shown in your account. Buying another plan before then adds its days to the end of the current one.",
         link: { label: 'Contact us', page: 'contact' },
       },
     ],

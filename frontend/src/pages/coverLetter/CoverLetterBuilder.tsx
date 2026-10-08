@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, ChevronLeft, ChevronRight, Download, Droplet, Home, Megaphone, PenLine, Sparkles, Type } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Crown, Download, Droplet, Home, Megaphone, PenLine, Sparkles, Type } from 'lucide-react';
 import TemplatePreview from '../../components/TemplatePreview';
 import { LeoAvatar } from '../../components/ResumeOnboarding';
 import { COVER_LETTER_EXAMPLES } from '../../data/coverLetterExamples';
@@ -8,6 +8,7 @@ import { BUILDER_FAQS } from '../../data/coverLetterFaqs';
 import { LETTER_DESIGNS, designById, saveLetterDraft } from '../../lib/coverLetter';
 import CoverLetterFaq from './CoverLetterFaq';
 import './CoverLetterPages.css';
+import { canUseTemplate, isProTemplate } from '../../lib/billing';
 
 interface CoverLetterBuilderProps {
   setCurrentPage: (page: string) => void;
@@ -32,6 +33,7 @@ export default function CoverLetterBuilder({ setCurrentPage }: CoverLetterBuilde
 
   const pickDesign = (i: number) => {
     const d = LETTER_DESIGNS[i];
+    if (!canUseTemplate(d.id)) return;
     saveLetterDraft({ html: d.render(d.sample), templateId: d.id, title: `Cover Letter - ${d.name}` });
     setCurrentPage('cover-letter-editor');
   };
@@ -95,7 +97,7 @@ export default function CoverLetterBuilder({ setCurrentPage }: CoverLetterBuilde
             );
           })}
         </div>
-        <p className="clx-car-name">{LETTER_DESIGNS[active].name} · {active + 1} of {count}</p>
+        <p className="clx-car-name">{LETTER_DESIGNS[active].name}{isProTemplate(LETTER_DESIGNS[active].id) && <> · <Crown size={13} style={{ verticalAlign: -2, color: '#d97706' }} /> Pro</>} · {active + 1} of {count}</p>
       </section>
 
       {/* Steps */}

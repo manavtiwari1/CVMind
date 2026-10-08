@@ -32,6 +32,8 @@ import { htmlForPdf } from '../lib/printLayout';
 import { getErrorMessage } from '../utils/errors';
 import type { ExtractedResume, LoadedWork, WizardFormData } from '../types/api';
 import { siteOrigin, urlForPage } from '../lib/hosts';
+import { isProTemplate, requestUpgrade, userIsPro } from '../lib/billing';
+import { exportHtml } from '../lib/branding';
 
 // ─────────────────────────────────────────────────────────────────
 // Toolbar constants
@@ -458,6 +460,10 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
   }, [step, activeWorkId, activeWorkTitle, activeTab, selectedTemplate, fromTailor]);
 
   const handleSelectTemplate = (template: Template) => {
+    if (isProTemplate(template.id) && !userIsPro()) {
+      requestUpgrade('template');
+      return;
+    }
     setSelectedTemplate(template);
     setActiveWorkId(null);
     setActiveWorkTitle(`${template.type === 'cover-letter' ? 'Cover Letter' : 'Resume'} - ${template.name}`);
@@ -699,8 +705,8 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
     setTimeout(() => { win.print(); win.close(); }, 600);
   };
 
-  const handleDownloadDOCX = (fileName?: string) => {
-    const content = editorRef.current?.innerHTML || '';
+  const handleDownloadDOCX = (fileName?: string, html?: string) => {
+    const content = html ?? exportHtml(editorRef.current?.innerHTML ?? '');
     const wordDoc = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
 <head><meta charset='utf-8'><title>Resume</title>
 <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
@@ -1024,6 +1030,10 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
   const handleApplyTemplate = async (template: Template) => {
     const ed = editorRef.current;
     if (!ed || swapping) return;
+    if (isProTemplate(template.id) && !userIsPro()) {
+      requestUpgrade('template');
+      return;
+    }
     setRefineError('');
     if (usedSampleLayout && !editedRef.current) {
       ed.innerHTML = template.html;

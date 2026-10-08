@@ -369,9 +369,13 @@ export const FREE_DAILY_LIMITS = {
 
 const WHITELISTED_EMAILS_HARDCODED = ['riturani2005@gmail.com', 'rajendermishra39@gmail.com'];
 
+// CVMind Pro comes from an active subscription: bought through Cashfree or added in the admin
+// panel (see billing/). Without MongoDB there are no subscriptions, so nobody is Pro.
 export async function isUserPaid(user) {
-  // All features are currently free for every user.
-  return true;
+  const email = String(user?.email || '').trim().toLowerCase();
+  if (!email || !mongoURI || mongoose.connection.readyState !== 1) return false;
+  const { Subscription } = await import('./billing/models.js');
+  return !!(await Subscription.exists({ email, status: 'active', expiresAt: { $gt: new Date() } }));
 }
 
 const userSchema = new mongoose.Schema({

@@ -24,6 +24,7 @@ import {
 import { getErrorMessage } from '../../utils/errors';
 import type { LoadedWork } from '../../types/api';
 import './CoverLetterPages.css';
+import { canUseTemplate, isProTemplate } from '../../lib/billing';
 
 interface CoverLetterEditorProps {
   customApiKey: string;
@@ -237,6 +238,7 @@ export default function CoverLetterEditor({ customApiKey, loadedWork, setLoadedW
   // Moving the letter into another design: the AI fills the empty design with the letter's own words
   const applyTemplate = async (id: string) => {
     if (id === templateId || aiBusy) return;
+    if (!canUseTemplate(id)) return;
     const text = editorRef.current?.innerText || '';
     const photoEl = editorRef.current ? Array.from(editorRef.current.querySelectorAll('img')).find(isProfilePhoto) : undefined;
     const oldPhoto = photoEl && !photoEl.src.startsWith('data:image/svg') ? photoEl.src : '';
@@ -344,7 +346,7 @@ ${text.slice(0, 6000)}
               {LETTER_DESIGNS.map(d => (
                 <button key={d.id} type="button" className={`clx-tpl${templateId === d.id ? ' is-on' : ''}`} disabled={Boolean(aiBusy)} onClick={() => applyTemplate(d.id)} aria-pressed={templateId === d.id}>
                   <TemplatePreview html={thumbHtml(d.id)} name={`${d.name} design`} aspect="1 / 0.8" />
-                  <span>{aiBusy === `template:${d.id}` ? <Loader2 size={14} className="rs-spin" /> : templateId === d.id ? <Check size={14} /> : null} {d.name}</span>
+                  <span>{aiBusy === `template:${d.id}` ? <Loader2 size={14} className="rs-spin" /> : templateId === d.id ? <Check size={14} /> : null} {d.name}{isProTemplate(d.id) && ' · Pro'}</span>
                 </button>
               ))}
             </div>
@@ -445,7 +447,7 @@ ${text.slice(0, 6000)}
           getHtml={() => (editorRef.current ? htmlForPdf(editorRef.current, PAPER.a4.height) : '')}
           getText={() => editorRef.current?.innerText || ''}
           customApiKey={customApiKey}
-          onWord={name => downloadLetterDoc(editorRef.current?.innerHTML || '', name)}
+          onWord={(name, html) => downloadLetterDoc(html, name)}
           onClose={() => setShowDownload(false)}
         />
       )}

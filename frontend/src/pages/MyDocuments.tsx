@@ -35,7 +35,7 @@ const TABS: { id: Tab; label: string; soon?: boolean }[] = [
 // The splash stays up at least this long so it reads as a deliberate transition, not a flicker
 const MIN_SPLASH_MS = 900;
 
-const PRO_PERKS = ['No CV Mind branding', 'Pro resume sections', 'Resume Tailor & Portfolio Generator', 'Unlimited section items'];
+const PRO_PERKS = ['No CVMind footer on downloads', 'Every resume template', 'Unlimited Tailor & Portfolio Generator', '25,000 AI tokens every 3 days'];
 
 const workId = (w: ListedWork) => w.id || w._id;
 const editedAt = (w: ListedWork) => new Date(w.updatedAt || w.createdAt);

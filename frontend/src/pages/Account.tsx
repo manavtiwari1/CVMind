@@ -13,6 +13,7 @@ import type { LoadedWork, SavedWork, StoredUser } from '../types/api';
 import './Account.css';
 import { siteOrigin } from '../lib/hosts';
 import { PRICING_LOCKED } from '../lib/pricing';
+import PlanUsage from '../components/PlanUsage';
 
 type Tab = 'profile' | 'billing' | 'documents' | 'devices';
 type ListedWork = SavedWork & { _id: string; createdAt: string };
@@ -24,11 +25,11 @@ interface AccountProps {
 }
 
 const PRO_PERKS = [
-  { icon: Crown, text: 'Pro resume sections' },
-  { icon: ListPlus, text: 'Unlimited section items' },
-  { icon: Wand2, text: 'Resume Tailor & Portfolio Generator' },
-  { icon: Files, text: '300 resumes and cover letters' },
-  { icon: BadgeCheck, text: 'No branding' },
+  { icon: Crown, text: 'Every resume template and cover letter design' },
+  { icon: BadgeCheck, text: 'No CVMind footer on downloads' },
+  { icon: Wand2, text: 'Unlimited Tailor, AI cover letters, Portfolio and interviews' },
+  { icon: ListPlus, text: 'Unlimited code explanations and solutions' },
+  { icon: Files, text: '25,000 AI tokens every 3 days' },
 ];
 
 export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }: AccountProps) {
@@ -443,13 +444,14 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
                   <p className="acct-plan-desc">
                     {isPro
                       ? 'You have access to every Pro feature.'
-                      : 'Build, check and download resumes for free. Upgrade any time for Pro sections, unlimited items and every AI tool.'}
+                      : 'Build, check and download resumes for free. Upgrade any time for every template, no footer and unlimited AI tools.'}
                   </p>
                 </div>
                 {!isPro && (
                   <button className="acct-btn" onClick={() => setCurrentPage('pricing')}>See plans</button>
                 )}
               </div>
+              <PlanUsage />
               <p className="acct-billing-note">
                 New Pro subscriptions come with a 7-day money-back guarantee. Read the{' '}
                 <button className="acct-link inline" onClick={() => setCurrentPage('refund-policy')}>refund policy</button>{' '}
@@ -511,7 +513,7 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
                 <span className="acct-pro-title">Get more with Pro</span>
                 <button className="acct-upgrade" onClick={() => setCurrentPage('pricing')}>Upgrade</button>
               </div>
-              <p className="acct-pro-price">{PRICING_LOCKED ? 'Coming soon' : 'Starting from ₹108.33 a month'}</p>
+              <p className="acct-pro-price">{PRICING_LOCKED ? 'Coming soon' : 'From ₹39 for 3 days · ₹189 a month'}</p>
               <ul className="acct-pro-perks">
                 {PRO_PERKS.map(({ icon: Icon, text }) => (
                   <li key={text}><Icon size={16} /> {text}</li>

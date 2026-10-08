@@ -1,7 +1,8 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { rateLimit } from 'express-rate-limit';
-import { requireUser, verifyToken } from '../services/authToken.js';
+import { requireUser, verifyToken, readUserSession } from '../services/authToken.js';
+import { grantedProducts } from '../services/productGate.js';
 import { dbReady, requireDb } from './auth.js';
 import { ContentBlock, CONTENT_SLOTS, ContentReport, Notification, REPORT_TARGETS, UserSession } from './models.js';
 import { FEATURES, VERSION_CLIENTS, getSettings, versionVerdict } from './settings.js';
@@ -21,6 +22,15 @@ router.get('/api/config', handle(async (req, res) => {
     maintenance: settings.maintenance.enabled ? settings.maintenance : { enabled: false, message: '' },
     disabledFeatures: Object.keys(FEATURES).filter((key) => settings.features[key] === false)
   });
+}));
+
+// Locked products and the ones this visitor has been given access to (none when signed out)
+router.get('/api/config/products', handle(async (req, res) => {
+  const { locked } = (await getSettings()).productAccess;
+  const session = locked.length ? await readUserSession(req) : null;
+  const granted = session?.ok ? await grantedProducts(session.payload.email, locked) : [];
+  res.set('Cache-Control', 'private, no-store');
+  res.json({ success: true, locked, granted });
 }));
 
 // ?client=android|extension&v=1.2.0 → { verdict: ok | recommended | required, ... }

@@ -20,6 +20,7 @@ import type { ExtractedResume, LoadedWork } from '../types/api';
 import '../components/ResumeOnboarding.css';
 import './Tailor.css';
 import './Proofreading.css';
+import { userIsPro } from '../lib/billing';
 
 interface ProofreadingProps {
   customApiKey: string;
@@ -664,7 +665,7 @@ export default function Proofreading({ customApiKey, resumeText: appResumeText, 
                   <button type="button" className="tlr-btn" onClick={() => applyTemplate(pendingTemplate)}><RefreshCw size={17} /> Try again</button>
                 )}
               </div>
-              <p className="tlr-fine"><Lock size={12} /> The cvmind.in · Powered by CVMind footer stays on every page.{readUser() ? '' : ' Sign in to save it to My Documents.'}</p>
+              <p className="tlr-fine"><Lock size={12} /> {userIsPro() ? 'Your downloads come without the CVMind footer (Pro).' : 'Downloads carry a small cvmind.in · Powered by CVMind footer; Pro removes it.'}{readUser() ? '' : ' Sign in to save it to My Documents.'}</p>
             </div>
           </section>
 
@@ -710,7 +711,7 @@ export default function Proofreading({ customApiKey, resumeText: appResumeText, 
             getHtml={() => design.html}
             getText={() => htmlToText(design.html)}
             customApiKey={customApiKey}
-            onWord={name => downloadWord(design.html, name)}
+            onWord={(name, html) => downloadWord(html, name)}
             onClose={() => setShowDownload(false)}
           />
         )}

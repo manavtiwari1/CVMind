@@ -13,12 +13,19 @@ export function getSessionToken(key: SessionKey = 'cvmind_user'): string | null 
   }
 }
 
-// Tells the app about verification and sign-in refusals; the caller still gets the response and shows its error
+// Fired when a free account hits a weekly limit or its AI token budget (App shows the upgrade dialog).
+// Same name as UPGRADE_EVENT in lib/billing.ts.
+const UPGRADE_EVENT = 'cvmind-upgrade-required';
+
+// Tells the app about verification, sign-in and plan refusals; the caller still gets the response and shows its error
 function announceRefusal(res: Response) {
-  if (res.status !== 401 && res.status !== 403) return;
-  res.clone().json().then((data: { code?: string }) => {
+  if (![401, 402, 403, 429].includes(res.status)) return;
+  res.clone().json().then((data: { code?: string; error?: string }) => {
     if (data?.code === 'EMAIL_NOT_VERIFIED') window.dispatchEvent(new Event(VERIFY_REQUIRED_EVENT));
     else if (data?.code === 'AUTH_REQUIRED') window.dispatchEvent(new Event(AUTH_REQUIRED_EVENT));
+    else if (data?.code === 'UPGRADE_REQUIRED' || data?.code === 'TOKEN_LIMIT') {
+      window.dispatchEvent(new CustomEvent(UPGRADE_EVENT, { detail: { reason: data.code === 'TOKEN_LIMIT' ? 'tokens' : 'limit', message: data.error } }));
+    }
   }).catch(() => { /* not JSON */ });
 }
 

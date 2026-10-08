@@ -1,5 +1,5 @@
 import {
-  Activity, Bell, Building2, ClipboardList, CreditCard, FileDown, KeyRound, LayoutDashboard, LifeBuoy,
+  Activity, Bell, Building2, ClipboardList, CreditCard, Crown, FileDown, KeyRound, LayoutDashboard, LifeBuoy,
   PanelsTopLeft, ScrollText, ShieldAlert, SlidersHorizontal, Sparkles, TicketPercent, UserCog, Users
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -35,6 +35,7 @@ export const NAV: NavGroup[] = [
   {
     label: 'Business',
     items: [
+      { id: 'subscriptions', label: 'Subscriptions', icon: Crown, permission: 'payments.view' },
       { id: 'payments', label: 'Payments', icon: CreditCard, permission: 'payments.view' },
       { id: 'coupons', label: 'Coupons', icon: TicketPercent, permission: 'coupons.manage' },
       { id: 'orders', label: 'Applications', icon: ClipboardList, permission: 'orders.view' },

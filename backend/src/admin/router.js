@@ -3,6 +3,8 @@ import '../db.js'; // registers the User, Work, PaymentLog, … models the admin
 import teamRoutes from './routes/team.js';
 import analyticsRoutes from './routes/analytics.js';
 import userRoutes from './routes/users.js';
+import productAccessRoutes from './routes/productAccess.js';
+import subscriptionRoutes from './routes/subscriptions.js';
 import paymentRoutes from './routes/payments.js';
 import ticketRoutes from './routes/tickets.js';
 import notificationRoutes from './routes/notifications.js';
@@ -22,6 +24,8 @@ const router = express.Router();
 router.use('/', teamRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/users', userRoutes);
+router.use('/product-access', productAccessRoutes);
+router.use('/subscriptions', subscriptionRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/tickets', ticketRoutes);
 router.use('/notifications', notificationRoutes);

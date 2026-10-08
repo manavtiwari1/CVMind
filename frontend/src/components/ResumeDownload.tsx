@@ -5,6 +5,8 @@ import { authFetch, getSessionToken } from '../lib/authFetch';
 import { API_BASE } from '../lib/apiBase';
 import { getErrorMessage } from '../utils/errors';
 import { printResume } from '../lib/printPdf';
+import { exportHtml } from '../lib/branding';
+import { requestUpgrade, userIsPro } from '../lib/billing';
 import './ResumeDownload.css';
 
 interface ResumeDownloadProps {
@@ -13,7 +15,8 @@ interface ResumeDownloadProps {
   getHtml: () => string;
   getText: () => string;
   customApiKey: string;
-  onWord: (fileName: string) => void;
+  /** Gets the HTML to export: without the CVMind footer for Pro accounts. */
+  onWord: (fileName: string, html: string) => void;
   /** Opens "Check & Tailor" with this job description. Without it the bonus scan step is hidden. */
   onScan?: (jobDescription: string) => void;
   onClose: () => void;
@@ -35,7 +38,10 @@ const saveBlob = (blob: Blob, name: string) => {
   setTimeout(() => URL.revokeObjectURL(url), 30000);
 };
 
-export default function ResumeDownload({ defaultName, paper, getHtml, getText, customApiKey, onWord, onScan, onClose, docLabel = 'Resume' }: ResumeDownloadProps) {
+export default function ResumeDownload({ defaultName, paper, getHtml: getEditorHtml, getText, customApiKey, onWord, onScan, onClose, docLabel = 'Resume' }: ResumeDownloadProps) {
+  // Every export goes through here, so Pro downloads lose the footer in one place
+  const getHtml = () => exportHtml(getEditorHtml());
+  const pro = userIsPro();
   const [name, setName] = useState(() => cleanName(defaultName) || `My ${docLabel}`);
   const [stage, setStage] = useState<Stage>('choose');
   const [mode, setMode] = useState<'pdf' | 'email'>('pdf');
@@ -161,8 +167,16 @@ export default function ResumeDownload({ defaultName, paper, getHtml, getText, c
             <div className="rd-links">
               <button type="button" onClick={downloadTxt}>Download as TXT</button>
               <span aria-hidden="true">·</span>
-              <button type="button" onClick={() => onWord(fileName)}>Download as Word</button>
+              <button type="button" onClick={() => onWord(fileName, getHtml())}>Download as Word</button>
             </div>
+            {pro ? (
+              <p className="rd-brand">No CVMind footer on your downloads (Pro).</p>
+            ) : (
+              <p className="rd-brand">
+                Includes a small "Powered by CVMind" footer.{' '}
+                <button type="button" onClick={() => requestUpgrade('branding')}>Remove it with Pro</button>
+              </p>
+            )}
           </>
         ) : (
           <>

@@ -17,6 +17,7 @@ import { workHash } from '../lib/workHandoff';
 import type { ExtractedResume, LoadedWork } from '../types/api';
 import { downloadResumeAsDocx, downloadResumeAsPdf, downloadResumeAsTxt } from '../utils/generateResumeDocx';
 import { getErrorMessage } from '../utils/errors';
+import { exportHtml } from '../lib/branding';
 import './Dashboard.css';
 
 interface Suggestions {
@@ -624,7 +625,7 @@ export default function Dashboard({ setCurrentPage, analysisResult, resumeText, 
                         <button type="button" className="rpt-btn rpt-btn--primary rpt-btn--lg rpt-btn--block" disabled={handingOff} onClick={() => void openInEditor()}>
                           {handingOff ? <Loader2 size={17} className="rpt-spin" /> : <PencilLine size={17} />} Edit in Resume Editor
                         </button>
-                        <button type="button" className="rpt-btn rpt-btn--block" onClick={() => downloadWord(design.html, (parsed?.data.personalInfo?.fullName || 'Resume').replace(/\s+/g, '_'))}>
+                        <button type="button" className="rpt-btn rpt-btn--block" onClick={() => downloadWord(exportHtml(design.html), (parsed?.data.personalInfo?.fullName || 'Resume').replace(/\s+/g, '_'))}>
                           <Download size={15} /> Download Word file
                         </button>
                         <p className="rpt-fine"><Lock size={12} /> It is saved to My Documents when you open the editor.</p>

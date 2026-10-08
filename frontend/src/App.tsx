@@ -62,6 +62,9 @@ import { peekPickedTemplate } from './lib/templatePick';
 import { letterDraftHash } from './lib/coverLetter';
 import { takeWorkFromHash } from './lib/workHandoff';
 import { authFetch, AUTH_REQUIRED_EVENT, VERIFY_REQUIRED_EVENT } from './lib/authFetch';
+import { useProductLock } from './lib/productAccess';
+import ProductLocked from './components/ProductLocked';
+import UpgradeModal from './components/UpgradeModal';
 import { readUser, saveUser, USER_CHANGE_EVENT } from './lib/currentUser';
 import type { LoadedWork, ResumeAnalysis } from './types/api';
 import './styles/theme.css';
@@ -179,6 +182,8 @@ export default function App() {
     };
   }, []);
   const [builderFocus, setBuilderFocus] = useState<false | 'flow' | 'studio'>(false);
+  // Products locked in the admin panel show a "no access" screen to accounts without access
+  const productLock = useProductLock(currentPage, isLoggedIn);
 
   useEffect(() => {
     localStorage.setItem('cvmind_aa_access', 'true');
@@ -221,11 +226,14 @@ export default function App() {
             signOut(d.message || 'Your account access has been restricted.');
             return;
           }
-          // Sessions from before verification existed learn their state here
+          // Sessions from before verification existed learn their state here, and Pro given or
+          // taken away in the admin panel shows up without signing in again
           const stored = readUser();
-          if (stored && typeof d?.emailVerified === 'boolean' && stored.emailVerified !== d.emailVerified) {
-            saveUser({ ...stored, emailVerified: d.emailVerified });
-          }
+          if (!stored) return;
+          const next = { ...stored };
+          if (typeof d?.emailVerified === 'boolean') next.emailVerified = d.emailVerified;
+          if (typeof d?.isPro === 'boolean') { next.isPro = d.isPro; next.plan = d.isPro ? 'pro' : undefined; }
+          if (next.emailVerified !== stored.emailVerified || next.isPro !== stored.isPro || next.plan !== stored.plan) saveUser(next);
         })
         .catch(() => {}); // network/offline — never sign the user out on errors
     };
@@ -682,7 +690,7 @@ export default function App() {
   // The Help Center (and its Contact form) is full-width with its own top bar and footer instead of the site ones
   const isHelpPage = currentPage === 'help-center' || currentPage === 'contact';
   // Landing pages that run edge to edge under the site navbar
-  const isWidePage = currentPage === 'cover-letter-generator' || currentPage === 'cover-letter-builder' || currentPage === 'resume-builder';
+  const isWidePage = currentPage === 'cover-letter-generator' || currentPage === 'cover-letter-builder' || currentPage === 'resume-builder' || currentPage === 'pricing';
 
   // Unverified accounts see the verify screen over locked app pages, or when the server refused a request
   const unverified = isLoggedIn && emailVerified === false;
@@ -732,12 +740,16 @@ export default function App() {
             </button>
           </div>
         )}
-        {renderPage()}
+        {productLock === 'locked'
+          ? <ProductLocked page={currentPage} isLoggedIn={isLoggedIn} setCurrentPage={setCurrentPage} onSignIn={() => setShowAuthModal(true)} />
+          : productLock === 'open' && renderPage()}
       </main>
 
       {currentPage === 'verify-email' && !showAuthModal && <VerifyEmail setCurrentPage={setCurrentPage} openSignIn={() => setShowAuthModal(true)} />}
 
       {routeLoading && <PageLoader />}
+
+      <UpgradeModal setCurrentPage={setCurrentPage} />
 
       {!isMinimalPage && !isHelpPage && !isNotFound && !isProductPage && <Footer setCurrentPage={setCurrentPage} />}
 

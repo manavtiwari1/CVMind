@@ -24,6 +24,10 @@ import { startInboxPolling } from './admin/inbox.js';
 import { evaluateCoupon, redeemCoupon } from './admin/coupons.js';
 import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser, userSessionStatus } from './services/authToken.js';
 import { verifiedGate } from './services/verifiedGate.js';
+import { productGate } from './services/productGate.js';
+import billingRouter from './billing/routes.js';
+import { aiBudgetGate, requireFreeUse, interviewFeature } from './billing/gate.js';
+import { chargeAiUsage, keepAiContext } from './billing/aiContext.js';
 import { issueVerification, verifyEmailToken, resendCooldown, hashToken, frontendUrl, markEmailVerified, verifyThroughProvider, VERIFY_MESSAGES } from './services/emailVerification.js';
 import { assessSignupRisk, isHighRisk, RISK_HIGH } from './services/emailRisk.js';
 import { hitLimit, checkLimit, clientIp, HOUR_MS, DAY_MS } from './services/limiter.js';
@@ -106,7 +110,11 @@ app.use(cors({
 
 // Saved resumes / portfolios carry full HTML (often with an embedded photo); the 100kb default
 // body limit made those saves fail with a 413 and the work never reached MongoDB.
-app.use(express.json({ limit: '10mb' }));
+// The Cashfree webhook signature covers the raw body, so that one route keeps it
+app.use(express.json({
+  limit: '10mb',
+  verify: (req, res, buf) => { if (req.originalUrl.endsWith('/api/billing/webhook')) req.rawBody = buf.toString('utf8'); }
+}));
 
 // Request timing for the admin System Health page
 app.use(metricsMiddleware);
@@ -114,6 +122,10 @@ app.use(metricsMiddleware);
 app.use(featureGate);
 // Email verification for the AI tools, saving, downloads and support (see services/verifiedGate.js)
 app.use(verifiedGate);
+// Locked products: only accounts given access in the admin panel
+app.use(productGate);
+// AI token budget for signed-in accounts (3-day window) and token accounting (see billing/)
+app.use(aiBudgetGate);
 
 // Public routes that call an AI model: limit each IP so scripted requests can't burn AI credits.
 // Signed-in-only AI routes (auto-apply, agent, company parse-job) are not included.
@@ -154,7 +166,7 @@ app.use([...AI_ROUTE_PATHS, ...AI_ROUTE_PATHS.map((p) => `/_/backend${p}`)], aiR
 const apiRouter = express.Router();
 
 // In-memory file upload configuration
-const upload = multer({
+const multerUpload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
@@ -172,6 +184,8 @@ const upload = multer({
     }
   }
 });
+// Multer loses the request's async context; keep it so AI calls after an upload are charged to the account
+const upload = { single: (field) => keepAiContext(multerUpload.single(field)) };
 
 // Root Health Check Route
 apiRouter.get('/', (req, res) => {
@@ -710,7 +724,7 @@ apiRouter.get('/api/auth/account-status', async (req, res) => {
     if (session && !session.ok) {
       return res.json({ status: 'signed-out', active: false, message: session.error });
     }
-    return res.json({ status: 'active', active: true, emailVerified: !!user.emailVerified });
+    return res.json({ status: 'active', active: true, emailVerified: !!user.emailVerified, isPro: await isUserPaid(user) });
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Status check failed.' });
   }
@@ -1374,7 +1388,7 @@ apiRouter.post('/api/optimize', optionalUser, async (req, res) => {
 });
 
 // AI Resume Tailoring Endpoint
-apiRouter.post('/api/tailor', optionalUser, upload.single('resume'), async (req, res) => {
+apiRouter.post('/api/tailor', optionalUser, upload.single('resume'), requireFreeUse('tailor'), async (req, res) => {
   try {
     const { file } = req;
     const { jobDescription, resumeUrl, templateHtml, templateId, resumeText } = req.body || {};
@@ -1976,7 +1990,7 @@ apiRouter.post('/api/cover-letter/read-resume', optionalUser, upload.single('res
 });
 
 // Cover Letter Generator: resume + job description -> structured letter (the page lays it out)
-apiRouter.post('/api/cover-letter/generate', optionalUser, upload.single('resume'), async (req, res) => {
+apiRouter.post('/api/cover-letter/generate', optionalUser, upload.single('resume'), requireFreeUse('cover-letter'), async (req, res) => {
   try {
     const jobDescription = careerField(req, 'jobDescription', 10000);
     const tone = careerField(req, 'tone', 30) || 'professional';
@@ -2150,6 +2164,7 @@ Return ONLY valid JSON.`;
     });
     if (!dsRes.ok) throw new Error(`DeepSeek error: ${dsRes.status}`);
     const dsJson = await dsRes.json();
+    chargeAiUsage(dsJson.usage);
     let text = dsJson.choices[0].message.content.trim();
     if (text.startsWith('```')) text = text.replace(/```json\n?|```\n?/g, '').trim();
     const data = JSON.parse(text);
@@ -2192,7 +2207,7 @@ const cleanMetrics = (m) => (m && typeof m === 'object' ? {
 } : null);
 
 // Prepares the questions. The CV is optional: a file, a link, or text read earlier.
-apiRouter.post('/api/interview/plan', optionalUser, upload.single('resume'), async (req, res) => {
+apiRouter.post('/api/interview/plan', optionalUser, upload.single('resume'), requireFreeUse(interviewFeature), async (req, res) => {
   try {
     const { file } = req;
     const body = req.body || {};
@@ -2365,6 +2380,7 @@ Return ONLY this JSON:
     });
     if (!dsRes.ok) throw new Error(`DeepSeek error: ${dsRes.status}`);
     const dsJson = await dsRes.json();
+    chargeAiUsage(dsJson.usage);
     let text = dsJson.choices[0].message.content.trim();
     if (text.startsWith('```')) text = text.replace(/```json\n?|```\n?/g, '').trim();
     const data = JSON.parse(text);
@@ -2424,6 +2440,7 @@ Return ONLY this JSON:
     });
     if (!dsRes.ok) throw new Error(`DeepSeek error: ${dsRes.status}`);
     const dsJson = await dsRes.json();
+    chargeAiUsage(dsJson.usage);
     let text = dsJson.choices[0].message.content.trim();
     if (text.startsWith('```')) text = text.replace(/```json\n?|```\n?/g, '').trim();
     const data = JSON.parse(text);
@@ -2451,7 +2468,7 @@ Return ONLY this JSON:
 });
 
 // Portfolio Website Generator Endpoint
-apiRouter.post('/api/portfolio/generate-site', optionalUser, async (req, res) => {
+apiRouter.post('/api/portfolio/generate-site', optionalUser, requireFreeUse('portfolio'), async (req, res) => {
   try {
     const { resumeText, colorTheme, style } = req.body || {};
     // Save to My Works only for the signed-in user (never a userId from the request body)
@@ -2521,6 +2538,7 @@ Return this exact JSON structure:
     });
     if (!dsRes.ok) throw new Error(`DeepSeek error: ${dsRes.status}`);
     const dsJson = await dsRes.json();
+    chargeAiUsage(dsJson.usage);
     let text = dsJson.choices[0].message.content.trim();
     if (text.startsWith('```')) text = text.replace(/```json\n?|```\n?/g, '').trim();
     const portfolioData = JSON.parse(text);
@@ -3057,6 +3075,8 @@ app.use('/api/admin', adminRouter);
 app.use('/_/backend/api/admin', adminRouter);
 app.use('/_/backend', adminPublicRoutes);
 app.use('/', adminPublicRoutes);
+app.use('/_/backend', billingRouter);
+app.use('/', billingRouter);
 app.use('/_/backend', apiRouter);
 app.use('/', apiRouter);
 app.use('/api/auto-apply', autoApplyRouter);

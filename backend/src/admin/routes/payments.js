@@ -2,6 +2,7 @@ import express from 'express';
 import { requireAdmin, requireDb } from '../auth.js';
 import { audit } from '../audit.js';
 import { Coupon } from '../models.js';
+import { cashfreeConfigured } from '../../billing/cashfree.js';
 import { model, clean, handle, httpError, isId, paging, escapeRegex, dateRange } from '../util.js';
 
 const router = express.Router();
@@ -91,7 +92,8 @@ router.get('/summary', requireAdmin('payments.view'), handle(async (req, res) =>
       byMethod: byMethod.map((m) => ({ method: m._id || 'unknown', amount: m.amount, count: m.count })),
       byPlan: byPlan.map((p) => ({ plan: p._id || 'Unlabelled', amount: p.amount, count: p.count })),
       totals: Object.fromEntries(totals.map((t) => [t._id || 'success', { amount: t.amount, count: t.count }])),
-      gatewaySimulated: true
+      // Real payments come through Cashfree once its keys are set (see billing/cashfree.js)
+      gatewaySimulated: !cashfreeConfigured()
     }
   });
 }));

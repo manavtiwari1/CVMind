@@ -5,6 +5,7 @@ import TemplatePreview from '../../components/TemplatePreview';
 import { COVER_LETTER_EXAMPLES, type CoverLetterExample } from '../../data/coverLetterExamples';
 import { LETTER_DESIGNS, renderLetter, saveLetterDraft, todayLong } from '../../lib/coverLetter';
 import './CoverLetterPages.css';
+import { canUseTemplate, isProTemplate, userIsPro } from '../../lib/billing';
 
 interface CoverLetterStartProps {
   setCurrentPage: (page: string) => void;
@@ -78,14 +79,17 @@ export default function CoverLetterStart({ setCurrentPage, onFocusChange, onExit
   const q = query.trim().toLowerCase();
   const list = q ? ranked.filter(e => `${e.role} ${e.category}`.toLowerCase().includes(q)) : ranked;
   const current = selected ?? ranked[0];
-  const currentDesign = design ?? (tone ? suggestedDesigns[0] : current?.design) ?? LETTER_DESIGNS[0].id;
+  // Free accounts start on a design they can use; Pro designs stay one click away
+  const firstAllowed = (ids: readonly string[]) => ids.find(id => !isProTemplate(id) || userIsPro()) ?? ids[0];
+  const exampleDesign = current?.design && (!isProTemplate(current.design) || userIsPro()) ? current.design : undefined;
+  const currentDesign = design ?? (tone ? firstAllowed(suggestedDesigns) : exampleDesign) ?? firstAllowed(LETTER_DESIGNS.map(d => d.id));
   const html = current ? renderLetter(currentDesign, { ...current.letter, date: todayLong() }) : '';
 
   const toggleStrength = (s: string) => setStrengths(cur =>
     cur.includes(s) ? cur.filter(x => x !== s) : cur.length < MAX_STRENGTHS ? [...cur, s] : cur);
 
   const select = () => {
-    if (!current) return;
+    if (!current || !canUseTemplate(currentDesign)) return;
     // A ready-made AI request for the editor, built from the answers; the user decides whether to send it
     const exp = EXPERIENCE.find(e => e.id === experience);
     const parts = [
@@ -221,8 +225,8 @@ export default function CoverLetterStart({ setCurrentPage, onFocusChange, onExit
                     const d = LETTER_DESIGNS.find(x => x.id === id);
                     if (!d) return null;
                     return (
-                      <button key={id} type="button" role="radio" aria-checked={currentDesign === id} className={currentDesign === id ? 'is-on' : ''} onClick={() => setDesign(id)}>
-                        <i style={{ background: d.color }} aria-hidden="true" /> {d.name}
+                      <button key={id} type="button" role="radio" aria-checked={currentDesign === id} className={currentDesign === id ? 'is-on' : ''} onClick={() => { if (canUseTemplate(id)) setDesign(id); }}>
+                        <i style={{ background: d.color }} aria-hidden="true" /> {d.name}{isProTemplate(id) && ' · Pro'}
                       </button>
                     );
                   })}

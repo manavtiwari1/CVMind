@@ -71,7 +71,7 @@ export default function Payments() {
 
       {s?.gatewaySimulated && (
         <Notice tone="amber">
-          <strong>Checkout is simulated.</strong> No payment gateway is connected yet, so these records come from the test checkout and "Refund" only marks a payment as refunded. Connect a real gateway before taking money.
+          <strong>Cashfree isn't connected.</strong> Set CASHFREE_APP_ID and CASHFREE_SECRET_KEY on the server to take payments. Until then these records come from the test checkout, and "Refund" only marks a payment as refunded.
         </Notice>
       )}
 

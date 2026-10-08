@@ -5,8 +5,10 @@ import { api } from '../api';
 import { useAction, useAdmin, useApi } from '../hooks';
 import { date } from '../format';
 import { Badge, Card, ConfirmDialog, DataTable, Empty, PageHeader, Spinner, Tabs } from '../ui';
+import ProductAccess from './ProductAccess';
 
 type ListKey = 'auto-apply' | 'job-finder';
+type TabKey = 'products' | ListKey;
 
 const LISTS: Record<ListKey, { title: string; description: string }> = {
   'auto-apply': { title: 'Auto Apply access', description: 'Auto Apply is in early access. Only these emails can use it; everyone else sees "coming soon".' },
@@ -16,8 +18,18 @@ const LISTS: Record<ListKey, { title: string; description: string }> = {
 interface Entry { email: string; addedAt: string | null; source: string }
 
 export default function AccessLists() {
+  const [tab, setTab] = useState<TabKey>('products');
+  return (
+    <>
+      <PageHeader title="Access lists" description="Give specific people access to CVMind products, and early access to features that aren't open to everyone yet." />
+      <Tabs tabs={[{ id: 'products' as TabKey, label: 'Products' }, { id: 'auto-apply' as TabKey, label: 'Auto Apply' }, { id: 'job-finder' as TabKey, label: 'Job finder' }]} active={tab} onChange={setTab} />
+      {tab === 'products' ? <ProductAccess /> : <EmailList key={tab} list={tab} />}
+    </>
+  );
+}
+
+function EmailList({ list }: { list: ListKey }) {
   const { can } = useAdmin();
-  const [list, setList] = useState<ListKey>('auto-apply');
   const { data, error, loading, reload } = useApi<{ data: Entry[] }>(`/users/access/${list}`);
   const { busy, run } = useAction();
   const [email, setEmail] = useState('');
@@ -33,8 +45,6 @@ export default function AccessLists() {
 
   return (
     <>
-      <PageHeader title="Access lists" description="Give specific people early access to features that aren't open to everyone yet." />
-      <Tabs tabs={[{ id: 'auto-apply' as ListKey, label: 'Auto Apply' }, { id: 'job-finder' as ListKey, label: 'Job finder' }]} active={list} onChange={setList} />
       <Card title={LISTS[list].title} description={LISTS[list].description} bodyClass={false}>
         {can('users.manage') && (
           <form className="ad-toolbar" onSubmit={add}>

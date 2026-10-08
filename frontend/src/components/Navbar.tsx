@@ -11,6 +11,7 @@ import { NAV_MENUS } from './navMenus';
 import cvmindIcon from '../assets/cvmind_icon.png';
 import type { LoadedWork } from '../types/api';
 import './Navbar.css';
+import { PRICING_LOCKED } from '../lib/pricing';
 
 interface NavbarProps {
   currentPage: string;
@@ -94,7 +95,7 @@ export default function Navbar({
                 <NavMegaMenu key={menu.label} menu={menu} currentPage={currentPage} onNavigate={go} />
               ))}
 
-              {/* Pricing: paid plans aren't live yet. CVMind Code is under AI Tools */}
+              {/* Pricing (CVMind Code is under AI Tools) */}
               <NavigationMenuItem>
                 <button
                   onClick={() => go('pricing')}
@@ -102,7 +103,7 @@ export default function Navbar({
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
                 >
                   Pricing
-                  <span className="nm-badge nm-badge--soon">COMING SOON</span>
+                  {PRICING_LOCKED && <span className="nm-badge nm-badge--soon">COMING SOON</span>}
                 </button>
               </NavigationMenuItem>
 

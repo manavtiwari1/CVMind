@@ -1,0 +1,112 @@
+/* Above the navbar (z-index 1000); padding is set here because the global reset zeroes utilities */
+.upm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.45);
+  animation: upm-fade 0.15s ease-out;
+}
+
+.upm-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  padding: 28px 24px 22px;
+  border-radius: 18px;
+  background: var(--bg-primary);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+  text-align: center;
+}
+
+.upm-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+
+.upm-close:hover { background: var(--bg-secondary); }
+
+.upm-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #fff7e6;
+  color: #d97706;
+  margin-bottom: 14px;
+}
+
+.upm-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+
+.upm-message,
+.upm-body {
+  font-size: 0.93rem;
+  line-height: 1.55;
+  color: var(--text-tertiary);
+  margin: 0 0 8px;
+}
+
+.upm-message { color: var(--text-secondary); }
+
+.upm-price {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 4px 0 0;
+}
+
+.upm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.upm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.upm-btn:hover { background: var(--bg-secondary); }
+
+.upm-btn--primary {
+  border-color: #111827;
+  background: #111827;
+  color: #fff;
+}
+
+.upm-btn--primary:hover { background: #1f2937; }
+
+@keyframes upm-fade { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) { .upm-backdrop { animation: none; } }

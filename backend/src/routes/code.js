@@ -1,3 +1,4 @@
+import { requireFreeUse, codeHintFeature } from '../billing/gate.js';
 import express from 'express';
 import { runJudgeSubmission, notJudged, nativeRunnersEnabled, NATIVE_LANGUAGES } from '../services/codeJudge.js';
 import { getSettings } from '../admin/settings.js';
@@ -238,7 +239,7 @@ router.post('/submit', optionalUser, async (req, res) => {
 });
 
 // AI Hint (Progressive 6-tier)
-router.post('/ai/hint', async (req, res) => {
+router.post('/ai/hint', requireFreeUse(codeHintFeature), async (req, res) => {
   try {
     const { problemTitle, problemDescription, userCode, language, requestedLevel } = req.body;
     const customApiKey = req.headers['x-gemini-key'] || null;

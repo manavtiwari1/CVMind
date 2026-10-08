@@ -1,3 +1,4 @@
+import { chargeAiUsage } from '../billing/aiContext.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -549,6 +550,8 @@ async function callDeepSeek({
   }
 
   const result = await response.json();
+  // Our key's tokens count against the account's AI budget; a visitor's own key doesn't
+  if (!customApiKey) chargeAiUsage(result.usage);
   if (!result.choices || result.choices.length === 0) {
     throw new Error('No choices returned by DeepSeek API.');
   }

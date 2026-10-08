@@ -59,3 +59,6 @@
   .rd-scan { flex-direction: column; }
 }
 @media (prefers-reduced-motion: reduce) { .rd-dialog, .rd-spin { animation: none; } .rd-bar span { transition: none; } }
+
+.rd-brand { margin: 14px 0 0; font-size: 0.8rem; color: #6b7280; text-align: center; }
+.rd-brand button { padding: 0; border: none; background: none; color: #b45309; font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; }

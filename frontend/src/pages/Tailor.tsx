@@ -19,6 +19,7 @@ import { parseSavedContent } from '../utils/savedWork';
 import { getErrorMessage } from '../utils/errors';
 import type { ExtractedResume, LoadedWork } from '../types/api';
 import './Tailor.css';
+import { userIsPro } from '../lib/billing';
 
 interface TailorProps {
   customApiKey: string;
@@ -505,7 +506,7 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
                   </button>
                 </div>
               )}
-              <p className="tlr-fine"><Lock size={12} /> The cvmind.in · Powered by CVMind footer stays on every page.{readUser() ? '' : ' Sign in to save it to My Documents.'}</p>
+              <p className="tlr-fine"><Lock size={12} /> {userIsPro() ? 'Your downloads come without the CVMind footer (Pro).' : 'Downloads carry a small cvmind.in · Powered by CVMind footer; Pro removes it.'}{readUser() ? '' : ' Sign in to save it to My Documents.'}</p>
             </div>
           </section>
 
@@ -602,7 +603,7 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
             getHtml={() => html}
             getText={() => htmlToText(html)}
             customApiKey={customApiKey}
-            onWord={name => downloadWord(html, name)}
+            onWord={(name, exported) => downloadWord(exported, name)}
             onScan={jd => { setShowDownload(false); setJobDescription(jd); if (resumeText) runTailor(jd, resumeText); }}
             onClose={() => setShowDownload(false)}
           />

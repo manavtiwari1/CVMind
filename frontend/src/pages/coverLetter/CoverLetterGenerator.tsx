@@ -19,6 +19,7 @@ import {
 import CoverLetterFaq from './CoverLetterFaq';
 import { GENERATOR_FAQS } from '../../data/coverLetterFaqs';
 import './CoverLetterPages.css';
+import { canUseTemplate, isProTemplate, userIsPro } from '../../lib/billing';
 
 interface CoverLetterGeneratorProps {
   customApiKey: string;
@@ -90,7 +91,8 @@ export default function CoverLetterGenerator({ customApiKey, resumeText: savedRe
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [letter, setLetter] = useState<LetterData | null>(null);
-  const [design, setDesign] = useState('cl-clean');
+  // Free accounts start on a free design (Clean Modern is Pro)
+  const [design, setDesign] = useState(() => (userIsPro() ? 'cl-clean' : 'cl-wave'));
   const [showDownload, setShowDownload] = useState(false);
   const [copied, setCopied] = useState(false);
   // Live "Design & Font" demo in the section below the tool
@@ -169,7 +171,7 @@ export default function CoverLetterGenerator({ customApiKey, resumeText: savedRe
   };
 
   const edit = () => {
-    if (!letter) return;
+    if (!letter || !canUseTemplate(design)) return;
     saveLetterDraft({ html, templateId: design, title: `Cover Letter${letter.company ? ` - ${letter.company}` : ''}` });
     setCurrentPage('cover-letter-editor');
   };
@@ -300,8 +302,8 @@ export default function CoverLetterGenerator({ customApiKey, resumeText: savedRe
                 <span className="clx-label">Design</span>
                 <div className="clx-designs" role="radiogroup" aria-label="Design">
                   {LETTER_DESIGNS.map(d => (
-                    <button key={d.id} type="button" role="radio" aria-checked={design === d.id} className={design === d.id ? 'is-on' : ''} onClick={() => setDesign(d.id)}>
-                      <i style={{ background: d.color }} aria-hidden="true" /> {d.name}
+                    <button key={d.id} type="button" role="radio" aria-checked={design === d.id} className={design === d.id ? 'is-on' : ''} onClick={() => { if (canUseTemplate(d.id)) setDesign(d.id); }}>
+                      <i style={{ background: d.color }} aria-hidden="true" /> {d.name}{isProTemplate(d.id) && ' · Pro'}
                     </button>
                   ))}
                 </div>
@@ -385,7 +387,7 @@ export default function CoverLetterGenerator({ customApiKey, resumeText: savedRe
           getHtml={() => html}
           getText={() => letterText(html)}
           customApiKey={customApiKey}
-          onWord={name => downloadLetterDoc(html, name)}
+          onWord={(name, exported) => downloadLetterDoc(exported, name)}
           onClose={() => setShowDownload(false)}
         />
       )}

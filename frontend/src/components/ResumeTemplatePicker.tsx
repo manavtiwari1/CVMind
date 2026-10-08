@@ -1,4 +1,5 @@
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Crown } from 'lucide-react';
+import { isProTemplate } from '../lib/billing';
 import type { Template } from '../data/resumeTemplates';
 import TemplatePreview from './TemplatePreview';
 import { Leo, Stepper, type ResumeGoal } from './ResumeOnboarding';
@@ -37,6 +38,7 @@ export default function ResumeTemplatePicker({ templates, goal, onSelect, onBack
             <span className="rtp-thumb">
               <TemplatePreview html={t.html} name={t.name} />
               <span className="rtp-ats" title="ATS-friendly">ATS</span>
+              {isProTemplate(t.id) && <span className="rtp-pro"><Crown size={11} /> Pro</span>}
             </span>
             <span className="rtp-name">{t.name}</span>
             <span className="rtp-tag">{t.tag}</span>

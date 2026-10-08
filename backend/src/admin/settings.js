@@ -21,6 +21,10 @@ export const FEATURES = {
   signups: { label: 'New sign-ups', description: 'New accounts by email or social login', paths: ['/api/auth/signup'] }
 };
 
+// Products a user can be given manual access to from the admin panel. When an admin locks one,
+// only accounts with an active grant can use it; unlocked products stay open to everyone.
+export const PRODUCT_KEYS = Object.keys(FEATURES).filter((key) => !['signups', 'company-portal', 'auto-apply'].includes(key));
+
 export const VERSION_CLIENTS = {
   android: { label: 'Android app' },
   extension: { label: 'Chrome extension' }
@@ -44,7 +48,8 @@ const DEFAULTS = {
     ...Object.fromEntries(Object.entries(SECURITY_LIMITS).map(([key, limit]) => [key, limit.default]))
   },
   maintenance: { enabled: false, message: 'CVMind is down for scheduled maintenance. We will be back shortly.' },
-  versions: Object.fromEntries(Object.keys(VERSION_CLIENTS).map((key) => [key, { minVersion: '', latestVersion: '', message: '', updateUrl: '' }]))
+  versions: Object.fromEntries(Object.keys(VERSION_CLIENTS).map((key) => [key, { minVersion: '', latestVersion: '', message: '', updateUrl: '' }])),
+  productAccess: { locked: [] }
 };
 
 export const SETTING_KEYS = Object.keys(DEFAULTS);
@@ -113,6 +118,9 @@ export async function saveSettingGroup(key, input, updatedBy) {
       enabled: typeof input?.enabled === 'boolean' ? input.enabled : current.enabled,
       message: input?.message !== undefined ? cleanText(input.message, 300) : current.message
     };
+  } else if (key === 'productAccess') {
+    const locked = Array.isArray(input?.locked) ? input.locked : current.locked;
+    value = { locked: [...new Set(locked.map(String))].filter((p) => PRODUCT_KEYS.includes(p)) };
   } else {
     value = { ...current };
     for (const client of Object.keys(VERSION_CLIENTS)) {

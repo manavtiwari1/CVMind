@@ -208,4 +208,19 @@ const oauthHandoffSchema = new Schema({
 oauthHandoffSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 export const OAuthHandoff = mongoose.models.OAuthHandoff || mongoose.model('OAuthHandoff', oauthHandoffSchema);
 
-export const ADMIN_MODELS = [AdminUser, AdminAuditLog, AppSetting, Ticket, Notification, Coupon, ContentBlock, ContentReport, UserSession, AuthEvent, CaptchaChallenge, OAuthHandoff];
+// Manual access to a locked product, given from the admin panel. One row per email and product;
+// a null expiresAt means lifetime access.
+const productGrantSchema = new Schema({
+  email: { type: String, required: true, lowercase: true, trim: true },
+  product: { type: String, required: true },
+  expiresAt: { type: Date, default: null },
+  note: { type: String, default: '' },
+  grantedBy: { type: String, default: '' },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+productGrantSchema.index({ email: 1, product: 1 }, { unique: true });
+productGrantSchema.index({ product: 1, createdAt: -1 });
+export const ProductGrant = mongoose.models.ProductGrant || mongoose.model('ProductGrant', productGrantSchema);
+
+export const ADMIN_MODELS = [AdminUser, AdminAuditLog, AppSetting, Ticket, Notification, Coupon, ContentBlock, ContentReport, UserSession, AuthEvent, CaptchaChallenge, OAuthHandoff, ProductGrant];
