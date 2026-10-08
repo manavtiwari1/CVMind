@@ -497,6 +497,19 @@ const prepSchema = {
 };
 
 
+// Added to every call that writes text a user will read or send, so resumes, letters and
+// feedback don't read as AI-generated. Based on Wikipedia's "Signs of AI writing" guide.
+// Kept short: it is sent with every request and counts against the account's token budget.
+const WRITING_STYLE = `WRITING STYLE (applies to all text you write):
+- Be specific and factual. State what the person did, with what, and the result. Never invent facts, numbers, employers or skills.
+- Plain words: use "is", "has", "led", "built" rather than "serves as", "boasts", "stands as".
+- Never use: delve, tapestry, testament, pivotal, crucial, vibrant, robust, seamless, showcase, underscore, highlight (as a verb), foster, leverage, spearhead, synergy, landscape (abstract), realm, intricate, meticulous, multifaceted, game-changer, cutting-edge, passionate about, "in today's fast-paced world".
+- No "not only X but also Y", "it's not X, it's Y" or "X rather than Y" contrasts.
+- Don't group things in threes by habit, and don't end sentences with "-ing" phrases that claim significance ("..., highlighting his commitment").
+- No puffery or claims of importance, legacy or impact unless the user's data states them.
+- Straight quotes and apostrophes, no em dashes, no emoji, no bold.
+- Vary sentence length. Prefer short, direct sentences.`;
+
 // ─── DEEPSEEK GENERIC API CALL HELPER ─────────────────────────────────────────
 async function callDeepSeek({
   systemInstruction,
@@ -506,7 +519,9 @@ async function callDeepSeek({
   temperature = 0.3,
   maxTokens = 3000,
   jsonMode = false,
-  rejectTruncated = false
+  rejectTruncated = false,
+  // false for calls that don't write prose for people (code help, data extraction)
+  plainStyle = true
 }) {
   const apiKey = customApiKey || process.env.DEEPSEEK_API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -515,7 +530,7 @@ async function callDeepSeek({
 
   const messages = [];
   if (systemInstruction) {
-    messages.push({ role: 'system', content: systemInstruction });
+    messages.push({ role: 'system', content: plainStyle ? `${systemInstruction}\n\n${WRITING_STYLE}` : systemInstruction });
   }
   messages.push({ role: 'user', content: prompt });
 
@@ -705,8 +720,8 @@ RULES (follow all of them strictly):
 3. Fix these identified weaknesses: ${weaknesses || 'none identified'}.
 4. Follow these recommendations: ${recommendations || 'none identified'}.
 5. Apply these bullet rewrites where the original bullets appear: ${bulletRewrites || 'none'}.
-6. Use strong action verbs (Led, Engineered, Delivered, Increased, Reduced, Optimized, Spearheaded, etc.).
-7. Quantify every achievement possible — add realistic percentages, numbers, timeframes where implied.
+6. Use strong action verbs (Led, Built, Delivered, Increased, Reduced, Cut, Launched, etc.).
+7. Keep every number, percentage and timeframe from the original. Do not add figures the original does not give.
 8. Structure the resume in this exact order using UPPERCASE section headers:
    PROFESSIONAL SUMMARY
    SKILLS
@@ -887,7 +902,7 @@ export async function generateResumeWithGemini({ templateHtml, formData, customA
   // Tailored data is already rewritten for a job; expanding it again would add claims the candidate never made.
   const contentRule = keepFacts
     ? '3. Use the provided content exactly as written: keep the same words, bullets, dates and numbers, and do not rephrase, shorten or expand anything. Do NOT add responsibilities, metrics, skills, achievements or time-breakdown activities that are not in the data. If a template section has no matching data, remove that section\'s placeholder content.'
-    : '3. Enhance the provided work experience descriptions. Rewrite them to be extremely professional, high-impact, and metrics-driven (use action verbs like Led, Spearheaded, Optimized, Engineered, etc.). If descriptions are sparse, expand them with professional responsibilities typical for that job title.';
+    : '3. Enhance the provided work experience descriptions. Rewrite them to be extremely professional, high-impact, and metrics-driven (use action verbs like Led, Built, Launched, Reduced, etc.). If descriptions are sparse, expand them with professional responsibilities typical for that job title.';
   const systemPrompt = `You are an elite professional resume writer, ATS optimization expert, and corporate recruiter.
 Your task is to take a raw HTML resume template and populate it with beautifully written, professional, and ATS-optimized content based on the user's details.
 
@@ -1008,6 +1023,7 @@ You MUST respond strictly with a valid JSON object adhering to this exact format
 
   try {
     const rawResult = await callDeepSeek({
+      plainStyle: false,
       systemInstruction,
       prompt,
       customApiKey,
@@ -1668,7 +1684,7 @@ Your task is to proofread and rewrite the provided text with the following impro
 1. GRAMMAR & PUNCTUATION: Fix all grammatical errors, tense inconsistencies, subject-verb agreement issues, and punctuation mistakes.
 2. SPELLING: Correct all spelling mistakes and typos.
 3. PASSIVE → ACTIVE VOICE: Identify passive-voice constructions and rewrite them in active voice for stronger, clearer communication.
-4. WEAK → POWER VERBS: Replace weak, vague verbs (e.g. "helped", "did", "was responsible for", "worked on") with strong action verbs (e.g. "orchestrated", "spearheaded", "engineered", "delivered", "drove").
+4. WEAK → POWER VERBS: Replace weak, vague verbs (e.g. "helped", "did", "was responsible for", "worked on") with strong action verbs (e.g. "led", "built", "launched", "delivered", "drove").
 5. TONE ALIGNMENT: Align the tone for ${industry} industry professionals — use appropriate formality and vocabulary.
 6. CLARITY: Simplify overly complex or wordy sentences. Remove redundant words.
 
@@ -1817,6 +1833,7 @@ Generate Level ${requestedLevel} guidance.`;
 
   try {
     return await callDeepSeek({
+      plainStyle: false,
       systemInstruction,
       prompt: userPrompt,
       responseSchema: codeHintSchema,
@@ -1857,6 +1874,7 @@ Perform an architectural and algorithmic code review.`;
 
   try {
     return await callDeepSeek({
+      plainStyle: false,
       systemInstruction,
       prompt: userPrompt,
       responseSchema: codeReviewSchema,
@@ -1900,6 +1918,7 @@ Analyze the flaw and provide debugging guidance.`;
 
   try {
     return await callDeepSeek({
+      plainStyle: false,
       systemInstruction,
       prompt: userPrompt,
       responseSchema: codeDebugSchema,
@@ -1935,6 +1954,7 @@ Generate a complete, fully playable coding challenge.`;
 
   try {
     return await callDeepSeek({
+      plainStyle: false,
       systemInstruction,
       prompt: userPrompt,
       responseSchema: aiProblemSchema,
