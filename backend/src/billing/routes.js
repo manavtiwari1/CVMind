@@ -1,5 +1,6 @@
 import express from 'express';
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import { requireUser } from '../services/authToken.js';
 import { dbReady } from '../admin/auth.js';
 import { evaluateCoupon, redeemCoupon } from '../admin/coupons.js';
@@ -10,6 +11,9 @@ import { PaymentOrder } from './models.js';
 import { sendInvoice } from './invoice.js';
 import { activeSubscription, activatePlan, tokenStatus, weeklyUses } from './service.js';
 import { cashfreeConfigured, cashfreeMode, createCashfreeOrder, getCashfreeOrder, getSuccessfulPayment, verifyCashfreeWebhook } from './cashfree.js';
+import { RefundRequest, REFUND_CATEGORIES, MIN_DETAILS, refundEligibility, formatRupees } from './refunds.js';
+import { sendEmail, emailConfigured, SUPPORT_EMAIL } from '../admin/mailer.js';
+import { refundRequestReceivedEmail, notificationEmail } from '../services/emailTemplates.js';
 
 // CVMind Pro: plans, the signed-in account's plan and allowance, and Cashfree checkout.
 const router = express.Router();
@@ -187,6 +191,92 @@ export function startOrderSweep(intervalMs = 5 * 60 * 1000) {
   setTimeout(tick, 30000);
   return setInterval(tick, intervalMs);
 }
+
+// ── Refund requests ──────────────────────────────────────────────────────────
+// Payments are non-refundable. A Monthly plan can be cancelled with a refund request for a genuine
+// reason; an admin reviews it in Admin → Refund requests and starts the refund by hand.
+const dayText = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
+
+const toUserRequest = (r) => ({
+  status: r.status === 'processing' ? 'pending' : r.status,
+  plan: PLANS[r.plan]?.label || r.plan,
+  amount: r.amount,
+  category: REFUND_CATEGORIES[r.category] || r.category,
+  createdAt: r.createdAt,
+  decidedAt: r.decidedAt,
+  note: r.status === 'rejected' ? r.adminNote : ''
+});
+
+const NOT_ELIGIBLE = {
+  'no-monthly': 'Cancelling with a refund request is only available for a Monthly plan bought on CVMind.',
+  refunded: 'This payment has already been refunded.',
+  ended: 'Your Monthly plan has already ended, so there is nothing to cancel.'
+};
+
+router.get('/api/billing/refund-request', requireUser, async (req, res) => {
+  try {
+    const email = String(req.auth.email).toLowerCase();
+    const [check, latest] = await Promise.all([refundEligibility(email), RefundRequest.findOne({ email }).sort({ createdAt: -1 }).lean()]);
+    const asked = check.order ? await RefundRequest.exists({ orderId: check.order.orderId }) : null;
+    res.set('Cache-Control', 'private, no-store');
+    res.json({
+      success: true,
+      canRequest: check.eligible && !asked,
+      plan: check.order ? { label: PLANS[check.order.plan]?.label || check.order.plan, amount: check.order.amount, paidAt: check.order.paidAt, expiresAt: check.sub?.expiresAt || null } : null,
+      request: latest ? toUserRequest(latest) : null,
+      categories: REFUND_CATEGORIES,
+      minDetails: MIN_DETAILS
+    });
+  } catch (err) {
+    console.error('[billing] refund request status failed:', err.message);
+    res.status(500).json({ success: false, error: 'Could not load this right now. Please try again.' });
+  }
+});
+
+router.post('/api/billing/refund-request', requireUser, async (req, res) => {
+  if (!(await dbReady(3000))) return res.status(503).json({ success: false, error: 'This is unavailable right now. Please try again shortly.' });
+  const category = String(req.body?.category || '');
+  const details = String(req.body?.details || '').trim().slice(0, 1000);
+  if (!REFUND_CATEGORIES[category]) return res.status(400).json({ success: false, error: 'Pick the reason for your request.' });
+  if (details.length < MIN_DETAILS) return res.status(400).json({ success: false, error: `Tell us what happened in at least ${MIN_DETAILS} characters.` });
+  if (req.body?.acknowledged !== true) return res.status(400).json({ success: false, error: 'Please confirm that you have read the refund policy.' });
+
+  const email = String(req.auth.email).toLowerCase();
+  try {
+    const check = await refundEligibility(email);
+    if (!check.eligible) return res.status(400).json({ success: false, error: NOT_ELIGIBLE[check.why] || 'This plan cannot be cancelled.' });
+    let request;
+    try {
+      request = (await RefundRequest.create({ email, userId: String(req.auth.sub), orderId: check.order.orderId, plan: check.order.plan, amount: check.order.amount, category, details })).toObject();
+    } catch (err) {
+      if (err.code === 11000) return res.status(409).json({ success: false, error: 'You have already asked for a refund on this payment.' });
+      throw err;
+    }
+
+    if (emailConfigured()) {
+      const user = await mongoose.models.User?.findOne({ email }, { name: 1 }).lean();
+      const plan = PLANS[check.order.plan]?.label || check.order.plan;
+      const amount = formatRupees(check.order.amount);
+      const log = (e) => console.error('[billing] refund request email failed:', e.message);
+      sendEmail({ to: email, ...refundRequestReceivedEmail({ name: user?.name || '', plan, amount, until: dayText(check.sub.expiresAt) }) }).catch(log);
+      sendEmail({
+        to: SUPPORT_EMAIL,
+        replyTo: email,
+        ...notificationEmail({
+          name: 'team',
+          title: `Refund request from ${email}`,
+          body: `${email} asked to cancel their ${plan} plan (${amount}, order ${check.order.orderId}) and get a refund.\n\nReason: ${REFUND_CATEGORIES[category]}\n\n${details}`,
+          ctaLabel: 'Review in the admin panel',
+          ctaUrl: `${frontendUrl()}/admin#refunds`
+        })
+      }).catch(log);
+    }
+    res.json({ success: true, request: toUserRequest(request) });
+  } catch (err) {
+    console.error('[billing] refund request failed:', err.message);
+    res.status(500).json({ success: false, error: 'Could not send your request. Please try again.' });
+  }
+});
 
 router.post('/api/billing/verify', requireUser, async (req, res) => {
   const orderId = String(req.body?.orderId || '').slice(0, 60);

@@ -114,6 +114,61 @@ export function invoiceEmail({ name, number, plan, amount, until }) {
   };
 }
 
+// ── Refunds ──────────────────────────────────────────────────────────────────
+// CVMind payments are non-refundable; a refund is only given after a person reviews a genuine reason.
+const REFUND_FOOTER = 'You received this email because of a refund request on your CVMind account.';
+
+export function refundRequestReceivedEmail({ name, plan, amount, until }) {
+  return {
+    subject: 'We received your refund request',
+    html: renderEmail({
+      preheader: 'Our team will review it by hand and reply within 3 working days.',
+      eyebrow: 'Refund request',
+      title: 'We received your refund request',
+      greetingName: name,
+      body: `Thanks for writing to us about your CVMind Pro ${plan} plan (${amount}).\n\nPayments on CVMind are non-refundable, so a refund is only given for a genuine reason. A member of our team reviews every request by hand and replies within 3 working days.`,
+      note: until ? `Your Pro plan stays active until ${until} while we review your request.` : '',
+      afterword: 'Want to add anything? Just reply to this email.',
+      footerReason: REFUND_FOOTER
+    })
+  };
+}
+
+export function refundInitiatedEmail({ name, amount, plan, orderId, proEnded = true, viaCashfree = true }) {
+  return {
+    subject: `Your refund of ${amount} has been started`,
+    html: renderEmail({
+      preheader: `We've started a refund of ${amount} for CVMind Pro.`,
+      eyebrow: 'Refund started',
+      title: `Your refund of ${amount} has been started`,
+      greetingName: name,
+      body: [
+        `We've started a refund of ${amount} for your CVMind Pro ${plan} plan (order ${orderId}).`,
+        viaCashfree ? 'It goes back to the account or card you paid with, usually within 5 to 7 working days depending on your bank.' : '',
+        proEnded ? 'The Pro plan from this payment has ended. Your account and documents stay as they are on the Free plan.' : ''
+      ].filter(Boolean).join('\n\n'),
+      note: viaCashfree ? "Not received it after 7 working days? Reply to this email with your order ID and we'll look into it." : '',
+      footerReason: REFUND_FOOTER
+    })
+  };
+}
+
+export function refundRejectedEmail({ name, plan, note, until }) {
+  return {
+    subject: "We couldn't approve your refund request",
+    html: renderEmail({
+      preheader: "We reviewed your refund request and couldn't approve it.",
+      eyebrow: 'Refund request',
+      title: "We couldn't approve your refund request",
+      greetingName: name,
+      body: `We reviewed your refund request for your CVMind Pro ${plan} plan. Payments on CVMind are non-refundable, and we couldn't approve this request.${note ? `\n\nOur note: ${note}` : ''}`,
+      note: until ? `Your Pro plan stays active until ${until}.` : '',
+      afterword: 'Think we got it wrong? Reply to this email and tell us more.',
+      footerReason: REFUND_FOOTER
+    })
+  };
+}
+
 export function resumePdfEmail({ name, fileName }) {
   return {
     subject: `Your resume: ${fileName}`,

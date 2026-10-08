@@ -2,9 +2,8 @@ import express from 'express';
 import { requireAdmin, requireDb } from '../auth.js';
 import { audit } from '../audit.js';
 import { Coupon } from '../models.js';
-import { cashfreeConfigured, createCashfreeRefund } from '../../billing/cashfree.js';
-import { PaymentOrder } from '../../billing/models.js';
-import { cancelSubscription } from '../../billing/service.js';
+import { cashfreeConfigured } from '../../billing/cashfree.js';
+import { refundPayment, RefundRequest } from '../../billing/refunds.js';
 import { model, clean, handle, httpError, isId, paging, escapeRegex, dateRange } from '../util.js';
 
 const router = express.Router();
@@ -104,32 +103,14 @@ router.post('/:id/refund', requireAdmin('payments.manage'), handle(async (req, r
   if (!isId(req.params.id)) throw httpError(404, 'Payment not found.');
   const reason = clean(req.body?.reason, 300);
   if (!reason) throw httpError(400, 'Add a reason for the refund.');
-  const PaymentLog = model('PaymentLog');
-  const found = await PaymentLog.findOne({ _id: req.params.id, status: 'success' }).lean();
-  if (!found) throw httpError(400, 'Only successful payments can be refunded.');
-
-  // A Cashfree payment gets its money back through Cashfree before it is marked refunded
-  const order = found.transactionId ? await PaymentOrder.findOne({ orderId: found.transactionId, status: 'paid' }).lean() : null;
-  let cfRefundId = '';
-  if (order && order.amount > 0 && cashfreeConfigured()) {
-    cfRefundId = `rf_${order.orderId}`;
-    try {
-      await createCashfreeRefund({ orderId: order.orderId, amount: order.amount, refundId: cfRefundId, note: reason });
-    } catch (err) {
-      // 409: this refund was already made (an earlier attempt that didn't finish here)
-      if (err.status !== 409) throw httpError(502, `Cashfree couldn't refund this payment: ${err.message}`);
-    }
-  }
-
-  const payment = await PaymentLog.findOneAndUpdate(
-    { _id: found._id, status: 'success' },
-    { status: 'refunded', refundedAt: new Date(), refundReason: reason },
-    { returnDocument: 'after' }
-  ).lean();
-  if (!payment) throw httpError(400, 'Only successful payments can be refunded.');
-  // The refunded order's Pro time ends
-  const ended = order ? await cancelSubscription({ orderId: order.orderId }) : null;
-  await audit(req, 'payment.refunded', { targetType: 'payment', targetId: payment._id, targetLabel: `${payment.transactionId} · ${payment.email}`, details: { amount: payment.amount, reason, cfRefundId, subscriptionEnded: !!ended } });
+  // Refunds through Cashfree, ends the order's Pro time and emails the buyer (see billing/refunds.js)
+  const { payment, cfRefundId, subscriptionEnded } = await refundPayment(req.params.id, reason);
+  // A refund request waiting on this payment is answered by this refund
+  await RefundRequest.updateOne(
+    { orderId: payment.transactionId, status: 'pending' },
+    { status: 'approved', adminNote: reason, decidedBy: req.admin.name, decidedAt: new Date(), cfRefundId }
+  ).catch(() => {});
+  await audit(req, 'payment.refunded', { targetType: 'payment', targetId: payment._id, targetLabel: `${payment.transactionId} · ${payment.email}`, details: { amount: payment.amount, reason, cfRefundId, subscriptionEnded } });
   res.json({ success: true, data: toPayment(payment) });
 }));
 

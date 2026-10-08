@@ -7,44 +7,48 @@ interface RefundPolicyProps {
 
 export default function RefundPolicy({ setCurrentPage }: RefundPolicyProps) {
   const mail = <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>;
+  const billing = <a href="/account?tab=billing">Account → Billing</a>;
 
   return (
-    <LegalLayout page="refund-policy" title="Refund Policy" updated="June 20, 2026" setCurrentPage={setCurrentPage}>
+    <LegalLayout page="refund-policy" title="Refund Policy" updated="October 9, 2026" setCurrentPage={setCurrentPage}>
       <h2>Overview</h2>
-      <p>We want you to be happy with your CV Mind subscription. This policy explains when and how you can ask for a refund on a Pro plan.</p>
+      <p>CVMind Pro plans are one-time payments. Each plan ends on its own date and nothing renews automatically, so you are never charged again without choosing to buy.</p>
 
-      <h2>7-day money-back guarantee</h2>
-      <p>If you are not satisfied with Pro, you can ask for a full refund within <strong>7 calendar days</strong> of your first purchase. The guarantee covers first-time Pro purchases only, not renewals.</p>
-
-      <h2>Who is eligible</h2>
-      <p>A refund may be granted if:</p>
+      <h2>Payments are non-refundable</h2>
+      <p>Once a payment goes through, it is <strong>not refunded</strong>. This includes:</p>
       <ul>
-        <li>You ask within 7 days of the original purchase.</li>
-        <li>You have not used Pro features heavily (more than 10 AI-generated outputs).</li>
-        <li>It is your first subscription, not a renewal or reactivation.</li>
-      </ul>
-      <p>Refunds are <strong>not</strong> available for:</p>
-      <ul>
-        <li>Subscription renewals (monthly, quarterly or yearly).</li>
+        <li>The 3-day pass, 7-day pass, 6-month and yearly plans.</li>
+        <li>Days of a plan you didn't use.</li>
+        <li>Changing your mind after using Pro, finding a job, or not needing Pro any more.</li>
         <li>Accounts suspended for breaking our Terms and Conditions.</li>
-        <li>Unused days within a billing cycle.</li>
-        <li>The Free plan, which has no charges.</li>
       </ul>
 
-      <h2>How to ask for a refund</h2>
-      <p>Email our support team:</p>
+      <h2>Monthly plan: cancelling for a genuine reason</h2>
+      <p>If you are on the <strong>Monthly plan</strong> and have a genuine reason, you can cancel it and ask for a refund while the plan is still active. Genuine reasons include:</p>
       <ul>
-        <li><strong>Email:</strong> {mail}</li>
-        <li><strong>Subject:</strong> Refund Request – [your registered email]</li>
-        <li><strong>Include:</strong> your name, registered email address, purchase date and the reason for the request.</li>
+        <li>You were charged more than once for the same plan.</li>
+        <li>A Pro feature doesn't work for you and our support team couldn't fix it.</li>
+        <li>You were charged by mistake and haven't used Pro.</li>
       </ul>
-      <p>We reply within <strong>3–5 business days</strong>. Approved refunds go back to your original payment method within 7–10 business days, depending on your bank or card issuer.</p>
+      <p>A refund is only given after our team reviews your request and agrees it is genuine. Asking for one does not guarantee it.</p>
 
-      <h2>Cancelling</h2>
-      <p>You can cancel your subscription at any time from your account settings. Cancelling stops future billing but does not refund the current period. You keep Pro until the end of the billing period you have paid for.</p>
+      <h2>How to ask</h2>
+      <ol>
+        <li>Go to {billing} while signed in.</li>
+        <li>Choose <strong>Cancel subscription</strong>, pick the reason and tell us what happened.</li>
+        <li>Send the request. You can send one request per payment.</li>
+      </ol>
+      <p>We email you to confirm we received it.</p>
 
-      <h2>Technical issues</h2>
-      <p>If a verifiable technical problem stops you using the Service and our support team cannot fix it in a reasonable time, you may be offered a pro-rated refund or account credit at our discretion.</p>
+      <h2>What happens next</h2>
+      <ul>
+        <li>A member of our team reviews every request by hand and replies by email within <strong>3 working days</strong>. Your Pro plan stays active while we review it.</li>
+        <li><strong>If it is approved</strong>, we start the refund to the account or card you paid with, and the Pro plan from that payment ends straight away. The money usually reaches you within 5 to 7 working days, depending on your bank.</li>
+        <li><strong>If it is not approved</strong>, we email you the reason and your plan continues until its end date.</li>
+      </ul>
+
+      <h2>Charged twice on another plan?</h2>
+      <p>If you were charged more than once for the same purchase on any plan, email {mail} with your registered email and both payment IDs and we'll return the extra charge.</p>
 
       <h2>Changes to this policy</h2>
       <p>We may update this Refund Policy at any time. Changes are posted on this page with a new "Last updated" date.</p>

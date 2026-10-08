@@ -44,6 +44,28 @@ const paymentOrderSchema = new Schema({
 paymentOrderSchema.index({ email: 1, createdAt: -1 });
 export const PaymentOrder = mongoose.models.PaymentOrder || mongoose.model('PaymentOrder', paymentOrderSchema);
 
+// A buyer's request to cancel a Monthly plan and get the money back. An admin reviews each one by hand.
+const refundRequestSchema = new Schema({
+  email: { type: String, required: true, lowercase: true, trim: true },
+  userId: { type: String, default: '' },
+  orderId: { type: String, required: true },
+  plan: { type: String, default: '' },
+  amount: { type: Number, default: 0 },
+  category: { type: String, required: true },
+  details: { type: String, required: true },
+  status: { type: String, default: 'pending' }, // 'pending' | 'processing' | 'approved' | 'rejected'
+  adminNote: { type: String, default: '' },
+  decidedBy: { type: String, default: '' },
+  decidedAt: { type: Date, default: null },
+  cfRefundId: { type: String, default: '' },
+  createdAt: { type: Date, default: Date.now }
+});
+// One request per payment
+refundRequestSchema.index({ orderId: 1 }, { unique: true });
+refundRequestSchema.index({ status: 1, createdAt: -1 });
+refundRequestSchema.index({ email: 1, createdAt: -1 });
+export const RefundRequest = mongoose.models.RefundRequest || mongoose.model('RefundRequest', refundRequestSchema);
+
 // AI tokens spent per request, for the rolling 3-day budget and the admin dashboard totals.
 // Kept long enough for the dashboard's 90-day view and the 90 days before it; older rows clean themselves up.
 const AI_USAGE_KEEP_SECONDS = 400 * 24 * 60 * 60;

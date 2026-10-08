@@ -127,7 +127,7 @@ const TOPICS: Topic[] = [
           },
       {
         q: 'Can I get a refund?',
-        a: 'First-time Pro purchases have a 7-day money-back guarantee. Contact us within 7 days of buying with your registered email and purchase date. Renewals are not refundable.',
+        a: "Payments are non-refundable. If you're on the Monthly plan and have a genuine reason, such as being charged twice or a Pro feature not working for you, you can cancel from Account → Billing and ask for a refund. Our team reviews every request by hand and replies within 3 working days.",
         link: { label: 'Read the refund policy', page: 'refund-policy' },
       },
     ],

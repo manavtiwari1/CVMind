@@ -143,12 +143,12 @@ const GROUPS: Group[] = [
           },
       {
         q: 'Can I get a refund?',
-        a: 'First-time Pro purchases have a 7-day money-back guarantee. Email us within 7 days of buying with your registered email and purchase date. Renewals are not refundable.',
+        a: "Payments are non-refundable. If you're on the Monthly plan and have a genuine reason, such as being charged twice or a Pro feature not working for you, you can cancel from Account → Billing and ask for a refund. Our team reviews every request by hand and replies within 3 working days.",
         link: { label: 'Read the Refund Policy', page: 'refund-policy' },
       },
       {
         q: 'How do I cancel Pro?',
-        a: "Pro doesn't renew automatically, so there is nothing to cancel: it simply ends on the date shown in your account. Buying another plan before then adds its days to the end of the current one.",
+        a: "Pro doesn't renew automatically, so it simply ends on the date shown in your account. Buying another plan before then adds its days to the end of the current one. On the Monthly plan you can also cancel from Account → Billing with a refund request if you have a genuine reason.",
         link: { label: 'Contact us', page: 'contact' },
       },
     ],

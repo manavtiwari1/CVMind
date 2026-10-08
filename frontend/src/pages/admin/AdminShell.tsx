@@ -17,6 +17,7 @@ const SECTIONS: Record<string, LazyExoticComponent<ComponentType>> = {
   access: lazy(() => import('./sections/AccessLists')),
   subscriptions: lazy(() => import('./sections/Subscriptions')),
   payments: lazy(() => import('./sections/Payments')),
+  refunds: lazy(() => import('./sections/RefundRequests')),
   coupons: lazy(() => import('./sections/Coupons')),
   orders: lazy(() => import('./sections/Orders')),
   partners: lazy(() => import('./sections/Partners')),
@@ -60,7 +61,7 @@ export default function AdminShell({ admin, onSignOut, setCurrentPage }: AdminSh
 
   const [route, setRoute] = useState(() => readHash());
   const [navOpen, setNavOpen] = useState(false);
-  const [badges, setBadges] = useState<{ tickets?: number; reports?: number }>({});
+  const [badges, setBadges] = useState<{ tickets?: number; reports?: number; refunds?: number }>({});
   const [badgeTick, setBadgeTick] = useState(0);
   const [search, setSearch] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
@@ -83,7 +84,7 @@ export default function AdminShell({ admin, onSignOut, setCurrentPage }: AdminSh
   // Sidebar badges, refreshed every minute and after actions that change them
   useEffect(() => {
     let cancelled = false;
-    const load = () => api<{ data: { tickets?: number; reports?: number } }>('/badges')
+    const load = () => api<{ data: { tickets?: number; reports?: number; refunds?: number } }>('/badges')
       .then((r) => { if (!cancelled) setBadges(r.data); })
       .catch(() => {});
     load();

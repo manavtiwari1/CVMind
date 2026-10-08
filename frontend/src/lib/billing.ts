@@ -158,3 +158,42 @@ export async function verifyOrder(orderId: string): Promise<{ status: string; ex
 }
 
 export const formatInr = (n: number) => `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+
+// ── Refund requests ──────────────────────────────────────────────────────────
+// Payments are non-refundable. A running Monthly plan can be cancelled with a refund request for a
+// genuine reason; the team reviews it by hand (backend/src/billing/refunds.js).
+export interface RefundRequestView {
+  status: 'pending' | 'approved' | 'rejected';
+  plan: string;
+  amount: number;
+  category: string;
+  createdAt: string;
+  decidedAt: string | null;
+  note: string;
+}
+
+export interface RefundStatus {
+  canRequest: boolean;
+  plan: { label: string; amount: number; paidAt: string; expiresAt: string | null } | null;
+  request: RefundRequestView | null;
+  categories: Record<string, string>;
+  minDetails: number;
+}
+
+export async function loadRefundStatus(): Promise<RefundStatus> {
+  const res = await authFetch(`${API_BASE}/api/billing/refund-request`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Could not load this right now.');
+  return data;
+}
+
+export async function requestRefund(body: { category: string; details: string; acknowledged: boolean }): Promise<RefundRequestView> {
+  const res = await authFetch(`${API_BASE}/api/billing/refund-request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Could not send your request. Please try again.');
+  return data.request;
+}

@@ -14,6 +14,7 @@ import './Account.css';
 import { siteOrigin } from '../lib/hosts';
 import { PRICING_LOCKED } from '../lib/pricing';
 import PlanUsage from '../components/PlanUsage';
+import CancelSubscription from '../components/CancelSubscription';
 
 type Tab = 'profile' | 'billing' | 'documents' | 'devices';
 type ListedWork = SavedWork & { _id: string; createdAt: string };
@@ -452,11 +453,14 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
                 )}
               </div>
               <PlanUsage />
-              <p className="acct-billing-note">
-                New Pro subscriptions come with a 7-day money-back guarantee. Read the{' '}
-                <button className="acct-link inline" onClick={() => setCurrentPage('refund-policy')}>refund policy</button>{' '}
-                for details.
-              </p>
+              <CancelSubscription isPro={isPro} setCurrentPage={setCurrentPage} />
+              {!isPro && (
+                <p className="acct-billing-note">
+                  Pro is a one-time payment that ends on its own, and payments are non-refundable. Read the{' '}
+                  <button className="acct-link inline" onClick={() => setCurrentPage('refund-policy')}>refund policy</button>{' '}
+                  for details.
+                </p>
+              )}
             </>
           )}
 

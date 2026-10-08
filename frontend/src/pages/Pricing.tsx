@@ -116,7 +116,7 @@ const FAQS = [
   { q: 'How do I pay?', a: 'Through Cashfree, with UPI, debit or credit cards, or netbanking. CVMind never sees your card or bank details.' },
   { q: 'What are AI tokens?', a: 'Every AI reply (a resume fix, a cover letter, a hint) uses tokens. Free accounts get 75,000 in any 3-day window and Pro gets 2,00,000. Tokens you used more than 3 days ago count again.' },
   { q: 'When do the weekly free tries come back?', a: 'Each try comes back 7 days after you used it. Your Account page shows how many are left.' },
-  { q: 'Can I get a refund?', a: 'Read the refund policy for when a refund applies, or contact support with your registered email.' },
+  { q: 'Can I get a refund?', a: "Payments are non-refundable. On the Monthly plan, if you have a genuine reason such as being charged twice or a Pro feature not working for you, you can cancel from Account → Billing and ask for a refund. Our team reviews every request by hand." },
 ];
 
 const perDay = (p: Plan) => p.price / p.days;
@@ -484,6 +484,10 @@ function Checkout({ plans, selected, onSelect, paymentsOn, onClose, onPaid, setC
             {PRO_LIST.map((f) => <li key={f}><Check size={15} /> {f}</li>)}
           </ul>
           <p className="pr-co-secure"><ShieldCheck size={14} /> Payments handled by Cashfree</p>
+          <p className="pr-co-secure">
+            Payments are non-refundable.{' '}
+            <button type="button" className="pr-inline-link" onClick={() => { onClose(); setCurrentPage('refund-policy'); }}>Refund policy</button>
+          </p>
         </aside>
 
         <form className="pr-co-main" onSubmit={pay}>

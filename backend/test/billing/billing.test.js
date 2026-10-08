@@ -241,15 +241,26 @@ test('a Cashfree payment turns Pro on exactly once', async () => {
   cashfree.status = 'ACTIVE';
 });
 
-async function paidOrder(email) {
+async function paidOrder(email, plan = 'monthly') {
   const token = await userToken(email);
-  const checkout = await call('/api/billing/checkout', { method: 'POST', token, body: { plan: 'monthly', phone: '9876543210' } });
+  const checkout = await call('/api/billing/checkout', { method: 'POST', token, body: { plan, phone: '9876543210' } });
   cashfree.status = 'PAID';
   await settleOrder(checkout.body.orderId);
   cashfree.status = 'ACTIVE';
   const log = await mongoose.model('PaymentLog').findOne({ transactionId: checkout.body.orderId }).lean();
-  return { orderId: checkout.body.orderId, logId: String(log._id) };
+  return { orderId: checkout.body.orderId, logId: String(log._id), token };
 }
+
+const waitForMail = async (to, subjectPart) => {
+  for (let i = 0; i < 60; i++) {
+    const found = sentEmails.find((m) => m.to.includes(to) && m.subject.includes(subjectPart));
+    if (found) return found;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  return null;
+};
+
+const GOOD_REASON = { category: 'not-working', details: 'The PDF download fails every time I export my resume on Chrome.', acknowledged: true };
 
 test('an admin refund pays the money back through Cashfree and ends that Pro time', async () => {
   const { orderId, logId } = await paidOrder('refund@example.com');
@@ -328,6 +339,93 @@ test('the sweep turns on Pro for a paid order nobody came back for', async () =>
   assert.ok(result.settled >= 1);
   assert.equal(await isUserPaid({ email: 'lost-return@example.com' }), true);
   assert.equal((await models.PaymentOrder.findOne({ orderId }).lean()).status, 'paid');
+});
+
+test('only a running Monthly plan can ask for a refund, with a real reason, once', async () => {
+  // A 7-day pass can't
+  const pass = await paidOrder('pass-buyer@example.com', 'pass-7d');
+  const passStatus = await call('/api/billing/refund-request', { token: pass.token });
+  assert.equal(passStatus.body.canRequest, false);
+  assert.equal((await call('/api/billing/refund-request', { method: 'POST', token: pass.token, body: GOOD_REASON })).status, 400);
+
+  const { token } = await paidOrder('monthly-buyer@example.com');
+  const before = await call('/api/billing/refund-request', { token });
+  assert.equal(before.body.canRequest, true);
+  assert.equal(before.body.request, null);
+  assert.equal(before.body.plan.label, 'Monthly');
+
+  const ask = (body) => call('/api/billing/refund-request', { method: 'POST', token, body });
+  assert.equal((await ask({ ...GOOD_REASON, category: 'bored' })).status, 400);
+  assert.equal((await ask({ ...GOOD_REASON, details: 'too short' })).status, 400);
+  assert.equal((await ask({ ...GOOD_REASON, acknowledged: false })).status, 400);
+  const sent = await ask(GOOD_REASON);
+  assert.equal(sent.status, 200);
+  assert.equal(sent.body.request.status, 'pending');
+  assert.equal((await ask(GOOD_REASON)).status, 409);
+
+  const after = await call('/api/billing/refund-request', { token });
+  assert.equal(after.body.canRequest, false);
+  assert.equal(after.body.request.status, 'pending');
+  // Asking doesn't refund anything or end Pro
+  assert.equal(await isUserPaid({ email: 'monthly-buyer@example.com' }), true);
+  assert.equal(cashfree.refunds.filter((r) => r.refund_note?.includes('Refund request')).length, 0);
+});
+
+test('an admin rejects or approves a refund request; approving refunds and ends Pro', async () => {
+  process.env.RESEND_API_KEY = 're_test';
+  try {
+    const reject = await paidOrder('reject-me@example.com');
+    await call('/api/billing/refund-request', { method: 'POST', token: reject.token, body: GOOD_REASON });
+    assert.ok(await waitForMail('reject-me@example.com', 'We received your refund request'));
+
+    const list = await call('/api/admin/refund-requests?status=pending', { token: ownerToken });
+    assert.equal(list.status, 200);
+    const pendingReject = list.body.data.find((r) => r.email === 'reject-me@example.com');
+    assert.equal(pendingReject.categoryLabel, "A Pro feature doesn't work for me");
+    assert.equal(pendingReject.proActive, true);
+    const badges = await call('/api/admin/badges', { token: ownerToken });
+    assert.ok(badges.body.data.refunds >= 1);
+
+    assert.equal((await call(`/api/admin/refund-requests/${pendingReject.id}/reject`, { method: 'POST', token: ownerToken, body: {} })).status, 400);
+    const rejected = await call(`/api/admin/refund-requests/${pendingReject.id}/reject`, { method: 'POST', token: ownerToken, body: { note: 'The download works; we checked your account.' } });
+    assert.equal(rejected.status, 200);
+    assert.ok(await waitForMail('reject-me@example.com', "couldn't approve"));
+    assert.equal(await isUserPaid({ email: 'reject-me@example.com' }), true);
+    assert.equal((await call(`/api/admin/refund-requests/${pendingReject.id}/approve`, { method: 'POST', token: ownerToken, body: {} })).status, 409);
+    assert.equal((await call('/api/billing/refund-request', { token: reject.token })).body.request.note, 'The download works; we checked your account.');
+
+    const approve = await paidOrder('approve-me@example.com');
+    await call('/api/billing/refund-request', { method: 'POST', token: approve.token, body: GOOD_REASON });
+    const id = (await call('/api/admin/refund-requests?status=pending', { token: ownerToken })).body.data.find((r) => r.email === 'approve-me@example.com').id;
+
+    // Cashfree refuses: nothing changes and the request waits again
+    cashfree.refundStatus = 400;
+    assert.equal((await call(`/api/admin/refund-requests/${id}/approve`, { method: 'POST', token: ownerToken, body: {} })).status, 502);
+    cashfree.refundStatus = 200;
+    assert.equal((await models.RefundRequest.findById(id).lean()).status, 'pending');
+    assert.equal(await isUserPaid({ email: 'approve-me@example.com' }), true);
+
+    const ok = await call(`/api/admin/refund-requests/${id}/approve`, { method: 'POST', token: ownerToken, body: { note: 'Confirmed the export bug.' } });
+    assert.equal(ok.status, 200);
+    assert.equal(ok.body.data.status, 'approved');
+    assert.equal(cashfree.refunds.at(-1).refund_id, `rf_${approve.orderId}`);
+    assert.equal((await mongoose.model('PaymentLog').findById(approve.logId).lean()).status, 'refunded');
+    assert.equal(await isUserPaid({ email: 'approve-me@example.com' }), false);
+    assert.ok(await waitForMail('approve-me@example.com', 'Your refund of ₹189 has been started'));
+    assert.equal((await call('/api/billing/refund-request', { token: approve.token })).body.request.status, 'approved');
+  } finally {
+    process.env.RESEND_API_KEY = '';
+  }
+});
+
+test('refunding from Payments answers a waiting refund request', async () => {
+  const { token, logId, orderId } = await paidOrder('payments-page@example.com');
+  await call('/api/billing/refund-request', { method: 'POST', token, body: GOOD_REASON });
+  const res = await call(`/api/admin/payments/${logId}/refund`, { method: 'POST', token: ownerToken, body: { reason: 'Refunded from Payments' } });
+  assert.equal(res.status, 200);
+  const request = await models.RefundRequest.findOne({ orderId }).lean();
+  assert.equal(request.status, 'approved');
+  assert.equal(request.adminNote, 'Refunded from Payments');
 });
 
 test('the webhook only accepts Cashfree-signed requests', async () => {
