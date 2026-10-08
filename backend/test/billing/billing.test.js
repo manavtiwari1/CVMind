@@ -371,6 +371,15 @@ test('only a running Monthly plan can ask for a refund, with a real reason, once
   assert.equal(cashfree.refunds.filter((r) => r.refund_note?.includes('Refund request')).length, 0);
 });
 
+test('Pro given by an admin has nothing to cancel or refund', async () => {
+  const token = await userToken('granted@example.com');
+  await call('/api/admin/subscriptions', { method: 'POST', token: ownerToken, body: { email: 'granted@example.com', plan: 'monthly' } });
+  const status = await call('/api/billing/refund-request', { token });
+  assert.equal(status.body.canRequest, false);
+  assert.equal(status.body.activeSource, 'admin');
+  assert.equal((await call('/api/billing/refund-request', { method: 'POST', token, body: GOOD_REASON })).status, 400);
+});
+
 test('an admin rejects or approves a refund request; approving refunds and ends Pro', async () => {
   process.env.RESEND_API_KEY = 're_test';
   try {

@@ -178,6 +178,7 @@ export interface RefundStatus {
   request: RefundRequestView | null;
   categories: Record<string, string>;
   minDetails: number;
+  activeSource?: 'cashfree' | 'admin' | 'coupon' | null;
 }
 
 export async function loadRefundStatus(): Promise<RefundStatus> {

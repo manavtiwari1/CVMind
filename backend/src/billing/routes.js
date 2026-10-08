@@ -216,7 +216,11 @@ const NOT_ELIGIBLE = {
 router.get('/api/billing/refund-request', requireUser, async (req, res) => {
   try {
     const email = String(req.auth.email).toLowerCase();
-    const [check, latest] = await Promise.all([refundEligibility(email), RefundRequest.findOne({ email }).sort({ createdAt: -1 }).lean()]);
+    const [check, latest, active] = await Promise.all([
+      refundEligibility(email),
+      RefundRequest.findOne({ email }).sort({ createdAt: -1 }).lean(),
+      activeSubscription(email)
+    ]);
     const asked = check.order ? await RefundRequest.exists({ orderId: check.order.orderId }) : null;
     res.set('Cache-Control', 'private, no-store');
     res.json({
@@ -225,7 +229,9 @@ router.get('/api/billing/refund-request', requireUser, async (req, res) => {
       plan: check.order ? { label: PLANS[check.order.plan]?.label || check.order.plan, amount: check.order.amount, paidAt: check.order.paidAt, expiresAt: check.sub?.expiresAt || null } : null,
       request: latest ? toUserRequest(latest) : null,
       categories: REFUND_CATEGORIES,
-      minDetails: MIN_DETAILS
+      minDetails: MIN_DETAILS,
+      // How the running Pro plan was got: 'cashfree', 'admin' (given by the team) or 'coupon'
+      activeSource: active?.source || null
     });
   } catch (err) {
     console.error('[billing] refund request status failed:', err.message);

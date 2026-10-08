@@ -40,7 +40,10 @@ export default function CancelSubscription({ isPro, setCurrentPage }: { isPro: b
 
       {!status.canRequest && !status.request && isPro && (
         <p className="acct-billing-note">
-          Payments are non-refundable. Cancelling with a refund request is only available on the Monthly plan, for a genuine reason. Read the {policy}.
+          {status.activeSource === 'admin' || status.activeSource === 'coupon'
+            ? `Your Pro plan was ${status.activeSource === 'admin' ? 'added by the CVMind team' : 'covered in full by a coupon'}, so there was no payment and nothing to cancel or refund. It ends on its own on the date above.`
+            : 'Payments are non-refundable. Cancelling with a refund request is only available on a Monthly plan paid on CVMind, for a genuine reason.'}{' '}
+          Read the {policy}.
         </p>
       )}
 
