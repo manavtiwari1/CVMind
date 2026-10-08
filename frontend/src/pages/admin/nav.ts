@@ -1,6 +1,6 @@
 import {
   Activity, Bell, Building2, ClipboardList, CreditCard, Crown, FileDown, KeyRound, LayoutDashboard, LifeBuoy,
-  PanelsTopLeft, ScrollText, ShieldAlert, SlidersHorizontal, Sparkles, TicketPercent, UserCog, Users
+  PanelsTopLeft, ScrollText, ShieldAlert, SlidersHorizontal, Sparkles, TicketPercent, UserCheck, UserCog, Users
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -29,6 +29,7 @@ export const NAV: NavGroup[] = [
     label: 'Users',
     items: [
       { id: 'users', label: 'Users', icon: Users, permission: 'users.view' },
+      { id: 'user-activity', label: 'User activity', icon: UserCheck, permission: 'users.view' },
       { id: 'access', label: 'Access lists', icon: KeyRound, permission: 'users.view' }
     ]
   },

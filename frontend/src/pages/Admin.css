@@ -735,6 +735,31 @@
   gap: 10px;
 }
 
+/* Actions for the rows ticked in a table */
+.ad-bulkbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--ad-border);
+  border-bottom: 1px solid var(--ad-border);
+  background: var(--ad-green-soft);
+  font-size: 0.86rem;
+  color: var(--ad-text);
+}
+
+.ad-bulkbar-gap { flex: 1; }
+
+.ad-table .ad-col-check { width: 40px; }
+
+.ad-table .ad-col-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--ad-green);
+  cursor: pointer;
+}
+
 .ad-toolbar .ad-search {
   flex: 1 1 260px;
   max-width: 360px;
