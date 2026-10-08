@@ -1,6 +1,6 @@
 import { dbReady } from '../admin/auth.js';
-import { tryConsume } from '../agent/rateLimit.js';
-import RateBucket from '../agent/models/RateBucket.js';
+import { tryConsume } from '@cvmind/auto-apply-agent/rateLimit.js';
+import RateBucket from '@cvmind/auto-apply-agent/models/RateBucket.js';
 
 // Abuse limits (sign-ups, verification emails, support messages). Counted in MongoDB so every
 // serverless instance shares them; without a database each process counts on its own.

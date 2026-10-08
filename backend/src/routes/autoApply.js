@@ -4,8 +4,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { getCentralJobs, saveCentralApplication, getCandidateApplications, updateCandidateApplication } from '../db.js';
 import { requireUser, requireSelf } from '../services/authToken.js';
-import { requireAgentAccess } from '../agent/auth.js';
-import { generateJson } from '../agent/ai/geminiClient.js';
+import { requireAgentAccess } from '../middleware/agentAuth.js';
+import { generateJson } from '@cvmind/auto-apply-agent/ai/geminiClient.js';
 import { scrapeJobFromUrl, parseJobContent } from '../services/jobScraper.js';
 import { fetchLiveAtsJobs } from '../services/atsCrawler.js';
 

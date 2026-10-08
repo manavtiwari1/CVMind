@@ -1,0 +1,13 @@
+{
+  "name": "cvmind",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "auto-apply-agent"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w backend",
+    "worker": "npm run worker -w @cvmind/auto-apply-agent",
+    "test": "npm test -w @cvmind/auto-apply-agent && npm test -w backend"
+  }
+}

@@ -6,7 +6,7 @@ import { metricsSnapshot } from '../metrics.js';
 import { FEATURES, VERSION_CLIENTS, SECURITY_LIMITS, getSettings, saveSettingGroup, SETTING_KEYS } from '../settings.js';
 import { handle, httpError } from '../util.js';
 import { emailConfigured } from '../mailer.js';
-import { workerStatus } from '../../agent/queue/heartbeat.js';
+import { workerStatus } from '@cvmind/auto-apply-agent/queue/heartbeat.js';
 
 const router = express.Router();
 const DB_STATES = ['disconnected', 'connected', 'connecting', 'disconnecting'];

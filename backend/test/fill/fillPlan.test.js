@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mapFieldByRules, describeField } from '../../src/agent/fill/ruleMapper.js';
-import { resolveValue, standardAnswerFor } from '../../src/agent/fill/resolveValue.js';
-import { buildFillPlan } from '../../src/agent/fill/buildFillPlan.js';
-import { buildProfileData } from '../../src/agent/resume/derive.js';
-import { DEFAULT_PREFERENCES } from '../../src/agent/preferences/schema.js';
+import { mapFieldByRules, describeField } from '@cvmind/auto-apply-agent/fill/ruleMapper.js';
+import { resolveValue, standardAnswerFor } from '@cvmind/auto-apply-agent/fill/resolveValue.js';
+import { buildFillPlan } from '@cvmind/auto-apply-agent/fill/buildFillPlan.js';
+import { buildProfileData } from '@cvmind/auto-apply-agent/resume/derive.js';
+import { DEFAULT_PREFERENCES } from '@cvmind/auto-apply-agent/preferences/schema.js';
 import { RESUME } from '../helpers/agentFixtures.js';
 
 const { structured, derived } = buildProfileData(RESUME);

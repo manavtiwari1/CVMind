@@ -1,12 +1,12 @@
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
-import Preferences from '../../src/agent/models/Preferences.js';
-import ResumeProfile from '../../src/agent/models/ResumeProfile.js';
-import ApplicationEvent from '../../src/agent/models/ApplicationEvent.js';
+import Preferences from '@cvmind/auto-apply-agent/models/Preferences.js';
+import ResumeProfile from '@cvmind/auto-apply-agent/models/ResumeProfile.js';
+import ApplicationEvent from '@cvmind/auto-apply-agent/models/ApplicationEvent.js';
 import { createAgentRouter } from '../../src/routes/agent.js';
 import { signToken } from '../../src/services/authToken.js';
-import { getPreferences } from '../../src/agent/preferences/service.js';
+import { getPreferences } from '@cvmind/auto-apply-agent/preferences/service.js';
 import { startTestMongo } from '../helpers/mongo.js';
 
 let mongo;

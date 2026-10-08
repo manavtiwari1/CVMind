@@ -2,22 +2,22 @@ import express from 'express';
 import multer from 'multer';
 import mongoose from 'mongoose';
 import { requireUser } from '../services/authToken.js';
-import { requireMongo, requireAgentAccess } from '../agent/auth.js';
-import { getModel, getEmbedModel, getEmbedDims } from '../agent/ai/geminiClient.js';
-import { ResumeStructured } from '../agent/ai/schemas.js';
-import ResumeProfile from '../agent/models/ResumeProfile.js';
-import { PreferencesInput, DEFAULT_PREFERENCES } from '../agent/preferences/schema.js';
-import { getPreferences, savePreferences, clearPreferredResume } from '../agent/preferences/service.js';
-import AgentApplication, { APPLICATION_STATUSES } from '../agent/models/AgentApplication.js';
-import JobPosting from '../agent/models/JobPosting.js';
-import QueueJob from '../agent/models/QueueJob.js';
-import { JOB_PARSE_VERSION } from '../agent/jobs/jobData.js';
-import { enqueueMatch, enqueueJobParse, enqueueTailor, enqueueRenderPdf, enqueueServerFill, enqueueServerSubmit, transition } from '../agent/pipeline.js';
-import { pickAdapter, formUrlFor } from '../agent/adapters/index.js';
-import { planHashOf } from '../agent/fill/buildFillPlan.js';
-import { TailoredEdit, applyTailoredEdits } from '../agent/tailoring/edits.js';
-import { tailoredResumeHash } from '../agent/resume/pdfArtifacts.js';
-import { tryConsume } from '../agent/rateLimit.js';
+import { requireMongo, requireAgentAccess } from '../middleware/agentAuth.js';
+import { getModel, getEmbedModel, getEmbedDims } from '@cvmind/auto-apply-agent/ai/geminiClient.js';
+import { ResumeStructured } from '@cvmind/auto-apply-agent/ai/schemas.js';
+import ResumeProfile from '@cvmind/auto-apply-agent/models/ResumeProfile.js';
+import { PreferencesInput, DEFAULT_PREFERENCES } from '@cvmind/auto-apply-agent/preferences/schema.js';
+import { getPreferences, savePreferences, clearPreferredResume } from '@cvmind/auto-apply-agent/preferences/service.js';
+import AgentApplication, { APPLICATION_STATUSES } from '@cvmind/auto-apply-agent/models/AgentApplication.js';
+import JobPosting from '@cvmind/auto-apply-agent/models/JobPosting.js';
+import QueueJob from '@cvmind/auto-apply-agent/models/QueueJob.js';
+import { JOB_PARSE_VERSION } from '@cvmind/auto-apply-agent/jobs/jobData.js';
+import { enqueueMatch, enqueueJobParse, enqueueTailor, enqueueRenderPdf, enqueueServerFill, enqueueServerSubmit, transition } from '@cvmind/auto-apply-agent/pipeline.js';
+import { pickAdapter, formUrlFor } from '@cvmind/auto-apply-agent/adapters/index.js';
+import { planHashOf } from '@cvmind/auto-apply-agent/fill/buildFillPlan.js';
+import { TailoredEdit, applyTailoredEdits } from '@cvmind/auto-apply-agent/tailoring/edits.js';
+import { tailoredResumeHash } from '@cvmind/auto-apply-agent/resume/pdfArtifacts.js';
+import { tryConsume } from '@cvmind/auto-apply-agent/rateLimit.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -98,14 +98,14 @@ function findOwnedApplication(id, userId) {
 
 const loadPosting = (id) => JobPosting.findById(id).select('-embeddings').lean();
 
-import { enqueue } from '../agent/queue/queue.js';
-import { logEvent, listEvents } from '../agent/events.js';
-import { buildProfileData } from '../agent/resume/derive.js';
-import { createApplicationForUser, pickResume } from '../agent/applications/create.js';
+import { enqueue } from '@cvmind/auto-apply-agent/queue/queue.js';
+import { logEvent, listEvents } from '@cvmind/auto-apply-agent/events.js';
+import { buildProfileData } from '@cvmind/auto-apply-agent/resume/derive.js';
+import { createApplicationForUser, pickResume } from '@cvmind/auto-apply-agent/applications/create.js';
 import { createExtensionRouter } from './agentExtension.js';
-import { deleteFile, openDownloadStream, BUCKETS } from '../agent/storage/gridfs.js';
-import { importUploadedResume, importCvmindWork, enqueueParse, RESUME_MIME_TYPES } from '../agent/resume/intake.js';
-import { workerStatus } from '../agent/queue/heartbeat.js';
+import { deleteFile, openDownloadStream, BUCKETS } from '@cvmind/auto-apply-agent/storage/gridfs.js';
+import { importUploadedResume, importCvmindWork, enqueueParse, RESUME_MIME_TYPES } from '@cvmind/auto-apply-agent/resume/intake.js';
+import { workerStatus } from '@cvmind/auto-apply-agent/queue/heartbeat.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),

@@ -8,7 +8,7 @@ import {
   updateApplicationStatus 
 } from '../db.js';
 import { requireCompany } from '../services/authToken.js';
-import { generateJson } from '../agent/ai/geminiClient.js';
+import { generateJson } from '@cvmind/auto-apply-agent/ai/geminiClient.js';
 
 const router = express.Router();
 

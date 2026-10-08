@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeSkill, normalizeSkillList } from '../../src/agent/scoring/normalizeSkill.js';
-import { monthIndex, totalYearsExperience, inferSeniority, latestRole } from '../../src/agent/scoring/experience.js';
-import { buildProfileData, collectBullets, textHash } from '../../src/agent/resume/derive.js';
+import { normalizeSkill, normalizeSkillList } from '@cvmind/auto-apply-agent/scoring/normalizeSkill.js';
+import { monthIndex, totalYearsExperience, inferSeniority, latestRole } from '@cvmind/auto-apply-agent/scoring/experience.js';
+import { buildProfileData, collectBullets, textHash } from '@cvmind/auto-apply-agent/resume/derive.js';
 import { htmlToStructuredText } from '../../src/services/parser.js';
 
 const NOW = new Date(Date.UTC(2026, 8, 14));

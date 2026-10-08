@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildProfileData } from '../../src/agent/resume/derive.js';
-import { guardTailoredResume, guardCoverLetter, missingJobSkills, numbersIn } from '../../src/agent/tailoring/guard.js';
-import { applyTailoredEdits } from '../../src/agent/tailoring/edits.js';
-import { renderResumeHtml, formatDateRange } from '../../src/agent/resume/atsTemplate.js';
-import { pdfFilename, pageFormatFor } from '../../src/agent/resume/pdfArtifacts.js';
+import { buildProfileData } from '@cvmind/auto-apply-agent/resume/derive.js';
+import { guardTailoredResume, guardCoverLetter, missingJobSkills, numbersIn } from '@cvmind/auto-apply-agent/tailoring/guard.js';
+import { applyTailoredEdits } from '@cvmind/auto-apply-agent/tailoring/edits.js';
+import { renderResumeHtml, formatDateRange } from '@cvmind/auto-apply-agent/resume/atsTemplate.js';
+import { pdfFilename, pageFormatFor } from '@cvmind/auto-apply-agent/resume/pdfArtifacts.js';
 import { RESUME, TAILORED_OUTPUT, COVER_LETTER_OUTPUT } from '../helpers/agentFixtures.js';
 
 const { structured } = buildProfileData(RESUME);

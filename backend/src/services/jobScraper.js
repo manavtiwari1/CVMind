@@ -3,7 +3,7 @@
  * Extracts structured job schema from job URLs or raw HTML.
  */
 
-import { generateJson } from '../agent/ai/geminiClient.js';
+import { generateJson } from '@cvmind/auto-apply-agent/ai/geminiClient.js';
 
 // Basic HTML stripping / cleaning helper
 function cleanText(htmlOrText) {

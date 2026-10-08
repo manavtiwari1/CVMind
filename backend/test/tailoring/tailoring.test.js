@@ -1,14 +1,14 @@
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
-import AgentApplication from '../../src/agent/models/AgentApplication.js';
-import QueueJob from '../../src/agent/models/QueueJob.js';
-import Preferences from '../../src/agent/models/Preferences.js';
-import { createParseJobHandler } from '../../src/agent/handlers/parseJob.js';
-import { createMatchHandler } from '../../src/agent/handlers/matchApplication.js';
-import { createTailorHandler, createRenderPdfHandler } from '../../src/agent/handlers/tailorApplication.js';
-import { sha256 } from '../../src/agent/resume/derive.js';
-import { FatalError } from '../../src/agent/errors.js';
+import AgentApplication from '@cvmind/auto-apply-agent/models/AgentApplication.js';
+import QueueJob from '@cvmind/auto-apply-agent/models/QueueJob.js';
+import Preferences from '@cvmind/auto-apply-agent/models/Preferences.js';
+import { createParseJobHandler } from '@cvmind/auto-apply-agent/handlers/parseJob.js';
+import { createMatchHandler } from '@cvmind/auto-apply-agent/handlers/matchApplication.js';
+import { createTailorHandler, createRenderPdfHandler } from '@cvmind/auto-apply-agent/handlers/tailorApplication.js';
+import { sha256 } from '@cvmind/auto-apply-agent/resume/derive.js';
+import { FatalError } from '@cvmind/auto-apply-agent/errors.js';
 import { DESCRIPTION, fakeAi, createReadyResume, runQueued, startAgentTestApp, tokenB } from '../helpers/agentFixtures.js';
 
 let testApp;

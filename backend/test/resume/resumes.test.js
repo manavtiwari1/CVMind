@@ -2,13 +2,13 @@ import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
 import mongoose from 'mongoose';
-import ResumeProfile from '../../src/agent/models/ResumeProfile.js';
-import QueueJob from '../../src/agent/models/QueueJob.js';
-import ApplicationEvent from '../../src/agent/models/ApplicationEvent.js';
+import ResumeProfile from '@cvmind/auto-apply-agent/models/ResumeProfile.js';
+import QueueJob from '@cvmind/auto-apply-agent/models/QueueJob.js';
+import ApplicationEvent from '@cvmind/auto-apply-agent/models/ApplicationEvent.js';
 import { createAgentRouter } from '../../src/routes/agent.js';
-import { createParseResumeHandler, createEmbedResumeHandler } from '../../src/agent/handlers/parseResume.js';
+import { createParseResumeHandler, createEmbedResumeHandler } from '@cvmind/auto-apply-agent/handlers/parseResume.js';
 import { signToken } from '../../src/services/authToken.js';
-import { vectorFromStored } from '../../src/agent/resume/embeddings.js';
+import { vectorFromStored } from '@cvmind/auto-apply-agent/resume/embeddings.js';
 import { startTestMongo } from '../helpers/mongo.js';
 
 const EXTRACTED = {

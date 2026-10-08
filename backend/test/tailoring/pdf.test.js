@@ -2,8 +2,8 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'fs';
 import { chromium } from 'playwright';
-import { renderPdf, closeBrowser } from '../../src/agent/resume/pdf.js';
-import { renderResumeHtml } from '../../src/agent/resume/atsTemplate.js';
+import { renderPdf, closeBrowser } from '@cvmind/auto-apply-agent/resume/pdf.js';
+import { renderResumeHtml } from '@cvmind/auto-apply-agent/resume/atsTemplate.js';
 import { parsePdf } from '../../src/services/parser.js';
 
 // Chromium is installed separately (npx playwright install chromium), so skip rather than fail without it
