@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, CheckCircle2, ChevronLeft, ChevronRight, Clock, Crown, Loader2, Lock, Minus, ShieldCheck, X } from 'lucide-react';
+import { Building2, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock, Crown, Loader2, Lock, Minus, ShieldCheck, X } from 'lucide-react';
 import TemplatePreview from '../components/TemplatePreview';
 import { SlotBanner } from '../components/SiteBanner';
 import { CV_TEMPLATES } from '../data/cvTemplates';
@@ -9,6 +9,7 @@ import { withSampleData } from '../data/samplePreview';
 import { LETTER_DESIGNS } from '../lib/coverLetter';
 import { PRO_LETTER_IDS, PRO_TEMPLATE_IDS, formatInr, loadPlans, startCheckout, userIsPro, verifyOrder, type Plan } from '../lib/billing';
 import { readUser, USER_CHANGE_EVENT } from '../lib/currentUser';
+import { setContactSubject } from '../data/support';
 import './Pricing.css';
 
 interface PricingProps {
@@ -102,6 +103,13 @@ const PRO_LIST = [
   '2,00,000 AI tokens every 3 days',
 ];
 
+const TEAM_LIST = [
+  'Pro for every student or employee, billed together',
+  'Volume pricing for colleges, bootcamps and companies',
+  'Access to just the products you need, like CVMind Code or Interview Prep',
+  'Help setting up accounts and one invoice',
+];
+
 const FAQS = [
   { q: 'Does Pro renew automatically?', a: 'No. You pay once for the time you pick and Pro ends on its own. Nothing is charged again unless you buy another plan.' },
   { q: 'What if I buy a plan while Pro is still running?', a: 'The new days are added to the end of your current plan, so you never lose time you already paid for.' },
@@ -170,6 +178,11 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
     setCheckoutOpen(true);
   };
 
+  const contactUs = (subject: string) => {
+    setContactSubject(subject);
+    setCurrentPage('contact');
+  };
+
   return (
     <div className="pr">
       <SlotBanner slot="promo" setCurrentPage={setCurrentPage} />
@@ -234,6 +247,16 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
             </button>
           )}
           <p className="pr-card-fine"><ShieldCheck size={13} /> Secure payment by Cashfree · UPI, cards, netbanking</p>
+        </article>
+
+        <article className="pr-card">
+          <h2 className="pr-card-name"><Building2 size={18} /> Institutions</h2>
+          <p className="pr-card-price"><span>Custom</span></p>
+          <p className="pr-card-desc">For colleges, placement cells, bootcamps and teams, or if you only need one product.</p>
+          <ul className="pr-list">
+            {TEAM_LIST.map((f) => <li key={f}><Check size={16} /> {f}</li>)}
+          </ul>
+          <button type="button" className="pr-btn pr-btn--ghost" onClick={() => contactUs('Institution or team pricing')}>Contact us</button>
         </article>
       </section>
       </section>

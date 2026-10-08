@@ -1,6 +1,6 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Send, CheckCircle2, Mail, MailWarning, LogIn, MessageCircle, Phone } from 'lucide-react';
-import { SUPPORT_EMAIL, WHATSAPP_DISPLAY, whatsappLink, mailLink, telLink } from '../data/support';
+import { SUPPORT_EMAIL, WHATSAPP_DISPLAY, whatsappLink, mailLink, telLink, readContactSubject, clearContactSubject } from '../data/support';
 import { getErrorMessage } from '../utils/errors';
 import { API_BASE } from '../lib/apiBase';
 import { authFetch, AUTH_REQUIRED_EVENT, VERIFY_REQUIRED_EVENT } from '../lib/authFetch';
@@ -14,10 +14,12 @@ const FALLBACK_ERROR = 'Unable to send message right now. Please try again, or e
 // and uses the account's name and email.
 export default function HelpContact() {
   const [user, setUser] = useState(readUser);
-  const [form, setForm] = useState(EMPTY);
+  const [form, setForm] = useState(() => ({ ...EMPTY, subject: readContactSubject() }));
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => { clearContactSubject(); }, []);
 
   useEffect(() => {
     const sync = () => setUser(readUser());
