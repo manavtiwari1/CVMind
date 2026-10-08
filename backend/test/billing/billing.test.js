@@ -26,6 +26,8 @@ before(async () => {
   process.env.RESEND_API_KEY = '';
   process.env.CASHFREE_APP_ID = 'test-app';
   process.env.CASHFREE_SECRET_KEY = 'test-secret';
+  // Checkout tests run as if after launch; the launch test moves this
+  process.env.PAYMENTS_OPEN_AT = '2026-01-01T00:00:00+05:30';
 
   // Cashfree is faked; everything else (the test's own requests) goes through
   realFetch = globalThis.fetch;
@@ -334,6 +336,23 @@ test('the webhook only accepts Cashfree-signed requests', async () => {
   const sig = crypto.createHmac('sha256', 'test-secret').update(ts + raw).digest('base64');
   assert.equal((await call('/api/billing/webhook', { method: 'POST', raw, headers: { 'x-webhook-timestamp': ts, 'x-webhook-signature': 'forged' } })).status, 401);
   assert.equal((await call('/api/billing/webhook', { method: 'POST', raw, headers: { 'x-webhook-timestamp': ts, 'x-webhook-signature': sig } })).status, 200);
+});
+
+test('checkout stays closed until payments open', async () => {
+  const token = await userToken('early@example.com');
+  process.env.PAYMENTS_OPEN_AT = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  try {
+    const early = await call('/api/billing/checkout', { method: 'POST', token, body: { plan: 'monthly', phone: '9876543210' } });
+    assert.equal(early.status, 403);
+    assert.equal(early.body.code, 'PAYMENTS_NOT_OPEN');
+    assert.equal(await models.PaymentOrder.countDocuments({ email: 'early@example.com' }), 0);
+    const plans = await call('/api/billing/plans');
+    assert.equal(plans.body.launch.paymentsOpenAt, process.env.PAYMENTS_OPEN_AT);
+    assert.ok(plans.body.launch.pricingOpensAt && plans.body.launch.now);
+  } finally {
+    process.env.PAYMENTS_OPEN_AT = '2026-01-01T00:00:00+05:30';
+  }
+  assert.equal((await call('/api/billing/checkout', { method: 'POST', token, body: { plan: 'monthly', phone: '9876543210' } })).status, 200);
 });
 
 test('plans are public', async () => {

@@ -13,7 +13,33 @@ export interface PlansInfo {
   tokenLimits: { free: number; pro: number };
   proTemplates: string[];
   payments: { enabled: boolean; mode: 'sandbox' | 'production' };
+  launch?: { pricingOpensAt: string; paymentsOpenAt: string; now: string };
 }
+
+// ── Launch ───────────────────────────────────────────────────────────────────
+// Kept in step with backend/src/billing/plans.js; the server's times replace these once loaded
+export interface LaunchTimes { pricingOpensAt: number; paymentsOpenAt: number; offset: number }
+
+export const FALLBACK_LAUNCH: LaunchTimes = {
+  pricingOpensAt: Date.parse('2026-10-10T23:00:00+05:30'),
+  paymentsOpenAt: Date.parse('2026-10-11T00:00:00+05:30'),
+  offset: 0,
+};
+
+// Server times, plus how far this device's clock is off when that's more than a couple of minutes
+// (the plans response can be up to a minute old, so smaller gaps are left alone)
+export function launchTimes(info?: PlansInfo['launch']): LaunchTimes {
+  if (!info) return FALLBACK_LAUNCH;
+  const skew = Date.parse(info.now) - Date.now();
+  return {
+    pricingOpensAt: Date.parse(info.pricingOpensAt),
+    paymentsOpenAt: Date.parse(info.paymentsOpenAt),
+    offset: Math.abs(skew) > 2 * 60 * 1000 ? skew : 0,
+  };
+}
+
+// e.g. "11 Oct, 12:00 am IST"
+export const launchTimeText = (ms: number) => `${new Date(ms).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' })} IST`;
 
 export interface BillingMe {
   pro: boolean;

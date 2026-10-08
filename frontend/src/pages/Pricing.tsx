@@ -7,7 +7,7 @@ import { SlotBanner } from '../components/SiteBanner';
 import { CV_TEMPLATES } from '../data/cvTemplates';
 import { withSampleData } from '../data/samplePreview';
 import { LETTER_DESIGNS } from '../lib/coverLetter';
-import { PRO_LETTER_IDS, PRO_TEMPLATE_IDS, formatInr, loadPlans, startCheckout, userIsPro, verifyOrder, type Plan } from '../lib/billing';
+import { FALLBACK_LAUNCH, PRO_LETTER_IDS, PRO_TEMPLATE_IDS, formatInr, launchTimeText, launchTimes, loadPlans, startCheckout, userIsPro, verifyOrder, type LaunchTimes, type Plan } from '../lib/billing';
 import { readUser, USER_CHANGE_EVENT } from '../lib/currentUser';
 import { setContactSubject } from '../data/support';
 import './Pricing.css';
@@ -134,9 +134,11 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
   const [returned, setReturned] = useState<ReturnState>(() => (returnOrder ? { status: 'checking' } : null));
   const [pro, setPro] = useState(userIsPro());
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [launch, setLaunch] = useState<LaunchTimes>(FALLBACK_LAUNCH);
+  const [clock, setClock] = useState(() => Date.now());
 
   useEffect(() => {
-    loadPlans().then((info) => { setPlans(info.plans); setPaymentsOn(info.payments.enabled); }).catch(() => {});
+    loadPlans().then((info) => { setPlans(info.plans); setPaymentsOn(info.payments.enabled); setLaunch(launchTimes(info.launch)); }).catch(() => {});
     const sync = () => setPro(userIsPro());
     window.addEventListener(USER_CHANGE_EVENT, sync);
     return () => window.removeEventListener(USER_CHANGE_EVENT, sync);
@@ -165,12 +167,23 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
     return () => { cancelled = true; };
   }, [returnOrder]);
 
+  // Before launch the page is locked, then shows prices with checkout closed until payments open
+  const now = clock + launch.offset;
+  const locked = now < launch.pricingOpensAt && !returnOrder;
+  const paymentsOpen = now >= launch.paymentsOpenAt;
+  useEffect(() => {
+    if (paymentsOpen) return;
+    const id = window.setInterval(() => setClock(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [paymentsOpen]);
+
   const plan = plans.find((p) => p.key === selected) || plans[0];
   const monthly = plans.find((p) => p.key === 'monthly');
   const proTemplates = useMemo(() => PRO_TEMPLATES.map((t) => ({ ...t, html: withSampleData(t) })), []);
   const proLetters = useMemo(() => PRO_LETTERS.map((d) => ({ id: d.id, name: d.name, html: d.render(d.sample) })), []);
 
   const getPro = () => {
+    if (!paymentsOpen) return;
     if (!isLoggedIn) {
       setShowAuthModal?.(true);
       return;
@@ -182,6 +195,10 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
     setContactSubject(subject);
     setCurrentPage('contact');
   };
+
+  if (locked) return <LaunchLock opensAt={launch.pricingOpensAt} now={now} setCurrentPage={setCurrentPage} />;
+
+  const opensText = `Payments open ${launchTimeText(launch.paymentsOpenAt)}`;
 
   return (
     <div className="pr">
@@ -237,7 +254,11 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
           <ul className="pr-list">
             {PRO_LIST.map((f) => <li key={f}><Check size={16} /> {f}</li>)}
           </ul>
-          {pro ? (
+          {!paymentsOpen ? (
+            <button type="button" className="pr-btn pr-btn--light" disabled>
+              <Clock size={16} /> {opensText}
+            </button>
+          ) : pro ? (
             <button type="button" className="pr-btn pr-btn--light" onClick={getPro}>
               <Clock size={16} /> Add {plan.days} more days
             </button>
@@ -326,8 +347,8 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
       {/* ── Closing band ─────────────────────────────────────────── */}
       <section className="pr-close">
         <h2>Start with a 3‑day pass for {formatInr(plans[0]?.price ?? 39)}.</h2>
-        <button type="button" className="pr-btn pr-btn--light" onClick={() => { setSelected(plans[0]?.key || 'pass-3d'); getPro(); }}>
-          <Crown size={16} /> Get Pro
+        <button type="button" className="pr-btn pr-btn--light" disabled={!paymentsOpen} onClick={() => { setSelected(plans[0]?.key || 'pass-3d'); getPro(); }}>
+          {paymentsOpen ? <><Crown size={16} /> Get Pro</> : <><Clock size={16} /> {opensText}</>}
         </button>
       </section>
 
@@ -350,6 +371,35 @@ function CellValue({ value, pro }: { value: Cell; pro?: boolean }) {
   if (value === true) return <span role="cell" className="pr-yes"><Check size={17} aria-label="Included" /></span>;
   if (value === false) return <span role="cell" className="pr-no"><Minus size={17} aria-label="Not included" /></span>;
   return <span role="cell" className={pro && value !== 'Soon' ? 'pr-strong' : value === 'Soon' ? 'pr-soon' : ''}>{value}</span>;
+}
+
+// Shown instead of the pricing page until it opens. Counts down and opens by itself.
+function LaunchLock({ opensAt, now, setCurrentPage }: { opensAt: number; now: number; setCurrentPage: (page: string) => void }) {
+  const left = Math.max(0, Math.floor((opensAt - now) / 1000));
+  const parts = [
+    { label: 'days', value: Math.floor(left / 86400) },
+    { label: 'hours', value: Math.floor((left % 86400) / 3600) },
+    { label: 'minutes', value: Math.floor((left % 3600) / 60) },
+    { label: 'seconds', value: left % 60 },
+  ].filter((p, i) => i > 0 || p.value > 0);
+  return (
+    <div className="pr">
+      <section className="pr-lock">
+        <span className="pr-eyebrow"><Lock size={14} /> CVMind Pro</span>
+        <h1 className="pr-title">Pro plans go live on {launchTimeText(opensAt)}.</h1>
+        <p className="pr-lede">We're putting the final touches on pricing. Everything free on CVMind works as usual until then.</p>
+        <div className="pr-lock-count" role="timer" aria-label={`Opens in ${parts.map((p) => `${p.value} ${p.label}`).join(', ')}`}>
+          {parts.map((p) => (
+            <div key={p.label} className="pr-lock-unit">
+              <strong>{String(p.value).padStart(2, '0')}</strong>
+              <span>{p.label}</span>
+            </div>
+          ))}
+        </div>
+        <button type="button" className="pr-btn pr-btn--dark" onClick={() => setCurrentPage('resume-builder')}>Build a resume for free</button>
+      </section>
+    </div>
+  );
 }
 
 function ReturnBanner({ state, onClose, onRetry }: { state: NonNullable<ReturnState>; onClose: () => void; onRetry: () => void }) {

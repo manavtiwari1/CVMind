@@ -5,7 +5,7 @@ import { dbReady } from '../admin/auth.js';
 import { evaluateCoupon, redeemCoupon } from '../admin/coupons.js';
 import { frontendUrl } from '../services/emailVerification.js';
 import { savePaymentLog } from '../db.js';
-import { PLANS, PLAN_KEYS, FREE_WEEKLY, TOKEN_LIMITS, PRO_TEMPLATES, PRO_LETTER_TEMPLATES } from './plans.js';
+import { PLANS, PLAN_KEYS, pricingOpensAt, paymentsOpenAt, FREE_WEEKLY, TOKEN_LIMITS, PRO_TEMPLATES, PRO_LETTER_TEMPLATES } from './plans.js';
 import { PaymentOrder } from './models.js';
 import { sendInvoice } from './invoice.js';
 import { activeSubscription, activatePlan, tokenStatus, weeklyUses } from './service.js';
@@ -25,7 +25,9 @@ router.get('/api/billing/plans', (req, res) => {
     tokenLimits: TOKEN_LIMITS,
     proTemplates: PRO_TEMPLATES,
     proLetterTemplates: PRO_LETTER_TEMPLATES,
-    payments: { enabled: cashfreeConfigured(), mode: cashfreeMode() }
+    payments: { enabled: cashfreeConfigured(), mode: cashfreeMode() },
+    // The page uses "now" to count down by the server's clock, not the visitor's
+    launch: { pricingOpensAt: pricingOpensAt(), paymentsOpenAt: paymentsOpenAt(), now: new Date() }
   });
 });
 
@@ -63,6 +65,10 @@ const notifyUrl = () => {
 router.post('/api/billing/checkout', requireUser, async (req, res) => {
   if (!(await dbReady(3000))) return res.status(503).json({ success: false, error: 'Payments are unavailable right now. Please try again shortly.' });
   if (!cashfreeConfigured()) return res.status(503).json({ success: false, code: 'PAYMENTS_OFF', error: 'Online payment is not set up yet. Please contact support to upgrade.' });
+  if (Date.now() < paymentsOpenAt().getTime()) {
+    const when = paymentsOpenAt().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
+    return res.status(403).json({ success: false, code: 'PAYMENTS_NOT_OPEN', opensAt: paymentsOpenAt(), error: `Payments open on ${when} IST.` });
+  }
 
   const plan = String(req.body?.plan || '');
   if (!PLANS[plan]) return res.status(400).json({ success: false, error: 'Pick a plan.' });
