@@ -157,28 +157,47 @@ test('code hints: the first four levels are free, explanation and solution twice
   assert.equal((await call('/api/code/ai/hint', { method: 'POST', token, body: { requestedLevel: 5 } })).status, 200);
 });
 
-test('AI tokens: 10,000 per 3 days free, 25,000 with Pro', async () => {
+test('AI tokens: 75,000 per 3 days free, 2,00,000 with Pro', async () => {
   const token = await userToken('tokens@example.com');
   // Spend through a Pro account's tailor allowance so the weekly limit isn't what stops it
   await call('/api/admin/subscriptions', { method: 'POST', token: ownerToken, body: { email: 'tokens@example.com', plan: 'pass-3d' } });
-  assert.equal((await call('/api/tailor', { method: 'POST', token, body: { spend: 24000 } })).status, 200);
+  assert.equal((await call('/api/tailor', { method: 'POST', token, body: { spend: 190000 } })).status, 200);
   await new Promise((r) => setTimeout(r, 100));
-  assert.equal((await call('/api/tailor', { method: 'POST', token, body: { spend: 2000 } })).status, 200);
+  assert.equal((await call('/api/tailor', { method: 'POST', token, body: { spend: 10000 } })).status, 200);
   await new Promise((r) => setTimeout(r, 100));
   const blocked = await call('/api/tailor', { method: 'POST', token, body: {} });
   assert.equal(blocked.status, 429);
   assert.equal(blocked.body.code, 'TOKEN_LIMIT');
-  assert.equal(blocked.body.limit, 25000);
+  assert.equal(blocked.body.limit, 200000);
 
   const free = await userToken('free-tokens@example.com');
-  await models.AiUsage.create({ email: 'free-tokens@example.com', tokens: 10000 });
+  await models.AiUsage.create({ email: 'free-tokens@example.com', tokens: 75000 });
   const freeBlocked = await call('/api/tailor', { method: 'POST', token: free, body: {} });
   assert.equal(freeBlocked.status, 429);
-  assert.equal(freeBlocked.body.limit, 10000);
+  assert.equal(freeBlocked.body.limit, 75000);
 
   // Spending from more than 3 days ago doesn't count
   await models.AiUsage.updateMany({ email: 'free-tokens@example.com' }, { createdAt: new Date(Date.now() - 4 * DAY) });
   assert.equal((await call('/api/tailor', { method: 'POST', token: free, body: {} })).status, 200);
+});
+
+test('admins can add extra AI tokens to an account and take them back', async () => {
+  const token = await userToken('bonus@example.com');
+  await models.AiUsage.create({ email: 'bonus@example.com', tokens: 75000 });
+  assert.equal((await call('/api/tailor', { method: 'POST', token, body: {} })).status, 429);
+
+  assert.equal((await call('/api/admin/subscriptions/tokens', { method: 'POST', token: ownerToken, body: { email: 'bonus@example.com', tokens: 0, days: 3 } })).status, 400);
+  const added = await call('/api/admin/subscriptions/tokens', { method: 'POST', token: ownerToken, body: { email: 'Bonus@example.com', tokens: 50000, days: 3 } });
+  assert.equal(added.status, 200);
+  assert.equal((await call('/api/tailor', { method: 'POST', token, body: {} })).status, 200);
+
+  const usage = await call('/api/admin/subscriptions/usage/bonus@example.com', { token: ownerToken });
+  assert.equal(usage.body.tokens.limit, 125000);
+  assert.equal(usage.body.tokens.bonus, 50000);
+  assert.equal(usage.body.grants.length, 1);
+
+  assert.equal((await call(`/api/admin/subscriptions/tokens/${usage.body.grants[0].id}`, { method: 'DELETE', token: ownerToken })).status, 200);
+  assert.equal((await call('/api/tailor', { method: 'POST', token, body: {} })).status, 429);
 });
 
 test('a Cashfree payment turns Pro on exactly once', async () => {
@@ -222,7 +241,7 @@ test('plans are public', async () => {
   const res = await call('/api/billing/plans');
   assert.equal(res.status, 200);
   assert.deepEqual(res.body.plans.map((p) => [p.key, p.price]), [['pass-3d', 39], ['pass-7d', 79], ['monthly', 189], ['half-yearly', 600], ['yearly', 1099]]);
-  assert.equal(res.body.tokenLimits.free, 10000);
+  assert.equal(res.body.tokenLimits.free, 75000);
   assert.equal(res.body.payments.enabled, true);
 });
 

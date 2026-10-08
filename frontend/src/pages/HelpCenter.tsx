@@ -112,7 +112,7 @@ const TOPICS: Topic[] = [
     articles: [
       {
         q: 'What is included in the Free plan?',
-        a: "The Resume Checker, the Resume Builder with its free templates and cover letter designs, AI Proofreading, the LinkedIn and career tools, and CVMind Code's concept, approach, algorithm and pseudocode hints. Each week you also get 1 AI cover letter, 2 Resume Tailor runs, 2 portfolios, 1 interview prep session, 1 voice interview, and 2 code explanations and 2 full solutions. Free accounts get 10,000 AI tokens every 3 days, and free resumes and cover letters carry a small CVMind footer.",
+        a: "The Resume Checker, the Resume Builder with its free templates and cover letter designs, AI Proofreading, the LinkedIn and career tools, and CVMind Code's concept, approach, algorithm and pseudocode hints. Each week you also get 1 AI cover letter, 2 Resume Tailor runs, 2 portfolios, 1 interview prep session, 1 voice interview, and 2 code explanations and 2 full solutions. Free accounts get 75,000 AI tokens every 3 days, and free resumes and cover letters carry a small CVMind footer.",
         ...(PRICING_LOCKED ? {} : { link: { label: 'Compare plans', page: 'pricing' } }),
       },
       PRICING_LOCKED
@@ -122,7 +122,7 @@ const TOPICS: Topic[] = [
           }
         : {
             q: 'How much does Pro cost?',
-            a: "Pro is ₹39 for 3 days, ₹79 for 7 days, ₹189 a month, ₹600 for 6 months or ₹1,099 a year. It unlocks every resume template and cover letter design, removes the CVMind footer, lifts the weekly limits and raises your AI tokens to 25,000 every 3 days. You pay once through Cashfree (UPI, cards or netbanking) and it doesn't renew on its own.",
+            a: "Pro is ₹39 for 3 days, ₹79 for 7 days, ₹189 a month, ₹600 for 6 months or ₹1,099 a year. It unlocks every resume template and cover letter design, removes the CVMind footer, lifts the weekly limits and raises your AI tokens to 2,00,000 every 3 days. You pay once through Cashfree (UPI, cards or netbanking) and it doesn't renew on its own.",
             link: { label: 'See pricing', page: 'pricing' },
           },
       {

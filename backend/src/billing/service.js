@@ -1,5 +1,5 @@
 import { dbReady } from '../admin/auth.js';
-import { Subscription, AiUsage, FeatureUse } from './models.js';
+import { Subscription, AiUsage, FeatureUse, TokenGrant } from './models.js';
 import { PLANS, FREE_WEEKLY, WEEK_MS, TOKEN_LIMITS, TOKEN_WINDOW_MS } from './plans.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -39,18 +39,39 @@ export async function activatePlan({ email, plan, days, amount = 0, source, orde
 }
 
 // ── AI token budget ─────────────────────────────────────────────────────────
+// Extra tokens from admin grants that haven't expired
+export async function bonusTokens(email) {
+  const clean = norm(email);
+  if (!clean) return 0;
+  const [row] = await TokenGrant.aggregate([
+    { $match: { email: clean, expiresAt: { $gt: new Date() } } },
+    { $group: { _id: null, tokens: { $sum: '$tokens' } } }
+  ]);
+  return row?.tokens || 0;
+}
+
+export async function grantTokens({ email, tokens, days, grantedBy = '', note = '' }) {
+  const expiresAt = new Date(Date.now() + days * DAY_MS);
+  return (await TokenGrant.create({ email: norm(email), tokens, expiresAt, grantedBy, note })).toObject();
+}
+
 export async function tokenStatus(email, pro) {
   const clean = norm(email);
-  const limit = pro ? TOKEN_LIMITS.pro : TOKEN_LIMITS.free;
-  if (!clean || !(await dbReady(2000))) return { used: 0, limit, resetsAt: null };
+  const base = pro ? TOKEN_LIMITS.pro : TOKEN_LIMITS.free;
+  if (!clean || !(await dbReady(2000))) return { used: 0, limit: base, base, bonus: 0, resetsAt: null };
   const since = new Date(Date.now() - TOKEN_WINDOW_MS);
-  const [row] = await AiUsage.aggregate([
-    { $match: { email: clean, createdAt: { $gt: since } } },
-    { $group: { _id: null, used: { $sum: '$tokens' }, first: { $min: '$createdAt' } } }
+  const [[row], bonus] = await Promise.all([
+    AiUsage.aggregate([
+      { $match: { email: clean, createdAt: { $gt: since } } },
+      { $group: { _id: null, used: { $sum: '$tokens' }, first: { $min: '$createdAt' } } }
+    ]),
+    bonusTokens(clean)
   ]);
   return {
     used: row?.used || 0,
-    limit,
+    limit: base + bonus,
+    base,
+    bonus,
     // The oldest use in the window drops out first
     resetsAt: row?.first ? new Date(row.first.getTime() + TOKEN_WINDOW_MS) : null
   };

@@ -72,7 +72,7 @@ const COMPARE: { group: string; rows: [string, Cell, Cell][] }[] = [
   },
   {
     group: 'AI usage',
-    rows: [['AI tokens', '10,000 every 3 days', '25,000 every 3 days']],
+    rows: [['AI tokens', '75,000 every 3 days', '2,00,000 every 3 days']],
   },
   {
     group: 'Coming soon',
@@ -90,7 +90,7 @@ const FREE_LIST = [
   'LinkedIn and career tools',
   'Code hints up to pseudocode',
   'Weekly free tries of Tailor, AI cover letter, Portfolio and interview practice',
-  '10,000 AI tokens every 3 days',
+  '75,000 AI tokens every 3 days',
 ];
 
 const PRO_LIST = [
@@ -99,14 +99,14 @@ const PRO_LIST = [
   'Unlimited Resume Tailor, AI cover letters and Portfolio Generator',
   'Unlimited interview and voice practice',
   'Unlimited code explanations and full solutions',
-  '25,000 AI tokens every 3 days',
+  '2,00,000 AI tokens every 3 days',
 ];
 
 const FAQS = [
   { q: 'Does Pro renew automatically?', a: 'No. You pay once for the time you pick and Pro ends on its own. Nothing is charged again unless you buy another plan.' },
   { q: 'What if I buy a plan while Pro is still running?', a: 'The new days are added to the end of your current plan, so you never lose time you already paid for.' },
   { q: 'How do I pay?', a: 'Through Cashfree, with UPI, debit or credit cards, or netbanking. CVMind never sees your card or bank details.' },
-  { q: 'What are AI tokens?', a: 'Every AI reply (a resume fix, a cover letter, a hint) uses tokens. Free accounts get 10,000 in any 3-day window and Pro gets 25,000. Tokens you used more than 3 days ago count again.' },
+  { q: 'What are AI tokens?', a: 'Every AI reply (a resume fix, a cover letter, a hint) uses tokens. Free accounts get 75,000 in any 3-day window and Pro gets 2,00,000. Tokens you used more than 3 days ago count again.' },
   { q: 'When do the weekly free tries come back?', a: 'Each try comes back 7 days after you used it. Your Account page shows how many are left.' },
   { q: 'Can I get a refund?', a: 'Read the refund policy for when a refund applies, or contact support with your registered email.' },
 ];

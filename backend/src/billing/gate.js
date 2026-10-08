@@ -1,6 +1,6 @@
 import { readUserSession } from '../services/authToken.js';
 import { dbReady } from '../admin/auth.js';
-import { FREE_WEEKLY } from './plans.js';
+import { FREE_WEEKLY, TOKEN_LIMITS } from './plans.js';
 import { isPro, tokenStatus, recordTokens, featureAllowance, recordFeatureUse } from './service.js';
 import { runWithAiContext } from './aiContext.js';
 
@@ -43,7 +43,7 @@ export async function aiBudgetGate(req, res, next) {
         resetsAt: status.resetsAt,
         error: pro
           ? `You've used your ${status.limit.toLocaleString('en-IN')} AI tokens for these 3 days.${when ? ` More free up on ${when}.` : ''}`
-          : `You've used your ${status.limit.toLocaleString('en-IN')} free AI tokens for these 3 days. Upgrade to CVMind Pro for ${(25000).toLocaleString('en-IN')}${when ? `, or wait until ${when}` : ''}.`
+          : `You've used your ${status.limit.toLocaleString('en-IN')} free AI tokens for these 3 days. Upgrade to CVMind Pro for ${TOKEN_LIMITS.pro.toLocaleString('en-IN')}${when ? `, or wait until ${when}` : ''}.`
       });
     }
   } catch (err) {

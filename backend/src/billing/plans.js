@@ -25,7 +25,10 @@ export const FREE_WEEKLY = {
 
 // AI tokens each account can use in a rolling 3-day window
 export const TOKEN_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
-export const TOKEN_LIMITS = { free: 10000, pro: 25000 };
+export const TOKEN_LIMITS = { free: 75000, pro: 200000 };
+// Admins can give an account extra tokens on top of its limit, for a number of days
+export const MAX_BONUS_TOKENS = 10000000;
+export const MAX_BONUS_DAYS = 365;
 
 // Resume templates that need Pro (ids from frontend/src/data/cvTemplates.ts)
 export const PRO_TEMPLATES = ['cv-stylish', 'cv-hybrid', 'cv-portrait', 'cv-terracotta', 'cv-spotlight', 'cv-studio', 'cv-ledger'];

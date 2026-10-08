@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Crown, IndianRupee, Plus, Receipt, Search, Users } from 'lucide-react';
+import { Coins, Crown, IndianRupee, Plus, Receipt, Search, Users } from 'lucide-react';
 import { api } from '../api';
 import { useAction, useAdmin, useApi, useDebounced } from '../hooks';
 import { count, date, dateTime, money } from '../format';
@@ -28,10 +28,12 @@ interface Order {
   id: string; orderId: string; email: string; plan: string; planLabel: string; listPrice: number; amount: number;
   couponCode: string; discount: number; status: string; paymentMethod: string; createdAt: string; paidAt: string | null;
 }
+interface Grant { id: string; tokens: number; expiresAt: string; createdAt: string; grantedBy: string; note: string }
 interface Usage {
   pro: boolean;
   expiresAt: string | null;
-  tokens: { used: number; limit: number; resetsAt: string | null };
+  tokens: { used: number; limit: number; base: number; bonus: number; resetsAt: string | null };
+  grants: Grant[];
   weekly: Record<string, { label: string; limit: number; used: number }>;
 }
 
@@ -223,11 +225,19 @@ function OrderList() {
 }
 
 function UsageLookup() {
+  const { can } = useAdmin();
   const [email, setEmail] = useState('');
   const [query, setQuery] = useState('');
-  const { data, error, loading } = useApi<Usage>(query ? `/subscriptions/usage/${encodeURIComponent(query)}` : null);
+  const { data, error, loading, reload } = useApi<Usage>(query ? `/subscriptions/usage/${encodeURIComponent(query)}` : null);
+  const { busy, run } = useAction();
+  const [adding, setAdding] = useState(false);
+  const [revoking, setRevoking] = useState<Grant | null>(null);
   return (
-    <Card title="Look up an account" description="Plan, AI tokens used in the last 3 days, and this week's free uses.">
+    <Card
+      title="Look up an account"
+      description="Plan, AI tokens used in the last 3 days, and this week's free uses."
+      actions={can('payments.manage') && <button type="button" className="ad-btn primary" onClick={() => setAdding(true)}><Coins size={15} /> Add tokens</button>}
+    >
       <form className="ad-toolbar" onSubmit={(e) => { e.preventDefault(); setQuery(email.trim().toLowerCase()); }} style={{ padding: 0, marginBottom: 16 }}>
         <input className="ad-input" style={{ maxWidth: 360 }} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" aria-label="Email" />
         <button className="ad-btn primary" type="submit" disabled={!email.trim()}><Search size={15} /> Look up</button>
@@ -241,6 +251,20 @@ function UsageLookup() {
             <p>{data.pro ? <><Badge tone="green">Pro</Badge> until {date(data.expiresAt)}</> : <Badge tone="gray">Free</Badge>}</p>
             <div className="ad-section-title" style={{ marginTop: 16 }}>AI tokens (last 3 days)</div>
             <p><strong>{count(data.tokens.used)}</strong> of {count(data.tokens.limit)}{data.tokens.resetsAt && <span className="muted"> · frees up from {dateTime(data.tokens.resetsAt)}</span>}</p>
+            {data.tokens.bonus > 0 && <p className="muted">{count(data.tokens.base)} plan limit + {count(data.tokens.bonus)} extra</p>}
+            {data.grants.length > 0 && (
+              <>
+                <div className="ad-section-title" style={{ marginTop: 16 }}>Extra tokens given</div>
+                <ul className="ad-list">
+                  {data.grants.map((g) => (
+                    <li key={g.id}>
+                      <span title={g.note}>+{count(g.tokens)} <span className="muted">until {date(g.expiresAt)}{g.grantedBy ? ` · ${g.grantedBy}` : ''}</span></span>
+                      {can('payments.manage') && <button type="button" className="ad-btn sm danger-outline" onClick={() => setRevoking(g)}>Remove</button>}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
           <div>
             <div className="ad-section-title">Free uses this week{data.pro && ' (not limited on Pro)'}</div>
@@ -250,6 +274,82 @@ function UsageLookup() {
           </div>
         </div>
       )}
+      {adding && (
+        <AddTokensModal
+          initialEmail={query || email.trim()}
+          onClose={() => setAdding(false)}
+          onDone={(to) => { setAdding(false); setEmail(to); if (to === query) reload(); else setQuery(to); }}
+        />
+      )}
+      {revoking && (
+        <ConfirmDialog
+          title={`Remove ${count(revoking.tokens)} extra tokens?`}
+          description="The account's token limit drops back by this amount now."
+          confirmLabel="Remove tokens"
+          danger
+          busy={busy === 'revoke'}
+          onClose={() => setRevoking(null)}
+          onConfirm={async () => {
+            const ok = await run('revoke', () => api(`/subscriptions/tokens/${revoking.id}`, { method: 'DELETE' }), 'Extra tokens removed');
+            setRevoking(null);
+            if (ok !== undefined) reload();
+          }}
+        />
+      )}
     </Card>
+  );
+}
+
+function AddTokensModal({ initialEmail, onClose, onDone }: { initialEmail: string; onClose: () => void; onDone: (email: string) => void }) {
+  const { busy, run } = useAction();
+  const [email, setEmail] = useState(initialEmail);
+  const [tokens, setTokens] = useState('50000');
+  const [days, setDays] = useState('3');
+  const [note, setNote] = useState('');
+  const amount = Number(tokens);
+  const length = Number(days);
+  const ready = /^\S+@\S+\.\S+$/.test(email.trim()) && Number.isInteger(amount) && amount >= 1 && Number.isInteger(length) && length >= 1 && length <= 365;
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!ready) return;
+    const to = email.trim().toLowerCase();
+    const ok = await run('tokens', () => api('/subscriptions/tokens', { method: 'POST', body: { email: to, tokens: amount, days: length, note } }), `${count(amount)} tokens added for ${to}`);
+    if (ok !== undefined) onDone(to);
+  };
+
+  return (
+    <Modal
+      title="Add AI tokens"
+      description="Raises this account's 3-day AI token limit by the amount below, on top of its Free or Pro limit, until the extra tokens expire."
+      onClose={onClose}
+      footer={
+        <>
+          <button type="button" className="ad-btn" onClick={onClose} disabled={busy === 'tokens'}>Cancel</button>
+          <button type="submit" form="ad-add-tokens" className="ad-btn primary" disabled={!ready || busy === 'tokens'}>{busy === 'tokens' && <Spinner size={14} />}Add tokens</button>
+        </>
+      }
+    >
+      <form id="ad-add-tokens" onSubmit={submit}>
+        <div className="ad-field">
+          <label htmlFor="at-email">Email</label>
+          <input id="at-email" className="ad-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" autoFocus={!initialEmail} />
+        </div>
+        <div className="ad-form-row" style={{ marginTop: 14 }}>
+          <div className="ad-field">
+            <label htmlFor="at-tokens">Extra tokens</label>
+            <input id="at-tokens" className="ad-input" type="number" min={1} step={1000} value={tokens} onChange={(e) => setTokens(e.target.value)} autoFocus={!!initialEmail} />
+          </div>
+          <div className="ad-field">
+            <label htmlFor="at-days">For how many days</label>
+            <input id="at-days" className="ad-input" type="number" min={1} max={365} value={days} onChange={(e) => setDays(e.target.value)} />
+          </div>
+        </div>
+        <div className="ad-field" style={{ marginTop: 14 }}>
+          <label htmlFor="at-note">Note (optional)</label>
+          <input id="at-note" className="ad-input" value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Support request #182" />
+        </div>
+      </form>
+    </Modal>
   );
 }

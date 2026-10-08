@@ -53,6 +53,18 @@ aiUsageSchema.index({ email: 1, createdAt: -1 });
 aiUsageSchema.index({ createdAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
 export const AiUsage = mongoose.models.AiUsage || mongoose.model('AiUsage', aiUsageSchema);
 
+// Extra AI tokens an admin gave an account. Raises its 3-day limit until expiresAt.
+const tokenGrantSchema = new Schema({
+  email: { type: String, required: true, lowercase: true, trim: true },
+  tokens: { type: Number, required: true },
+  expiresAt: { type: Date, required: true },
+  grantedBy: { type: String, default: '' },
+  note: { type: String, default: '' },
+  createdAt: { type: Date, default: Date.now }
+});
+tokenGrantSchema.index({ email: 1, expiresAt: -1 });
+export const TokenGrant = mongoose.models.TokenGrant || mongoose.model('TokenGrant', tokenGrantSchema);
+
 // One free use of a weekly-limited feature (portfolio, tailor, interview session, code hints)
 const featureUseSchema = new Schema({
   email: { type: String, required: true },

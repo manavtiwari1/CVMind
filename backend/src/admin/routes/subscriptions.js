@@ -2,9 +2,9 @@ import express from 'express';
 import { requireAdmin, requireDb } from '../auth.js';
 import { audit } from '../audit.js';
 import { model, clean, handle, httpError, isId, isEmail, escapeRegex } from '../util.js';
-import { Subscription, PaymentOrder } from '../../billing/models.js';
-import { PLANS, PLAN_KEYS, FREE_WEEKLY } from '../../billing/plans.js';
-import { activatePlan, activeSubscription, tokenStatus, weeklyUses } from '../../billing/service.js';
+import { Subscription, PaymentOrder, TokenGrant } from '../../billing/models.js';
+import { PLANS, PLAN_KEYS, FREE_WEEKLY, MAX_BONUS_TOKENS, MAX_BONUS_DAYS } from '../../billing/plans.js';
+import { activatePlan, activeSubscription, tokenStatus, weeklyUses, grantTokens } from '../../billing/service.js';
 
 // CVMind Pro subscriptions: who has Pro until when, Cashfree orders, and Pro given by hand.
 const router = express.Router();
@@ -116,14 +116,41 @@ router.get('/orders', requireAdmin('payments.view'), handle(async (req, res) => 
 router.get('/usage/:email', requireAdmin('users.view'), handle(async (req, res) => {
   const email = clean(req.params.email, 120).toLowerCase();
   const sub = await activeSubscription(email);
-  const [tokens, used] = await Promise.all([tokenStatus(email, !!sub), weeklyUses(email)]);
+  const [tokens, used, grants] = await Promise.all([
+    tokenStatus(email, !!sub),
+    weeklyUses(email),
+    TokenGrant.find({ email, expiresAt: { $gt: new Date() } }).sort({ expiresAt: 1 }).lean()
+  ]);
   res.json({
     success: true,
     pro: !!sub,
     expiresAt: sub?.expiresAt || null,
     tokens,
+    grants: grants.map((g) => ({ id: String(g._id), tokens: g.tokens, expiresAt: g.expiresAt, createdAt: g.createdAt, grantedBy: g.grantedBy, note: g.note })),
     weekly: Object.fromEntries(Object.entries(FREE_WEEKLY).map(([k, f]) => [k, { label: f.label, limit: f.limit, used: used[k] || 0 }]))
   });
+}));
+
+// Gives an account extra AI tokens on top of its 3-day limit, for a number of days
+router.post('/tokens', requireAdmin('payments.manage'), handle(async (req, res) => {
+  const email = clean(req.body?.email, 120).toLowerCase();
+  if (!isEmail(email)) throw httpError(400, 'Enter a valid email address.');
+  const tokens = Number(req.body?.tokens);
+  if (!Number.isInteger(tokens) || tokens < 1 || tokens > MAX_BONUS_TOKENS) throw httpError(400, `Tokens must be a whole number from 1 to ${MAX_BONUS_TOKENS.toLocaleString('en-IN')}.`);
+  const days = Number(req.body?.days);
+  if (!Number.isInteger(days) || days < 1 || days > MAX_BONUS_DAYS) throw httpError(400, `Days must be a whole number from 1 to ${MAX_BONUS_DAYS}.`);
+  const note = clean(req.body?.note, 300);
+  const grant = await grantTokens({ email, tokens, days, grantedBy: req.admin.name, note });
+  await audit(req, 'tokens.granted', { targetType: 'email', targetId: email, targetLabel: email, details: { tokens, days, note, expiresAt: grant.expiresAt } });
+  res.json({ success: true, expiresAt: grant.expiresAt });
+}));
+
+router.delete('/tokens/:id', requireAdmin('payments.manage'), handle(async (req, res) => {
+  if (!isId(req.params.id)) throw httpError(404, 'Token grant not found.');
+  const grant = await TokenGrant.findByIdAndDelete(req.params.id).lean();
+  if (!grant) throw httpError(404, 'Token grant not found.');
+  await audit(req, 'tokens.revoked', { targetType: 'email', targetId: grant.email, targetLabel: grant.email, details: { tokens: grant.tokens } });
+  res.json({ success: true });
 }));
 
 export default router;

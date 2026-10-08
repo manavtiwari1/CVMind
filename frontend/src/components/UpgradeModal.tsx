@@ -7,7 +7,7 @@ const COPY: Record<UpgradeDetail['reason'], { title: string; body: string }> = {
   template: { title: 'This design is part of CVMind Pro', body: 'Pro unlocks every resume template and cover letter design, and removes the CVMind footer from your downloads.' },
   branding: { title: 'Remove the CVMind footer with Pro', body: 'Free resumes and cover letters carry a small "Powered by CVMind" footer. With Pro your downloads come out clean.' },
   limit: { title: "You've used this week's free tries", body: 'Pro gives you unlimited use of every tool.' },
-  tokens: { title: "You've used your AI tokens for now", body: 'Free accounts get 10,000 AI tokens every 3 days; Pro gets 25,000.' },
+  tokens: { title: "You've used your AI tokens for now", body: 'Free accounts get 75,000 AI tokens every 3 days; Pro gets 2,00,000.' },
 };
 
 // The upgrade dialog. Opens whenever something fires UPGRADE_EVENT (see lib/billing.ts and lib/authFetch.ts).

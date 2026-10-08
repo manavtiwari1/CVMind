@@ -29,7 +29,7 @@ const PRO_PERKS = [
   { icon: BadgeCheck, text: 'No CVMind footer on downloads' },
   { icon: Wand2, text: 'Unlimited Tailor, AI cover letters, Portfolio and interviews' },
   { icon: ListPlus, text: 'Unlimited code explanations and solutions' },
-  { icon: Files, text: '25,000 AI tokens every 3 days' },
+  { icon: Files, text: '2,00,000 AI tokens every 3 days' },
 ];
 
 export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }: AccountProps) {
