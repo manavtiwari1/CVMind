@@ -563,6 +563,17 @@ textarea.form-input {
 .admin-shell .main-content {
   max-width: none;
   padding: 0;
+  /* The 3D tilt perspective would make the admin's fixed modals and drawers position
+     against this wrapper instead of the screen, so they open far down a long page */
+  perspective: none;
+}
+
+/* overflow-x: hidden on both html and body turns body into its own scroll box, which stops
+   the admin sidebar from sticking while the window scrolls. clip hides overflow the same way
+   without that side effect. */
+html:has(.admin-shell),
+html:has(.admin-shell) body {
+  overflow-x: clip;
 }
 
 /* ════ Dashboard sidebar override ══════════════════════════════ */
