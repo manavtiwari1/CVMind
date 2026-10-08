@@ -13,7 +13,7 @@ import bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
 import { parsePdf, parseDocx, parseTxt, fetchResumeFromUrl } from './services/parser.js';
 import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, generateCoverLetterWithAI, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, findJobsWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek, generateInterviewPlan, evaluateInterviewAnswer, generateInterviewReport } from './services/gemini.js';
-import { getPublicStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, updateUserFields, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveJobFinderLog, saveProofreadLog, savePaymentLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, hasAutoApplyAccess } from './db.js';
+import { getPublicStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, updateUserFields, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveJobFinderLog, saveProofreadLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, hasAutoApplyAccess } from './db.js';
 import adminRouter from './admin/router.js';
 import adminPublicRoutes from './admin/publicRoutes.js';
 import { featureGate, signupsEnabled, getSettings } from './admin/settings.js';
@@ -21,7 +21,6 @@ import { metricsMiddleware } from './admin/metrics.js';
 import { installSessionValidator, newSessionId, recordSession, revokeAllSessions, invalidateSessionCache } from './admin/sessions.js';
 import { ticketFromContact } from './admin/tickets.js';
 import { startInboxPolling } from './admin/inbox.js';
-import { evaluateCoupon, redeemCoupon } from './admin/coupons.js';
 import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser, userSessionStatus } from './services/authToken.js';
 import { verifiedGate } from './services/verifiedGate.js';
 import { productGate } from './services/productGate.js';
@@ -2914,70 +2913,6 @@ apiRouter.post('/api/job-finder', optionalUser, upload.single('resume'), async (
     return res.status(500).json({
       error: error.message || 'try again after sometime or mail to contact@manavtiwari.in for this error'
     });
-  }
-});
-
-// Checkout simulated payment route. An optional coupon from the admin panel lowers the price.
-// There is no payment provider yet: this records a payment without charging anyone. It stays off unless
-// PAYMENTS_MOCK=true (local testing), so nobody can log fake payments or use up coupons in production.
-apiRouter.post('/api/payments/checkout', async (req, res, next) => {
-  if (process.env.PAYMENTS_MOCK !== 'true') {
-    return res.status(503).json({ error: 'Online payments are not available yet.' });
-  }
-  return requireUser(req, res, next);
-}, async (req, res) => {
-  const { amount, paymentMethod, couponCode, plan } = req.body || {};
-  // Always the signed-in account's address, never one from the request
-  const email = req.auth.email;
-
-  if (!email) {
-    return res.status(400).json({ error: 'Email address is required to process payment.' });
-  }
-
-  // Generate a mock transaction ID
-  const prefix = paymentMethod === 'upi' ? 'UPI' : paymentMethod === 'paypal' ? 'PAY' : 'TXN';
-  const transactionId = `${prefix}-${Math.floor(100000 + Math.random() * 900000)}-${Date.now().toString().slice(-4)}`;
-  const listPrice = Number(amount || 200);
-
-  try {
-    let coupon = null;
-    let discount = 0;
-    if (couponCode) {
-      if (mongoose.connection.readyState !== 1) {
-        return res.status(503).json({ error: 'Coupons are unavailable right now. Please try without one.' });
-      }
-      const check = await evaluateCoupon(couponCode, { email, amount: listPrice });
-      if (!check.ok) return res.status(400).json({ error: check.error });
-      coupon = check.coupon;
-      discount = check.discount;
-      if (!(await redeemCoupon(coupon, { email, amount: listPrice, discount, transactionId }))) {
-        return res.status(400).json({ error: 'That coupon has just been fully used.' });
-      }
-    }
-    const charged = Math.round((listPrice - discount) * 100) / 100;
-
-    // Save successful log
-    await savePaymentLog({
-      email,
-      amount: charged,
-      paymentMethod: paymentMethod || 'card',
-      transactionId,
-      status: 'success',
-      plan: String(plan || '').slice(0, 40),
-      couponCode: coupon?.code || '',
-      discount
-    });
-
-    return res.json({
-      success: true,
-      message: `Payment of ₹${charged} processed successfully!`,
-      transactionId,
-      amount: charged,
-      discount
-    });
-  } catch (error) {
-    console.error('Payment Checkout API Error:', error);
-    return res.status(500).json({ error: 'Failed to process payment. Please try again.' });
   }
 });
 
