@@ -25,7 +25,7 @@ import { evaluateCoupon, redeemCoupon } from './admin/coupons.js';
 import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser, userSessionStatus } from './services/authToken.js';
 import { verifiedGate } from './services/verifiedGate.js';
 import { productGate } from './services/productGate.js';
-import billingRouter from './billing/routes.js';
+import billingRouter, { startOrderSweep } from './billing/routes.js';
 import { aiBudgetGate, requireFreeUse, interviewFeature } from './billing/gate.js';
 import { chargeAiUsage, keepAiContext } from './billing/aiContext.js';
 import { issueVerification, verifyEmailToken, resendCooldown, hashToken, frontendUrl, markEmailVerified, verifyThroughProvider, VERIFY_MESSAGES } from './services/emailVerification.js';
@@ -3109,6 +3109,8 @@ if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
   // Local dev convenience: run agent queue workers in the API process (production runs auto-apply-agent/src/worker.js)
   // Pull the support inbox into tickets every 2 minutes (serverless hosts sync when Support is opened)
   if (!process.env.VERCEL) startInboxPolling();
+  // Turn on Pro for paid orders whose webhook never came, and retry unsent invoices
+  if (!process.env.VERCEL) startOrderSweep();
   if (process.env.INLINE_WORKERS === 'true' && !process.env.VERCEL) {
     startWorkers().catch((err) => console.error('[agent] failed to start inline workers:', err.message));
   } else if (!process.env.VERCEL) {

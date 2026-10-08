@@ -66,6 +66,18 @@ export async function getSuccessfulPayment(orderId) {
   }
 }
 
+// Refunds money on a paid order. Cashfree rejects a repeated refund_id, so a retry can't refund twice.
+export function createCashfreeRefund({ orderId, amount, refundId, note }) {
+  return call(`/orders/${encodeURIComponent(orderId)}/refunds`, {
+    method: 'POST',
+    body: {
+      refund_amount: amount,
+      refund_id: refundId,
+      ...(note ? { refund_note: note.slice(0, 100) } : {})
+    }
+  });
+}
+
 // Signature = base64(HMAC-SHA256(timestamp + raw body, secret key))
 export function verifyCashfreeWebhook(rawBody, timestamp, signature) {
   if (!rawBody || !timestamp || !signature || !process.env.CASHFREE_SECRET_KEY) return false;

@@ -15,7 +15,8 @@ let models;
 let settleOrder;
 let isUserPaid;
 let realFetch;
-const cashfree = { status: 'ACTIVE', calls: 0 };
+const cashfree = { status: 'ACTIVE', calls: 0, refundStatus: 200, refunds: [] };
+const sentEmails = [];
 
 before(async () => {
   mongod = await MongoMemoryServer.create({ instance: { launchTimeout: 60000 } });
@@ -32,10 +33,19 @@ before(async () => {
     if (String(url).includes('cashfree.com')) {
       cashfree.calls += 1;
       const u = String(url);
+      if (u.endsWith('/refunds')) {
+        cashfree.refunds.push(JSON.parse(opts.body));
+        const ok = cashfree.refundStatus === 200;
+        return new Response(JSON.stringify(ok ? { refund_status: 'PENDING' } : { message: 'refund failed' }), { status: cashfree.refundStatus, headers: { 'Content-Type': 'application/json' } });
+      }
       const body = u.endsWith('/orders') ? { payment_session_id: 'session_123', order_status: 'ACTIVE' }
         : u.endsWith('/payments') ? [{ payment_status: 'SUCCESS', cf_payment_id: 99, payment_group: 'upi' }]
         : { order_status: cashfree.status };
       return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (String(url).includes('api.resend.com')) {
+      sentEmails.push(JSON.parse(opts.body));
+      return new Response(JSON.stringify({ id: `email_${sentEmails.length}` }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
     return realFetch(url, opts);
   };
@@ -227,6 +237,95 @@ test('a Cashfree payment turns Pro on exactly once', async () => {
   const order = await models.PaymentOrder.findOne({ orderId }).lean();
   assert.equal(order.paymentMethod, 'upi');
   cashfree.status = 'ACTIVE';
+});
+
+async function paidOrder(email) {
+  const token = await userToken(email);
+  const checkout = await call('/api/billing/checkout', { method: 'POST', token, body: { plan: 'monthly', phone: '9876543210' } });
+  cashfree.status = 'PAID';
+  await settleOrder(checkout.body.orderId);
+  cashfree.status = 'ACTIVE';
+  const log = await mongoose.model('PaymentLog').findOne({ transactionId: checkout.body.orderId }).lean();
+  return { orderId: checkout.body.orderId, logId: String(log._id) };
+}
+
+test('an admin refund pays the money back through Cashfree and ends that Pro time', async () => {
+  const { orderId, logId } = await paidOrder('refund@example.com');
+  assert.equal(await isUserPaid({ email: 'refund@example.com' }), true);
+
+  const refund = (body) => call(`/api/admin/payments/${logId}/refund`, { method: 'POST', token: ownerToken, body });
+  assert.equal((await refund({})).status, 400);
+  const res = await refund({ reason: 'Charged twice' });
+  assert.equal(res.status, 200);
+  assert.equal(res.body.data.status, 'refunded');
+  assert.deepEqual(cashfree.refunds.at(-1), { refund_amount: 189, refund_id: `rf_${orderId}`, refund_note: 'Charged twice' });
+  assert.equal(await isUserPaid({ email: 'refund@example.com' }), false);
+  assert.equal((await models.Subscription.findOne({ orderId }).lean()).status, 'cancelled');
+  // A second refund is refused before reaching Cashfree
+  const before = cashfree.refunds.length;
+  assert.equal((await refund({ reason: 'again' })).status, 400);
+  assert.equal(cashfree.refunds.length, before);
+});
+
+test('a refund Cashfree rejects leaves the payment and Pro as they were', async () => {
+  const { logId } = await paidOrder('refund-fail@example.com');
+  cashfree.refundStatus = 400;
+  const res = await call(`/api/admin/payments/${logId}/refund`, { method: 'POST', token: ownerToken, body: { reason: 'Test' } });
+  cashfree.refundStatus = 200;
+  assert.equal(res.status, 502);
+  assert.equal((await mongoose.model('PaymentLog').findById(logId).lean()).status, 'success');
+  assert.equal(await isUserPaid({ email: 'refund-fail@example.com' }), true);
+
+  // Already refunded at Cashfree (an earlier try that didn't finish): still marked refunded here
+  cashfree.refundStatus = 409;
+  const retry = await call(`/api/admin/payments/${logId}/refund`, { method: 'POST', token: ownerToken, body: { reason: 'Test' } });
+  cashfree.refundStatus = 200;
+  assert.equal(retry.status, 200);
+  assert.equal(await isUserPaid({ email: 'refund-fail@example.com' }), false);
+});
+
+test('a paid order emails one PDF invoice, numbered in order', async () => {
+  process.env.RESEND_API_KEY = 're_test';
+  try {
+    const { orderId } = await paidOrder('invoice@example.com');
+    const { sendInvoice } = await import('../../src/billing/invoice.js');
+    // settleOrder sends it without waiting
+    for (let i = 0; i < 50 && !sentEmails.some((m) => m.to.includes('invoice@example.com')); i++) await new Promise((r) => setTimeout(r, 50));
+    const mails = sentEmails.filter((m) => m.to.includes('invoice@example.com'));
+    assert.equal(mails.length, 1);
+    const order = await models.PaymentOrder.findOne({ orderId }).lean();
+    assert.match(order.invoiceNumber, /^CVM-\d{4}-\d{4}$/);
+    assert.ok(order.invoiceSentAt);
+    assert.equal(mails[0].subject, `Your CVMind invoice ${order.invoiceNumber}`);
+    assert.equal(mails[0].attachments[0].filename, `CVMind-Invoice-${order.invoiceNumber}.pdf`);
+    assert.equal(Buffer.from(mails[0].attachments[0].content, 'base64').subarray(0, 5).toString(), '%PDF-');
+
+    // Never twice for the same order
+    assert.equal(await sendInvoice(orderId), false);
+    assert.equal(sentEmails.filter((m) => m.to.includes('invoice@example.com')).length, 1);
+
+    const next = await paidOrder('invoice2@example.com');
+    for (let i = 0; i < 50 && !(await models.PaymentOrder.findOne({ orderId: next.orderId }).lean()).invoiceNumber; i++) await new Promise((r) => setTimeout(r, 50));
+    const second = await models.PaymentOrder.findOne({ orderId: next.orderId }).lean();
+    assert.equal(Number(second.invoiceNumber.slice(-4)), Number(order.invoiceNumber.slice(-4)) + 1);
+  } finally {
+    process.env.RESEND_API_KEY = '';
+  }
+});
+
+test('the sweep turns on Pro for a paid order nobody came back for', async () => {
+  const token = await userToken('lost-return@example.com');
+  const checkout = await call('/api/billing/checkout', { method: 'POST', token, body: { plan: 'pass-7d', phone: '9876543210' } });
+  const { orderId } = checkout.body;
+  // No webhook and no return page: the order is still "created" here, but paid at Cashfree
+  await models.PaymentOrder.updateOne({ orderId }, { createdAt: new Date(Date.now() - 5 * 60 * 1000) });
+  cashfree.status = 'PAID';
+  const { sweepOrders } = await import('../../src/billing/routes.js');
+  const result = await sweepOrders();
+  cashfree.status = 'ACTIVE';
+  assert.ok(result.settled >= 1);
+  assert.equal(await isUserPaid({ email: 'lost-return@example.com' }), true);
+  assert.equal((await models.PaymentOrder.findOne({ orderId }).lean()).status, 'paid');
 });
 
 test('the webhook only accepts Cashfree-signed requests', async () => {

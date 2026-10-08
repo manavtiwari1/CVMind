@@ -38,6 +38,24 @@ export async function activatePlan({ email, plan, days, amount = 0, source, orde
   }
 }
 
+// Ends an active subscription now. Later subscriptions that stacked on it move up to fill the gap.
+// Returns the cancelled subscription, or null when none matched.
+export async function cancelSubscription(filter) {
+  const sub = await Subscription.findOneAndUpdate({ ...filter, status: 'active' }, { status: 'cancelled', cancelledAt: new Date() }, { returnDocument: 'after' }).lean();
+  if (!sub) return null;
+  const removed = Math.max(0, new Date(sub.expiresAt).getTime() - Math.max(Date.now(), new Date(sub.startsAt).getTime()));
+  if (removed > 0) {
+    const later = await Subscription.find({ email: sub.email, status: 'active', startsAt: { $gte: sub.expiresAt } }).lean();
+    for (const s of later) {
+      await Subscription.updateOne({ _id: s._id }, {
+        startsAt: new Date(new Date(s.startsAt).getTime() - removed),
+        expiresAt: new Date(new Date(s.expiresAt).getTime() - removed)
+      });
+    }
+  }
+  return sub;
+}
+
 // ── AI token budget ─────────────────────────────────────────────────────────
 // Extra tokens from admin grants that haven't expired
 export async function bonusTokens(email) {

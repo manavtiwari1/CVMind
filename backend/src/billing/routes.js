@@ -7,6 +7,7 @@ import { frontendUrl } from '../services/emailVerification.js';
 import { savePaymentLog } from '../db.js';
 import { PLANS, PLAN_KEYS, FREE_WEEKLY, TOKEN_LIMITS, PRO_TEMPLATES, PRO_LETTER_TEMPLATES } from './plans.js';
 import { PaymentOrder } from './models.js';
+import { sendInvoice } from './invoice.js';
 import { activeSubscription, activatePlan, tokenStatus, weeklyUses } from './service.js';
 import { cashfreeConfigured, cashfreeMode, createCashfreeOrder, getCashfreeOrder, getSuccessfulPayment, verifyCashfreeWebhook } from './cashfree.js';
 
@@ -138,6 +139,8 @@ export async function settleOrder(orderId) {
         const coupon = await Coupon.findOne({ code: order.couponCode }).lean();
         if (coupon) await redeemCoupon(coupon, { email: order.email, amount: order.listPrice, discount: order.discount, transactionId: orderId }).catch(() => {});
       }
+      // Not awaited: a slow email shouldn't hold up the webhook or the return page
+      sendInvoice(orderId).catch((e) => console.error('[billing] invoice email failed:', orderId, e.message));
     }
     return { status: 'paid', order, subscription: sub };
   }
@@ -146,6 +149,37 @@ export async function settleOrder(orderId) {
     return { status: 'failed', order };
   }
   return { status: 'pending', order };
+}
+
+// Safety net for a missed webhook and a buyer who closed the tab after paying: checks recent
+// unpaid orders with Cashfree, and retries invoice emails that didn't go out.
+export async function sweepOrders() {
+  if (!cashfreeConfigured() || !(await dbReady(0))) return { settled: 0, invoices: 0 };
+  const now = Date.now();
+  const open = await PaymentOrder.find({ status: 'created', createdAt: { $gt: new Date(now - 24 * 60 * 60 * 1000), $lt: new Date(now - 2 * 60 * 1000) } })
+    .sort({ createdAt: -1 }).limit(50).lean();
+  let settled = 0;
+  for (const o of open) {
+    try {
+      if ((await settleOrder(o.orderId)).status === 'paid') settled += 1;
+    } catch (err) {
+      console.error('[billing] sweep settle failed:', o.orderId, err.message);
+    }
+  }
+  const unsent = await PaymentOrder.find({ status: 'paid', amount: { $gt: 0 }, invoiceSentAt: null, paidAt: { $gt: new Date(now - 3 * 24 * 60 * 60 * 1000), $lt: new Date(now - 60 * 1000) } })
+    .limit(20).lean();
+  let invoices = 0;
+  for (const o of unsent) {
+    if (await sendInvoice(o.orderId).catch((err) => console.error('[billing] invoice retry failed:', o.orderId, err.message))) invoices += 1;
+  }
+  return { settled, invoices };
+}
+
+// Long-running servers sweep every 5 minutes
+export function startOrderSweep(intervalMs = 5 * 60 * 1000) {
+  const tick = () => sweepOrders().catch((err) => console.error('[billing] sweep failed:', err.message));
+  setTimeout(tick, 30000);
+  return setInterval(tick, intervalMs);
 }
 
 router.post('/api/billing/verify', requireUser, async (req, res) => {

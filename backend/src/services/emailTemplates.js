@@ -96,6 +96,24 @@ export function supportReplyEmail({ name, subject, number, body }) {
   };
 }
 
+export function invoiceEmail({ name, number, plan, amount, until }) {
+  return {
+    subject: `Your CVMind invoice ${number}`,
+    html: renderEmail({
+      preheader: `Payment received: ${amount} for CVMind Pro.`,
+      eyebrow: 'Payment received',
+      title: 'Thanks for getting CVMind Pro',
+      greetingName: name,
+      body: `We received your payment of ${amount} for CVMind Pro (${plan}). Your invoice ${number} is attached as a PDF.`,
+      note: until ? `Pro is active on your account until ${until}.` : '',
+      ctaLabel: 'Open CVMind',
+      ctaUrl: 'https://www.cvmind.in/dashboard',
+      afterword: 'Questions about this payment? Just reply to this email.',
+      footerReason: 'You received this email because you paid for CVMind Pro.'
+    })
+  };
+}
+
 export function resumePdfEmail({ name, fileName }) {
   return {
     subject: `Your resume: ${fileName}`,

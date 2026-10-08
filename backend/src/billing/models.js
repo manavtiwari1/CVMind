@@ -37,6 +37,8 @@ const paymentOrderSchema = new Schema({
   paymentMethod: { type: String, default: '' },
   cfPaymentId: { type: String, default: '' },
   paidAt: { type: Date, default: null },
+  invoiceNumber: { type: String, default: '' },
+  invoiceSentAt: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now }
 });
 paymentOrderSchema.index({ email: 1, createdAt: -1 });

@@ -153,14 +153,16 @@ export default function Payments() {
       {refunding && (
         <ConfirmDialog
           title={`Refund ${money(refunding.amount)} to ${refunding.email}?`}
-          description={s?.gatewaySimulated ? 'The payment is marked as refunded. No money moves because the gateway is simulated.' : 'The payment is marked as refunded.'}
-          confirmLabel="Mark as refunded"
+          description={s?.gatewaySimulated
+            ? 'The payment is marked as refunded. No money moves because the gateway is simulated.'
+            : 'Cashfree payments are refunded to the buyer through Cashfree (it takes a few working days to reach them), and the Pro time from that payment ends now.'}
+          confirmLabel={s?.gatewaySimulated ? 'Mark as refunded' : 'Refund'}
           danger
           reason={{ label: 'Reason', placeholder: 'e.g. Charged twice', required: true }}
           busy={busy === 'refund'}
           onClose={() => setRefunding(null)}
           onConfirm={async (reason) => {
-            const ok = await run('refund', () => api(`/payments/${refunding.id}/refund`, { method: 'POST', body: { reason } }), 'Payment marked as refunded');
+            const ok = await run('refund', () => api(`/payments/${refunding.id}/refund`, { method: 'POST', body: { reason } }), 'Payment refunded');
             setRefunding(null);
             if (ok !== undefined) { list.reload(); summary.reload(); }
           }}

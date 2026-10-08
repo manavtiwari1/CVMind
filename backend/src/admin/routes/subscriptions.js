@@ -4,7 +4,7 @@ import { audit } from '../audit.js';
 import { model, clean, handle, httpError, isId, isEmail, escapeRegex } from '../util.js';
 import { Subscription, PaymentOrder, TokenGrant } from '../../billing/models.js';
 import { PLANS, PLAN_KEYS, FREE_WEEKLY, MAX_BONUS_TOKENS, MAX_BONUS_DAYS } from '../../billing/plans.js';
-import { activatePlan, activeSubscription, tokenStatus, weeklyUses, grantTokens } from '../../billing/service.js';
+import { activatePlan, activeSubscription, cancelSubscription, tokenStatus, weeklyUses, grantTokens } from '../../billing/service.js';
 
 // CVMind Pro subscriptions: who has Pro until when, Cashfree orders, and Pro given by hand.
 const router = express.Router();
@@ -83,19 +83,8 @@ router.post('/', requireAdmin('payments.manage'), handle(async (req, res) => {
 
 router.post('/:id/cancel', requireAdmin('payments.manage'), handle(async (req, res) => {
   if (!isId(req.params.id)) throw httpError(404, 'Subscription not found.');
-  const sub = await Subscription.findOneAndUpdate({ _id: req.params.id, status: 'active' }, { status: 'cancelled', cancelledAt: new Date() }, { returnDocument: 'after' }).lean();
+  const sub = await cancelSubscription({ _id: req.params.id });
   if (!sub) throw httpError(404, 'Subscription not found or already cancelled.');
-  // Later subscriptions that stacked on this one move up to fill the gap
-  const removed = Math.max(0, new Date(sub.expiresAt).getTime() - Math.max(Date.now(), new Date(sub.startsAt).getTime()));
-  if (removed > 0) {
-    const later = await Subscription.find({ email: sub.email, status: 'active', startsAt: { $gte: sub.expiresAt } }).lean();
-    for (const s of later) {
-      await Subscription.updateOne({ _id: s._id }, {
-        startsAt: new Date(new Date(s.startsAt).getTime() - removed),
-        expiresAt: new Date(new Date(s.expiresAt).getTime() - removed)
-      });
-    }
-  }
   await audit(req, 'subscription.cancelled', { targetType: 'email', targetId: sub.email, targetLabel: sub.email, details: { plan: sub.plan, reason: clean(req.body?.reason, 300) } });
   res.json({ success: true });
 }));
