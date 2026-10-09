@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { Building2, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock, Crown, Loader2, Lock, Minus, ShieldCheck, X } from 'lucide-react';
+import { ArrowRight, Building2, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock, CreditCard, Crown, Download, Landmark, LayoutTemplate, Loader2, Lock, Minus, Palette, ShieldCheck, Smartphone, Sparkles, SpellCheck, Target, X } from 'lucide-react';
 import TemplatePreview from '../components/TemplatePreview';
 import { SlotBanner } from '../components/SiteBanner';
 import { CV_TEMPLATES } from '../data/cvTemplates';
@@ -103,13 +103,6 @@ const PRO_LIST = [
   '2,00,000 AI tokens every 3 days',
 ];
 
-const TEAM_LIST = [
-  'Pro for every student or employee, billed together',
-  'Volume pricing for colleges, bootcamps and companies',
-  'Access to just the products you need, like CVMind Code or Interview Prep',
-  'Help setting up accounts and one invoice',
-];
-
 const FAQS = [
   { q: 'Does Pro renew automatically?', a: 'No. You pay once for the time you pick and Pro ends on its own. Nothing is charged again unless you buy another plan.' },
   { q: 'What if I buy a plan while Pro is still running?', a: 'The new days are added to the end of your current plan, so you never lose time you already paid for.' },
@@ -121,6 +114,8 @@ const FAQS = [
 
 const perDay = (p: Plan) => p.price / p.days;
 const perDayText = (p: Plan) => `₹${perDay(p).toFixed(perDay(p) < 10 ? 2 : 0)}/day`;
+// Percent saved per day against the monthly plan, for plans longer than a month
+const savingFor = (p: Plan, monthly?: Plan) => (monthly && p.days > monthly.days ? Math.round((1 - perDay(p) / perDay(monthly)) * 100) : 0);
 
 type ReturnState = { status: 'checking' | 'paid' | 'pending' | 'failed' | 'error'; message?: string; expiresAt?: string | null } | null;
 
@@ -179,6 +174,7 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
 
   const plan = plans.find((p) => p.key === selected) || plans[0];
   const monthly = plans.find((p) => p.key === 'monthly');
+  const saving = savingFor(plan, monthly);
   const proTemplates = useMemo(() => PRO_TEMPLATES.map((t) => ({ ...t, html: withSampleData(t) })), []);
   const proLetters = useMemo(() => PRO_LETTERS.map((d) => ({ id: d.id, name: d.name, html: d.render(d.sample) })), []);
 
@@ -206,92 +202,116 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
 
       {returned && <ReturnBanner state={returned} onClose={() => setReturned(null)} onRetry={() => { setReturned(null); setCheckoutOpen(true); }} />}
 
-      <section className="pr-top">
-      <header className="pr-hero">
-        <div>
+      {/* ── Free and Pro passes on the wave band ─────────────────── */}
+      <section className="pr-stage">
+        <Waves />
+
+        <header className="pr-hero">
           <span className="pr-eyebrow"><Crown size={14} /> CVMind Pro</span>
-          <h1 className="pr-title">Pay for the weeks you're job hunting. Not a month more.</h1>
+          <h1 className="pr-title">Pay for the weeks you're job hunting. <em>Not a month more.</em></h1>
+          <p className="pr-lede">Pick a pass for a sprint or a plan for the long run. Every plan is a one-time payment and ends on its own; nothing renews behind your back.</p>
+        </header>
+
+        <div className="pr-duo">
+          <article className="pr-pass pr-pass--free" aria-labelledby="pr-free-name">
+            <div className="pr-pass-top">
+              <div className="pr-pass-tags">
+                <h2 id="pr-free-name" className="pr-tag">Free plan</h2>
+              </div>
+              <p className="pr-amount"><span className="pr-amount-num">₹0</span><span className="pr-amount-sup">forever</span></p>
+              <p className="pr-amount-sub">Build and check resumes, with weekly tries of the AI tools.</p>
+            </div>
+            <div className="pr-pass-bottom">
+              <ul className="pr-ticks">
+                {FREE_LIST.map((f) => <li key={f}><Check size={15} strokeWidth={2.5} /> {f}</li>)}
+              </ul>
+              <button type="button" className="pr-btn pr-btn--outline" onClick={() => setCurrentPage('resume-builder')}>Build my resume</button>
+            </div>
+          </article>
+
+          <article className="pr-pass pr-pass--pro" aria-labelledby="pr-pro-name">
+            <div className="pr-pass-top">
+              <span className="pr-spark pr-spark--a" aria-hidden="true"><Sparkles size={16} /></span>
+              <span className="pr-spark pr-spark--b" aria-hidden="true"><Sparkles size={12} /></span>
+              <div className="pr-pass-tags">
+                <span className="pr-crown" aria-hidden="true"><Crown size={17} /></span>
+                <h2 id="pr-pro-name" className="pr-tag">Pro {plan.label}</h2>
+                {saving > 0 && monthly && (
+                  <span className="pr-save"><s>{formatInr(Math.round(perDay(monthly) * plan.days))}</s> Save {saving}%</span>
+                )}
+              </div>
+              <p className="pr-amount" aria-live="polite">
+                <span className="pr-amount-num">{formatInr(plan.price)}</span>
+                <span className="pr-amount-sup">/{plan.days} days</span>
+              </p>
+              <p className="pr-amount-sub">{perDayText(plan)} · {PLAN_NOTES[plan.key] || `${plan.days} days of Pro`} · no auto-renew</p>
+              <div className="pr-tabs" role="group" aria-label="How long you need Pro">
+                {plans.map((p) => {
+                  const off = savingFor(p, monthly);
+                  return (
+                    <button key={p.key} type="button" className={`pr-tab${p.key === plan.key ? ' is-active' : ''}`} aria-pressed={p.key === plan.key} onClick={() => setSelected(p.key)}>
+                      {p.label}{off > 0 && <sup>-{off}%</sup>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="pr-pass-bottom">
+              <ul className="pr-ticks">
+                {PRO_LIST.map((f) => <li key={f}><Check size={15} strokeWidth={2.5} /> {f}</li>)}
+              </ul>
+              {!paymentsOpen ? (
+                <button type="button" className="pr-btn pr-btn--green" disabled>
+                  <Clock size={16} /> {opensText}
+                </button>
+              ) : pro ? (
+                <button type="button" className="pr-btn pr-btn--green" onClick={getPro}>
+                  <Clock size={16} /> Add {plan.days} more days
+                </button>
+              ) : (
+                <button type="button" className="pr-btn pr-btn--green" onClick={getPro}>
+                  Get Pro for {formatInr(plan.price)} <ArrowRight size={17} />
+                </button>
+              )}
+              <p className="pr-pass-fine"><ShieldCheck size={13} /> Secure payment by Cashfree</p>
+            </div>
+          </article>
         </div>
-        <p className="pr-lede">Pick a pass for a sprint or a plan for the long run. Every plan is a one-time payment and ends on its own; nothing renews behind your back.</p>
-      </header>
 
-      {/* ── Plan lengths ─────────────────────────────────────────── */}
-      <section className="pr-plans" aria-label="Choose how long you need Pro">
-        {plans.map((p) => {
-          const active = p.key === selected;
-          const saving = monthly && p.days > monthly.days ? Math.round((1 - perDay(p) / perDay(monthly)) * 100) : 0;
-          return (
-            <button key={p.key} type="button" className={`pr-plan${active ? ' is-active' : ''}`} aria-pressed={active} onClick={() => setSelected(p.key)}>
-              {saving > 0 && <span className="pr-plan-save">Save {saving}%</span>}
-              <span className="pr-plan-label">{p.label}</span>
-              <span className="pr-plan-price">{formatInr(p.price)}</span>
-              <span className="pr-plan-day">{perDayText(p)}</span>
-              <span className="pr-plan-note">{PLAN_NOTES[p.key] || `${p.days} days`}</span>
-            </button>
-          );
-        })}
-      </section>
-
-      {/* ── Free vs Pro ──────────────────────────────────────────── */}
-      <section className="pr-cards">
-        <article className="pr-card">
-          <h2 className="pr-card-name">Free</h2>
-          <p className="pr-card-price"><span>₹0</span> forever</p>
-          <p className="pr-card-desc">Everything you need to build and check a resume, with weekly tries of the AI tools.</p>
-          <ul className="pr-list">
-            {FREE_LIST.map((f) => <li key={f}><Check size={16} /> {f}</li>)}
+        <div className="pr-accept" aria-label="Payment methods">
+          <span>Pay with</span>
+          <ul>
+            <li><Smartphone size={16} /> UPI</li>
+            <li><CreditCard size={16} /> Debit &amp; credit cards</li>
+            <li><Landmark size={16} /> Netbanking</li>
           </ul>
-          <button type="button" className="pr-btn pr-btn--ghost" onClick={() => setCurrentPage('resume-builder')}>Start for free</button>
-        </article>
+        </div>
 
-        <article className="pr-card pr-card--pro">
-          <div className="pr-card-top">
-            <h2 className="pr-card-name"><Crown size={18} /> Pro</h2>
-            <span className="pr-card-chip">{plan.label}</span>
+        <aside className="pr-team">
+          <span className="pr-team-icon" aria-hidden="true"><Building2 size={22} /></span>
+          <div className="pr-team-text">
+            <h2>Colleges, bootcamps and teams</h2>
+            <p>Pro for every student or employee on one invoice, with volume pricing, or just the products you need.</p>
           </div>
-          <p className="pr-card-price"><span>{formatInr(plan.price)}</span> for {plan.days} days</p>
-          <p className="pr-card-desc">Works out to {perDayText(plan)}. One payment, no auto-renew.</p>
-          <ul className="pr-list">
-            {PRO_LIST.map((f) => <li key={f}><Check size={16} /> {f}</li>)}
-          </ul>
-          {!paymentsOpen ? (
-            <button type="button" className="pr-btn pr-btn--light" disabled>
-              <Clock size={16} /> {opensText}
-            </button>
-          ) : pro ? (
-            <button type="button" className="pr-btn pr-btn--light" onClick={getPro}>
-              <Clock size={16} /> Add {plan.days} more days
-            </button>
-          ) : (
-            <button type="button" className="pr-btn pr-btn--light" onClick={getPro}>
-              Get Pro for {formatInr(plan.price)}
-            </button>
-          )}
-          <p className="pr-card-fine"><ShieldCheck size={13} /> Secure payment by Cashfree · UPI, cards, netbanking</p>
-        </article>
-
-        <article className="pr-card">
-          <h2 className="pr-card-name"><Building2 size={18} /> Institutions</h2>
-          <p className="pr-card-price"><span>Custom</span></p>
-          <p className="pr-card-desc">For colleges, placement cells, bootcamps and teams, or if you only need one product.</p>
-          <ul className="pr-list">
-            {TEAM_LIST.map((f) => <li key={f}><Check size={16} /> {f}</li>)}
-          </ul>
-          <button type="button" className="pr-btn pr-btn--ghost" onClick={() => contactUs('Institution or team pricing')}>Contact us</button>
-        </article>
-      </section>
+          <button type="button" className="pr-btn pr-btn--outline" onClick={() => contactUs('Institution or team pricing')}>Get custom pricing</button>
+        </aside>
       </section>
 
-      {/* ── Pro templates, rendered for real ─────────────────────── */}
-      <section className="pr-templates">
-        <div className="pr-section-head">
-          <h2>{PRO_TEMPLATES.length + PRO_LETTERS.length} designs come with Pro</h2>
-          <p>These are the actual templates, filled with sample content. Free accounts keep the other {FREE_TEMPLATE_COUNT} resume templates and {FREE_LETTER_COUNT} cover letter designs.</p>
+      {/* ── What Pro unlocks, shown with the real templates ──────── */}
+      <section className="pr-show">
+        <div className="pr-show-copy">
+          <span className="pr-eyebrow pr-eyebrow--green"><Sparkles size={14} /> Included with Pro</span>
+          <h2>A feature-packed resume builder that makes the job hunt a breeze</h2>
+          <p>Pro opens all {CV_TEMPLATES.length} resume templates and {LETTER_DESIGNS.length} cover letter designs, with no CVMind footer on your downloads. Pick a design, tailor it to the job, and download. These previews are the real templates.</p>
+          <ul className="pr-show-stats">
+            <li><strong>{PRO_TEMPLATES.length}</strong><span>Pro resume templates</span></li>
+            <li><strong>{PRO_LETTERS.length}</strong><span>Pro cover letters</span></li>
+            <li><strong>∞</strong><span>Tailored versions</span></li>
+          </ul>
+          <button type="button" className="pr-btn pr-btn--outline" onClick={() => setCurrentPage('resume-builder')}>Build my resume now</button>
+          <p className="pr-show-note">Free accounts keep {FREE_TEMPLATE_COUNT} resume templates and {FREE_LETTER_COUNT} cover letter designs.</p>
         </div>
-        <div className="pr-slider-cols">
-          <ProSlider title="Resume templates" items={proTemplates.map((t) => ({ id: t.id, name: t.name, sub: t.tag, html: t.html }))} />
-          <ProSlider title="Cover letters" items={proLetters.map((d) => ({ id: d.id, name: d.name, sub: 'Cover letter', html: d.html }))} delay={1600} />
-        </div>
+        <Showcase templates={proTemplates} letter={proLetters[0]} />
       </section>
 
       {/* ── Comparison ───────────────────────────────────────────── */}
@@ -347,7 +367,7 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
       {/* ── Closing band ─────────────────────────────────────────── */}
       <section className="pr-close">
         <h2>Start with a 3‑day pass for {formatInr(plans[0]?.price ?? 39)}.</h2>
-        <button type="button" className="pr-btn pr-btn--light" disabled={!paymentsOpen} onClick={() => { setSelected(plans[0]?.key || 'pass-3d'); getPro(); }}>
+        <button type="button" className="pr-btn pr-btn--white" disabled={!paymentsOpen} onClick={() => { setSelected(plans[0]?.key || 'pass-3d'); getPro(); }}>
           {paymentsOpen ? <><Crown size={16} /> Get Pro</> : <><Clock size={16} /> {opensText}</>}
         </button>
       </section>
@@ -548,74 +568,107 @@ function Checkout({ plans, selected, onSelect, paymentsOn, onClose, onPaid, setC
   );
 }
 
-interface SlideItem { id: string; name: string; sub: string; html: string }
+interface ShowItem { id: string; name: string; tag?: string; html: string }
 
-// Auto-advancing row of real template previews: two at a time on wide screens, one on phones.
-// Pauses while hovered or focused and when the tab is hidden; reduced-motion users get arrows only.
-function ProSlider({ title, items, delay = 0 }: { title: string; items: SlideItem[]; delay?: number }) {
-  const [per, setPer] = useState(() => (window.matchMedia('(max-width: 700px)').matches ? 1 : 2));
+const EDITOR_TOOLS = [
+  { icon: LayoutTemplate, label: 'Templates' },
+  { icon: Palette, label: 'Design & fonts' },
+  { icon: Target, label: 'Tailor to a job' },
+  { icon: SpellCheck, label: 'AI proofreading' },
+  { icon: Download, label: 'Download PDF' },
+];
+
+const SWATCHES = ['#0f172a', '#2dc08d', '#2997ff', '#7c3aed', '#f97316', '#e11d48'];
+
+// The "feature" collage: an editor window, the real Pro templates cycling on a page, a phone
+// showing a cover letter, and a design panel. Pauses on hover; reduced-motion users get arrows only.
+function Showcase({ templates, letter }: { templates: ShowItem[]; letter?: ShowItem }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const last = Math.max(0, items.length - per);
-  const shown = Math.min(index, last);
+  const count = templates.length;
 
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 700px)');
-    const onChange = () => setPer(mq.matches ? 1 : 2);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
+    if (paused || count < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const id = window.setInterval(() => { if (!document.hidden) setIndex((i) => (i + 1) % count); }, 3600);
+    return () => window.clearInterval(id);
+  }, [paused, count]);
 
-  useEffect(() => {
-    if (paused || last === 0 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    let timer = 0;
-    const tick = () => {
-      if (!document.hidden) setIndex((i) => (Math.min(i, last) >= last ? 0 : Math.min(i, last) + 1));
-      timer = window.setTimeout(tick, 3200);
-    };
-    timer = window.setTimeout(tick, 3200 + delay);
-    return () => window.clearTimeout(timer);
-  }, [paused, last, delay]);
-
-  const go = (i: number) => setIndex((i + last + 1) % (last + 1));
+  if (!count) return null;
+  const t = templates[index % count];
+  const go = (step: number) => setIndex((i) => (i + step + count) % count);
 
   return (
     <div
-      className="pr-slider"
+      className="pr-show-stage"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
-      aria-roledescription="carousel"
-      aria-label={title}
     >
-      <div className="pr-slider-head">
-        <h3>{title} <span>{items.length} Pro</span></h3>
-        <div className="pr-slider-arrows">
-          <button type="button" onClick={() => go(shown - 1)} aria-label={`Previous ${title.toLowerCase()}`}><ChevronLeft size={18} /></button>
-          <button type="button" onClick={() => go(shown + 1)} aria-label={`Next ${title.toLowerCase()}`}><ChevronRight size={18} /></button>
-        </div>
+      <span className="pr-show-diamond" aria-hidden="true" />
+      <svg className="pr-show-doodle" viewBox="0 0 160 220" fill="none" aria-hidden="true">
+        <path d="M40 2c-30 40 30 60 10 100-14 28-52 14-38-14 16-32 74-12 76 30 2 34-26 56 4 80" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+        <path d="m86 192 6 10-12 2" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+
+      <div className="pr-show-editor" aria-hidden="true">
+        <div className="pr-show-bar"><i /><i /><i /></div>
+        <ul>
+          {EDITOR_TOOLS.map(({ icon: Icon, label }) => <li key={label}><Icon size={15} /> {label}</li>)}
+        </ul>
       </div>
-      <div className="pr-slider-window">
-        <div className="pr-slider-track" style={{ transform: `translateX(-${(shown * 100) / per}%)` }}>
-          {items.map((t, i) => (
-            <figure key={t.id} className="pr-slide" style={{ flexBasis: `${100 / per}%` }} aria-hidden={i < shown || i >= shown + per}>
-              <div className="pr-template-thumb">
-                <TemplatePreview html={t.html} name={t.name} eager />
-                <span className="pr-template-pro"><Crown size={11} /> Pro</span>
-              </div>
-              <figcaption><strong>{t.name}</strong><span>{t.sub}</span></figcaption>
-            </figure>
-          ))}
-        </div>
-      </div>
-      {last > 0 && (
-        <div className="pr-slider-dots" role="group" aria-label={`${title} slides`}>
-          {Array.from({ length: last + 1 }, (_, i) => (
-            <button key={i} type="button" className={i === shown ? 'is-on' : ''} onClick={() => setIndex(i)} aria-label={`Show slide ${i + 1}`} aria-current={i === shown} />
-          ))}
+
+      {/* All pages stay mounted and crossfade, so switching never flashes a loading skeleton */}
+      <figure className="pr-show-paper">
+        {templates.map((item) => (
+          <div key={item.id} className={`pr-show-page${item.id === t.id ? ' is-on' : ''}`} aria-hidden={item.id !== t.id}>
+            <TemplatePreview html={item.html} name={item.name} eager />
+          </div>
+        ))}
+        <figcaption><Crown size={12} /> {t.name}</figcaption>
+      </figure>
+
+      {letter && (
+        <div className="pr-show-phone" aria-hidden="true">
+          <div className="pr-show-phone-screen">
+            <span className="pr-show-phone-cta">Download PDF</span>
+            <div className="pr-show-phone-page"><TemplatePreview html={letter.html} name={letter.name} eager /></div>
+          </div>
         </div>
       )}
+
+      <div className="pr-show-panel" aria-hidden="true">
+        <span className="pr-show-label">Page margins</span>
+        <span className="pr-show-slider"><i style={{ width: '28%' }} /></span>
+        <span className="pr-show-label">Font style</span>
+        <span className="pr-show-select">Inter <ChevronRight size={12} /></span>
+        <span className="pr-show-label">Colours</span>
+        <span className="pr-show-swatches">
+          {SWATCHES.map((c, i) => <i key={c} style={{ background: c }} className={i === 1 ? 'is-on' : ''} />)}
+        </span>
+      </div>
+
+      <div className="pr-show-nav">
+        <button type="button" onClick={() => go(-1)} aria-label="Previous Pro template"><ChevronLeft size={16} /></button>
+        <span aria-live="polite">{(index % count) + 1} / {count}</span>
+        <button type="button" onClick={() => go(1)} aria-label="Next Pro template"><ChevronRight size={16} /></button>
+      </div>
     </div>
+  );
+}
+
+// Soft green and blue hills behind the plan cards
+function Waves() {
+  return (
+    <svg className="pr-waves" viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="pr-wave-a" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" className="pr-wave-stop-a1" />
+          <stop offset="1" className="pr-wave-stop-a2" />
+        </linearGradient>
+      </defs>
+      <path className="pr-wave-b" d="M480 900C700 640 960 440 1220 410c110-12 170 0 220 14V900Z" />
+      <path fill="url(#pr-wave-a)" d="M0 150c170 170 300 400 520 560 130 95 250 150 360 190H0Z" />
+    </svg>
   );
 }
