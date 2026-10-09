@@ -90,7 +90,7 @@ const GROUPS: Group[] = [
       },
       {
         q: 'Are AI Job Finder results live job postings?',
-        a: 'The Job Finder suggests roles and companies that fit your profile. Its Apply button opens a LinkedIn Jobs search for that title, company and location, where you can find the current posting.',
+        a: "Yes. AI Job Finder shows open jobs from job sites (through Adzuna and Google for Jobs), companies' own careers pages and recruiters on CVMind. Apply opens the real application on the company's site. Free accounts can apply to 1 job a month; Pro has no limit.",
       },
       {
         q: 'Should I use AI-written text as it is?',
@@ -138,7 +138,7 @@ const GROUPS: Group[] = [
           }
         : {
             q: 'How much does Pro cost?',
-            a: "Pro is ₹39 for 3 days, ₹79 for 7 days, ₹189 a month, ₹600 for 6 months or ₹1,099 a year. It unlocks every resume template and cover letter design, removes the CVMind footer, lifts the weekly limits and raises your AI tokens to 2,00,000 every 3 days. You pay once through Cashfree (UPI, cards or netbanking) and it doesn't renew on its own.",
+            a: "Pro is ₹39 for 3 days, ₹79 for 7 days, ₹189 a month, ₹600 for 6 months or ₹1,099 a year. It unlocks every resume template and cover letter design, removes the CVMind footer, lifts the weekly limits, removes the AI Job Finder limits and raises your AI tokens to 2,00,000 every 3 days. You pay once through Cashfree (UPI, cards or netbanking) and it doesn't renew on its own.",
             link: { label: 'See pricing', page: 'pricing' },
           },
       {

@@ -71,7 +71,7 @@ export const NAV_MENUS: NavMenu[] = [
   },
   {
     label: 'AI Tools',
-    pages: ['prep', 'voice-prep', 'job-finder', 'proofreading', 'auto-apply', 'code'],
+    pages: ['prep', 'voice-prep', 'ai-job-finder', 'proofreading', 'auto-apply', 'code'],
     columns: [
       {
         heading: 'Interview',
@@ -85,7 +85,7 @@ export const NAV_MENUS: NavMenu[] = [
       {
         heading: 'Job Search',
         tiles: [
-          { page: 'job-finder', title: 'AI Job Finder', desc: 'Curated roles matching your profile', icon: Briefcase },
+          { page: 'ai-job-finder', title: 'AI Job Finder', desc: 'Live jobs ranked against your resume', icon: Briefcase, badge: 'new' },
           { page: 'auto-apply', title: 'Auto Apply Agent', desc: 'Coming soon: AI applies to jobs for you', icon: Send, badge: 'soon' },
         ],
       },

@@ -32,7 +32,6 @@ import LinkedInPost from './pages/linkedin/LinkedInPost';
 import VoicePrep from './pages/VoicePrep';
 import PortfolioGen from './pages/PortfolioGen';
 import Products from './pages/Products';
-// import JobFinder from './pages/JobFinder'; // temporarily disabled — restore with the job-finder case below
 import ResumeBuilderLanding from './pages/ResumeBuilderLanding';
 import Pricing from './pages/Pricing';
 import PricingSoon from './pages/PricingSoon';
@@ -49,6 +48,8 @@ import CopyrightPolicy from './pages/CopyrightPolicy';
 import ArticlePage from './pages/ArticlePage';
 import CVmindCode from './pages/code/CVmindCode';
 import CVmindCodeLanding from './pages/code/CVmindCodeLanding';
+import JobFinderApp from './pages/jobFinder/JobFinderApp';
+import JobFinderLanding from './pages/jobFinder/JobFinderLanding';
 import NotFound from './pages/NotFound';
 import VerifyEmail from './pages/VerifyEmail';
 import VerifyEmailGate from './components/VerifyEmailGate';
@@ -75,7 +76,7 @@ import './styles/shared-legacy.css';
 // How long the loading screen shows when moving to another page
 const ROUTE_LOADER_MS = 450;
 
-const VALID_PAGES = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'cover-letter-generator', 'cover-letter-builder', 'cover-letter-start', 'cover-letter-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'copyright-policy', 'account', 'help-center', 'my-documents', 'verify-email', ...ARTICLES.map(a => a.slug)];
+const VALID_PAGES = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'cover-letter-generator', 'cover-letter-builder', 'cover-letter-start', 'cover-letter-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'ai-job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'copyright-policy', 'account', 'help-center', 'my-documents', 'verify-email', ...ARTICLES.map(a => a.slug)];
 
 // Leo's pages (Resume Tailorer, Interview Prep AI, Voice Prep AI, AI Proofreading), the Career tools and the cover letter pages
 const GUIDED_PAGES = ['cover-letter-start', 'cover-letter-generator', 'tailor', 'prep', 'voice-prep', 'proofreading', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'career-courses', 'elevator-pitch', 'career-roadmap'];
@@ -595,16 +596,9 @@ export default function App() {
       case 'products':
         return <Products setCurrentPage={setCurrentPage} />;
       case 'job-finder':
-        // Temporarily locked — restore `return <JobFinder customApiKey={customApiKey} />;` to re-enable.
-        return (
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:'70vh',gap:'18px',textAlign:'center',padding:'40px 24px'}}>
-            <div style={{fontSize:'3rem'}}>🔍</div>
-            <h2 style={{fontSize:'1.8rem',fontWeight:800,margin:0}}>AI Job Finder</h2>
-            <div style={{display:'inline-flex',alignItems:'center',gap:'6px',background:'linear-gradient(135deg,#ff9f0a,#ff453a)',color:'#fff',padding:'4px 14px',borderRadius:'99px',fontSize:'0.78rem',fontWeight:700,letterSpacing:'0.05em'}}>TEMPORARILY UNAVAILABLE</div>
-            <p style={{color:'#6e6e73',fontSize:'1rem',maxWidth:'440px',lineHeight:1.6,margin:0}}>AI Job Finder is temporarily unavailable while we upgrade it. It will be back soon — meanwhile, explore our other AI tools.</p>
-            <button onClick={() => setCurrentPage('home')} style={{padding:'10px 24px',borderRadius:'12px',border:'none',background:'#1d1d1f',color:'#fff',fontWeight:600,fontSize:'0.9rem',cursor:'pointer'}}>← Go Home</button>
-          </div>
-        );
+        return <JobFinderApp setCurrentPage={setCurrentPage} />;
+      case 'ai-job-finder':
+        return <JobFinderLanding setCurrentPage={setCurrentPage} />;
       case 'portfolio': {
         const wId = window.location.pathname.split('/').pop();
         return <Portfolio workId={wId} />;
@@ -683,7 +677,8 @@ export default function App() {
   // Account and My Documents have their own Back button / top bar; the editor's full-screen flows have Exit
   // The Portfolio Generator is a full-screen chat with its own top bar and Back button
   const isPortfolioStudio = currentPage === 'portfolio-gen';
-  const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && !isFocusFlow && !isPortfolioStudio;
+  // Job Finder has its own top bar
+  const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && currentPage !== 'job-finder' && !isFocusFlow && !isPortfolioStudio;
   const isMinimalPage = currentPage === 'dashboard' || currentPage === 'admin' || currentPage === 'portfolio' || currentPage === 'verify-email' || isCodePage || isFocusFlow || isAppPage || isPortfolioStudio;
   // The resume report has its own top bar instead of the site header and footer
   const isReportPage = currentPage === 'dashboard';

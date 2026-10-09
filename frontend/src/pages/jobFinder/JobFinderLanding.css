@@ -1,0 +1,119 @@
+/* ═══════════════════════════════════════════════════════════════════
+   AI Job Finder intro page (www.cvmind.in/ai-job-finder)
+   Concept: a job board you can read at a glance. Warm paper, dark ink, and green only where
+   something matches. The hero shows the app's real job cards, not a mock window.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.jfl-page {
+  --jfl-paper: #f4f3ee;
+  --jfl-surface: #ffffff;
+  --jfl-ink: #15181e;
+  --jfl-mute: #5f6672;
+  --jfl-line: #e2e0d8;
+  --jfl-green: #0b7a4b;
+  --jfl-green-bg: #dcf2e5;
+  --jfl-display: 'Bricolage Grotesque', 'IBM Plex Sans', system-ui, sans-serif;
+  --jfl-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --jfl-gutter: clamp(20px, 4.5vw, 80px);
+  width: 100%;
+  padding-top: 72px; /* clears the fixed navbar */
+  background: var(--jfl-paper);
+  color: var(--jfl-ink);
+  font-family: var(--jfl-body);
+  overflow-x: hidden;
+}
+[data-theme='dark'] .jfl-page {
+  --jfl-paper: #101317;
+  --jfl-surface: #171b21;
+  --jfl-ink: #eceae4;
+  --jfl-mute: #9aa1ad;
+  --jfl-line: #262b33;
+  --jfl-green: #4fd393;
+  --jfl-green-bg: rgba(79, 211, 147, 0.14);
+}
+.jfl-page *, .jfl-page *::before, .jfl-page *::after { box-sizing: border-box; }
+
+/* ── Type ──────────────────────────────────────────────────────── */
+.jfl-kicker { margin: 0 0 20px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--jfl-mute); }
+.jfl-h1 { margin: 0; font-family: var(--jfl-display); font-size: clamp(2.7rem, 6vw, 5rem); font-weight: 800; line-height: 0.98; letter-spacing: -0.045em; text-wrap: balance; }
+.jfl-mark { background: linear-gradient(transparent 62%, var(--jfl-green-bg) 62%); color: var(--jfl-green); }
+.jfl-h2 { margin: 0; font-family: var(--jfl-display); font-size: clamp(1.7rem, 3vw, 2.5rem); font-weight: 800; letter-spacing: -0.035em; line-height: 1.05; text-wrap: balance; }
+.jfl-lead { margin: 26px 0 0; max-width: 500px; font-size: 1.12rem; line-height: 1.6; color: var(--jfl-mute); }
+.jfl-sub { margin: 14px 0 0; max-width: 420px; line-height: 1.6; color: var(--jfl-mute); }
+
+/* ── Buttons ───────────────────────────────────────────────────── */
+.jfl-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 22px; margin-top: 34px; }
+.jfl-btn { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; color: inherit; font: inherit; font-size: 1rem; font-weight: 600; cursor: pointer; }
+.jfl-btn:focus-visible, .jfl-faq-q:focus-visible { outline: 2px solid var(--jfl-green); outline-offset: 3px; }
+.jfl-btn--solid { padding: 15px 24px; border-radius: 10px; background: var(--jfl-ink); color: var(--jfl-paper); transition: transform 0.12s; }
+.jfl-btn--solid:hover { transform: translateY(-1px); }
+.jfl-btn--text { padding: 12px 2px; border-bottom: 2px solid var(--jfl-line); }
+.jfl-btn--text:hover { border-bottom-color: var(--jfl-green); }
+.jfl-btn--light { padding: 15px 24px; border-radius: 10px; background: #f4f3ee; color: #15181e; }
+.jfl-btn--on-dark { color: #f4f3ee; border-bottom-color: rgba(244, 243, 238, 0.3); }
+
+/* ── Hero ──────────────────────────────────────────────────────── */
+.jfl-hero {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(32px, 5vw, 88px); align-items: center;
+  padding: clamp(40px, 6vw, 88px) var(--jfl-gutter); border-bottom: 1px solid var(--jfl-line);
+}
+.jfl-hero-visual { min-width: 0; }
+.jfl-preview {
+  display: flex; flex-direction: column; gap: 10px; min-height: 0;
+  padding: 16px; border: 1px solid var(--jfl-line); border-radius: 20px; background: var(--jfl-paper);
+  box-shadow: 0 30px 60px -30px rgba(21, 24, 30, 0.35);
+}
+.jfl-preview .jf-card:first-child { border-color: var(--jfl-ink); box-shadow: 0 0 0 1px var(--jfl-ink); }
+.jfl-caption { margin: 12px 4px 0; font-size: 0.82rem; color: var(--jfl-mute); }
+
+/* ── Sections ──────────────────────────────────────────────────── */
+.jfl-section { padding: clamp(48px, 7vw, 96px) var(--jfl-gutter); border-bottom: 1px solid var(--jfl-line); }
+.jfl-section--split { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: clamp(28px, 5vw, 80px); align-items: start; }
+
+.jfl-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 32px 0 0; padding: 0; list-style: none; counter-reset: none; }
+.jfl-step { padding: 24px; border: 1px solid var(--jfl-line); border-radius: 16px; background: var(--jfl-surface); }
+.jfl-step-no { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--jfl-ink); color: var(--jfl-paper); font-family: var(--jfl-display); font-weight: 800; }
+.jfl-step h3 { margin: 18px 0 8px; font-family: var(--jfl-display); font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em; }
+.jfl-step p { margin: 0; line-height: 1.6; color: var(--jfl-mute); }
+
+.jfl-sources, .jfl-parts { margin: 0; display: flex; flex-direction: column; }
+.jfl-source, .jfl-part { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 20px; padding: 20px 0; border-top: 1px solid var(--jfl-line); }
+.jfl-source:last-child, .jfl-part:last-child { border-bottom: 1px solid var(--jfl-line); }
+.jfl-source dt, .jfl-part dt { font-family: var(--jfl-display); font-size: 1.08rem; font-weight: 800; }
+.jfl-source dd, .jfl-part dd { margin: 0; line-height: 1.6; color: var(--jfl-mute); }
+.jfl-companies { display: flex; flex-wrap: wrap; gap: 6px; }
+.jfl-companies span { padding: 4px 10px; border: 1px solid var(--jfl-line); border-radius: 99px; background: var(--jfl-surface); color: var(--jfl-ink); font-size: 0.85rem; }
+
+.jfl-score-demo { display: flex; gap: 12px; min-height: 0; margin-top: 28px; background: none; }
+.jfl-dialog-demo { display: grid; place-items: center; min-height: 0; padding: clamp(20px, 4vw, 48px); border: 1px solid var(--jfl-line); border-radius: 20px; background: var(--jfl-paper); }
+.jfl-dialog-demo .jf-dialog { box-shadow: 0 30px 60px -30px rgba(21, 24, 30, 0.35); }
+
+.jfl-soon { display: flex; align-items: flex-start; gap: 16px; margin: clamp(32px, 5vw, 64px) var(--jfl-gutter); padding: 24px; border: 1px dashed var(--jfl-mute); border-radius: 16px; color: var(--jfl-mute); }
+.jfl-soon h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 6px; color: var(--jfl-ink); font-family: var(--jfl-display); font-size: 1.3rem; font-weight: 800; }
+.jfl-soon p { margin: 0; max-width: 640px; line-height: 1.6; }
+.jfl-soon > svg { flex-shrink: 0; margin-top: 4px; color: var(--jfl-ink); }
+.jfl-soon-tag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 99px; background: var(--jfl-ink); color: var(--jfl-paper); font-family: var(--jfl-body); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+
+/* ── FAQ ───────────────────────────────────────────────────────── */
+.jfl-faq { max-width: 820px; margin-top: 28px; border-top: 1px solid var(--jfl-line); }
+.jfl-faq-item { border-bottom: 1px solid var(--jfl-line); }
+.jfl-faq-q { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; padding: 20px 0; border: 0; background: none; color: var(--jfl-ink); font: inherit; font-size: 1.05rem; font-weight: 600; text-align: left; cursor: pointer; }
+.jfl-faq-q svg { flex-shrink: 0; transition: transform 0.2s; }
+.jfl-faq-item.is-open .jfl-faq-q svg { transform: rotate(180deg); }
+.jfl-faq-a { margin: 0; padding: 0 0 20px; max-width: 680px; line-height: 1.65; color: var(--jfl-mute); }
+
+/* ── Closing ───────────────────────────────────────────────────── */
+.jfl-close { padding: clamp(56px, 8vw, 112px) var(--jfl-gutter); background: #15181e; color: #f4f3ee; }
+.jfl-close h2 { margin: 0; max-width: 760px; color: #f4f3ee; font-family: var(--jfl-display); font-size: clamp(2rem, 4.4vw, 3.4rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1.02; text-wrap: balance; }
+
+/* ── Responsive ────────────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .jfl-hero, .jfl-section--split { grid-template-columns: minmax(0, 1fr); }
+  .jfl-steps { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 600px) {
+  .jfl-source, .jfl-part { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .jfl-preview { padding: 10px; }
+  .jfl-actions { gap: 14px; }
+}
+.jfl-companies .jfl-more { border-style: dashed; background: none; color: var(--jfl-mute); }

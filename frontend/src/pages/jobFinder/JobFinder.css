@@ -1,0 +1,273 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+/* ═══════════════════════════════════════════════════════════════════
+   AI Job Finder app (app.cvmind.in/job-finder)
+   Shares its palette with the landing page: warm paper, dark ink, and green kept for "you match".
+   Spacing is set here, not with Tailwind classes (theme.css resets margin and padding).
+   ═══════════════════════════════════════════════════════════════════ */
+
+.jf-app {
+  --jf-paper: #f4f3ee;
+  --jf-surface: #ffffff;
+  --jf-ink: #15181e;
+  --jf-mute: #5f6672;
+  --jf-line: #e2e0d8;
+  --jf-line-strong: #c9c6bb;
+  --jf-accent: #15181e;
+  --jf-green: #0b7a4b;
+  --jf-green-bg: #dcf2e5;
+  --jf-amber: #9a5b00;
+  --jf-amber-bg: #fbecd0;
+  --jf-grey-bg: #ecebe6;
+  --jf-red: #b42318;
+  --jf-display: 'Bricolage Grotesque', 'IBM Plex Sans', system-ui, sans-serif;
+  --jf-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  background: var(--jf-paper);
+  color: var(--jf-ink);
+  font-family: var(--jf-body);
+  font-size: 15px;
+}
+[data-theme='dark'] .jf-app {
+  --jf-paper: #101317;
+  --jf-surface: #171b21;
+  --jf-ink: #eceae4;
+  --jf-mute: #9aa1ad;
+  --jf-line: #262b33;
+  --jf-line-strong: #39404b;
+  --jf-accent: #eceae4;
+  --jf-green: #4fd393;
+  --jf-green-bg: rgba(79, 211, 147, 0.14);
+  --jf-amber: #f2b84b;
+  --jf-amber-bg: rgba(242, 184, 75, 0.14);
+  --jf-grey-bg: #222730;
+  --jf-red: #ff8a80;
+}
+.jf-app *, .jf-app *::before, .jf-app *::after { box-sizing: border-box; }
+.jf-loading { display: grid; place-items: center; min-height: 50vh; padding: 24px; }
+.jf-muted { color: var(--jf-mute); margin: 0; line-height: 1.55; }
+.jf-error { margin: 8px 0; padding: 10px 14px; border-radius: 8px; background: rgba(180, 35, 24, 0.08); color: var(--jf-red); font-size: 0.92rem; line-height: 1.5; }
+.jf-kicker { margin: 0 0 10px; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--jf-mute); }
+.jf-spin { animation: jf-spin 0.9s linear infinite; vertical-align: -3px; }
+@keyframes jf-spin { to { transform: rotate(360deg); } }
+
+/* ── Buttons, pills, chips ─────────────────────────────────────── */
+.jf-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 10px 16px; border: 1px solid transparent; border-radius: 9px;
+  font: inherit; font-weight: 600; font-size: 0.92rem; line-height: 1.2; cursor: pointer; white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.jf-btn:active:not(:disabled) { transform: translateY(1px); }
+.jf-btn:disabled { opacity: 0.55; cursor: default; }
+.jf-btn:focus-visible, .jf-pill:focus-visible, .jf-card-main:focus-visible, .jf-icon-btn:focus-visible { outline: 2px solid var(--jf-green); outline-offset: 2px; }
+.jf-btn--primary { background: var(--jf-accent); color: var(--jf-paper); }
+.jf-btn--primary:hover:not(:disabled) { background: #000; }
+[data-theme='dark'] .jf-btn--primary:hover:not(:disabled) { background: #fff; }
+.jf-btn--ghost { background: var(--jf-surface); border-color: var(--jf-line-strong); color: var(--jf-ink); }
+.jf-btn--ghost:hover:not(:disabled) { border-color: var(--jf-ink); }
+.jf-btn--sm { padding: 7px 12px; font-size: 0.85rem; }
+.jf-btn--locked { background: var(--jf-grey-bg); color: var(--jf-mute); border-color: var(--jf-line); }
+.jf-soon { display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; padding: 2px 7px; border-radius: 99px; background: var(--jf-surface); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; }
+.jf-icon-btn { display: grid; place-items: center; width: 34px; height: 34px; flex-shrink: 0; border: 1px solid var(--jf-line); border-radius: 8px; background: var(--jf-surface); color: var(--jf-ink); cursor: pointer; }
+
+.jf-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.jf-pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px;
+  border: 1px solid var(--jf-line-strong); border-radius: 99px; background: var(--jf-surface);
+  color: var(--jf-ink); font: inherit; font-size: 0.88rem; font-weight: 500; cursor: pointer;
+}
+.jf-pill.is-on { background: var(--jf-ink); border-color: var(--jf-ink); color: var(--jf-paper); }
+.jf-pill input { position: absolute; opacity: 0; pointer-events: none; }
+
+.jf-tag { padding: 2px 8px; border-radius: 5px; background: var(--jf-grey-bg); color: var(--jf-ink); font-size: 0.78rem; font-weight: 500; }
+.jf-chip-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+.jf-chip-label { width: 100%; font-size: 0.78rem; font-weight: 600; color: var(--jf-mute); text-transform: uppercase; letter-spacing: 0.05em; }
+.jf-chip { padding: 4px 10px; border-radius: 6px; font-size: 0.84rem; font-weight: 500; }
+.jf-chip--ok { background: var(--jf-green-bg); color: var(--jf-green); }
+.jf-chip--miss { background: var(--jf-surface); border: 1px dashed var(--jf-line-strong); color: var(--jf-ink); }
+
+/* Match score: the one place green, amber and grey carry meaning */
+.jf-match {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+  min-width: 58px; height: 58px; padding: 0 8px; flex-shrink: 0; border-radius: 12px;
+  font-family: var(--jf-display); line-height: 1;
+}
+.jf-match b { font-size: 1.15rem; font-weight: 800; }
+.jf-match small { margin-top: 3px; font-family: var(--jf-body); font-size: 0.66rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+.jf-match--high { background: var(--jf-green-bg); color: var(--jf-green); }
+.jf-match--mid { background: var(--jf-amber-bg); color: var(--jf-amber); }
+.jf-match--low, .jf-match--none { background: var(--jf-grey-bg); color: var(--jf-mute); }
+.jf-match--lg { min-width: 76px; height: 76px; border-radius: 16px; }
+.jf-match--lg b { font-size: 1.5rem; }
+
+/* ── Logo ──────────────────────────────────────────────────────── */
+.jf-logo { display: grid; place-items: center; flex-shrink: 0; overflow: hidden; border: 1px solid var(--jf-line); border-radius: 10px; background: #fff; }
+.jf-logo img { width: 72%; height: 72%; object-fit: contain; }
+.jf-logo-initials { font-family: var(--jf-display); font-weight: 800; font-size: 0.95rem; color: #3a3f48; }
+
+/* ── Top bar and search ────────────────────────────────────────── */
+.jf-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px clamp(16px, 3vw, 32px); border-bottom: 1px solid var(--jf-line); background: var(--jf-surface);
+}
+.jf-top-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.jf-top-home { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px 6px 6px; border: 0; border-radius: 8px; background: none; color: var(--jf-mute); font: inherit; font-size: 0.88rem; font-weight: 500; cursor: pointer; }
+.jf-top-home:hover { background: var(--jf-grey-bg); color: var(--jf-ink); }
+.jf-top-name { font-family: var(--jf-display); font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em; white-space: nowrap; }
+.jf-top-pro { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 99px; background: var(--jf-ink); color: var(--jf-paper); font-size: 0.72rem; font-weight: 700; }
+.jf-resume-chip { display: inline-flex; align-items: center; gap: 8px; min-width: 0; flex-shrink: 1; max-width: 46vw; padding: 8px 14px; border: 1px solid var(--jf-line-strong); border-radius: 99px; background: var(--jf-surface); color: var(--jf-ink); font: inherit; font-size: 0.86rem; font-weight: 500; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jf-resume-chip-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.jf-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: var(--jf-mute); }
+.jf-dot--ready { background: var(--jf-green); }
+.jf-dot--queued, .jf-dot--parsing { background: var(--jf-amber); }
+.jf-dot--failed { background: var(--jf-red); }
+
+.jf-search { display: flex; flex-wrap: wrap; gap: 10px; padding: 18px clamp(16px, 3vw, 32px) 10px; }
+.jf-search-field {
+  display: flex; align-items: center; gap: 8px; flex: 1 1 220px; padding: 0 14px;
+  border: 1px solid var(--jf-line-strong); border-radius: 10px; background: var(--jf-surface); color: var(--jf-mute);
+}
+.jf-search-field:focus-within { border-color: var(--jf-ink); }
+.jf-search-field input { flex: 1; min-width: 0; padding: 12px 0; border: 0; outline: none; background: none; color: var(--jf-ink); font: inherit; font-size: 0.95rem; }
+.jf-filters-toggle { display: none; }
+.jf-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 0 clamp(16px, 3vw, 32px) 14px; }
+.jf-filters select {
+  padding: 8px 30px 8px 12px; border: 1px solid var(--jf-line-strong); border-radius: 99px;
+  background: var(--jf-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235f6672' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 11px center;
+  color: var(--jf-ink); font: inherit; font-size: 0.88rem; appearance: none; cursor: pointer;
+}
+.jf-banner { display: flex; align-items: center; gap: 8px; margin: 0 clamp(16px, 3vw, 32px) 12px; padding: 10px 14px; border-radius: 10px; background: var(--jf-amber-bg); color: var(--jf-ink); font-size: 0.9rem; }
+.jf-banner button { border: 0; background: none; padding: 0; color: inherit; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+
+/* ── Results: list and drawer ──────────────────────────────────── */
+.jf-results { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 0 clamp(16px, 3vw, 32px) 48px; }
+.jf-results.has-drawer { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
+.jf-list { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.jf-list-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 24px; font-size: 0.9rem; font-weight: 500; }
+.jf-empty { padding: 36px 24px; border: 1px dashed var(--jf-line-strong); border-radius: 14px; text-align: center; color: var(--jf-mute); }
+.jf-empty h3 { margin: 0 0 6px; color: var(--jf-ink); font-family: var(--jf-display); font-size: 1.15rem; }
+.jf-empty p { margin: 0 auto; max-width: 420px; line-height: 1.55; }
+
+.jf-card { border: 1px solid var(--jf-line); border-radius: 14px; background: var(--jf-surface); transition: border-color 0.15s, box-shadow 0.15s; }
+.jf-card:hover { border-color: var(--jf-line-strong); }
+.jf-card.is-selected { border-color: var(--jf-ink); box-shadow: 0 0 0 1px var(--jf-ink); }
+.jf-card-main { display: flex; align-items: flex-start; gap: 14px; width: 100%; padding: 16px 16px 8px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; border-radius: 14px 14px 0 0; }
+.jf-card-body { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.jf-card-title { font-family: var(--jf-display); font-size: 1.06rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.25; }
+.jf-card-company { font-weight: 500; }
+.jf-card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 2px; color: var(--jf-mute); font-size: 0.85rem; }
+.jf-card-meta > span { display: inline-flex; align-items: center; gap: 4px; }
+.jf-card-skills { display: flex; gap: 8px; margin-top: 4px; font-size: 0.82rem; }
+.jf-skill-count { color: var(--jf-mute); }
+.jf-skill-count--ok { color: var(--jf-green); font-weight: 600; }
+.jf-card-via { font-size: 0.78rem; color: var(--jf-mute); }
+.jf-card-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 0 16px 14px; }
+.jf-applied { display: inline-flex; align-items: center; gap: 5px; margin-right: auto; color: var(--jf-green); font-size: 0.84rem; font-weight: 600; }
+
+.jf-drawer {
+  position: sticky; top: 16px; align-self: start; display: flex; flex-direction: column;
+  max-height: calc(100vh - 32px); overflow-y: auto;
+  border: 1px solid var(--jf-line); border-radius: 16px; background: var(--jf-surface);
+}
+.jf-drawer-scrim { display: none; }
+.jf-drawer-head { display: flex; align-items: flex-start; gap: 14px; padding: 20px 20px 16px; border-bottom: 1px solid var(--jf-line); }
+.jf-drawer-titles { flex: 1; min-width: 0; }
+.jf-drawer-titles h2 { margin: 0; font-family: var(--jf-display); font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
+.jf-drawer-titles p { margin: 4px 0 0; font-weight: 500; }
+.jf-drawer-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--jf-mute); font-size: 0.86rem; font-weight: 400 !important; }
+.jf-drawer-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.jf-drawer-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 20px; border-bottom: 1px solid var(--jf-line); }
+.jf-drawer-applied { display: flex; align-items: center; gap: 6px; width: 100%; margin: 4px 0 0; color: var(--jf-green); font-size: 0.88rem; font-weight: 500; }
+.jf-drawer-section { padding: 18px 20px; border-bottom: 1px solid var(--jf-line); }
+.jf-drawer-section:last-child { border-bottom: 0; }
+.jf-drawer-section h3 { margin: 0 0 6px; font-family: var(--jf-display); font-size: 1.05rem; font-weight: 800; }
+.jf-drawer-match { display: flex; align-items: center; gap: 16px; }
+.jf-drawer-match p { margin: 0; color: var(--jf-mute); font-size: 0.88rem; line-height: 1.5; }
+.jf-description { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.92rem; line-height: 1.65; color: var(--jf-ink); }
+
+/* ── Setup ─────────────────────────────────────────────────────── */
+.jf-setup { max-width: 720px; margin: 0 auto; padding: clamp(28px, 5vw, 56px) 16px 64px; }
+.jf-setup-head h1 { margin: 0 0 10px; font-family: var(--jf-display); font-size: clamp(1.7rem, 3.4vw, 2.3rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
+.jf-setup-block { margin-top: 24px; padding: 22px; border: 1px solid var(--jf-line); border-radius: 16px; background: var(--jf-surface); }
+.jf-setup-block h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font-family: var(--jf-display); font-size: 1.12rem; font-weight: 800; }
+.jf-step-no { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--jf-ink); color: var(--jf-paper); font-size: 0.82rem; }
+.jf-resume-list { display: flex; flex-direction: column; gap: 8px; }
+.jf-resume { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid var(--jf-line); border-radius: 10px; cursor: pointer; }
+.jf-resume.is-on { border-color: var(--jf-ink); }
+.jf-resume input { accent-color: var(--jf-ink); }
+.jf-resume-name { flex: 1; min-width: 0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jf-resume-status { font-size: 0.8rem; font-weight: 600; color: var(--jf-mute); }
+.jf-resume-status--ready { color: var(--jf-green); }
+.jf-resume-status--queued, .jf-resume-status--parsing { color: var(--jf-amber); }
+.jf-resume-status--failed { color: var(--jf-red); }
+.jf-resume-add { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.jf-docs { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.jf-doc { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--jf-line); border-radius: 9px; background: var(--jf-paper); color: var(--jf-ink); font: inherit; font-size: 0.9rem; text-align: left; cursor: pointer; }
+.jf-doc:hover:not(:disabled) { border-color: var(--jf-ink); }
+.jf-doc small { margin-left: auto; color: var(--jf-mute); }
+.jf-field { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.jf-setup-block h2 + .jf-field { margin-top: 0; }
+.jf-field > span { font-weight: 600; font-size: 0.9rem; }
+.jf-field input { padding: 11px 14px; border: 1px solid var(--jf-line-strong); border-radius: 10px; background: var(--jf-surface); color: var(--jf-ink); font: inherit; outline: none; }
+.jf-field input:focus { border-color: var(--jf-ink); }
+.jf-field small { color: var(--jf-mute); font-size: 0.82rem; }
+.jf-setup-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
+/* ── Dialog and toast ──────────────────────────────────────────── */
+.jf-dialog-backdrop { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 16px; background: rgba(10, 12, 16, 0.5); }
+.jf-dialog { width: 100%; max-width: 420px; padding: 26px; border-radius: 16px; background: var(--jf-surface); color: var(--jf-ink); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25); }
+.jf-dialog-icon { display: inline-grid; place-items: center; width: 46px; height: 46px; margin-bottom: 14px; border-radius: 12px; background: var(--jf-green-bg); color: var(--jf-green); }
+.jf-dialog h2 { margin: 0 0 8px; font-family: var(--jf-display); font-size: 1.3rem; font-weight: 800; }
+.jf-dialog p { margin: 0; color: var(--jf-mute); line-height: 1.55; }
+.jf-dialog p b { color: var(--jf-ink); font-weight: 600; }
+.jf-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+.jf-toast { position: fixed; left: 50%; bottom: 24px; z-index: 1200; display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 32px); padding: 12px 14px 12px 18px; border-radius: 12px; background: var(--jf-ink); color: var(--jf-paper); font-size: 0.92rem; transform: translateX(-50%); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25); }
+.jf-toast button { display: grid; place-items: center; padding: 4px; border: 0; border-radius: 6px; background: none; color: inherit; cursor: pointer; }
+
+/* ── Small screens: the drawer covers the list ─────────────────── */
+@media (max-width: 900px) {
+  .jf-results.has-drawer { grid-template-columns: minmax(0, 1fr); }
+  .jf-drawer-scrim { display: block; position: fixed; inset: 0; z-index: 1100; background: rgba(10, 12, 16, 0.45); }
+  .jf-drawer { position: fixed; inset: auto 0 0 0; top: 8vh; z-index: 1101; max-height: none; border-radius: 18px 18px 0 0; }
+}
+@media (max-width: 640px) {
+  .jf-filters-toggle { display: inline-flex; }
+  .jf-filters { display: none; }
+  .jf-filters.is-open { display: flex; }
+  .jf-search .jf-btn--primary { flex: 1; }
+  .jf-card-main { padding: 14px 14px 6px; gap: 12px; }
+  .jf-card-actions { padding: 0 14px 12px; }
+  .jf-match { min-width: 50px; height: 50px; }
+  .jf-top { padding: 12px 14px; }
+  .jf-top-brand { gap: 6px; }
+  .jf-top-home-label, .jf-top-pro { display: none; }
+  .jf-top-name { font-size: 1.05rem; }
+  .jf-resume-chip { max-width: 44vw; padding: 7px 12px; font-size: 0.8rem; }
+  .jf-list-head { flex-wrap: wrap; }
+}
+
+/* Setup: the chosen resume, its skills and the switch to another one */
+.jf-resume-skills { margin: 10px 2px 0; color: var(--jf-mute); font-size: 0.86rem; line-height: 1.5; }
+.jf-resume-skills span { color: var(--jf-ink); font-weight: 600; }
+.jf-link { margin: 10px 2px 0; padding: 0; border: 0; background: none; color: var(--jf-ink); font: inherit; font-size: 0.88rem; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.jf-resume-status--noskills { color: var(--jf-amber); }
+.jf-credit { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+/* Find by role / by skills */
+.jf-tabs { display: flex; gap: 6px; padding: 16px clamp(16px, 3vw, 32px) 0; }
+.jf-tab { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; border: 1px solid var(--jf-line-strong); border-radius: 99px; background: var(--jf-surface); color: var(--jf-mute); font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+.jf-tab.is-on { background: var(--jf-ink); border-color: var(--jf-ink); color: var(--jf-paper); }
+.jf-tab:focus-visible { outline: 2px solid var(--jf-green); outline-offset: 2px; }
+.jf-skillpick { display: flex; flex-direction: column; gap: 10px; padding: 14px clamp(16px, 3vw, 32px) 0; }
+.jf-skillpick-label { font-size: 0.88rem; font-weight: 500; color: var(--jf-mute); }
+
+/* The same search on LinkedIn, Naukri and Indeed */
+.jf-elsewhere { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 10px 14px; border: 1px dashed var(--jf-line-strong); border-radius: 12px; color: var(--jf-mute); font-size: 0.86rem; }
+.jf-elsewhere-link { display: inline-flex; align-items: center; gap: 4px; padding: 5px 11px; border: 1px solid var(--jf-line-strong); border-radius: 99px; background: var(--jf-surface); color: var(--jf-ink); font-weight: 600; text-decoration: none; }
+.jf-elsewhere-link:hover { border-color: var(--jf-ink); }
+.jf-elsewhere-link:focus-visible { outline: 2px solid var(--jf-green); outline-offset: 2px; }
+.jf-top-free { padding: 4px 10px; border: 1px solid var(--jf-line-strong); border-radius: 99px; background: var(--jf-surface); color: var(--jf-mute); font: inherit; font-size: 0.78rem; font-weight: 500; white-space: nowrap; cursor: pointer; }
+.jf-top-free b { color: var(--jf-ink); }
+.jf-top-free:hover { border-color: var(--jf-ink); color: var(--jf-ink); }
+@media (max-width: 640px) { .jf-top-free { display: none; } }

@@ -20,6 +20,7 @@ import { getErrorMessage } from '../utils/errors';
 import type { ExtractedResume, LoadedWork } from '../types/api';
 import './Tailor.css';
 import { userIsPro } from '../lib/billing';
+import { takeTailorJob } from '../lib/tailorHandoff';
 
 interface TailorProps {
   customApiKey: string;
@@ -121,7 +122,8 @@ export default function Tailor({ customApiKey, setCurrentPage, loadedWork, setLo
   const [uploadMode, setUploadMode] = useState<'file' | 'link'>('file');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [resumeUrl, setResumeUrl] = useState('');
-  const [jobDescription, setJobDescription] = useState('');
+  // A job opened from AI Job Finder arrives with its description already filled in
+  const [jobDescription, setJobDescription] = useState(takeTailorJob);
   const [templateId, setTemplateId] = useState(DEFAULT_TEMPLATE);
   const [dragActive, setDragActive] = useState(false);
   const [loading, setLoading] = useState(false);

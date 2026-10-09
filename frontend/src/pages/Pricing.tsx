@@ -76,9 +76,10 @@ const COMPARE: { group: string; rows: [string, Cell, Cell][] }[] = [
     rows: [['AI tokens', '75,000 every 3 days', '2,00,000 every 3 days']],
   },
   {
-    group: 'Coming soon',
+    group: 'Job search',
     rows: [
-      ['AI Job Finder', 'Soon', 'Soon'],
+      ['AI Job Finder applications', '1 a month', 'Unlimited'],
+      ['AI Job Finder searches with every job source', '10 a day', 'Unlimited'],
       ['Auto Apply agent', 'Soon', 'Soon'],
     ],
   },
@@ -91,6 +92,7 @@ const FREE_LIST = [
   'LinkedIn and career tools',
   'Code hints up to pseudocode',
   'Weekly free tries of Tailor, AI cover letter, Portfolio and interview practice',
+  'AI Job Finder: 1 job application a month',
   '75,000 AI tokens every 3 days',
 ];
 
@@ -100,6 +102,7 @@ const PRO_LIST = [
   'Unlimited Resume Tailor, AI cover letters and Portfolio Generator',
   'Unlimited interview and voice practice',
   'Unlimited code explanations and full solutions',
+  'Unlimited AI Job Finder applications and searches',
   '2,00,000 AI tokens every 3 days',
 ];
 

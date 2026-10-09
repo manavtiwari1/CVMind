@@ -108,10 +108,15 @@ const PAGE_SEO: Record<string, PageSEO> = {
     description: 'Leo asks interview questions out loud, built from your CV and the job. Answer by speaking and get feedback on your content, pace, filler words and confidence.',
     keywords: 'Voice Interview Practice, AI Interview Coach, Mock Interview, Speaking Feedback, Filler Words',
   },
+  'ai-job-finder': {
+    title: 'AI Job Finder - Live Jobs Ranked Against Your Resume | CV Mind',
+    description: 'Search live jobs from job sites, company careers pages and CVMind recruiters. See a match score and the missing skills for every job, and never apply to the same job twice.',
+    keywords: 'AI Job Finder, Job Search India, Resume Job Match, Jobs for Freshers, Remote Jobs, Match Score, CVMind Pro',
+  },
   'job-finder': {
-    title: 'AI Job Finder | Match Jobs to Your CV - CV Mind',
-    description: 'Upload your CV and describe your target role. CV Mind matches you with curated job openings complete with match scores, required skills, salary ranges, and direct apply links.',
-    keywords: 'AI Job Finder, Job Search, Resume to Jobs, Remote Jobs, Full-time Jobs, Internship Finder, Career Match',
+    title: 'AI Job Finder | CV Mind',
+    description: 'Search live jobs ranked against your resume. Part of CVMind Pro.',
+    keywords: 'AI Job Finder, Job Search, Resume Job Match',
   },
   proofreading: {
     title: 'AI Proofreading | Grammar, Tone & Power Verbs - CV Mind',

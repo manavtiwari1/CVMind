@@ -57,7 +57,7 @@ const PRODUCTS: ProductGroup[] = [
     icon: Briefcase,
     tone: 'amber',
     links: [
-      { label: 'AI Job Finder', page: 'job-finder' },
+      { label: 'AI Job Finder', page: 'ai-job-finder' },
       { label: 'AI Proofreading', page: 'proofreading' },
     ],
   },

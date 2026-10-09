@@ -109,10 +109,10 @@ const TABS: Tab[] = [
     points: [
       { icon: Gauge, text: 'A compatibility score for every role.' },
       { icon: Target, text: 'Matched and missing skills shown side by side.' },
-      { icon: Send, text: 'Direct links to apply on the original posting.' },
+      { icon: Send, text: "Apply on the company's own page, and see which jobs you already applied to." },
     ],
     cta: 'Find jobs',
-    page: 'job-finder',
+    page: 'ai-job-finder',
     visual: (
       <RowsVisual
         title="Matches"

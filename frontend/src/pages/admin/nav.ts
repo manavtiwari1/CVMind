@@ -1,5 +1,5 @@
 import {
-  Activity, Bell, Building2, ClipboardList, CreditCard, Crown, FileDown, FileText, KeyRound, LayoutDashboard, LifeBuoy,
+  Activity, Bell, Briefcase, Building2, ClipboardList, CreditCard, Crown, FileDown, FileText, KeyRound, LayoutDashboard, LifeBuoy,
   PanelsTopLeft, ReceiptText, ScrollText, ShieldAlert, SlidersHorizontal, Sparkles, TicketPercent, UserCheck, UserCog, Users
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -30,6 +30,7 @@ export const NAV: NavGroup[] = [
     items: [
       { id: 'users', label: 'Users', icon: Users, permission: 'users.view' },
       { id: 'user-activity', label: 'User activity', icon: UserCheck, permission: 'users.view' },
+      { id: 'job-finder', label: 'AI Job Finder', icon: Briefcase, permission: 'users.view' },
       { id: 'access', label: 'Access lists', icon: KeyRound, permission: 'users.view' }
     ]
   },
