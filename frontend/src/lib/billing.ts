@@ -69,7 +69,7 @@ export function canUseTemplate(id?: string | null) {
 // Fired when a free account hits a Pro-only feature or a limit; App shows the upgrade dialog
 export const UPGRADE_EVENT = 'cvmind-upgrade-required';
 
-export type UpgradeReason = 'template' | 'branding' | 'limit' | 'tokens';
+export type UpgradeReason = 'template' | 'branding' | 'limit' | 'tokens' | 'job-apply';
 
 export interface UpgradeDetail { reason: UpgradeReason; message?: string }
 

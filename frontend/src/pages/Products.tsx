@@ -98,14 +98,14 @@ const products: ProductCard[] = [
     id: 'job-finder',
     icon: '🔍',
     title: 'AI Job Finder',
-    tagline: 'Find Your Dream Job Instantly',
-    description: 'Upload your CV, describe your target role, and AI curates 8–10 perfectly matched job openings with match scores, required skills, salary ranges, and direct apply links.',
-    features: ['CV-to-Job Match', 'Match Score %', 'Work Type Filters', 'Direct Apply Links'],
+    tagline: 'Live jobs, ranked against your resume',
+    description: "Search openings from job sites, company careers pages and recruiters on CVMind. Each job shows a match score and the skills it asks for that your resume doesn't list. Free to try, with no limits on Pro.",
+    features: ['Live job listings', 'Match score per job', 'Missing skills', '"Already applied" reminder'],
     gradient: 'linear-gradient(135deg, #00d4aa 0%, #2997ff 100%)',
     glowColor: 'rgba(0, 212, 170, 0.6)',
     badge: 'New',
     badgeClass: 'badge-green',
-    stats: [{ label: 'Jobs per Search', value: '8–10' }, { label: 'Match Accuracy', value: '95%' }],
+    stats: [{ label: 'Job sources', value: '4' }, { label: 'Free applications', value: '1 a month' }],
   },
 ];
 
@@ -224,7 +224,7 @@ export default function Products({ setCurrentPage }: ProductsProps) {
     'resume-tailor': 'tailor',
     'career-roadmap': 'career-roadmap',
     'voice-prep': 'voice-prep',
-    'job-finder': 'job-finder',
+    'job-finder': 'ai-job-finder',
   };
 
   return (

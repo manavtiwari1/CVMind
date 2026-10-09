@@ -3,6 +3,8 @@ import { requireAdmin, requireDb } from '../auth.js';
 import { Ticket, UserSession } from '../models.js';
 import { model, handle, paging, clean, escapeRegex } from '../util.js';
 import { AiUsage } from '../../billing/models.js';
+// Registers JobApplyLog, which FEATURE_LOGS reads by name
+import '../../jobFinder/models.js';
 
 const router = express.Router();
 const TZ = 'Asia/Kolkata';
@@ -24,7 +26,7 @@ export const FEATURE_LOGS = [
   { key: 'elevator-pitch', label: 'Elevator pitch', model: 'ElevatorPitchLog', detail: ['email', 'jobTitle'] },
   { key: 'career-roadmap', label: 'Career roadmap', model: 'CareerRoadmapLog', detail: ['email'] },
   { key: 'portfolio', label: 'Portfolio generator', model: 'PortfolioGenLog', detail: ['email', 'theme'] },
-  { key: 'job-finder', label: 'Job finder', model: 'JobFinderLog', detail: ['email', 'jobType', 'jobsCount'] }
+  { key: 'job-finder', label: 'AI Job Finder applies', model: 'JobApplyLog', detail: ['email', 'company', 'title'] }
 ];
 
 const startOfDay = (offsetDays = 0) => {
@@ -216,7 +218,7 @@ router.get('/activity', requireAdmin('dashboard.view'), requireDb, handle(async 
   const filter = {};
   if (req.query.q) {
     const rx = new RegExp(escapeRegex(clean(req.query.q, 80)), 'i');
-    filter.$or = feature.detail.filter((f) => ['email', 'fileName', 'jobTitle', 'topic', 'industry', 'theme'].includes(f)).map((f) => ({ [f]: rx }));
+    filter.$or = feature.detail.filter((f) => ['email', 'fileName', 'jobTitle', 'topic', 'industry', 'theme', 'company', 'title'].includes(f)).map((f) => ({ [f]: rx }));
     if (!filter.$or.length) delete filter.$or;
   }
   const [rows, total] = await Promise.all([

@@ -11,7 +11,7 @@ export const AI_PATHS = [
   '/api/cover-letter/refine', '/api/cover-letter/generate',
   '/api/resume/generate', '/api/resume/parse-data', '/api/resume/import-linkedin',
   '/api/linkedin', '/api/career', '/api/voice-prep', '/api/portfolio/generate-site',
-  '/api/job-finder', '/api/ai', '/api/code/ai'
+  '/api/ai', '/api/code/ai'
 ];
 
 const normalizePath = (path) => path.replace(/^\/_\/backend/, '');

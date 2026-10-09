@@ -1532,6 +1532,8 @@ export async function deleteAccount(userId) {
     await Work.deleteMany({ userId: cleanId });
     await resetUserCodingProgress(cleanId);
     await LoginLog.deleteMany({ $or: [{ userId: cleanId }] });
+    const { JobApplyLog } = await import('./jobFinder/models.js');
+    await JobApplyLog.deleteMany({ userId: cleanId });
     await User.deleteOne({ _id: cleanId });
     return;
   }

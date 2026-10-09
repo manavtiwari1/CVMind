@@ -73,6 +73,8 @@ export default function Privacy({ setCurrentPage }: PrivacyProps) {
       <h2 id="ai">AI processing</h2>
       <p>Our AI features send the text needed for your request (for example your resume text and a job description) to our AI model providers, DeepSeek and Google Gemini, which return the feedback or draft you asked for. We use these services through their APIs, and we do not use your resumes, prompts or answers to train any AI model. These providers may process data on servers outside India.</p>
 
+      <p><strong>AI Job Finder.</strong> To find jobs, the role and city you search for are sent to our job listings providers (JSearch, through RapidAPI, and Adzuna); your resume is not. We save the resume and preferences you choose for Job Finder, and the jobs you tell us you applied to, with the date, so the same job can show that you already applied. If you apply to a job a recruiter posted on CVMind, your name, email, phone and resume text are sent to that recruiter. Deleting your account removes your Job Finder records.</p>
+
       <h2 id="share">Who we share it with</h2>
       <p>We do not sell or rent your personal information. We share it only with service providers that help us run CV Mind, and only as much as they need:</p>
       <div className="rsc-table-wrap">

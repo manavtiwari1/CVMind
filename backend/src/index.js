@@ -4,6 +4,7 @@ import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 import autoApplyRouter from './routes/autoApply.js';
 import agentRouter from './routes/agent.js';
+import jobFinderRouter from './routes/jobFinder.js';
 import { startWorkers } from '@cvmind/auto-apply-agent/queue/workers.js';
 import companyRouter from './routes/company.js';
 import codeRouter from './routes/code.js';
@@ -12,8 +13,8 @@ import multer from 'multer';
 import bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
 import { parsePdf, parseDocx, parseTxt, fetchResumeFromUrl } from './services/parser.js';
-import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, generateCoverLetterWithAI, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, findJobsWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek, generateInterviewPlan, evaluateInterviewAnswer, generateInterviewReport } from './services/gemini.js';
-import { getPublicStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, updateUserFields, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveJobFinderLog, saveProofreadLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, hasAutoApplyAccess } from './db.js';
+import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, generateCoverLetterWithAI, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek, generateInterviewPlan, evaluateInterviewAnswer, generateInterviewReport } from './services/gemini.js';
+import { getPublicStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, updateUserFields, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveProofreadLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, hasAutoApplyAccess } from './db.js';
 import adminRouter from './admin/router.js';
 import adminPublicRoutes from './admin/publicRoutes.js';
 import { featureGate, signupsEnabled, getSettings } from './admin/settings.js';
@@ -1675,7 +1676,7 @@ apiRouter.get('/api/jobs/search', async (req, res) => {
 
 apiRouter.get('/api/jobs/detail', async (req, res) => {
   const id = String(req.query.id || '');
-  if (!/^(gh|lv):[\w-]+:[\w-]+$/.test(id)) return res.status(400).json({ error: 'Invalid job id.' });
+  if (!/^(gh|lv|ab|sr|wk):[\w.-]+:[\w-]+$/.test(id)) return res.status(400).json({ error: 'Invalid job id.' });
   try {
     const data = await getJobDetail(id);
     if (!data) return res.status(404).json({ error: 'This job is no longer available.' });
@@ -2854,68 +2855,6 @@ apiRouter.post('/api/user/password', requireUser, async (req, res) => {
   }
 });
 
-// AI Job Finder Endpoint
-apiRouter.post('/api/job-finder', optionalUser, upload.single('resume'), async (req, res) => {
-  try {
-    const { file } = req;
-    const { jobDescription, jobType } = req.body || {};
-    const customApiKey = req.headers['x-gemini-key'] || null;
-
-    if (!file) {
-      return res.status(400).json({ error: 'No resume file uploaded. Please upload a PDF, DOCX, or TXT file.' });
-    }
-
-    if (!jobDescription || typeof jobDescription !== 'string' || jobDescription.trim().length < 10) {
-      return res.status(400).json({ error: 'Please describe your target role or paste a job description (min 10 characters).' });
-    }
-
-    let extractedText = '';
-    if (file.mimetype === 'application/pdf') {
-      extractedText = await parsePdf(file.buffer);
-    } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      extractedText = await parseDocx(file.buffer);
-    } else if (file.mimetype === 'text/plain') {
-      extractedText = parseTxt(file.buffer);
-    } else {
-      return res.status(400).json({ error: 'Unsupported file format. Please upload PDF, DOCX, or TXT.' });
-    }
-
-    if (!extractedText || extractedText.trim().length < 50) {
-      return res.status(400).json({ error: 'Unable to extract text from the uploaded resume. Please ensure the document has readable text.' });
-    }
-
-    const preferredJobType = jobType || 'All';
-    const result = await findJobsWithGemini(extractedText, jobDescription.trim(), preferredJobType, customApiKey);
-
-    const userId = req.auth?.sub || '';
-    await saveJobFinderLog({
-      email: req.auth?.email || req.body.email || '',
-      userId,
-      jobsCount: result?.jobs?.length || 0,
-      jobDescription: jobDescription.trim().substring(0, 200),
-      jobType: preferredJobType
-    });
-    const savedWork = await saveFeatureWork(userId, {
-      title: `Job Search - ${jobDescription.trim().substring(0, 50)}`,
-      type: 'job-finder',
-      templateId: 'ai-job-finder',
-      payload: { jobDescription: jobDescription.trim(), jobType: preferredJobType, result }
-    });
-
-    return res.json({
-      success: true,
-      data: result,
-      resumeText: extractedText,
-      work: savedWork
-    });
-  } catch (error) {
-    console.error('Job Finder API Error:', error);
-    return res.status(500).json({
-      error: error.message || 'try again after sometime or mail to contact@manavtiwari.in for this error'
-    });
-  }
-});
-
 // Check payment access status
 apiRouter.get('/api/payments/check-access/:email', async (req, res) => {
   const email = String(req.params.email || '').trim().toLowerCase();
@@ -3022,6 +2961,8 @@ app.use('/api/company', companyRouter);
 app.use('/_/backend/api/company', companyRouter);
 app.use('/api/code', codeRouter);
 app.use('/_/backend/api/code', codeRouter);
+app.use('/api/job-finder', jobFinderRouter);
+app.use('/_/backend/api/job-finder', jobFinderRouter);
 
 // Handle 404
 app.use((req, res) => {

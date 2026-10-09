@@ -16,6 +16,7 @@ const SECTIONS: Record<string, LazyExoticComponent<ComponentType>> = {
   'user-activity': lazy(() => import('./sections/UserActivity')),
   access: lazy(() => import('./sections/AccessLists')),
   subscriptions: lazy(() => import('./sections/Subscriptions')),
+  'job-finder': lazy(() => import('./sections/JobFinder')),
   payments: lazy(() => import('./sections/Payments')),
   invoices: lazy(() => import('./sections/Invoices')),
   refunds: lazy(() => import('./sections/RefundRequests')),

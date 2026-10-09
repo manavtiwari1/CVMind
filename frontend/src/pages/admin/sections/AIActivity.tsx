@@ -15,7 +15,8 @@ interface ActivityResponse {
 
 const COLUMN_LABELS: Record<string, string> = {
   fileName: 'File', score: 'Score', priorScore: 'Score before', questionsCount: 'Questions', email: 'Email',
-  jobTitle: 'Role', industry: 'Industry', issuesCount: 'Issues found', topic: 'Topic', theme: 'Theme', jobType: 'Job type', jobsCount: 'Jobs found'
+  jobTitle: 'Role', industry: 'Industry', issuesCount: 'Issues found', topic: 'Topic', theme: 'Theme', jobType: 'Job type', jobsCount: 'Jobs found',
+  company: 'Company', title: 'Job'
 };
 const NUMERIC = new Set(['score', 'priorScore', 'questionsCount', 'issuesCount', 'jobsCount']);
 

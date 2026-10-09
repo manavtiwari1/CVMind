@@ -1,24 +1,16 @@
-// Live job search for the resume builder's "What job do you want next?" step.
+// Live job search for the resume builder's "What job do you want next?" step and AI Job Finder.
 //
-// Sources are the companies' own public job boards (Greenhouse and Lever), which are published for
-// exactly this kind of listing. Everything is cached in memory so a search never hits those APIs
-// directly, and results are ranked by how well they match the query (no unrelated filler results).
+// Sources are companies' own public job boards (Greenhouse, Lever, Ashby, SmartRecruiters and
+// Workable), which are published for exactly this kind of listing. Everything is cached in memory so
+// a search never hits those APIs directly, and results are ranked by how well they match the query.
 import { htmlToStructuredText } from './parser.js';
 import { fetchGreenhouseJob } from '@cvmind/auto-apply-agent/jobs/fetchers/greenhouse.js';
+import { GREENHOUSE, LEVER, ASHBY, SMARTRECRUITERS, WORKABLE } from './jobBoards.js';
 
-const GREENHOUSE = [
-  ['stripe', 'Stripe', 'stripe.com'], ['mongodb', 'MongoDB', 'mongodb.com'], ['figma', 'Figma', 'figma.com'],
-  ['datadog', 'Datadog', 'datadoghq.com'], ['reddit', 'Reddit', 'reddit.com'], ['elastic', 'Elastic', 'elastic.co'],
-  ['cloudflare', 'Cloudflare', 'cloudflare.com'], ['airbnb', 'Airbnb', 'airbnb.com'], ['coinbase', 'Coinbase', 'coinbase.com'],
-  ['gitlab', 'GitLab', 'gitlab.com'], ['pinterest', 'Pinterest', 'pinterest.com'], ['instacart', 'Instacart', 'instacart.com'],
-  ['databricks', 'Databricks', 'databricks.com'], ['robinhood', 'Robinhood', 'robinhood.com'], ['discord', 'Discord', 'discord.com'],
-  ['dropbox', 'Dropbox', 'dropbox.com'], ['twilio', 'Twilio', 'twilio.com'], ['asana', 'Asana', 'asana.com'],
-  ['duolingo', 'Duolingo', 'duolingo.com'], ['lyft', 'Lyft', 'lyft.com'], ['inmobi', 'InMobi', 'inmobi.com'], ['groww', 'Groww', 'groww.in'],
-];
-const LEVER = [
-  ['cred', 'CRED', 'cred.club'], ['paytm', 'Paytm', 'paytm.com'], ['meesho', 'Meesho', 'meesho.com'],
-  ['freshworks', 'Freshworks', 'freshworks.com'], ['spotify', 'Spotify', 'spotify.com'],
-];
+// Descriptions kept in the index are capped; the detail view shows this much
+const DESCRIPTION_CAP = 6000;
+// SmartRecruiters boards page 100 at a time; big employers list thousands
+const SMARTRECRUITERS_MAX = 300;
 
 const INDEX_TTL_MS = 30 * 60 * 1000;      // company boards
 const DETAIL_TTL_MS = 60 * 60 * 1000;
@@ -27,7 +19,7 @@ let boardIndex = { at: 0, jobs: [], loading: null };
 const detailCache = new Map();
 
 const getJson = async (url) => {
-  const res = await fetch(url, { headers: { Accept: 'application/json', 'User-Agent': 'CVMindJobSearch/1.0 (+https://cvmind.in)' }, signal: AbortSignal.timeout(15000) });
+  const res = await fetch(url, { headers: { Accept: 'application/json', 'User-Agent': 'CVMindJobSearch/1.0 (+https://cvmind.in)' }, signal: AbortSignal.timeout(20000) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 };
@@ -58,6 +50,48 @@ async function loadLever([slug, company, domain]) {
   });
 }
 
+async function loadAshby([board, company, domain]) {
+  const data = await getJson(`https://api.ashbyhq.com/posting-api/job-board/${board}`);
+  return (data.jobs || []).filter((j) => j.isListed !== false).map((j) => {
+    const location = [j.location, ...(j.secondaryLocations || []).map((l) => l.location)].filter(Boolean).join(', ');
+    return {
+      id: `ab:${board}:${j.id}`, source: 'ashby', title: tidyTitle(j.title), company, domain, logo: null,
+      location, remote: Boolean(j.isRemote) || isRemote(location), team: j.department || j.team || '', type: j.employmentType === 'FullTime' ? 'Full-time' : j.employmentType === 'Intern' ? 'Internship' : '',
+      postedAt: j.publishedAt || null, url: j.jobUrl || j.applyUrl || '', description: String(j.descriptionPlain || '').slice(0, DESCRIPTION_CAP),
+    };
+  });
+}
+
+async function loadSmartRecruiters([board, company, domain]) {
+  const jobs = [];
+  for (let offset = 0; offset < SMARTRECRUITERS_MAX; offset += 100) {
+    const data = await getJson(`https://api.smartrecruiters.com/v1/companies/${board}/postings?limit=100&offset=${offset}`);
+    for (const j of data.content || []) {
+      const loc = j.location || {};
+      const location = loc.fullLocation || [loc.city, loc.country?.toUpperCase()].filter(Boolean).join(', ');
+      jobs.push({
+        id: `sr:${board}:${j.id}`, source: 'smartrecruiters', title: tidyTitle(j.name), company, domain, logo: null,
+        location: loc.remote ? `${location} (Remote)` : location, remote: Boolean(loc.remote), team: j.department?.label || j.function?.label || '',
+        type: j.typeOfEmployment?.label || '', postedAt: j.releasedDate || null, url: `https://jobs.smartrecruiters.com/${board}/${j.id}`,
+      });
+    }
+    if (!data.content || data.content.length < 100) break;
+  }
+  return jobs;
+}
+
+async function loadWorkable([board, company, domain]) {
+  const data = await getJson(`https://apply.workable.com/api/v1/widget/accounts/${board}`);
+  return (data.jobs || []).map((j) => {
+    const location = [j.city, j.country].filter(Boolean).join(', ');
+    return {
+      id: `wk:${board}:${j.shortcode}`, source: 'workable', title: tidyTitle(j.title), company, domain, logo: null,
+      location: location || (j.telecommuting ? 'Remote' : ''), remote: Boolean(j.telecommuting), team: j.department || '', type: j.employment_type || '',
+      postedAt: j.published_on || j.created_at || null, url: j.url || j.application_url || '',
+    };
+  });
+}
+
 /** Runs loaders with a small concurrency limit; a failing board is skipped, not fatal. */
 async function settleAll(items, loader, limit = 6) {
   const out = [];
@@ -83,10 +117,16 @@ async function ensure(index, ttl, build) {
   return index.jobs.length ? index.jobs : index.loading;
 }
 
-const getBoards = () => ensure(boardIndex, INDEX_TTL_MS, async () => [
-  ...await settleAll(GREENHOUSE, loadGreenhouse),
-  ...await settleAll(LEVER, loadLever),
-]);
+const getBoards = () => ensure(boardIndex, INDEX_TTL_MS, async () => {
+  const lists = await Promise.all([
+    settleAll(GREENHOUSE, loadGreenhouse),
+    settleAll(LEVER, loadLever),
+    settleAll(ASHBY, loadAshby),
+    settleAll(SMARTRECRUITERS, loadSmartRecruiters, 3),
+    settleAll(WORKABLE, loadWorkable),
+  ]);
+  return lists.flat();
+});
 
 const STOP = new Set(['job', 'jobs', 'role', 'roles', 'opening', 'openings', 'hiring', 'position', 'positions', 'in', 'at', 'for', 'the', 'a', 'an', 'and', 'of', 'to', 'near', 'me', 'vacancy', 'vacancies']);
 const LEVEL_WORDS = { entry: ['intern', 'junior', 'associate', 'graduate', 'new grad', 'entry', 'trainee', 'early career'], fresher: ['intern', 'junior', 'associate', 'graduate', 'new grad', 'trainee'], senior: ['senior', 'sr.', 'staff', 'lead', 'principal'] };
@@ -171,6 +211,19 @@ export async function getJobDetail(id) {
     if (!GREENHOUSE.some(([b]) => b === board) || !/^\d+$/.test(jobId)) return null;
     const job = await fetchGreenhouseJob({ boardToken: board, jobId });
     data = { description: job.descriptionText || '' };
+  } else if (id.startsWith('sr:')) {
+    const [, board, jobId] = id.split(':');
+    if (!SMARTRECRUITERS.some(([b]) => b === board) || !/^\d+$/.test(jobId)) return null;
+    const job = await getJson(`https://api.smartrecruiters.com/v1/companies/${board}/postings/${jobId}`);
+    const sections = job.jobAd?.sections || {};
+    data = { description: ['jobDescription', 'qualifications', 'additionalInformation', 'companyDescription']
+      .map((k) => (sections[k]?.text ? `${sections[k].title || ''}\n${htmlToStructuredText(sections[k].text)}` : ''))
+      .filter(Boolean).join('\n\n').trim() };
+  } else if (id.startsWith('wk:')) {
+    const [, board, code] = id.split(':');
+    if (!WORKABLE.some(([b]) => b === board) || !/^[A-Z0-9]+$/i.test(code)) return null;
+    const job = await getJson(`https://apply.workable.com/api/v2/accounts/${board}/jobs/${code}`);
+    data = { description: [job.description, job.requirements, job.benefits].filter(Boolean).map(htmlToStructuredText).join('\n\n').trim() };
   } else {
     const job = boardIndex.jobs.find((j) => j.id === id);
     if (job) data = { description: job.description || '' };
@@ -185,4 +238,4 @@ export function warmJobSearch() {
 }
 
 /** Company names we search, for the "no results" hint. */
-export const JOB_SEARCH_COMPANIES = [...GREENHOUSE, ...LEVER].map(([, name]) => name);
+export const JOB_SEARCH_COMPANIES = [...new Set([...GREENHOUSE, ...LEVER, ...ASHBY, ...SMARTRECRUITERS, ...WORKABLE].map(([, name]) => name))].sort((a, b) => a.localeCompare(b));
