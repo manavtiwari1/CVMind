@@ -11,14 +11,14 @@ export const PLANS = {
 
 export const PLAN_KEYS = Object.keys(PLANS);
 
-// Launch: the pricing page and checkout both open at 4:00 AM IST on 11 Oct 2026.
-// PRICING_OPENS_AT / PAYMENTS_OPEN_AT (ISO dates) override them, e.g. to test or move the launch.
+// Launch: the pricing page and checkout are open. Set a future date to show a countdown instead.
+// PRICING_OPENS_AT / PAYMENTS_OPEN_AT (ISO dates) set those dates, e.g. to test or schedule a launch.
 const at = (value, fallback) => {
   const d = new Date(value || fallback);
   return Number.isNaN(d.getTime()) ? new Date(fallback) : d;
 };
-export const pricingOpensAt = () => at(process.env.PRICING_OPENS_AT, '2026-10-11T04:00:00+05:30');
-export const paymentsOpenAt = () => at(process.env.PAYMENTS_OPEN_AT, '2026-10-11T04:00:00+05:30');
+export const pricingOpensAt = () => at(process.env.PRICING_OPENS_AT, '2026-10-09T00:00:00+05:30');
+export const paymentsOpenAt = () => at(process.env.PAYMENTS_OPEN_AT, '2026-10-09T00:00:00+05:30');
 
 // Free accounts get a few uses of these each week (rolling 7 days); Pro is unlimited
 export const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
