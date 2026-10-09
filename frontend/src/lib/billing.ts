@@ -22,7 +22,7 @@ export interface LaunchTimes { pricingOpensAt: number; paymentsOpenAt: number; o
 
 export const FALLBACK_LAUNCH: LaunchTimes = {
   pricingOpensAt: Date.parse('2026-10-09T00:00:00+05:30'),
-  paymentsOpenAt: Date.parse('2026-10-09T00:00:00+05:30'),
+  paymentsOpenAt: Date.parse('2026-10-11T04:00:00+05:30'),
   offset: 0,
 };
 
