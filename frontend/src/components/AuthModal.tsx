@@ -2,12 +2,13 @@ import { useState, useEffect, useRef, type FormEvent, type ReactNode } from 'rea
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft,
-  User, CheckCircle, AlertCircle, ShieldCheck, RefreshCw,
+  User, CheckCircle, AlertCircle, ShieldCheck, RefreshCw, Briefcase,
 } from 'lucide-react';
 import { Confetti, type ConfettiRef } from './ui/sign-up';
 import { getErrorMessage } from '../utils/errors';
 import { setSession } from '../lib/session';
-import { OAUTH_NONCE_KEY, siteOrigin } from '../lib/hosts';
+import { OAUTH_NONCE_KEY, isAppHost, siteOrigin } from '../lib/hosts';
+import { api as adminApi, saveSession as saveAdminSession, type AdminSession } from '../pages/admin/api';
 import VerifyEmailPanel from './VerifyEmailPanel';
 import { LEO_POSES, type LeoPose } from '../lib/leoPoses';
 import cvmindLogo from '../assets/cvmind_logo_transparent.png';
@@ -15,7 +16,7 @@ import './AuthModal.css';
 
 /* ─── Types ─────────────────────────────────────────────────────── */
 
-type AuthMode = 'signIn' | 'signUp' | 'forgotPassword' | 'resetPassword';
+type AuthMode = 'signIn' | 'signUp' | 'forgotPassword' | 'resetPassword' | 'team';
 type AuthMethod = 'google' | 'linkedin' | 'github' | 'email';
 
 const LAST_AUTH_KEY = 'cvmind_last_auth';
@@ -116,6 +117,11 @@ const IDLE_FRAMES: Record<AuthMode, LeoFrame[]> = {
   ],
   forgotPassword: [{ pose: 'support', line: 'Happens to the best of us!' }],
   resetPassword:  [{ pose: 'thumbs',  line: "Pick a strong one. I won't peek!" }],
+  team: [
+    { pose: 'support',   line: 'Hey team! Ready for today?' },
+    { pose: 'growth',    line: "Let's check how CVMind is doing." },
+    { pose: 'checklist', line: 'Tickets, users, reports. All in one place.' },
+  ],
 };
 const FRAME_MS = 2800;
 
@@ -123,6 +129,7 @@ interface BrandPanelProps { mode: AuthMode; mood: MascotMood; frames: LeoFrame[]
 
 function BrandPanel({ mode, mood, frames }: BrandPanelProps) {
   const signUp = mode === 'signUp';
+  const team = mode === 'team';
 
   // Loop through the frames; start over whenever the set of frames changes
   const framesKey = frames.map(f => f.line).join('|');
@@ -190,16 +197,16 @@ function BrandPanel({ mode, mood, frames }: BrandPanelProps) {
 
         <AnimatePresence mode="wait">
           <motion.div
-            key={signUp ? 'up' : 'in'}
+            key={team ? 'team' : signUp ? 'up' : 'in'}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3 }}
           >
             <h2 className="auth-brand-title">
-              {signUp ? 'Build a resume' : 'Welcome back.'}
+              {team ? 'Team space.' : signUp ? 'Build a resume' : 'Welcome back.'}
               <br />
-              <em>{signUp ? 'that gets read.' : 'Your next role is waiting.'}</em>
+              <em>{team ? 'Keep CVMind running.' : signUp ? 'that gets read.' : 'Your next role is waiting.'}</em>
             </h2>
             <svg className="auth-underline" viewBox="0 0 210 14" fill="none">
               <path d="M2 9c40-6 90-8 140-4 22 2 44 3 66-1" stroke="#2dc08d" strokeWidth="3" strokeLinecap="round" />
@@ -209,9 +216,9 @@ function BrandPanel({ mode, mood, frames }: BrandPanelProps) {
 
         <div className="auth-plan">
           <span className="auth-plan-label">Your plan</span>
-          <div className="auth-plan-row on"><span className="auth-plan-num">1</span>{signUp ? 'Create your account' : 'Sign in'}</div>
-          <div className="auth-plan-row"><span className="auth-plan-num">2</span>Upload or build your resume</div>
-          <div className="auth-plan-row"><span className="auth-plan-num">3</span>Tailor it for any job</div>
+          <div className="auth-plan-row on"><span className="auth-plan-num">1</span>{team ? 'Sign in with your team account' : signUp ? 'Create your account' : 'Sign in'}</div>
+          <div className="auth-plan-row"><span className="auth-plan-num">2</span>{team ? 'Open the admin panel' : 'Upload or build your resume'}</div>
+          <div className="auth-plan-row"><span className="auth-plan-num">3</span>{team ? 'Help users and keep things running' : 'Tailor it for any job'}</div>
         </div>
       </div>
 
@@ -251,8 +258,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   // After sign-up: the "Verify your email address" step for this address
   const [verifyFor, setVerifyFor] = useState<{ email: string; sendFailed: boolean } | null>(null);
   const [lastAuth, setLastAuth] = useState<AuthMethod | null>(null);
+  // Team (admin panel) sign-in
+  const [username, setUsername] = useState('');
+  const [remember, setRemember] = useState(false);
   // Which field has focus, so the mascot can react to it
-  const [focused, setFocused] = useState<'name' | 'email' | 'password' | 'confirm' | 'captcha' | null>(null);
+  const [focused, setFocused] = useState<'name' | 'email' | 'username' | 'password' | 'confirm' | 'captcha' | null>(null);
   // Mascot shows an "oops" face for a moment after each error
   const [oops, setOops] = useState(false);
   const [seenError, setSeenError] = useState<string | null>(null);
@@ -346,7 +356,20 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     setSignupCaptcha(false);
   }
 
+  function openTeamLogin() {
+    // The admin panel lives on the main site and its session is per site, so sign in there
+    if (isAppHost()) { window.location.assign(siteOrigin() + '/admin'); return; }
+    setUsername('');
+    setRemember(false);
+    switchMode('team');
+  }
+
   function validate(): string | null {
+    if (mode === 'team') {
+      if (!username.trim()) return 'Please enter your username.';
+      if (!password) return 'Please enter your password.';
+      return null;
+    }
     if (mode !== 'resetPassword') {
       if (mode === 'signUp' && !name.trim()) return 'Please enter your full name.';
       if (!email.trim()) return 'Please enter your email address.';
@@ -376,6 +399,20 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   /* Submit ─────────────────────────────────────────────────────── */
 
   async function handleSubmit() {
+    if (mode === 'team') {
+      setLoading(true);
+      try {
+        const data = await adminApi<AdminSession>('/login', { method: 'POST', body: { username: username.trim(), password } });
+        saveAdminSession({ token: data.token, admin: data.admin }, remember);
+        setDone(true);
+        setTimeout(() => window.location.assign('/admin'), 900);
+      } catch (err) {
+        setErrorMsg(getErrorMessage(err) || 'Sign-in failed.');
+      }
+      finally { setLoading(false); }
+      return;
+    }
+
     if (mode === 'forgotPassword') {
       setLoading(true);
       try {
@@ -505,14 +542,16 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     signUp:         ['Create your free account', 'Build, check and tailor your resume in minutes.'],
     forgotPassword: ['Reset your password', "Enter your email and we'll send you a reset link."],
     resetPassword:  ['Choose a new password', 'Use at least 6 characters.'],
-  };
+      team:           ['CVMind Team Login', 'For the CVMind team. Use the account your owner set up for you.'],
+};
 
   const submitLabel: Record<AuthMode, string> = {
     signIn:         'Log in',
     signUp:         'Create account',
     forgotPassword: 'Send reset link',
     resetPassword:  'Save new password',
-  };
+      team:           'Sign in to admin panel',
+};
 
   const isAuthMode = mode === 'signIn' || mode === 'signUp';
   const strength = passwordStrength(password);
@@ -536,7 +575,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     done ? 'happy' :
     oops ? 'oops' :
     typingSecret ? (secretShown ? 'peeking' : 'hiding') :
-    focused === 'email' || focused === 'name' ? 'looking' :
+    focused === 'email' || focused === 'name' || focused === 'username' ? 'looking' :
     'idle';
   const firstName = name.trim().split(/\s+/)[0];
   const reaction =
@@ -546,6 +585,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     mood === 'oops' ? "Oops! Let's try that again." :
     focused === 'name' ? (firstName ? `Nice to meet you, ${firstName}!` : 'What should I call you?') :
     focused === 'email' ? (email ? 'Noting it down…' : 'Type your email here.') :
+    focused === 'username' ? (username.trim() ? `Hey ${username.trim()}, welcome back!` : 'Your team username, please.') :
     null;
   const leoFrames: LeoFrame[] =
     verifyFor && !done ? [{ pose: 'checklist', line: 'Check your inbox for my letter!' }] :
@@ -620,7 +660,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                         <CheckCircle size={38} />
                       </motion.div>
                       <strong>{verifyFor ? 'Email verified!' : mode === 'signUp' ? 'Account created!' : "You're in!"}</strong>
-                      <p>Taking you to your dashboard…</p>
+                      <p>{mode === 'team' ? 'Opening the admin panel…' : 'Taking you to your dashboard…'}</p>
                     </div>
                   ) : (
                     <>
@@ -689,7 +729,27 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                               </label>
                             )}
 
-                            {mode !== 'resetPassword' && (
+                            {mode === 'team' && (
+                              <label className="auth-field">
+                                <input
+                                  className="auth-input"
+                                  type="text"
+                                  placeholder="Team username"
+                                  value={username}
+                                  onChange={e => setUsername(e.target.value)}
+                                  autoComplete="username"
+                                  autoCapitalize="none"
+                                  spellCheck={false}
+                                  onFocus={() => setFocused('username')}
+                                  onBlur={() => setFocused(null)}
+                                  disabled={loading}
+                                  autoFocus
+                                />
+                                <span className="auth-field-icon"><Briefcase size={17} /></span>
+                              </label>
+                            )}
+
+                            {mode !== 'resetPassword' && mode !== 'team' && (
                               <label className="auth-field">
                                 <input
                                   className="auth-input"
@@ -714,7 +774,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                                   placeholder={mode === 'resetPassword' ? 'New password' : 'Password'}
                                   value={password}
                                   onChange={e => setPassword(e.target.value)}
-                                  autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
+                                  autoComplete={mode === 'signIn' || mode === 'team' ? 'current-password' : 'new-password'}
                                   onFocus={() => setFocused('password')}
                                   onBlur={() => setFocused(null)}
                                   disabled={loading}
@@ -764,6 +824,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                                   Forgot password?
                                 </button>
                               </div>
+                            )}
+
+                            {mode === 'team' && (
+                              <label className="auth-check">
+                                <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} disabled={loading} />
+                                Keep me signed in on this device
+                              </label>
                             )}
 
                             {/* Captcha (sign in, and risky sign-ups) */}
@@ -850,7 +917,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                               {loading ? <span className="auth-spinner" /> : <>{submitLabel[mode]} <ArrowRight size={17} /></>}
                             </button>
 
-                            {mode === 'forgotPassword' && (
+                            {(mode === 'forgotPassword' || mode === 'team') && (
                               <button type="button" className="auth-ghost-btn" onClick={() => switchMode('signIn')}>
                                 ← Back to log in
                               </button>
@@ -870,6 +937,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                                 Create a free account
                               </button>
                             </p>
+                          )}
+                          {mode === 'signIn' && (
+                            <button type="button" className="auth-team-link" onClick={openTeamLogin}>
+                              <Briefcase size={14} />
+                              <span>CVMind team? <b>Team login</b></span>
+                              <ArrowRight size={14} />
+                            </button>
                           )}
                         </>
                       )}
