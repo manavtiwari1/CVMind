@@ -40,6 +40,8 @@ export interface ParsedProfile {
 // POST /api/analyze — structured resume evaluation
 export interface ResumeAnalysis {
   score: number;
+  // Compared with the user's last check of the same resume (signed-in only)
+  scoreChange?: { previousScore: number; previousAt: string; delta: number; trend: 'up' | 'down' | 'same' } | null;
   summary: string;
   atsKeywords: {
     score: number;

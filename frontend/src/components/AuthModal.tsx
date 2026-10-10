@@ -2,12 +2,13 @@ import { useState, useEffect, useRef, type FormEvent, type ReactNode } from 'rea
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft,
-  User, CheckCircle, AlertCircle, ShieldCheck, RefreshCw, Briefcase,
+  User, CheckCircle, AlertCircle, ShieldCheck, RefreshCw, Briefcase, Gift,
 } from 'lucide-react';
 import { Confetti, type ConfettiRef } from './ui/sign-up';
 import { getErrorMessage } from '../utils/errors';
 import { setSession } from '../lib/session';
 import { OAUTH_NONCE_KEY, isAppHost, siteOrigin } from '../lib/hosts';
+import { storedReferral } from '../lib/referralCapture';
 import { api as adminApi, saveSession as saveAdminSession, type AdminSession } from '../pages/admin/api';
 import VerifyEmailPanel from './VerifyEmailPanel';
 import { LEO_POSES, type LeoPose } from '../lib/leoPoses';
@@ -295,7 +296,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         setResetToken(token);
         setEmail(urlEmail);
       } else {
-        setMode('signIn');
+        // Someone who arrived with a friend's invite link is here to sign up
+        setMode(storedReferral() ? 'signUp' : 'signIn');
         setResetToken('');
         setEmail('');
       }
@@ -669,6 +671,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                         <>
                           <h1 className="auth-title">{title}</h1>
                           <p className="auth-sub">{subtitle}</p>
+                          {mode === 'signUp' && storedReferral() && (
+                            <p className="auth-invite"><Gift size={15} /> A friend invited you. Sign up and verify your email, and you both get an extra job application in AI Job Finder.</p>
+                          )}
                         </>
                       )}
 

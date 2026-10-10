@@ -1,7 +1,7 @@
 import {
   FileText, ScanSearch, Target, Globe, MessageSquare, Mic, SpellCheck, Code2,
   Briefcase, Send, UserCheck, PenLine, MessagesSquare, GraduationCap, Presentation,
-  Map as MapIcon, Info, LifeBuoy, HelpCircle, BookOpen, Mail,
+  Map as MapIcon, Info, LifeBuoy, HelpCircle, BookOpen, Mail, Handshake,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -71,7 +71,7 @@ export const NAV_MENUS: NavMenu[] = [
   },
   {
     label: 'AI Tools',
-    pages: ['prep', 'voice-prep', 'ai-job-finder', 'proofreading', 'auto-apply', 'code'],
+    pages: ['prep', 'voice-prep', 'ai-job-finder', 'proofreading', 'auto-apply', 'code', 'offer-negotiation'],
     columns: [
       {
         heading: 'Interview',
@@ -86,6 +86,7 @@ export const NAV_MENUS: NavMenu[] = [
         heading: 'Job Search',
         tiles: [
           { page: 'ai-job-finder', title: 'AI Job Finder', desc: 'Live jobs ranked against your resume', icon: Briefcase, badge: 'new' },
+          { page: 'offer-negotiation', title: 'Offer Negotiation', desc: 'Ask for a better offer, politely', icon: Handshake, badge: 'new' },
           { page: 'auto-apply', title: 'Auto Apply Agent', desc: 'Coming soon: AI applies to jobs for you', icon: Send, badge: 'soon' },
         ],
       },

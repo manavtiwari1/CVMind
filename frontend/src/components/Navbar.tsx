@@ -218,6 +218,12 @@ export default function Navbar({
                 AI Job Finder
               </button>
               <button
+                className={`mobile-drawer-link mobile-sub-link${currentPage === 'offer-negotiation' ? ' active' : ''}`}
+                onClick={() => go('offer-negotiation')}
+              >
+                Offer Negotiation
+              </button>
+              <button
                 className={`mobile-drawer-link mobile-sub-link${currentPage === 'auto-apply' ? ' active' : ''}`}
                 onClick={() => go('auto-apply')}
               >
@@ -314,7 +320,7 @@ export default function Navbar({
         {/* Remaining links */}
         {[
           { label: 'Pricing', page: 'pricing' },
-          ...(isLoggedIn ? [{ label: 'My Documents', page: 'my-documents' }, { label: 'Account', page: 'account' }] : []),
+          ...(isLoggedIn ? [{ label: 'My Documents', page: 'my-documents' }, { label: 'Account', page: 'account' }, { label: 'Invite friends', page: 'invite' }] : []),
           { label: 'Help Desk', page: 'help-center' },
           { label: 'About Us', page: 'about' },
           { label: 'FAQs', page: 'faq' },

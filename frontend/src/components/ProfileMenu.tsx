@@ -56,6 +56,9 @@ export default function ProfileMenu({ user, setCurrentPage, handleSignOut }: Pro
             <button role="menuitem" className="nav-profile-dropdown-item" onClick={() => go('account')}>
               Account
             </button>
+            <button role="menuitem" className="nav-profile-dropdown-item" onClick={() => go('invite')}>
+              Invite friends
+            </button>
             <button role="menuitem" className="nav-profile-dropdown-item" onClick={() => go('help-center')}>
               Help Center
             </button>

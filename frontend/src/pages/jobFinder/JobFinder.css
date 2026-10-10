@@ -118,6 +118,8 @@
 .jf-top-pro { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 99px; background: var(--jf-ink); color: var(--jf-paper); font-size: 0.72rem; font-weight: 700; }
 .jf-resume-chip { display: inline-flex; align-items: center; gap: 8px; min-width: 0; flex-shrink: 1; max-width: 46vw; padding: 8px 14px; border: 1px solid var(--jf-line-strong); border-radius: 99px; background: var(--jf-surface); color: var(--jf-ink); font: inherit; font-size: 0.86rem; font-weight: 500; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .jf-resume-chip-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* Sits next to the resume chip on the right of the top bar */
+.jf-alerts-chip { margin-left: auto; flex-shrink: 0; }
 .jf-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: var(--jf-mute); }
 .jf-dot--ready { background: var(--jf-green); }
 .jf-dot--queued, .jf-dot--parsing { background: var(--jf-amber); }
@@ -244,6 +246,8 @@
   .jf-top-home-label, .jf-top-pro { display: none; }
   .jf-top-name { font-size: 1.05rem; }
   .jf-resume-chip { max-width: 44vw; padding: 7px 12px; font-size: 0.8rem; }
+  .jf-alerts-chip .jf-resume-chip-text { display: none; }
+  .jf-alerts-chip { padding: 7px 10px; }
   .jf-list-head { flex-wrap: wrap; }
 }
 

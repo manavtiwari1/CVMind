@@ -5,34 +5,41 @@ import {
 import SkeletonLoader from '../components/SkeletonLoader';
 import ReportContent from '../components/ReportContent';
 import { getErrorMessage } from '../utils/errors';
+import { API_BASE } from '../lib/apiBase';
+import { authFetch } from '../lib/authFetch';
 import type { SavedWork } from '../types/api';
 import './Portfolio.css';
 
 interface PortfolioProps {
-  workId: string | undefined;
+  // The older public link, /portfolio/<document id>
+  workId?: string;
+  // A resume share link, /r/<name>; counts a view
+  slug?: string;
 }
 
-export default function Portfolio({ workId }: PortfolioProps) {
+export default function Portfolio({ workId, slug }: PortfolioProps) {
+  const target = slug || workId;
   const [fetchLoading, setLoading] = useState(true);
   const [fetchError, setErrorMsg] = useState<string | null>(null);
   const [workData, setWorkData] = useState<SavedWork | null>(null);
   const [themeName, setThemeName] = useState('classic');
 
-  // Without a work id in the URL there is nothing to load
-  const loading = !!workId && fetchLoading;
-  const errorMsg = workId ? fetchError : 'No resume portfolio link detected. Please check the URL.';
+  // Without a work id or link name in the URL there is nothing to load
+  const loading = !!target && fetchLoading;
+  const errorMsg = target ? fetchError : 'No resume portfolio link detected. Please check the URL.';
 
   useEffect(() => {
-    if (!workId) return;
+    if (!target) return;
 
     const fetchPortfolio = async () => {
       setLoading(true);
       setErrorMsg(null);
       try {
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL 
-          || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://cvmindai-backend.onrender.com');
-
-        const response = await fetch(`${baseUrl}/api/portfolio/${workId}`);
+        // Share links send where the visitor came from (the API request's own referrer is this site),
+        // and the owner's session, so their own visits aren't counted
+        const response = slug
+          ? await authFetch(`${API_BASE}/api/r/${encodeURIComponent(slug)}?from=${encodeURIComponent(document.referrer || '')}`)
+          : await fetch(`${API_BASE}/api/portfolio/${workId}`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -53,7 +60,7 @@ export default function Portfolio({ workId }: PortfolioProps) {
     };
 
     fetchPortfolio();
-  }, [workId]);
+  }, [target, slug, workId]);
 
   const handlePrint = () => {
     if (!workData) return;
@@ -105,7 +112,7 @@ export default function Portfolio({ workId }: PortfolioProps) {
       <div className="pf-error-container animate-fade-in">
         <div className="pf-error-card glass-card">
           <AlertCircle size={40} className="text-red" />
-          <h2>Portfolio Load Failed</h2>
+          <h2>{slug ? 'This resume link is not available' : 'Portfolio Load Failed'}</h2>
           <p>{errorMsg || 'Unable to display this portfolio.'}</p>
           <a href="/" className="btn-primary pf-home-btn">
             <ArrowLeft size={16} /> Return to Home

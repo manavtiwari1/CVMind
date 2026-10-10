@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bot, CheckCircle2, ExternalLink, Loader2, Lock, MapPin, Send, Wand2, X } from 'lucide-react';
+import { Bot, CheckCircle2, ExternalLink, Loader2, Lock, MapPin, Send, Users, Wand2, X } from 'lucide-react';
 import CompanyLogo from './CompanyLogo';
 import { MatchBadge } from './JobCard';
 import { appliedOn, postedAgo, SOURCE_LABEL } from './format';
@@ -12,9 +12,10 @@ interface JobDrawerProps {
   job: FinderJob;
   onClose: () => void;
   onApply: (job: FinderJob) => void;
+  onFindReferral: (job: FinderJob) => void;
 }
 
-export default function JobDrawer({ job, onClose, onApply }: JobDrawerProps) {
+export default function JobDrawer({ job, onClose, onApply, onFindReferral }: JobDrawerProps) {
   // Loaded detail, kept with the job it belongs to so switching jobs never shows the previous one
   const [loaded, setLoaded] = useState<{ jobKey: string; description?: string; match?: JobMatch; error?: string } | null>(null);
   const current = loaded?.jobKey === job.jobKey ? loaded : null;
@@ -68,6 +69,9 @@ export default function JobDrawer({ job, onClose, onApply }: JobDrawerProps) {
         </button>
         <button type="button" className="jf-btn jf-btn--ghost" onClick={tailor}>
           <Wand2 size={15} /> Tailor my resume for this job
+        </button>
+        <button type="button" className="jf-btn jf-btn--ghost" onClick={() => onFindReferral(job)}>
+          <Users size={15} /> Find a referral at {job.company}
         </button>
         <button type="button" className="jf-btn jf-btn--locked" disabled title="Auto Apply is coming soon">
           <Bot size={15} /> Apply with Auto Apply <span className="jf-soon"><Lock size={11} /> Coming soon</span>
