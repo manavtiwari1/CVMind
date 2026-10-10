@@ -20,15 +20,18 @@
     <meta property="og:url" content="https://www.cvmind.in/" />
     <meta property="og:title" content="Free AI Resume Builder & CV Maker Online | CV Mind" />
     <meta property="og:description" content="Make a professional resume or CV online in minutes with CV Mind's free AI Resume Builder. ATS-friendly templates, instant resume score, AI rewriting, and one-click job tailoring." />
-    <meta property="og:image" content="https://www.cvmind.in/favicon.png" />
+    <meta property="og:image" content="https://www.cvmind.in/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="CVMind: free AI resume builder and ATS resume checker" />
     <meta property="og:site_name" content="CV Mind" />
 
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://www.cvmind.in/" />
-    <meta property="twitter:title" content="Free AI Resume Builder & CV Maker Online | CV Mind" />
-    <meta property="twitter:description" content="Make a professional resume or CV online in minutes with CV Mind's free AI Resume Builder. ATS-friendly templates, instant resume score, AI rewriting, and one-click job tailoring." />
-    <meta property="twitter:image" content="https://www.cvmind.in/favicon.png" />
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://www.cvmind.in/" />
+    <meta name="twitter:title" content="Free AI Resume Builder & CV Maker Online | CV Mind" />
+    <meta name="twitter:description" content="Make a professional resume or CV online in minutes with CV Mind's free AI Resume Builder. ATS-friendly templates, instant resume score, AI rewriting, and one-click job tailoring." />
+    <meta name="twitter:image" content="https://www.cvmind.in/og-image.png" />
 
     <!-- Canonical Link -->
     <link rel="canonical" href="https://www.cvmind.in/" />
@@ -38,7 +41,9 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5881037019354515"
      crossorigin="anonymous"></script>
 
-    <!-- Structured Data -->
+    <!-- Structured data. The build keeps this block on the home page only (vite.config.ts) and adds
+         BlogPosting data to articles. Don't add ratings or reviews here unless they are real. -->
+    <!-- page-jsonld:start -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -50,15 +55,10 @@
       "operatingSystem": "Web",
       "description": "Free AI resume builder and CV maker with ATS-friendly templates, instant resume score, AI rewriting, job tailoring, interview prep, and LinkedIn optimization tools.",
       "featureList": "AI Resume Builder, CV Maker, ATS Resume Checker, Resume Score, Job Description Tailoring, AI Interview Prep, LinkedIn Optimizer",
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.9",
-        "ratingCount": "250"
-      },
       "offers": {
         "@type": "Offer",
         "price": "0",
-        "priceCurrency": "USD"
+        "priceCurrency": "INR"
       }
     }
     </script>
@@ -70,53 +70,17 @@
       "url": "https://www.cvmind.in/"
     }
     </script>
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "Is CV Mind's resume builder really free?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. You can build, score, and download an ATS-friendly resume for free with CV Mind's AI Resume Builder. Pro features like unlimited AI rewrites are available on paid plans."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How do I make a CV online with CV Mind?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Open the Resume Builder, pick an ATS-compliant template, fill in your details or upload an existing resume, let AI polish your bullet points, and download your CV as PDF or DOC in minutes."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Are CV Mind resumes ATS-friendly?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. Every template is built to pass applicant tracking systems, and the built-in ATS checker scores your resume for formatting, keywords, and structure before you apply."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Can CV Mind tailor my resume to a job description?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. Paste any job description and CV Mind's AI Resume Tailorer matches keywords and rewrites your experience to align with the role instantly."
-          }
-        }
-      ]
-    }
-    </script>
+    <!-- page-jsonld:end -->
+
       <!-- Fonts used by the resume templates and editor -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;family=Rubik:wght@300;400;500;600;700&amp;family=Lato:wght@400;700&amp;family=Merriweather:wght@400;700&amp;family=Playfair+Display:wght@400;700&amp;family=Poppins:wght@400;500;600&amp;family=Open+Sans:wght@400;600;700;800&amp;family=Raleway:wght@300;400;600&amp;family=EB+Garamond:wght@400;500&amp;family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&amp;family=Great+Vibes&amp;family=Montserrat:wght@400;500;600;700;800&amp;display=swap" />
+    <!-- Loaded without blocking the first paint: only the resume templates and editor use these -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;family=Rubik:wght@300;400;500;600;700&amp;family=Lato:wght@400;700&amp;family=Merriweather:wght@400;700&amp;family=Playfair+Display:wght@400;700&amp;family=Poppins:wght@400;500;600&amp;family=Open+Sans:wght@400;600;700;800&amp;family=Raleway:wght@300;400;600&amp;family=EB+Garamond:wght@400;500&amp;family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&amp;family=Great+Vibes&amp;family=Montserrat:wght@400;500;600;700;800&amp;display=swap" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;family=Rubik:wght@300;400;500;600;700&amp;family=Lato:wght@400;700&amp;family=Merriweather:wght@400;700&amp;family=Playfair+Display:wght@400;700&amp;family=Poppins:wght@400;500;600&amp;family=Open+Sans:wght@400;600;700;800&amp;family=Raleway:wght@300;400;600&amp;family=EB+Garamond:wght@400;500&amp;family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&amp;family=Great+Vibes&amp;family=Montserrat:wght@400;500;600;700;800&amp;display=swap" /></noscript>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><!-- page-content --></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
