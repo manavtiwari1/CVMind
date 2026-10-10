@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertCircle, CheckCircle, Mail, MailOpen, Pencil, RefreshCw } from 'lucide-react';
-import { GlassInput } from './ui/sign-up';
+import { AlertCircle, ArrowUpRight, Check, CheckCircle, RefreshCw } from 'lucide-react';
 import { changeEmail, inboxLink, refreshVerification, resendVerification } from '../lib/verification';
+import cvmindLogo from '../assets/cvmind_logo_transparent.png';
+import './VerifyEmailPanel.css';
 
 interface VerifyEmailPanelProps {
   email: string;
@@ -13,10 +14,57 @@ interface VerifyEmailPanelProps {
   onVerified: () => void;
 }
 
+// Name of the inbox "Open …" takes the user to (matches the hosts in inboxLink)
+function inboxName(email: string): string {
+  const domain = email.split('@')[1]?.toLowerCase() || '';
+  if (['gmail.com', 'googlemail.com'].includes(domain)) return 'Gmail';
+  if (['outlook.com', 'hotmail.com', 'live.com', 'msn.com'].includes(domain)) return 'Outlook';
+  if (domain.startsWith('yahoo.')) return 'Yahoo Mail';
+  if (['icloud.com', 'me.com', 'mac.com'].includes(domain)) return 'iCloud Mail';
+  if (['proton.me', 'protonmail.com'].includes(domain)) return 'Proton Mail';
+  return 'your email app';
+}
+
+const formatSeconds = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+/* Envelope with the verification letter sliding out, a CVMind stamp and a postmark */
+function EnvelopeScene() {
+  return (
+    <div className="vep-scene" aria-hidden="true">
+      <svg className="vep-postlines" viewBox="0 0 90 30" fill="none">
+        <path d="M2 6c10-5 20 5 30 0s20 5 30 0 20 5 26 1M2 15c10-5 20 5 30 0s20 5 30 0 20 5 26 1M2 24c10-5 20 5 30 0s20 5 30 0 20 5 26 1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      </svg>
+
+      <div className="vep-env">
+        <svg className="vep-env-back" viewBox="0 0 168 150">
+          <path d="M4 50 84 6l80 44Z" fill="#e6d8bf" stroke="#d9c8a8" strokeLinejoin="round" />
+          <rect x="0" y="46" width="168" height="104" rx="9" fill="#efe4cf" />
+        </svg>
+
+        <div className="vep-letter">
+          <span className="vep-letter-line w60" />
+          <span className="vep-letter-line w85" />
+          <span className="vep-letter-line w70" />
+          <span className="vep-letter-btn"><Check size={9} strokeWidth={4} /> Verify</span>
+        </div>
+
+        <svg className="vep-env-front" viewBox="0 0 168 150">
+          <path d="M0 80 84 118l84-38v61a9 9 0 0 1-9 9H9a9 9 0 0 1-9-9Z" fill="#f7efdf" stroke="#e1d2b6" strokeLinejoin="round" />
+        </svg>
+
+        <div className="vep-stamp"><img src={cvmindLogo} alt="" /></div>
+        <div className="vep-postmark"><span>CVMIND</span><span className="vep-postmark-mid">✓ MAIL</span><span>2026</span></div>
+      </div>
+    </div>
+  );
+}
+
 // "Verify your email address": shown after sign-up and whenever an unverified account opens a locked feature
 export default function VerifyEmailPanel({ email, initialCooldown = 0, sendFailed = false, onVerified }: VerifyEmailPanelProps) {
   const [address, setAddress] = useState(email);
   const [cooldown, setCooldown] = useState(initialCooldown);
+  // Length of the current cooldown, for the progress bar on the resend button
+  const [cooldownTotal, setCooldownTotal] = useState(initialCooldown);
   const [busy, setBusy] = useState<'resend' | 'change' | 'check' | null>(null);
   const [error, setError] = useState<string | null>(sendFailed ? "We couldn't send the verification email right now. Please try again later." : null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -30,6 +78,7 @@ export default function VerifyEmailPanel({ email, initialCooldown = 0, sendFaile
   }, [cooldown]);
 
   const clear = () => { setError(null); setNotice(null); };
+  const startCooldown = (seconds: number) => { setCooldown(seconds); setCooldownTotal(seconds); };
 
   async function resend() {
     clear();
@@ -40,7 +89,7 @@ export default function VerifyEmailPanel({ email, initialCooldown = 0, sendFaile
     if (r.ok) setNotice(r.message || `We've sent a new verification link to ${address}.`);
     // A cooldown just restarts the countdown on the button
     else if (!r.cooldown) setError(r.message);
-    if (r.retryAfter) setCooldown(r.retryAfter);
+    if (r.retryAfter) startCooldown(r.retryAfter);
   }
 
   async function submitNewEmail() {
@@ -50,12 +99,12 @@ export default function VerifyEmailPanel({ email, initialCooldown = 0, sendFaile
     setBusy('change');
     const r = await changeEmail(value);
     setBusy(null);
-    if (!r.ok) { setError(r.message); if (r.retryAfter) setCooldown(r.retryAfter); return; }
+    if (!r.ok) { setError(r.message); if (r.retryAfter) startCooldown(r.retryAfter); return; }
     setAddress(value.toLowerCase());
     setEditing(false);
     setNewEmail('');
     setNotice(r.message);
-    setCooldown(r.retryAfter);
+    startCooldown(r.retryAfter);
   }
 
   async function checkNow() {
@@ -64,94 +113,87 @@ export default function VerifyEmailPanel({ email, initialCooldown = 0, sendFaile
     const verified = await refreshVerification();
     setBusy(null);
     if (verified) onVerified();
-    else setError("Your email isn't verified yet. Open the link in the email we sent, then try again.");
+    else setError("Not verified yet. Open the link in the email we sent, then try again.");
   }
 
-  // Inline padding: theme.css resets every element's padding, which overrides Tailwind's spacing classes
-  const buttonStyle = { background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-primary)', padding: '12px 16px' };
-  const noticeStyle = { padding: '10px 12px' };
+  const provider = inboxName(address);
+  const cooldownLeft = cooldownTotal > 0 ? (cooldown / cooldownTotal) * 100 : 0;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col items-center gap-3 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full" style={{ background: 'var(--blue-dim, rgba(41,151,255,0.12))', color: 'var(--blue)' }}>
-          <Mail size={26} />
-        </div>
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-          We've sent a verification link to <strong style={{ color: 'var(--text-primary)', overflowWrap: 'anywhere' }}>{address}</strong>.
-          Please verify your email address to continue using CVMind.
-        </p>
-      </div>
+    <div className="vep">
+      <EnvelopeScene />
 
-      {editing ? (
-        <div className="flex flex-col gap-3">
-          <GlassInput
-            type="email"
-            placeholder="Your correct email address"
-            value={newEmail}
-            onChange={e => setNewEmail(e.target.value)}
-            autoComplete="email"
-            icon={<Mail size={16} />}
-            disabled={busy !== null}
-            autoFocus
-            onKeyDown={e => { if (e.key === 'Enter' && busy === null) submitNewEmail(); }}
-          />
-          <div className="flex gap-2">
-            <button type="button" onClick={() => { setEditing(false); clear(); }} disabled={busy !== null}
-              className="flex-1 rounded-xl text-sm font-semibold transition-all hover:opacity-80" style={buttonStyle}>
-              Cancel
-            </button>
-            <button type="button" onClick={submitNewEmail} disabled={busy !== null}
-              className="flex-1 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
-              style={{ background: 'var(--gradient-brand)', padding: '12px 16px' }}>
-              {busy === 'change' ? 'Saving…' : 'Send link here'}
-            </button>
+      <div className="vep-body">
+        <h3 className="vep-title">Check your <em>inbox</em></h3>
+        <p className="vep-text">Click the link we emailed you to unlock everything in CVMind.</p>
+
+        {editing ? (
+          <div className="vep-edit">
+            <input
+              className="vep-input"
+              type="email"
+              placeholder="Your correct email address"
+              value={newEmail}
+              onChange={e => setNewEmail(e.target.value)}
+              autoComplete="email"
+              disabled={busy !== null}
+              autoFocus
+              onKeyDown={e => { if (e.key === 'Enter' && busy === null) submitNewEmail(); }}
+            />
+            <div className="vep-row">
+              <button type="button" className="vep-btn ghost" onClick={() => { setEditing(false); clear(); }} disabled={busy !== null}>
+                Cancel
+              </button>
+              <button type="button" className="vep-btn ink" onClick={submitNewEmail} disabled={busy !== null}>
+                {busy === 'change' ? 'Saving…' : 'Send link here'}
+              </button>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2.5">
-          <a href={inboxLink(address)} target="_blank" rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-95"
-            style={{ background: 'var(--gradient-brand)', boxShadow: '0 4px 20px rgba(124,58,237,0.25)', padding: '12px 16px', color: '#fff', textDecoration: 'none' }}>
-            <MailOpen size={16} /> Open Email
-          </a>
-          <button type="button" onClick={resend} disabled={busy !== null || cooldown > 0}
-            className="flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all hover:opacity-80 disabled:opacity-60"
-            style={buttonStyle}>
-            <RefreshCw size={15} className={busy === 'resend' ? 'animate-spin' : ''} />
-            {cooldown > 0 ? `Resend available in ${cooldown} seconds` : 'Resend Verification Email'}
-          </button>
-          <button type="button" onClick={() => { clear(); setEditing(true); }} disabled={busy !== null}
-            className="flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
-            style={buttonStyle}>
-            <Pencil size={15} /> Change Email
-          </button>
-        </div>
-      )}
+        ) : (
+          <>
+            <div className="vep-address">
+              <span className="vep-address-label">Sent to</span>
+              <strong>{address}</strong>
+              <button type="button" className="vep-change" onClick={() => { clear(); setEditing(true); }} disabled={busy !== null}>
+                Change
+              </button>
+            </div>
 
-      <AnimatePresence>
-        {error && (
-          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            className="flex items-center gap-2 rounded-lg text-sm" role="alert"
-            style={{ ...noticeStyle, background: 'var(--red-dim)', color: 'var(--red)', border: '1px solid rgba(239,68,68,0.2)' }}>
-            <AlertCircle size={14} className="flex-shrink-0" /> {error}
-          </motion.div>
-        )}
-        {notice && (
-          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            className="flex items-center gap-2 rounded-lg text-sm" role="status"
-            style={{ ...noticeStyle, background: 'var(--green-dim)', color: 'var(--green)', border: '1px solid rgba(45,192,141,0.2)' }}>
-            <CheckCircle size={14} className="flex-shrink-0" /> {notice}
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <a className="vep-btn ink" href={inboxLink(address)} target="_blank" rel="noopener noreferrer">
+              Open {provider} <ArrowUpRight size={16} />
+            </a>
 
-      <p className="text-center text-xs leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>
-        Didn't receive the email? Check your spam folder or resend the verification email.{' '}
-        <button type="button" onClick={checkNow} disabled={busy !== null} className="font-semibold" style={{ color: 'var(--blue)' }}>
-          {busy === 'check' ? 'Checking…' : "I've verified it"}
-        </button>
-      </p>
+            <div className="vep-row">
+              <button type="button" className="vep-btn ghost vep-resend" onClick={resend} disabled={busy !== null || cooldown > 0}>
+                {cooldown > 0 && <span className="vep-resend-fill" style={{ width: `${cooldownLeft}%` }} />}
+                <span className="vep-btn-inner">
+                  <RefreshCw size={14} className={busy === 'resend' ? 'animate-spin' : ''} />
+                  {cooldown > 0 ? `Resend in ${formatSeconds(cooldown)}` : 'Resend link'}
+                </span>
+              </button>
+              <button type="button" className="vep-btn ghost" onClick={checkNow} disabled={busy !== null}>
+                <Check size={14} strokeWidth={2.6} />
+                {busy === 'check' ? 'Checking…' : "I've verified"}
+              </button>
+            </div>
+          </>
+        )}
+
+        <AnimatePresence>
+          {error && (
+            <motion.div key="err" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="vep-note err" role="alert">
+              <AlertCircle size={14} /> {error}
+            </motion.div>
+          )}
+          {notice && (
+            <motion.div key="ok" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="vep-note ok" role="status">
+              <CheckCircle size={14} /> {notice}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <p className="vep-tip">Can't find it? Look in <b>Spam</b> or <b>Promotions</b>.</p>
+      </div>
     </div>
   );
 }
