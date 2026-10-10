@@ -552,3 +552,38 @@
   .auth-leo, .auth-doodle { animation: none; }
   .auth-underline path { animation: none; stroke-dashoffset: 0; }
 }
+
+/* Team login */
+.auth-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+.auth-check input { width: 16px; height: 16px; accent-color: #7c3aed; cursor: pointer; }
+
+.auth-team-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 22px;
+  padding: 11px 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.84rem;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: border-color var(--t-fast), color var(--t-fast), background var(--t-fast);
+}
+.auth-team-link b { font-weight: 600; color: var(--text-secondary); }
+.auth-team-link > svg:last-child { transition: transform var(--t-fast); }
+.auth-team-link:hover { border-color: #7c3aed; color: var(--text-secondary); background: rgba(124, 58, 237, 0.04); }
+.auth-team-link:hover b { color: #7c3aed; }
+.auth-team-link:hover > svg:last-child { transform: translateX(3px); }
