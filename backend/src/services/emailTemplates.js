@@ -1,4 +1,4 @@
-import { renderEmail } from '../admin/mailer.js';
+import { renderEmail, escapeHtml } from '../admin/mailer.js';
 
 // Every email CVMind sends, as { subject, html }. All share the layout in admin/mailer.js.
 
@@ -179,6 +179,43 @@ export function resumePdfEmail({ name, fileName }) {
       greetingName: name,
       body: `Here is ${fileName}.pdf, exported from CVMind.\n\nGood luck with your applications!`,
       footerReason: 'You received this email because you sent a resume to yourself from CVMind.'
+    })
+  };
+}
+
+const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+
+// One row per job: title, company and place, match score, and a link that opens it in Job Finder
+function jobRowsHtml(jobs) {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 18px;border-collapse:separate;border-spacing:0 10px">${jobs.map((job) => {
+    const where = [job.company, job.location || (job.remote ? 'Remote' : '')].filter(Boolean).join(' · ');
+    const score = Number.isFinite(job.score) ? `<span style="display:inline-block;padding:3px 9px;border-radius:999px;background:#e9f7f1;color:#0f7a55;font-size:12px;font-weight:700">${job.score}% match</span>` : '';
+    return `<tr><td style="padding:14px 16px;border:1px solid #e4e8ef;border-radius:10px;font-family:${FONT}">
+<a href="${escapeHtml(job.url)}" target="_blank" style="font-size:16px;font-weight:700;color:#0f172a;text-decoration:none">${escapeHtml(job.title)}</a>
+<div style="margin:4px 0 8px;font-size:13px;color:#64748b">${escapeHtml(where)}</div>
+${score}
+<a href="${escapeHtml(job.url)}" target="_blank" style="float:right;font-size:13px;font-weight:700;color:#1d4ed8;text-decoration:none">View job &rarr;</a>
+</td></tr>`;
+  }).join('')}</table>`;
+}
+
+export function jobAlertEmail({ name, jobs, role, location, manageUrl, unsubscribeUrl, frequency = 'weekly' }) {
+  const count = jobs.length;
+  const forWhat = [role, location ? `in ${location}` : ''].filter(Boolean).join(' ');
+  const subject = `${count} new job${count === 1 ? '' : 's'}${forWhat ? ` for ${forWhat}` : ''} on CVMind`;
+  return {
+    subject,
+    html: renderEmail({
+      preheader: jobs.slice(0, 2).map((j) => `${j.title} at ${j.company}`).join(', '),
+      eyebrow: frequency === 'daily' ? 'Your daily job alert' : 'Your weekly job alert',
+      title: subject.replace(/ on CVMind$/, ''),
+      greetingName: name,
+      body: `These jobs were posted since your last alert and match your resume. Scores come from your skills, the role you want, your level and location.`,
+      htmlBlock: jobRowsHtml(jobs),
+      ctaLabel: 'See all jobs in Job Finder',
+      ctaUrl: manageUrl,
+      footerReason: 'You received this email because you turned on job alerts in CVMind Job Finder.',
+      unsubscribeUrl
     })
   };
 }

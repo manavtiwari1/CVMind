@@ -29,7 +29,8 @@ export const FREE_WEEKLY = {
   'interview-text': { label: 'Interview prep session', limit: 1 },
   'interview-voice': { label: 'Voice interview session', limit: 1 },
   'code-explanation': { label: 'CVMind Code explanation hint', limit: 2 },
-  'code-solution': { label: 'CVMind Code full solution', limit: 2 }
+  'code-solution': { label: 'CVMind Code full solution', limit: 2 },
+  negotiation: { label: 'Offer negotiation', limit: 1 }
 };
 
 // AI tokens each account can use in a rolling 3-day window

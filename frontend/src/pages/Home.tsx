@@ -160,7 +160,7 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
       if (!response.ok) throw new Error(resData.error || 'Server error during analysis');
 
       if (resData.success && resData.data) {
-        const resultWithMeta = { ...resData.data, fileName: selectedFile?.name || resumeUrl };
+        const resultWithMeta = { ...resData.data, fileName: selectedFile?.name || resumeUrl, scoreChange: resData.scoreChange || null };
         setAnalysisResult(resultWithMeta);
         if (resData.resumeText) setResumeText(resData.resumeText);
         setCurrentPage('dashboard');

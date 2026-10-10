@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Crown, X } from 'lucide-react';
+import { Crown, Gift, X } from 'lucide-react';
 import { UPGRADE_EVENT, userIsPro, type UpgradeDetail } from '../lib/billing';
 import './UpgradeModal.css';
 
@@ -8,7 +8,7 @@ const COPY: Record<UpgradeDetail['reason'], { title: string; body: string }> = {
   branding: { title: 'Remove the CVMind footer with Pro', body: 'Free resumes and cover letters carry a small "Powered by CVMind" footer. With Pro your downloads come out clean.' },
   limit: { title: "You've used this week's free tries", body: 'Pro gives you unlimited use of every tool.' },
   tokens: { title: "You've used your AI tokens for now", body: 'Free accounts get 75,000 AI tokens every 3 days; Pro gets 2,00,000.' },
-  'job-apply': { title: "You've used this month's free job application", body: 'Free accounts can apply to 1 job a month in AI Job Finder. Pro lets you apply to as many jobs as you like, with every job source in every search.' },
+  'job-apply': { title: "You've used this month's free job application", body: 'Free accounts can apply to 1 job a month in AI Job Finder. Invite a friend to earn another application, or get Pro to apply to as many jobs as you like, with every job source in every search.' },
 };
 
 // The upgrade dialog. Opens whenever something fires UPGRADE_EVENT (see lib/billing.ts and lib/authFetch.ts).
@@ -47,6 +47,11 @@ export default function UpgradeModal({ setCurrentPage }: { setCurrentPage: (page
           {!pro && (
             <button type="button" className="upm-btn upm-btn--primary" onClick={() => { setDetail(null); setCurrentPage('pricing'); }}>
               <Crown size={16} /> See Pro plans
+            </button>
+          )}
+          {!pro && detail.reason === 'job-apply' && (
+            <button type="button" className="upm-btn" onClick={() => { setDetail(null); setCurrentPage('invite'); }}>
+              <Gift size={16} /> Invite a friend
             </button>
           )}
           <button type="button" className="upm-btn" onClick={() => setDetail(null)}>{pro ? 'OK' : 'Not now'}</button>

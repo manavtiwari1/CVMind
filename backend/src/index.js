@@ -8,6 +8,9 @@ import jobFinderRouter from './routes/jobFinder.js';
 import { startWorkers } from '@cvmind/auto-apply-agent/queue/workers.js';
 import companyRouter from './routes/company.js';
 import codeRouter from './routes/code.js';
+import growthRouter from './routes/growth.js';
+import { previousScan, scoreChange } from './growth/scans.js';
+import { startJobAlerts } from './growth/alerts.js';
 import cors from 'cors';
 import multer from 'multer';
 import bcrypt from 'bcryptjs';
@@ -1303,21 +1306,25 @@ apiRouter.post('/api/analyze', optionalUser, upload.single('resume'), async (req
     const userId = req.auth?.sub || '';
     const fileName = file ? file.originalname : 'Link Upload';
     let savedWork = null;
+    let change = null;
     if (evaluation && evaluation.score) {
-      await saveScan({
-        fileName,
-        fileType: file ? file.mimetype : 'link',
-        fileSize: file ? file.size : 0,
-        evaluation,
-        userId
-      });
-      invalidatePublicStats();
+      // Compared with the last check of the same resume, for "up 8 since your last check"
+      change = userId ? scoreChange(await previousScan(userId, fileName).catch(() => null), evaluation.score) : null;
       savedWork = await saveFeatureWork(userId, {
         title: `Resume Check - ${fileName}`,
         type: 'resume-check',
         templateId: 'resume-checker',
         payload: { fileName, resumeText: extractedText, evaluation }
       });
+      await saveScan({
+        fileName,
+        fileType: file ? file.mimetype : 'link',
+        fileSize: file ? file.size : 0,
+        evaluation,
+        userId,
+        workId: savedWork ? String(savedWork._id || savedWork.id) : ''
+      });
+      invalidatePublicStats();
     }
 
     const agentResume = await importCheckerResumeForAgent(req, file);
@@ -1328,7 +1335,8 @@ apiRouter.post('/api/analyze', optionalUser, upload.single('resume'), async (req
       data: evaluation,
       resumeText: extractedText,
       agentResume,
-      work: savedWork
+      work: savedWork,
+      scoreChange: change
     });
 
   } catch (error) {
@@ -2951,6 +2959,8 @@ app.use('/_/backend', adminPublicRoutes);
 app.use('/', adminPublicRoutes);
 app.use('/_/backend', billingRouter);
 app.use('/', billingRouter);
+app.use('/_/backend', growthRouter);
+app.use('/', growthRouter);
 app.use('/_/backend', apiRouter);
 app.use('/', apiRouter);
 app.use('/api/auto-apply', autoApplyRouter);
@@ -2987,6 +2997,8 @@ if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
   if (!process.env.VERCEL) startInboxPolling();
   // Turn on Pro for paid orders whose webhook never came, and retry unsent invoices
   if (!process.env.VERCEL) startOrderSweep();
+  // Send job alert emails that are due (on Vercel, Vercel Cron calls /api/cron/job-alerts instead)
+  if (!process.env.VERCEL) startJobAlerts();
   if (process.env.INLINE_WORKERS === 'true' && !process.env.VERCEL) {
     startWorkers().catch((err) => console.error('[agent] failed to start inline workers:', err.message));
   } else if (!process.env.VERCEL) {

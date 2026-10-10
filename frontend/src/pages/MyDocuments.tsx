@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Plus, PlusCircle, CheckCircle2, FileText, FileSearch, Bookmark, MoreHorizontal,
-  Edit3, Link2, Trash2, AlertCircle, Crown, Check, Globe,
+  Plus, FileText, FileSearch, Bookmark, MoreHorizontal,
+  Edit3, Link2, Trash2, AlertCircle, Crown, Check, Globe, Eye,
 } from 'lucide-react';
 import ProfileMenu from '../components/ProfileMenu';
 import { API_BASE } from '../lib/apiBase';
@@ -15,7 +15,10 @@ import NotificationBell from '../components/NotificationBell';
 import PageLoader from '../components/PageLoader';
 import type { LoadedWork, SavedWork, StoredUser } from '../types/api';
 import './MyDocuments.css';
-import { siteOrigin } from '../lib/hosts';
+import YourPlan from '../components/growth/YourPlan';
+import ScoreHistory from '../components/growth/ScoreHistory';
+import ShareDialog from '../components/growth/ShareDialog';
+import { getShareLinks, type ShareLink } from '../lib/growthApi';
 
 type Tab = 'dashboard' | 'documents' | 'saved-jobs';
 type ListedWork = SavedWork & { _id: string; createdAt: string };
@@ -79,6 +82,8 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
   const [loadError, setLoadError] = useState('');
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [toast, setToast] = useState('');
+  const [shareFor, setShareFor] = useState<ListedWork | null>(null);
+  const [shareLinks, setShareLinks] = useState<Record<string, ShareLink>>({});
 
   useEffect(() => {
     const sync = () => setUser(readUser());
@@ -98,6 +103,13 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
   }, [userId]);
 
   useEffect(() => {
+    if (!userId) return;
+    let alive = true;
+    getShareLinks().then(links => { if (alive) setShareLinks(links); }).catch(() => { /* counts just don't show */ });
+    return () => { alive = false; };
+  }, [userId]);
+
+  useEffect(() => {
     if (!menuFor) return;
     const close = () => setMenuFor(null);
     window.addEventListener('click', close);
@@ -111,21 +123,17 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
   }, [toast]);
 
   const documents = useMemo(() => works.filter(w => DOCUMENT_TYPES.includes(w.type)), [works]);
-  const hasType = (type: string) => works.some(w => w.type === type);
 
   const openWork = (w: ListedWork) => {
     setLoadedWork(w);
     setCurrentPage(workPage(w.type));
   };
 
-  const copyShareLink = async (w: ListedWork) => {
-    const url = `${siteOrigin()}/portfolio/${workId(w)}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setToast('Share link copied');
-    } catch {
-      window.open(url, '_blank');
-    }
+  // A past ATS check from the score history reopens its report
+  const openReport = (id: string) => {
+    const w = works.find(x => workId(x) === id);
+    if (w) openWork(w);
+    else setToast('That report is no longer saved.');
   };
 
   const deleteWork = async (w: ListedWork) => {
@@ -169,7 +177,12 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
                     <button type="button" className="md-doc-name" onClick={() => openWork(w)} title={w.title}>
                       <FileText size={16} />
                       <span className="md-doc-text">
-                        <span className="md-doc-title">{w.title}</span>
+                        <span className="md-doc-title">
+                          {w.title}
+                          {shareLinks[id]?.enabled && (
+                            <span className="md-share-views" title="Share link views"><Eye size={12} /> {shareLinks[id].viewCount}</span>
+                          )}
+                        </span>
                         <small className="md-doc-type">{workLabel(w.type)}</small>
                       </span>
                     </button>
@@ -198,8 +211,8 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
                             <Edit3 size={15} /> Open
                           </button>
                           {w.type === 'resume' && (
-                            <button role="menuitem" onClick={() => { setMenuFor(null); copyShareLink(w); }}>
-                              <Link2 size={15} /> Copy share link
+                            <button role="menuitem" onClick={() => { setMenuFor(null); setShareFor(w); }}>
+                              <Link2 size={15} /> Share link
                             </button>
                           )}
                           <button role="menuitem" className="danger" onClick={() => { setMenuFor(null); deleteWork(w); }}>
@@ -233,13 +246,6 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
     </div>
   );
 
-  const steps = [
-    { label: 'Create your first resume', done: hasType('resume'), page: 'resume-builder' },
-    { label: 'Check your resume\'s ATS score', done: false, page: 'home' },
-    { label: 'Tailor your resume to a job', done: false, page: 'tailor' },
-    { label: 'Practise for your interview', done: hasType('prep'), page: 'prep' },
-  ];
-
   const renderDashboard = () => (
     <div className="md-dash">
       <div className="md-dash-main">
@@ -260,6 +266,8 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
             </div>
           </div>
         </section>
+
+        <ScoreHistory userKey={String(userId || '')} onOpenReport={openReport} onCheckResume={() => setCurrentPage('home')} />
 
         <section className="md-section">
           <div className="md-section-head">
@@ -298,21 +306,7 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
       </div>
 
       <aside className="md-dash-side">
-        <section className="md-section">
-          <div className="md-section-head">
-            <h2>Get started</h2>
-          </div>
-          <ul className="md-panel md-steps">
-            {steps.map(s => (
-              <li key={s.label}>
-                <button type="button" className={s.done ? 'done' : ''} onClick={() => setCurrentPage(s.page)}>
-                  {s.done ? <CheckCircle2 size={18} /> : <PlusCircle size={18} />}
-                  <span>{s.label}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+        {userId && <YourPlan userKey={String(userId)} setCurrentPage={setCurrentPage} />}
 
         {!isPro && (
           <section className="md-pro">
@@ -421,6 +415,16 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
       </footer>
 
       {toast && <div className="md-toast" role="status">{toast}</div>}
+
+      {shareFor && (
+        <ShareDialog
+          workId={workId(shareFor)}
+          title={shareFor.title}
+          onClose={() => setShareFor(null)}
+          onChange={link => setShareLinks(prev => ({ ...prev, [workId(shareFor)]: link }))}
+          onUpgrade={() => { setShareFor(null); setCurrentPage('pricing'); }}
+        />
+      )}
     </div>
   );
 }

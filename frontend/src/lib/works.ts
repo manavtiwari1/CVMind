@@ -18,6 +18,7 @@ export const WORK_LABELS: Record<string, string> = {
   'career-courses': 'Skill Gaps',
   'elevator-pitch': 'Elevator Pitch',
   'career-roadmap': 'Career Roadmap',
+  'offer-negotiation': 'Offer Negotiation',
 };
 
 // Pages that reopen a saved work of each type; anything not listed opens in the resume editor
@@ -38,6 +39,7 @@ const WORK_PAGES: Record<string, string> = {
   'career-courses': 'career-courses',
   'elevator-pitch': 'elevator-pitch',
   'career-roadmap': 'career-roadmap',
+  'offer-negotiation': 'offer-negotiation',
 };
 
 // Works that are documents (made in the resume editor) rather than tool results

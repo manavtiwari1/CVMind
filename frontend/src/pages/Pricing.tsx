@@ -52,6 +52,8 @@ const COMPARE: { group: string; rows: [string, Cell, Cell][] }[] = [
       ['AI cover letter generator', '1 a week', 'Unlimited'],
       ['Resume Tailor', '2 a week', 'Unlimited'],
       ['AI Proofreading', true, true],
+      ['Resume share link with view count', true, true],
+      ['Custom link name and where views come from', false, true],
     ],
   },
   {
@@ -60,6 +62,7 @@ const COMPARE: { group: string; rows: [string, Cell, Cell][] }[] = [
       ['Interview Prep AI', '1 session a week', 'Unlimited'],
       ['Voice interview practice', '1 session a week', 'Unlimited'],
       ['Portfolio Generator', '2 a week', 'Unlimited'],
+      ['Offer negotiation help', '1 a week', 'Unlimited'],
       ['LinkedIn & career tools', true, true],
     ],
   },
@@ -78,7 +81,8 @@ const COMPARE: { group: string; rows: [string, Cell, Cell][] }[] = [
   {
     group: 'Job search',
     rows: [
-      ['AI Job Finder applications', '1 a month', 'Unlimited'],
+      ['AI Job Finder applications', '1 a month, +1 per invited friend', 'Unlimited'],
+      ['Job alert emails', 'Weekly', 'Daily or weekly'],
       ['AI Job Finder searches with every job source', '10 a day', 'Unlimited'],
       ['Auto Apply agent', 'Soon', 'Soon'],
     ],

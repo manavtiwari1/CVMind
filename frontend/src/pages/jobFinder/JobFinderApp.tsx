@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
-import { ArrowLeft, Building2, CheckCircle2, Crown, ExternalLink, Loader2, MapPin, Search, Send, SlidersHorizontal, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, Bell, BellRing, Building2, CheckCircle2, Crown, ExternalLink, Loader2, MapPin, Search, Send, SlidersHorizontal, Sparkles, X } from 'lucide-react';
 import JobCard from './JobCard';
 import JobDrawer from './JobDrawer';
 import MoreOnJobSites from './MoreOnJobSites';
 import ProfileSetup from './ProfileSetup';
+import AlertsDialog from './AlertsDialog';
+import ReferralDialog from './ReferralDialog';
+import { getAlerts } from '../../lib/growthApi';
 import { appliedOn } from './format';
-import { getFeed, getProfile, recordApply, JobFinderError, type Feed, type FeedFilters, type FinderJob, type FinderPlan, type FinderProfile } from './jobFinderApi';
+import { getFeed, getJob, getProfile, recordApply, JobFinderError, type Feed, type FeedFilters, type FinderJob, type FinderPlan, type FinderProfile } from './jobFinderApi';
 import { requestUpgrade, userIsPro } from '../../lib/billing';
 import { USER_CHANGE_EVENT } from '../../lib/currentUser';
 import { getErrorMessage } from '../../utils/errors';
@@ -78,6 +81,10 @@ export default function JobFinderApp({ setCurrentPage }: JobFinderAppProps) {
   const [dialog, setDialog] = useState<{ kind: 'applied' | 'confirm'; job: FinderJob } | null>(null);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
+  // Job alert emails (null until loaded) and the "Find a referral" dialog
+  const [alertsOn, setAlertsOn] = useState<boolean | null>(null);
+  const [showAlerts, setShowAlerts] = useState(false);
+  const [referralFor, setReferralFor] = useState<FinderJob | null>(null);
 
   // Edge-to-edge app page: lift the default content width cap while mounted. The 3D tilt
   // perspective on .main-content (styles/3d-effects.css) would also make the fixed dialogs, toast
@@ -158,6 +165,30 @@ export default function JobFinderApp({ setCurrentPage }: JobFinderAppProps) {
   }, [ready, filters, feedKey, handleError]);
 
   useEffect(() => {
+    if (!ready) return;
+    let live = true;
+    getAlerts().then((a) => { if (live) setAlertsOn(a.enabled); }).catch(() => {});
+    return () => { live = false; };
+  }, [ready]);
+
+  // A job alert email links to one job (?job=<key>): open it once the page is ready
+  useEffect(() => {
+    if (!ready) return;
+    const params = new URLSearchParams(window.location.search);
+    const jobKey = params.get('job');
+    if (!jobKey) return;
+    params.delete('job');
+    params.delete('from');
+    const qs = params.toString();
+    window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''));
+    let live = true;
+    getJob(jobKey)
+      .then((res) => { if (live) setSelected(res.job); })
+      .catch((err) => { if (live) setToast(getErrorMessage(err) || 'That job is no longer listed.'); });
+    return () => { live = false; };
+  }, [ready]);
+
+  useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(''), 5000);
     return () => clearTimeout(timer);
@@ -220,7 +251,9 @@ export default function JobFinderApp({ setCurrentPage }: JobFinderAppProps) {
           <button type="button" className="jf-top-free" onClick={() => setCurrentPage('pricing')} title="See Pro plans">
             {plan.applies.used >= plan.applies.limit
               ? <>Free · this month's application used · <b>Get Pro</b></>
-              : <>Free · {plan.applies.limit - plan.applies.used} application left this month</>}
+              : plan.applies.credits
+                ? <>Free · {plan.applies.limit - plan.applies.used} applications left ({plan.applies.credits} from invites)</>
+                : <>Free · {plan.applies.limit - plan.applies.used} application left this month</>}
           </button>
         )}
       </div>
@@ -269,12 +302,16 @@ export default function JobFinderApp({ setCurrentPage }: JobFinderAppProps) {
 
   return (
     <div className="jf-app">
-      {topBar(
+      {topBar(<>
+        <button type="button" className="jf-resume-chip jf-alerts-chip" onClick={() => setShowAlerts(true)} title="Email me new jobs that match my resume">
+          {alertsOn ? <BellRing size={14} /> : <Bell size={14} />}
+          <span className="jf-resume-chip-text">Job alerts{alertsOn ? ' · On' : ''}</span>
+        </button>
         <button type="button" className="jf-resume-chip" onClick={() => setEditing(true)} title="Change your resume and preferences">
           <span className={`jf-dot jf-dot--${chosen ? (chosen.skills.length ? 'ready' : chosen.status) : 'none'}`} />
           <span className="jf-resume-chip-text">{chosen ? chosen.label : 'No resume'} · Edit profile</span>
         </button>
-      )}
+      </>)}
 
       <div className="jf-tabs" role="tablist" aria-label="Find jobs by">
         <button type="button" role="tab" aria-selected={!bySkills} className={`jf-tab${!bySkills ? ' is-on' : ''}`} onClick={() => setFilter('mode', 'role')}>
@@ -397,7 +434,7 @@ export default function JobFinderApp({ setCurrentPage }: JobFinderAppProps) {
         {selected && (
           <>
             <div className="jf-drawer-scrim" onClick={() => setSelected(null)} />
-            <JobDrawer job={selected} onClose={() => setSelected(null)} onApply={apply} />
+            <JobDrawer job={selected} onClose={() => setSelected(null)} onApply={apply} onFindReferral={setReferralFor} />
           </>
         )}
       </div>
@@ -435,6 +472,15 @@ export default function JobFinderApp({ setCurrentPage }: JobFinderAppProps) {
             : <>We opened the application for <b>{dialog.job.title}</b> at <b>{dialog.job.company}</b> in a new tab. Once you've sent it, tell us and we'll remember it, so this job shows as applied next time.</>}
         </Dialog>
       )}
+      {showAlerts && (
+        <AlertsDialog
+          role={feed?.mode === 'skills' ? '' : feed?.query || profile.preferences.targetTitles[0] || ''}
+          location={feed?.location || profile.preferences.locations[0] || ''}
+          onClose={() => setShowAlerts(false)}
+          onSaved={(a) => { setAlertsOn(a.enabled); setToast(a.enabled ? `Job alerts are on. We'll email you ${a.frequency === 'daily' ? 'daily' : 'weekly'} when new jobs match.` : 'Job alerts are off.'); }}
+        />
+      )}
+      {referralFor && <ReferralDialog job={referralFor} onClose={() => setReferralFor(null)} />}
       {toast && (
         <div className="jf-toast" role="status">
           {toast}

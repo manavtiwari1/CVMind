@@ -99,6 +99,12 @@ const scanSchema = new mongoose.Schema({
   score: { type: Number, required: true },
   summary: { type: String, default: '' },
   missingKeywords: [{ type: String }],
+  // Sub-scores, the saved report, and which resume this was (for the user's score history)
+  keywordsScore: { type: Number, default: null },
+  contentScore: { type: Number, default: null },
+  formattingScore: { type: Number, default: null },
+  workId: { type: String, default: '' },
+  resumeKey: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -645,7 +651,18 @@ async function saveLog(Model, listKey, record, label) {
 
 // ─── HYBRID DATABASE EXPORTS ──────────────────────────────────────────────────
 
-export async function saveScan({ fileName, fileType, fileSize, evaluation, userId = '' }) {
+// The same resume checked again (another upload of the same file) shares a key
+export const resumeKeyFor = (fileName) => String(fileName || '')
+  .toLowerCase()
+  .replace(/\.(pdf|docx?|txt)$/i, '')
+  .replace(/\s*\(\d+\)$/, '')
+  .replace(/[^a-z0-9]+/g, ' ')
+  .trim()
+  .slice(0, 120);
+
+const subScore = (value) => (Number.isFinite(Number(value)) && value !== null && value !== '' ? Math.round(Number(value)) : null);
+
+export async function saveScan({ fileName, fileType, fileSize, evaluation, userId = '', workId = '' }) {
   const score = Number(evaluation?.score || 0);
   const missing = Array.isArray(evaluation?.atsKeywords?.missing) ? evaluation.atsKeywords.missing : [];
   await ensureMongoConnection();
@@ -658,7 +675,12 @@ export async function saveScan({ fileName, fileType, fileSize, evaluation, userI
         fileSize,
         score,
         summary: evaluation?.summary || '',
-        missingKeywords: missing
+        missingKeywords: missing,
+        keywordsScore: subScore(evaluation?.atsKeywords?.score),
+        contentScore: subScore(evaluation?.contentAndImpact?.score),
+        formattingScore: subScore(evaluation?.formattingAndStyle?.score),
+        workId: String(workId || ''),
+        resumeKey: resumeKeyFor(fileName)
       });
       return;
     }

@@ -12,7 +12,11 @@ import { candidateFrom, matchJob } from '../jobFinder/match.js';
 import { boardDescription, BOARD_SOURCES } from '../jobFinder/sources/boards.js';
 import { resumeForMatching, resumeText } from '../jobFinder/resume.js';
 import { FinderJob, JobApplyLog } from '../jobFinder/models.js';
-import { planFor, canApply, canSearchEverywhere, recordSearch } from '../jobFinder/allowance.js';
+import { planFor, canApply, canSearchEverywhere, recordSearch, FREE_APPLIES } from '../jobFinder/allowance.js';
+import { useCredit } from '../growth/referrals.js';
+import { getAlertSettings, saveAlertSettings } from '../growth/alerts.js';
+import { ReferralAsk } from '../growth/models.js';
+import { generateLinkedinOutreachWithGemini } from '../services/gemini.js';
 
 // AI Job Finder (app.cvmind.in/job-finder). Jobs come from JSearch, Adzuna, company job boards and
 // the CVMind Company Portal; the user applies on the company's site and we remember which jobs they
@@ -113,7 +117,7 @@ async function applyInCvmind(job, req, match, loadWork) {
   });
 }
 
-export function createJobFinderRouter({ loadWork = defaultLoadWork, sources = {} } = {}) {
+export function createJobFinderRouter({ loadWork = defaultLoadWork, sources = {}, outreach = generateLinkedinOutreachWithGemini } = {}) {
   const router = express.Router();
   router.use(requireUser);
 
@@ -218,7 +222,7 @@ export function createJobFinderRouter({ loadWork = defaultLoadWork, sources = {}
         success: false,
         code: 'JOB_APPLY_LIMIT',
         resetsAt: plan.applies.resetsAt,
-        error: 'Free accounts can apply to 1 job a month in AI Job Finder. Upgrade to CVMind Pro to apply to as many as you like.'
+        error: 'Free accounts can apply to 1 job a month in AI Job Finder. Invite a friend to earn another, or upgrade to CVMind Pro to apply to as many as you like.'
       });
     }
 
@@ -252,8 +256,102 @@ export function createJobFinderRouter({ loadWork = defaultLoadWork, sources = {}
         throw err;
       }
     }
-    if (!plan.pro) plan.applies.used += 1;
+    if (!plan.pro) {
+      // Past the monthly free application, this one uses an invite credit
+      if (plan.applies.used >= FREE_APPLIES && await useCredit(email, now)) {
+        plan.applies.limit -= 1;
+        plan.applies.credits -= 1;
+      } else {
+        plan.applies.used += 1;
+      }
+    }
     res.json({ success: true, alreadyApplied: false, appliedAt: now, applyUrl: job.applyUrl, plan });
+  }));
+
+  // ── Job alert emails (growth/alerts.js) ──────────────────────────────────
+  router.get('/alerts', asyncRoute(async (req, res) => {
+    res.json({ success: true, alerts: await getAlertSettings(req.auth.sub, req.auth.email) });
+  }));
+
+  router.put('/alerts', asyncRoute(async (req, res) => {
+    const { enabled, frequency, minScore } = req.body || {};
+    res.json({ success: true, alerts: await saveAlertSettings(req.auth.sub, req.auth.email, { enabled, frequency, minScore }) });
+  }));
+
+  // ── "Find a referral": messages to someone at the job's company ─────────
+  const referralLinks = (job) => {
+    const people = encodeURIComponent(`${job.company} ${job.title}`.trim());
+    const company = encodeURIComponent(job.company || '');
+    return {
+      people: `https://www.linkedin.com/search/results/people/?keywords=${people}`,
+      company: `https://www.linkedin.com/search/results/people/?keywords=${company}`
+    };
+  };
+
+  router.get('/referral/:jobKey', asyncRoute(async (req, res) => {
+    const { jobKey } = req.params;
+    if (!JOB_KEY.test(jobKey)) return res.status(400).json({ success: false, error: 'Invalid job.' });
+    const ask = await ReferralAsk.findOne({ userId: String(req.auth.sub), jobKey }).sort({ createdAt: -1 }).lean();
+    res.json({ success: true, ask: ask ? { workId: ask.workId, sentAt: ask.sentAt, createdAt: ask.createdAt } : null });
+  }));
+
+  router.post('/referral', asyncRoute(async (req, res) => {
+    const jobKey = String(req.body?.jobKey || '');
+    if (!JOB_KEY.test(jobKey)) return res.status(400).json({ success: false, error: 'Invalid job.' });
+    const job = await FinderJob.findOne({ jobKey }).lean();
+    if (!job) return res.status(404).json({ success: false, error: 'This job is no longer listed. Search again for fresh jobs.' });
+
+    const clip = (value, max) => String(value ?? '').trim().slice(0, max);
+    const targetName = clip(req.body?.targetName, 80);
+    const relation = clip(req.body?.relation, 120);
+    const tone = clip(req.body?.tone, 40);
+    const profile = await resumeForMatching(req.auth.sub, { loadWork });
+    const cv = profile ? await resumeText(profile, { loadWork }).catch(() => '') : '';
+    const summary = clip(String(job.description || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '), 600);
+    const context = [
+      relation ? `How the candidate knows them: ${relation}.` : 'The candidate does not know them yet.',
+      'The candidate wants a referral for this specific job.',
+      summary ? `Job summary: ${summary}` : ''
+    ].filter(Boolean).join(' ');
+
+    const messages = await outreach({
+      jobTitle: job.title,
+      companyName: job.company,
+      targetName,
+      context,
+      tone,
+      resumeText: cv,
+      customApiKey: req.get('x-gemini-key') || null
+    });
+
+    const { saveWork } = await import('../db.js');
+    let work = null;
+    try {
+      work = await saveWork({
+        userId: req.auth.sub,
+        title: `Referral request - ${job.company}`.slice(0, 120),
+        type: 'linkedin-outreach',
+        templateId: 'linkedin-outreach',
+        htmlContent: JSON.stringify({ jobTitle: job.title, companyName: job.company, targetName, context: relation, jobKey, result: messages })
+      });
+    } catch (err) {
+      console.error('[jobFinder] could not save referral messages:', err.message);
+    }
+    const workId = work ? String(work._id || work.id) : '';
+    await ReferralAsk.create({ userId: String(req.auth.sub), email: req.auth.email, jobKey, company: job.company, title: job.title, workId });
+    res.json({ success: true, messages, links: referralLinks(job), workId });
+  }));
+
+  router.post('/referral-sent', asyncRoute(async (req, res) => {
+    const jobKey = String(req.body?.jobKey || '');
+    if (!JOB_KEY.test(jobKey)) return res.status(400).json({ success: false, error: 'Invalid job.' });
+    const ask = await ReferralAsk.findOneAndUpdate(
+      { userId: String(req.auth.sub), jobKey },
+      { $set: { sentAt: new Date() } },
+      { sort: { createdAt: -1 }, returnDocument: 'after' }
+    ).lean();
+    if (!ask) return res.status(404).json({ success: false, error: 'Write the referral message first.' });
+    res.json({ success: true, sentAt: ask.sentAt });
   }));
 
   router.use((err, req, res, next) => {

@@ -17,6 +17,7 @@ export const PRODUCT_LABELS: Record<string, string> = {
   career: 'Career tools',
   portfolio: 'Portfolio generator',
   'job-finder': 'Job finder',
+  negotiation: 'Offer negotiation',
   chat: 'AI assistant',
   code: 'CVMind Code',
   leo: 'Leo AI'
@@ -44,6 +45,7 @@ const PAGE_PRODUCTS: Record<string, string> = {
   'career-roadmap': 'career',
   'portfolio-gen': 'portfolio',
   'job-finder': 'job-finder',
+  'offer-negotiation': 'negotiation',
   code: 'code',
   'cvmind-code': 'code',
   'code-arena': 'code',

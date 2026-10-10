@@ -39,7 +39,7 @@ export interface FinderPreferences {
   employmentTypes: string[];
 }
 
-export interface Allowance { used: number; limit: number; resetsAt: string | null }
+export interface Allowance { used: number; limit: number; resetsAt: string | null; credits?: number }
 
 // Pro, or what a free account has left: one application a month and a few full searches a day
 export interface FinderPlan {

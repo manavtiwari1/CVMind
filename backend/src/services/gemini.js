@@ -1368,6 +1368,84 @@ export async function generateLinkedinOutreachWithGemini({ jobTitle, companyName
   }
 }
 
+const negotiationSchema = {
+  type: 'object',
+  properties: {
+    email: {
+      type: 'object',
+      properties: {
+        subject: { type: 'string', description: 'Email subject, under 70 characters' },
+        body: { type: 'string', description: 'The counter-offer email, ready to send, under 220 words' }
+      },
+      required: ['subject', 'body']
+    },
+    callScript: { type: 'array', items: { type: 'string' }, description: '4-7 short lines to say on a call, in order' },
+    talkingPoints: { type: 'array', items: { type: 'string' }, description: '3-6 reasons the candidate can give, from their own facts' },
+    avoid: { type: 'array', items: { type: 'string' }, description: '3-5 things not to say or do' },
+    warnings: { type: 'array', items: { type: 'string' }, description: 'Problems with the inputs, e.g. the target is below the offer. Empty when none.' }
+  },
+  required: ['email', 'callScript', 'talkingPoints', 'avoid', 'warnings']
+};
+
+/**
+ * Offer negotiation help: a counter-offer email, a call script and talking points, built only from
+ * the numbers and facts the candidate typed. It never quotes market salaries.
+ */
+export async function generateOfferNegotiationWithGemini({ offer = {}, position = {}, tone = '', resumeText = '', customApiKey = null }) {
+  const systemPrompt = `You help job seekers in India respond to a job offer and ask for a better package, politely and specifically.
+  Write:
+  1. email: a counter-offer email to the recruiter or hiring manager. Thank them, say clearly that the candidate wants to join, make one clear ask, give the reasons, and end warmly. Under 220 words.
+  2. callScript: what to say on a phone call, line by line.
+  3. talkingPoints: reasons the candidate can give, taken only from their own details (competing offer, current pay, skills, experience, notice period).
+  4. avoid: things that would hurt the negotiation (ultimatums, lying about offers, apologising for asking, and so on).
+  5. warnings: problems in the inputs, for example a target below the offer, or a missing number the email needs. Empty array when there are none.
+  Rules:
+  - Use ONLY the numbers the candidate gave. Never state or estimate market rates, salary ranges, percentages or "industry standard" pay. If no target number is given, ask the company to revisit the package and explain why, without quoting a figure.
+  - Use Indian offer terms where they fit: CTC, fixed pay, variable pay, joining bonus, notice period, notice-period buyout. Write money the way the candidate wrote it (e.g. "18 LPA" or "₹18,00,000").
+  - Ask for one main thing, plus at most one fallback (e.g. a joining bonus if fixed pay can't move).
+  - Never threaten to walk away unless the candidate said they would.
+  ${FACTS_RULE}`;
+
+  const line = (label, value) => (value ? `${label}: ${String(value).slice(0, 300)}` : '');
+  const userPrompt = [
+    'The offer:',
+    line('Company', offer.company),
+    line('Role', offer.role),
+    line('Location', offer.location),
+    line('Fixed pay / CTC offered', offer.fixed),
+    line('Variable pay / bonus', offer.variable),
+    line('Joining bonus', offer.joiningBonus),
+    line('Notice period / start date', offer.notice),
+    line('Other terms', offer.other),
+    '',
+    "The candidate's position:",
+    line('Current CTC', position.current),
+    line('Competing offers', position.competing),
+    line('What they want to ask for', position.target),
+    line('What matters most', Array.isArray(position.priorities) ? position.priorities.join(', ') : position.priorities),
+    line('Anything else', position.notes),
+    '',
+    `Tone: ${tone || 'Warm and confident'}`,
+    resumeText ? cvBlock(resumeText, "Candidate's resume (for strengths only)") : '',
+    '',
+    'Return the structured JSON now.'
+  ].filter((l) => l !== '').join('\n');
+
+  try {
+    return await callDeepSeek({
+      systemInstruction: systemPrompt,
+      prompt: userPrompt,
+      responseSchema: negotiationSchema,
+      customApiKey,
+      temperature: 0.4,
+      maxTokens: 1800
+    });
+  } catch (error) {
+    console.error('DeepSeek Negotiation Error:', error);
+    throw new Error('Could not write the negotiation help. ' + error.message);
+  }
+}
+
 export async function generateCareerCoursesWithGemini({ targetJob, skills, resumeText, level = '', customApiKey = null }) {
   const systemPrompt = `You are a Career Path and Skills Development Coach. Your task is to:
   1. Judge how ready the candidate is for their target job today (0-100), using only the evidence given.

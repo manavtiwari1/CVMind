@@ -49,6 +49,9 @@ import ArticlePage from './pages/ArticlePage';
 import CVmindCode from './pages/code/CVmindCode';
 import CVmindCodeLanding from './pages/code/CVmindCodeLanding';
 import JobFinderApp from './pages/jobFinder/JobFinderApp';
+import OfferNegotiation from './pages/growth/OfferNegotiation';
+import InvitePage from './pages/growth/InvitePage';
+import { captureReferral, claimStoredReferral } from './lib/referralCapture';
 import JobFinderLanding from './pages/jobFinder/JobFinderLanding';
 import NotFound from './pages/NotFound';
 import VerifyEmail from './pages/VerifyEmail';
@@ -76,7 +79,10 @@ import './styles/shared-legacy.css';
 // How long the loading screen shows when moving to another page
 const ROUTE_LOADER_MS = 450;
 
-const VALID_PAGES = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'cover-letter-generator', 'cover-letter-builder', 'cover-letter-start', 'cover-letter-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'ai-job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'copyright-policy', 'account', 'help-center', 'my-documents', 'verify-email', ...ARTICLES.map(a => a.slug)];
+const VALID_PAGES = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'cover-letter-generator', 'cover-letter-builder', 'cover-letter-start', 'cover-letter-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'ai-job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'copyright-policy', 'account', 'help-center', 'my-documents', 'verify-email', 'offer-negotiation', 'invite', ...ARTICLES.map(a => a.slug)];
+
+// An invite link (?ref=CODE) is remembered as soon as the site loads, before anything rewrites the URL
+const ARRIVED_WITH_REF = captureReferral();
 
 // Leo's pages (Resume Tailorer, Interview Prep AI, Voice Prep AI, AI Proofreading), the Career tools and the cover letter pages
 const GUIDED_PAGES = ['cover-letter-start', 'cover-letter-generator', 'tailor', 'prep', 'voice-prep', 'proofreading', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'career-courses', 'elevator-pitch', 'career-roadmap'];
@@ -89,7 +95,7 @@ const AUTH_PATHS = ['/sign-in', '/sign-up', '/login'];
 
 // The page an address shows: null for the site root, 'not-found' for anything the app doesn't serve
 function pageFromPath(pathname: string): string | null {
-  if (pathname.startsWith('/portfolio/')) return 'portfolio';
+  if (pathname.startsWith('/portfolio/') || pathname.startsWith('/r/')) return 'portfolio';
   if (AUTH_PATHS.includes(pathname)) return 'home';
   const page = pathname.replace(/^\/+|\/+$/g, '');
   if (!page || page === 'index.html') return null;
@@ -151,6 +157,8 @@ export default function App() {
     if (AUTH_PATHS.includes(pathname)) return true;
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.get('resetToken') && searchParams.get('email')) return true;
+    // A friend's invite link opens sign-up straight away
+    if (ARRIVED_WITH_REF && localStorage.getItem('cvmind_logged_in') !== 'true') return true;
     // AuthModal reads and clears ?authError itself to show the message
     return Boolean(searchParams.get('authError'));
   });
@@ -271,6 +279,11 @@ export default function App() {
     if ((window.history.state?.cvDepth ?? 0) > 0) window.history.back();
     else setCurrentPage('my-documents');
   };
+
+  // A friend's invite code saved from ?ref= is sent once there's an account
+  useEffect(() => {
+    if (isLoggedIn) claimStoredReferral();
+  }, [isLoggedIn]);
 
   // Where a fresh sign-in lands: the home page, or My Documents when signing in on the app host
   const enterAfterSignIn = () => {
@@ -600,9 +613,14 @@ export default function App() {
       case 'ai-job-finder':
         return <JobFinderLanding setCurrentPage={setCurrentPage} />;
       case 'portfolio': {
-        const wId = window.location.pathname.split('/').pop();
-        return <Portfolio workId={wId} />;
+        const last = window.location.pathname.split('/').pop();
+        // /r/<name> is a resume share link; /portfolio/<id> the older link by document id
+        return window.location.pathname.startsWith('/r/') ? <Portfolio slug={last} /> : <Portfolio workId={last} />;
       }
+      case 'offer-negotiation':
+        return <OfferNegotiation loadedWork={loadedWork} />;
+      case 'invite':
+        return <InvitePage setCurrentPage={setCurrentPage} />;
       case 'resume-builder':
         return <ResumeBuilderLanding setCurrentPage={setCurrentPage} />;
       case 'resume-editor':

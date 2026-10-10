@@ -28,6 +28,7 @@ interface Suggestions {
 interface AnalysisData {
   fileName?: string;
   score: number;
+  scoreChange?: { previousScore: number; previousAt: string; delta: number; trend: 'up' | 'down' | 'same' } | null;
   summary: string;
   atsKeywords: {
     score: number;
@@ -332,6 +333,13 @@ export default function Dashboard({ setCurrentPage, analysisResult, resumeText, 
             <p className="rpt-score-sub">
               {issueCount > 0 ? <><b>{issueCount}</b> things to improve</> : 'Nothing major to fix'}
             </p>
+            {analysisResult.scoreChange && (
+              <p className={`rpt-change is-${analysisResult.scoreChange.trend}`}>
+                {analysisResult.scoreChange.trend === 'up' && <>Up {analysisResult.scoreChange.delta} since your last check</>}
+                {analysisResult.scoreChange.trend === 'down' && <>Down {Math.abs(analysisResult.scoreChange.delta)} since your last check</>}
+                {analysisResult.scoreChange.trend === 'same' && <>About the same as your last check ({analysisResult.scoreChange.previousScore})</>}
+              </p>
+            )}
           </div>
 
           <nav className="rpt-card rpt-nav no-print" aria-label="Report parts">
