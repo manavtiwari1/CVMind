@@ -1,0 +1,277 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
+
+/* Verify-email panel ("letter" design). Spacing lives here: the theme.css reset cancels Tailwind padding/margin. */
+
+.vep { display: flex; flex-direction: column; gap: 18px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+/* ── Scene ─────────────────────────────────────────────── */
+.vep-scene {
+  position: relative;
+  height: 178px;
+  border-radius: 16px;
+  overflow: hidden;
+  display: grid;
+  place-items: end center;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(124, 58, 237, 0.12), transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(45, 192, 141, 0.14), transparent 45%),
+    radial-gradient(rgba(120, 100, 70, 0.13) 1px, transparent 1px) 0 0 / 14px 14px,
+    #fbf8f2;
+}
+/* Airmail stripe along the top */
+.vep-scene::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: repeating-linear-gradient(-45deg, #7c3aed 0 9px, #fbf8f2 9px 14px, #2dc08d 14px 23px, #fbf8f2 23px 28px);
+}
+
+.vep-postlines {
+  position: absolute;
+  left: calc(50% - 150px);
+  top: 70px;
+  width: 64px;
+  color: rgba(124, 58, 237, 0.28);
+  transform: rotate(-6deg);
+}
+
+.vep-env {
+  position: relative;
+  width: 168px;
+  height: 150px;
+  margin-bottom: -10px;
+  animation: vep-drop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.vep-env-back, .vep-env-front { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.vep-env-back { filter: drop-shadow(0 14px 18px rgba(80, 60, 30, 0.18)); }
+
+.vep-letter {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 30px;
+  height: 92px;
+  padding: 14px 14px 0;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(60, 40, 10, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  animation: vep-rise 0.9s 0.35s cubic-bezier(0.22, 1, 0.36, 1) both, vep-bob 4s 1.4s ease-in-out infinite;
+}
+.vep-letter-line { height: 5px; border-radius: 3px; background: #e7e3da; }
+.vep-letter-line.w60 { width: 60%; background: #2a2f3a; height: 6px; }
+.vep-letter-line.w85 { width: 85%; }
+.vep-letter-line.w70 { width: 70%; }
+.vep-letter-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  padding: 4px 9px;
+  border-radius: 5px;
+  background: #2dc08d;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.vep-stamp {
+  position: absolute;
+  right: -14px;
+  top: 58px;
+  width: 42px;
+  height: 50px;
+  padding: 5px;
+  background: #fff;
+  border: 3px dotted #f7efdf;
+  outline: 1px solid #e1d2b6;
+  transform: rotate(8deg);
+  box-shadow: 0 4px 10px rgba(60, 40, 10, 0.15);
+  display: grid;
+  place-items: center;
+  animation: vep-stamp 0.45s 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.vep-stamp img { width: 100%; height: 100%; object-fit: contain; }
+
+.vep-postmark {
+  position: absolute;
+  left: -40px;
+  top: 64px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(124, 58, 237, 0.5);
+  box-shadow: inset 0 0 0 3px #f7efdf, inset 0 0 0 4px rgba(124, 58, 237, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  color: rgba(124, 58, 237, 0.7);
+  font-size: 6.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  transform: rotate(-14deg);
+  animation: vep-stamp 0.45s 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.vep-postmark-mid { font-size: 8px; color: rgba(45, 160, 120, 0.9); }
+
+@keyframes vep-drop { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes vep-rise { from { transform: translateY(46px); } to { transform: translateY(0); } }
+@keyframes vep-bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -4px; } }
+@keyframes vep-stamp { from { opacity: 0; scale: 1.6; } to { opacity: 1; scale: 1; } }
+
+/* ── Body ──────────────────────────────────────────────── */
+.vep-body { display: flex; flex-direction: column; gap: 12px; }
+
+.vep h3.vep-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+.vep-title em {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.15em;
+  letter-spacing: -0.01em;
+  color: #7c3aed;
+}
+:root[data-theme='dark'] .vep-title em { color: #a78bfa; }
+.vep p.vep-text { font-size: 0.9rem; line-height: 1.5; color: var(--text-tertiary); margin-top: -4px; }
+
+.vep-address {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px 11px 14px;
+  border-radius: 12px;
+  border: 1px dashed var(--border-strong);
+  background: var(--bg-secondary);
+  min-width: 0;
+}
+.vep-address-label {
+  flex-shrink: 0;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.vep-address strong {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vep-change {
+  flex-shrink: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #7c3aed;
+  cursor: pointer;
+}
+:root[data-theme='dark'] .vep-change { color: #a78bfa; }
+.vep-change:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+.vep-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.vep-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 46px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s, background 0.15s;
+}
+.vep-btn:disabled { cursor: not-allowed; }
+.vep-btn.ink {
+  border: 0;
+  background: #14161f;
+  color: #fff;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 8px 18px -8px rgba(20, 22, 31, 0.6);
+}
+.vep-btn.ink:hover { transform: translateY(-1px); background: #1d2030; opacity: 1; color: #fff; }
+.vep-btn.ink svg { transition: transform 0.15s; }
+.vep-btn.ink:hover svg { transform: translate(2px, -2px); }
+:root[data-theme='dark'] .vep-btn.ink { background: #f5f5f7; color: #0d0d0d; }
+:root[data-theme='dark'] .vep-btn.ink:hover { background: #fff; color: #0d0d0d; }
+
+.vep-btn.ghost {
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+.vep-btn.ghost:hover:not(:disabled) { border-color: var(--border-strong); background: var(--bg-secondary); }
+.vep-btn.ghost:disabled { color: var(--text-tertiary); }
+
+.vep-resend-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(45, 192, 141, 0.12);
+  transition: width 1s linear;
+}
+.vep-btn-inner { position: relative; display: inline-flex; align-items: center; gap: 7px; font-variant-numeric: tabular-nums; }
+
+.vep-edit { display: flex; flex-direction: column; gap: 10px; }
+.vep-input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.92rem;
+  outline: none;
+}
+.vep-input:focus { border-color: #2dc08d; box-shadow: 0 0 0 4px rgba(45, 192, 141, 0.14); }
+
+.vep-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.83rem;
+  line-height: 1.45;
+}
+.vep-note svg { flex-shrink: 0; margin-top: 2px; }
+.vep-note.err { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.2); }
+.vep-note.ok { background: var(--green-dim); color: var(--green); border: 1px solid rgba(45, 192, 141, 0.22); }
+
+.vep p.vep-tip { font-size: 0.8rem; line-height: 1.5; color: var(--text-tertiary); }
+.vep-tip b { font-weight: 600; color: var(--text-secondary); }
+
+@media (prefers-reduced-motion: reduce) {
+  .vep-env, .vep-letter, .vep-stamp, .vep-postmark { animation: none; }
+}

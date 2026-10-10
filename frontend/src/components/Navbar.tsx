@@ -313,6 +313,7 @@ export default function Navbar({
 
         {/* Remaining links */}
         {[
+          { label: 'Pricing', page: 'pricing' },
           ...(isLoggedIn ? [{ label: 'My Documents', page: 'my-documents' }, { label: 'Account', page: 'account' }] : []),
           { label: 'Help Desk', page: 'help-center' },
           { label: 'About Us', page: 'about' },
@@ -326,6 +327,7 @@ export default function Navbar({
             onClick={() => go(page)}
           >
             {label}
+            {page === 'pricing' && PRICING_LOCKED && <span className="nm-badge nm-badge--soon" style={{ marginLeft: 8 }}>COMING SOON</span>}
           </button>
         ))}
 
