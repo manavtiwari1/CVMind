@@ -27,7 +27,9 @@ const VERIFIED_ONLY = [
   { path: '/api/chat' },
   { path: '/api/ai' },
   { path: '/api/code/ai' },
+  { path: '/api/negotiation' },
   { path: '/api/user/work', methods: ['POST'] },
+  { path: '/api/user/share', methods: ['PUT'] },
   { path: '/api/contact', methods: ['POST'], message: VERIFY_MESSAGES.NOT_VERIFIED }
 ];
 

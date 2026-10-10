@@ -74,8 +74,10 @@ function buttonHtml(label, url) {
  * @param {string} [o.note]       highlighted line, e.g. how long a link works
  * @param {string} [o.afterword]  text after the button, e.g. "If you didn't ask for this…"
  * @param {string} [o.footerReason] why the reader got this email
+ * @param {string} [o.htmlBlock]  ready-made HTML placed after the body (callers escape their own text)
+ * @param {string} [o.unsubscribeUrl] adds an "Unsubscribe" link to the footer
  */
-export function renderEmail({ preheader = '', eyebrow = '', title = '', greetingName = '', body = '', bullets = [], ctaLabel = '', ctaUrl = '', note = '', afterword = '', footerReason = '' }) {
+export function renderEmail({ preheader = '', eyebrow = '', title = '', greetingName = '', body = '', bullets = [], ctaLabel = '', ctaUrl = '', note = '', afterword = '', footerReason = '', htmlBlock = '', unsubscribeUrl = '' }) {
   const bulletRows = bullets.length
     ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 18px">${bullets.map((b) => `
 <tr><td valign="top" width="22" style="padding:3px 0 7px;font-size:15px;line-height:1.5;color:${C.brand};font-weight:700">&#10003;</td>
@@ -109,6 +111,7 @@ ${eyebrow ? `<p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spac
 ${title ? `<h1 style="margin:0 0 18px;font-size:23px;line-height:1.3;font-weight:800;color:${C.ink}">${escapeHtml(title)}</h1>` : ''}
 ${greetingName ? `<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:${C.text}">Hi ${escapeHtml(greetingName)},</p>` : ''}
 ${paragraphsHtml(body)}
+${htmlBlock}
 ${bulletRows}
 ${ctaLabel && linkable(ctaUrl) ? buttonHtml(ctaLabel, ctaUrl) : ''}
 ${noteBox}
@@ -118,6 +121,7 @@ ${paragraphsHtml(afterword)}
 
 <tr><td style="padding:22px 8px 0;text-align:center;font-size:12px;line-height:1.7;color:${C.muted}">
 ${footerReason ? `${escapeHtml(footerReason)}<br>` : ''}
+${unsubscribeUrl && linkable(unsubscribeUrl) ? `<a href="${escapeHtml(unsubscribeUrl)}" target="_blank" style="color:${C.muted}">Unsubscribe</a> from these emails.<br>` : ''}
 Questions? Just reply to this email or write to <a href="mailto:${escapeHtml(SUPPORT_EMAIL)}" style="color:${C.muted}">${escapeHtml(SUPPORT_EMAIL)}</a>.<br>
 <a href="${SITE_URL}" target="_blank" style="color:${C.muted};font-weight:600;text-decoration:none">cvmind.in</a>
 </td></tr>
@@ -149,7 +153,7 @@ export async function sendEmail({ to, subject, html, replyTo = SUPPORT_EMAIL, at
 export const BATCH_SIZE = 100;
 const BATCH_GAP_MS = 600;
 
-// Sends many emails (each { to, subject, html }) in batches. One bad address doesn't sink its batch
+// Sends many emails (each { to, subject, html, headers? }) in batches. One bad address doesn't sink its batch
 // (permissive validation), and a rate-limited batch is retried once. Never throws for a provider
 // error: returns { sent, failed, errors } so the caller can record the outcome.
 export async function sendEmailBatch(messages, { replyTo = SUPPORT_EMAIL } = {}) {
@@ -160,7 +164,7 @@ export async function sendEmailBatch(messages, { replyTo = SUPPORT_EMAIL } = {})
   for (let i = 0; i < messages.length; i += BATCH_SIZE) {
     if (i > 0) await sleep(BATCH_GAP_MS);
     const chunk = messages.slice(i, i + BATCH_SIZE);
-    const payload = chunk.map((m) => ({ from: EMAIL_FROM, to: [m.to], subject: m.subject, html: m.html, ...(replyTo ? { replyTo } : {}) }));
+    const payload = chunk.map((m) => ({ from: EMAIL_FROM, to: [m.to], subject: m.subject, html: m.html, ...(replyTo ? { replyTo } : {}), ...(m.headers ? { headers: m.headers } : {}) }));
     let result;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {

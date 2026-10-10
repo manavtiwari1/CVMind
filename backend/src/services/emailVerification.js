@@ -71,6 +71,10 @@ export async function markEmailVerified(user) {
     verificationFailures: 0
   });
   invalidateSessionCache(userId(user));
+  // A friend who joined with an invite code earns both people their reward now
+  import('../growth/referrals.js')
+    .then(({ qualifyReferral }) => qualifyReferral(userId(user)))
+    .catch((err) => console.error('[referrals] could not check invite reward:', err.message));
 }
 
 // A Google, GitHub or LinkedIn sign-in proves the person owns the address. An unverified account may have

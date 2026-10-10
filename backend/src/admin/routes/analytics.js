@@ -5,6 +5,8 @@ import { model, handle, paging, clean, escapeRegex } from '../util.js';
 import { AiUsage } from '../../billing/models.js';
 // Registers JobApplyLog, which FEATURE_LOGS reads by name
 import '../../jobFinder/models.js';
+// Registers NegotiationLog and ReferralAsk
+import '../../growth/models.js';
 
 const router = express.Router();
 const TZ = 'Asia/Kolkata';
@@ -26,7 +28,9 @@ export const FEATURE_LOGS = [
   { key: 'elevator-pitch', label: 'Elevator pitch', model: 'ElevatorPitchLog', detail: ['email', 'jobTitle'] },
   { key: 'career-roadmap', label: 'Career roadmap', model: 'CareerRoadmapLog', detail: ['email'] },
   { key: 'portfolio', label: 'Portfolio generator', model: 'PortfolioGenLog', detail: ['email', 'theme'] },
-  { key: 'job-finder', label: 'AI Job Finder applies', model: 'JobApplyLog', detail: ['email', 'company', 'title'] }
+  { key: 'job-finder', label: 'AI Job Finder applies', model: 'JobApplyLog', detail: ['email', 'company', 'title'] },
+  { key: 'job-referral', label: 'Referral requests', model: 'ReferralAsk', detail: ['email', 'company', 'title'] },
+  { key: 'negotiation', label: 'Offer negotiation', model: 'NegotiationLog', detail: ['email', 'company', 'role'] }
 ];
 
 const startOfDay = (offsetDays = 0) => {

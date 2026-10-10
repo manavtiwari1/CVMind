@@ -10,5 +10,11 @@
       "routePrefix": "/_/backend",
       "entrypoint": "src/index.js"
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/_/backend/api/cron/job-alerts",
+      "schedule": "17 3 * * *"
+    }
+  ]
 }
