@@ -1,63 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
-import About from './pages/About';
-import Account from './pages/Account';
-import HelpCenter from './pages/HelpCenter';
-import MyDocuments from './pages/MyDocuments';
-import Dashboard from './pages/Dashboard';
-import Admin from './pages/Admin';
 import SiteBanner from './components/SiteBanner';
 import AppUpdateGate from './components/AppUpdateGate';
-import Tailor from './pages/Tailor';
-import Prep from './pages/Prep';
-import CoverLetter from './pages/CoverLetter';
-import CoverLetterGenerator from './pages/coverLetter/CoverLetterGenerator';
-import CoverLetterBuilder from './pages/coverLetter/CoverLetterBuilder';
-import CoverLetterStart from './pages/coverLetter/CoverLetterStart';
-import CoverLetterEditor from './pages/coverLetter/CoverLetterEditor';
-import LinkedIn from './pages/linkedin/LinkedIn';
-import LinkedInBio from './pages/linkedin/LinkedInBio';
-import LinkedInOutreach from './pages/linkedin/LinkedInOutreach';
-import CareerCourses from './pages/career-path-ai/CareerCourses';
-import ElevatorPitch from './pages/career-path-ai/ElevatorPitch';
-import CareerRoadmap from './pages/career-path-ai/CareerRoadmap';
-import Portfolio from './pages/Portfolio';
-import Privacy from './pages/Privacy';
-import FAQ from './pages/FAQ';
-import Blog from './pages/Blog';
-import LinkedInPost from './pages/linkedin/LinkedInPost';
-import VoicePrep from './pages/VoicePrep';
-import PortfolioGen from './pages/PortfolioGen';
-import Products from './pages/Products';
-import ResumeBuilderLanding from './pages/ResumeBuilderLanding';
-import Pricing from './pages/Pricing';
-import PricingSoon from './pages/PricingSoon';
 import { PRICING_LOCKED } from './lib/pricing';
 import AuthModal from './components/AuthModal';
-import Terms from './pages/Terms';
-import RefundPolicy from './pages/RefundPolicy';
-import Disclaimer from './pages/Disclaimer';
-import Proofreading from './pages/Proofreading';
-import AutoApply from './autoApply/AutoApply';
-import CompanyPortal from './pages/CompanyPortal';
-import ArticleAtsResume from './pages/ArticleAtsResume';
-import CopyrightPolicy from './pages/CopyrightPolicy';
-import ArticlePage from './pages/ArticlePage';
-import CVmindCode from './pages/code/CVmindCode';
-import CVmindCodeLanding from './pages/code/CVmindCodeLanding';
-import JobFinderApp from './pages/jobFinder/JobFinderApp';
-import OfferNegotiation from './pages/growth/OfferNegotiation';
-import InvitePage from './pages/growth/InvitePage';
 import { captureReferral, claimStoredReferral } from './lib/referralCapture';
-import JobFinderLanding from './pages/jobFinder/JobFinderLanding';
-import NotFound from './pages/NotFound';
-import VerifyEmail from './pages/VerifyEmail';
 import VerifyEmailGate from './components/VerifyEmailGate';
 import PageLoader from './components/PageLoader';
 import { ARTICLES } from './data/articles';
+import { VALID_PAGES, AUTH_PATHS } from './lib/routes';
 import { applySEO } from './utils/seo';
 import { getErrorMessage } from './utils/errors';
 import { APP_PAGES, PUBLIC_APP_PAGES, OAUTH_NONCE_KEY, isAppHost, isCrossHost, isSplitHost, siteOrigin, urlForPage } from './lib/hosts';
@@ -79,7 +33,56 @@ import './styles/shared-legacy.css';
 // How long the loading screen shows when moving to another page
 const ROUTE_LOADER_MS = 450;
 
-const VALID_PAGES = ['home', 'about', 'contact', 'dashboard', 'admin', 'tailor', 'prep', 'code', 'cvmind-code', 'code-arena', 'cvmind-code-arena', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap', 'resume-builder', 'resume-editor', 'cover-letter-generator', 'cover-letter-builder', 'cover-letter-start', 'cover-letter-editor', 'privacy', 'faq', 'blog', 'voice-prep', 'portfolio-gen', 'products', 'job-finder', 'ai-job-finder', 'pricing', 'terms', 'refund-policy', 'disclaimer', 'proofreading', 'auto-apply', 'company-portal', 'copyright-policy', 'account', 'help-center', 'my-documents', 'verify-email', 'offer-negotiation', 'invite', ...ARTICLES.map(a => a.slug)];
+// Pages load on demand, so the first visit only downloads the page it opens
+const About = lazy(() => import('./pages/About'));
+const Account = lazy(() => import('./pages/Account'));
+const HelpCenter = lazy(() => import('./pages/HelpCenter'));
+const MyDocuments = lazy(() => import('./pages/MyDocuments'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Admin = lazy(() => import('./pages/Admin'));
+const Tailor = lazy(() => import('./pages/Tailor'));
+const Prep = lazy(() => import('./pages/Prep'));
+const CoverLetter = lazy(() => import('./pages/CoverLetter'));
+const CoverLetterGenerator = lazy(() => import('./pages/coverLetter/CoverLetterGenerator'));
+const CoverLetterBuilder = lazy(() => import('./pages/coverLetter/CoverLetterBuilder'));
+const CoverLetterStart = lazy(() => import('./pages/coverLetter/CoverLetterStart'));
+const CoverLetterEditor = lazy(() => import('./pages/coverLetter/CoverLetterEditor'));
+const LinkedIn = lazy(() => import('./pages/linkedin/LinkedIn'));
+const LinkedInBio = lazy(() => import('./pages/linkedin/LinkedInBio'));
+const LinkedInOutreach = lazy(() => import('./pages/linkedin/LinkedInOutreach'));
+const CareerCourses = lazy(() => import('./pages/career-path-ai/CareerCourses'));
+const ElevatorPitch = lazy(() => import('./pages/career-path-ai/ElevatorPitch'));
+const CareerRoadmap = lazy(() => import('./pages/career-path-ai/CareerRoadmap'));
+const Portfolio = lazy(() => import('./pages/Portfolio'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const FAQ = lazy(() => import('./pages/FAQ'));
+const Blog = lazy(() => import('./pages/Blog'));
+const LinkedInPost = lazy(() => import('./pages/linkedin/LinkedInPost'));
+const VoicePrep = lazy(() => import('./pages/VoicePrep'));
+const PortfolioGen = lazy(() => import('./pages/PortfolioGen'));
+const Products = lazy(() => import('./pages/Products'));
+const ResumeBuilderLanding = lazy(() => import('./pages/ResumeBuilderLanding'));
+const Pricing = lazy(() => import('./pages/Pricing'));
+const PricingSoon = lazy(() => import('./pages/PricingSoon'));
+const Terms = lazy(() => import('./pages/Terms'));
+const RefundPolicy = lazy(() => import('./pages/RefundPolicy'));
+const Disclaimer = lazy(() => import('./pages/Disclaimer'));
+const Proofreading = lazy(() => import('./pages/Proofreading'));
+const AutoApply = lazy(() => import('./autoApply/AutoApply'));
+const CompanyPortal = lazy(() => import('./pages/CompanyPortal'));
+const ArticleAtsResume = lazy(() => import('./pages/ArticleAtsResume'));
+const CopyrightPolicy = lazy(() => import('./pages/CopyrightPolicy'));
+const ArticlePage = lazy(() => import('./pages/ArticlePage'));
+const CVmindCode = lazy(() => import('./pages/code/CVmindCode'));
+const CVmindCodeLanding = lazy(() => import('./pages/code/CVmindCodeLanding'));
+const JobFinderApp = lazy(() => import('./pages/jobFinder/JobFinderApp'));
+const OfferNegotiation = lazy(() => import('./pages/growth/OfferNegotiation'));
+const InvitePage = lazy(() => import('./pages/growth/InvitePage'));
+const JobFinderLanding = lazy(() => import('./pages/jobFinder/JobFinderLanding'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+
+// VALID_PAGES and AUTH_PATHS live in lib/routes.ts, which the build also reads
 
 // An invite link (?ref=CODE) is remembered as soon as the site loads, before anything rewrites the URL
 const ARRIVED_WITH_REF = captureReferral();
@@ -90,8 +93,6 @@ const GUIDED_PAGES = ['cover-letter-start', 'cover-letter-generator', 'tailor', 
 // Signed-in pages an unverified account can still open (the server enforces the rest)
 const UNVERIFIED_OPEN_PAGES = ['account', 'my-documents'];
 
-// Sign-in addresses open the AuthModal over the home page
-const AUTH_PATHS = ['/sign-in', '/sign-up', '/login'];
 
 // The page an address shows: null for the site root, 'not-found' for anything the app doesn't serve
 function pageFromPath(pathname: string): string | null {
@@ -755,10 +756,10 @@ export default function App() {
         )}
         {productLock === 'locked'
           ? <ProductLocked page={currentPage} isLoggedIn={isLoggedIn} setCurrentPage={setCurrentPage} onSignIn={() => setShowAuthModal(true)} />
-          : productLock === 'open' && renderPage()}
+          : productLock === 'open' && <Suspense fallback={<PageLoader />}>{renderPage()}</Suspense>}
       </main>
 
-      {currentPage === 'verify-email' && !showAuthModal && <VerifyEmail setCurrentPage={setCurrentPage} openSignIn={() => setShowAuthModal(true)} />}
+      {currentPage === 'verify-email' && !showAuthModal && <Suspense fallback={null}><VerifyEmail setCurrentPage={setCurrentPage} openSignIn={() => setShowAuthModal(true)} /></Suspense>}
 
       {routeLoading && <PageLoader />}
 

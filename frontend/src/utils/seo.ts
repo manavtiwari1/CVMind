@@ -1,16 +1,17 @@
 import { ARTICLES } from '../data/articles';
-import { isAppHost } from '../lib/hosts';
+import { isAppHost, isAppPage } from '../lib/hosts';
 
-interface PageSEO {
+export interface PageSEO {
   title: string;
   description: string;
   keywords?: string;
 }
 
-const SITE_URL = 'https://www.cvmind.in';
+export const SITE_URL = 'https://www.cvmind.in';
 
 // Account-only and error pages stay out of search results
-const NO_INDEX_PAGES = ['account', 'my-documents', 'admin', 'dashboard', 'resume-editor', 'cover-letter-start', 'cover-letter-editor', 'not-found'];
+// Shared resumes (portfolio) hold people's contact details, so they stay out too; cvmind-code is an alias of /code
+export const NO_INDEX_PAGES = ['account', 'my-documents', 'admin', 'dashboard', 'resume-editor', 'cover-letter-start', 'cover-letter-editor', 'not-found', 'portfolio', 'cvmind-code'];
 
 const PAGE_SEO: Record<string, PageSEO> = {
   home: {
@@ -250,20 +251,30 @@ function setMeta(name: string, content: string, attr: 'name' | 'property' = 'nam
   el.setAttribute('content', content);
 }
 
+export const seoFor = (page: string): PageSEO => PAGE_SEO[page] || PAGE_SEO['not-found'];
+
+export const pageUrl = (page: string) => (page === 'home' ? `${SITE_URL}/` : `${SITE_URL}/${page}`);
+
+/**
+ * Pages search engines should index: public pages on www. Signed-in, error and app-host pages
+ * (on www those addresses forward to app.cvmind.in, which is never indexed) stay out.
+ */
+export const isIndexable = (page: string) => Boolean(PAGE_SEO[page]) && !NO_INDEX_PAGES.includes(page) && !isAppPage(page);
+
 export function applySEO(page: string) {
-  const seo = PAGE_SEO[page] || PAGE_SEO['not-found'];
+  const seo = seoFor(page);
 
   document.title = seo.title;
   setMeta('description', seo.description);
   if (seo.keywords) setMeta('keywords', seo.keywords);
   setMeta('og:title', seo.title, 'property');
   setMeta('og:description', seo.description, 'property');
-  setMeta('twitter:title', seo.title, 'property');
-  setMeta('twitter:description', seo.description, 'property');
+  setMeta('twitter:title', seo.title);
+  setMeta('twitter:description', seo.description);
 
-  const url = page === 'home' ? `${SITE_URL}/` : `${SITE_URL}/${page}`;
+  const url = pageUrl(page);
   setMeta('og:url', url, 'property');
-  setMeta('twitter:url', url, 'property');
+  setMeta('twitter:url', url);
 
   let canonical = document.querySelector('link[rel="canonical"]');
   if (!canonical) {
@@ -274,6 +285,6 @@ export function applySEO(page: string) {
   canonical.setAttribute('href', url);
 
   // app.cvmind.in duplicates the site build, and signed-in or missing pages have nothing to index
-  const noIndex = isAppHost() || NO_INDEX_PAGES.includes(page) || !PAGE_SEO[page];
+  const noIndex = isAppHost() || !isIndexable(page);
   setMeta('robots', noIndex ? 'noindex, nofollow' : 'index, follow');
 }
