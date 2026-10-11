@@ -106,3 +106,10 @@
 .nm-title { white-space: nowrap; }
 
 .nm-col.nm-col--links { min-width: 240px; }
+
+/* The tiles and links are <a> elements: keep the menu's own colors, not the global link style */
+[data-slot="navigation-menu-link"].nm-tile,
+[data-slot="navigation-menu-link"].nm-link { text-decoration: none; }
+[data-slot="navigation-menu-link"].nm-tile { color: inherit; }
+[data-slot="navigation-menu-link"].nm-tile:hover,
+[data-slot="navigation-menu-link"].nm-link:hover { opacity: 1; }

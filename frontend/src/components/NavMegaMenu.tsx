@@ -1,5 +1,6 @@
 import { NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuTrigger } from './ui/navigation-menu';
 import type { NavMenu, NavBadge } from './navMenus';
+import PageLink from './PageLink';
 import './NavMegaMenu.css';
 
 const BADGE_LABEL: Record<NavBadge, string> = { new: 'NEW', soon: 'SOON' };
@@ -23,7 +24,7 @@ export default function NavMegaMenu({ menu, currentPage, onNavigate }: NavMegaMe
             <div key={col.heading} className={`nm-col${col.tiles ? '' : ' nm-col--links'}`}>
               <span className="nm-heading">{col.heading}</span>
               {col.tiles?.map((t) => (
-                <NavigationMenuLink key={t.page} render={<button type="button" className="nm-tile" onClick={() => onNavigate(t.page)} />}>
+                <NavigationMenuLink key={t.page} render={<PageLink page={t.page} onNavigate={onNavigate} className="nm-tile" />}>
                   <span className="nm-icon"><t.icon size={18} strokeWidth={1.75} aria-hidden="true" /></span>
                   <span className="nm-text">
                     <span className="nm-title">
@@ -35,7 +36,7 @@ export default function NavMegaMenu({ menu, currentPage, onNavigate }: NavMegaMe
                 </NavigationMenuLink>
               ))}
               {col.links?.map((l) => (
-                <NavigationMenuLink key={l.page} render={<button type="button" className="nm-link" onClick={() => onNavigate(l.page)} />}>
+                <NavigationMenuLink key={l.page} render={<PageLink page={l.page} onNavigate={onNavigate} className="nm-link" />}>
                   {l.title}
                 </NavigationMenuLink>
               ))}

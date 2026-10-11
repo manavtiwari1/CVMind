@@ -4,6 +4,7 @@ import TemplatePreview from '../TemplatePreview';
 import { TEMPLATES } from '../../data/resumeTemplates';
 import { withSampleData } from '../../data/samplePreview';
 import { ARTICLES } from '../../data/articles';
+import PageLink from '../PageLink';
 
 interface GuidesSectionProps {
   setCurrentPage: (page: string) => void;
@@ -61,9 +62,9 @@ export default function GuidesSection({ setCurrentPage }: GuidesSectionProps) {
             <article key={c.title} className="hp-gcard">
               <h3>{c.title}</h3>
               <p>{c.body}</p>
-              <button type="button" className="hp-gcard-link" onClick={() => setCurrentPage(c.page)}>
+              <PageLink page={c.page} onNavigate={setCurrentPage} className="hp-gcard-link">
                 {c.link} <ArrowRight size={14} />
-              </button>
+              </PageLink>
             </article>
           ))}
         </div>
@@ -72,18 +73,18 @@ export default function GuidesSection({ setCurrentPage }: GuidesSectionProps) {
           <div className="hp-guides-list-intro">
             <h3 className="hp-h3 hp-h3--light">Guides from the blog</h3>
             <p className="hp-body hp-body--light">Step-by-step articles you can act on the same day.</p>
-            <button type="button" className="hp-btn hp-btn--outline hp-btn--small" onClick={() => setCurrentPage('blog')}>
+            <PageLink page="blog" onNavigate={setCurrentPage} className="hp-btn hp-btn--outline hp-btn--small">
               See all guides
-            </button>
+            </PageLink>
           </div>
           <div className="hp-guides-items">
             {ARTICLES.slice(0, FEATURED_COUNT).map((a) => (
-              <button key={a.slug} type="button" className="hp-gcard hp-gitem" onClick={() => setCurrentPage(a.slug)}>
+              <PageLink key={a.slug} page={a.slug} onNavigate={setCurrentPage} className="hp-gcard hp-gitem">
                 <span className="hp-gitem-tag">{a.tag}</span>
                 <span className="hp-gitem-title">{a.title}</span>
                 <span className="hp-gitem-blurb">{a.blurb}</span>
                 <span className="hp-gitem-meta"><Clock size={12} /> {a.readTime}</span>
-              </button>
+              </PageLink>
             ))}
           </div>
         </div>

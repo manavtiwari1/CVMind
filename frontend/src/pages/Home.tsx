@@ -13,6 +13,7 @@ import GuidesSection from '../components/home/GuidesSection';
 import TemplateMarquee from '../components/home/TemplateMarquee';
 import '../components/home/home-v2.css';
 import { getErrorMessage } from '../utils/errors';
+import { HOME_CHECKER, HOME_FAQS } from '../data/homeCopy';
 import type { ResumeAnalysis } from '../types/api';
 import './Home.css';
 import './HomeCarousel.css';
@@ -176,18 +177,6 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
     }
   };
 
-  // ── FAQ data ──
-  const faqs = [
-    { q: 'How does the AI resume checker work?', a: 'Our AI reads your resume, checks keyword coverage and formatting, looks for gaps in quantified achievements, and scores the document from 0 to 100. You get a full report in seconds.' },
-    { q: 'Can AI auto-fix my resume from the suggestions?', a: 'Yes. In the Resume Center, after your analysis is complete, click "AI Fix Resume" and our AI will automatically rewrite your entire resume incorporating all the suggestions. You can then download the fixed version as a PDF or DOCX instantly, or open it in the in-app resume editor to polish it further.' },
-    { q: 'What file formats are supported?', a: 'We support PDF, DOCX, and TXT files up to 5MB. PDF and DOCX give the best results as they preserve formatting information.' },
-    { q: 'How accurate is the ATS score?', a: 'The score is an AI-based estimate of how well your resume reads to an applicant tracking system: keyword coverage, structure and formatting. Treat it as a guide rather than a guarantee, because every company configures its ATS differently.' },
-    { q: 'Can I use this for multiple jobs?', a: 'Absolutely. Use the Resume Tailor tool to create a custom-tailored version of your resume for each job application. Our AI aligns your skills, keywords, and achievements to each specific job description.' },
-    { q: 'Is my resume data kept private?', a: 'Yes. Your resume is processed in memory and never stored on our servers without your consent. We use end-to-end encrypted connections and your data is never used for AI training.' },
-    { q: 'Do I need to create an account?', a: 'No account is required to get your ATS score and basic analysis. Features like saved works, and resume downloads require a free account. You can sign up with Google OAuth or email in seconds.' },
-    { q: 'Can I delete my account and all my data?', a: 'Yes. Go to the profile dropdown in the top-right corner → click "Delete Account" → type DELETE to confirm. This permanently removes your account, all saved works, and all associated data from our servers immediately.' },
-  ];
-
   return (
     <div className="home-container animate-fade-in-up">
 
@@ -218,8 +207,8 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
         <div className="home-score-inner">
           <div className="home-score-text">
             <span className="home-score-eyebrow">Free ATS Check</span>
-            <h2 className="home-score-title">Get Your Resume Score in Seconds</h2>
-            <p className="home-score-sub">Upload your resume and instantly see your ATS compatibility score, keyword gaps, formatting issues, and AI-powered fix suggestions.</p>
+            <h2 className="home-score-title">{HOME_CHECKER.heading}</h2>
+            <p className="home-score-sub">{HOME_CHECKER.text}</p>
             <div className="home-score-badges">
               <span className="home-score-badge"><ShieldCheck size={13} /> Privacy guaranteed</span>
               <span className="home-score-badge"><CheckCircle2 size={13} /> Instant results</span>
@@ -401,15 +390,14 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
           <h2 className="home-faq-title">Frequently Asked Questions</h2>
           <p className="home-faq-sub">Everything you need to know about our AI resume tools.</p>
           <div className="home-faq-list">
-            {faqs.map((faq, i) => (
+            {HOME_FAQS.map((faq, i) => (
               <div key={i} className={`home-faq-item${openFaq === i ? ' open' : ''}`}>
                 <button className="home-faq-question" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
                   <span>{faq.q}</span>
                   <span className="home-faq-chevron">{openFaq === i ? '−' : '+'}</span>
                 </button>
-                {openFaq === i && (
-                  <div className="home-faq-answer">{faq.a}</div>
-                )}
+                {/* Answers stay in the page (hidden when closed) so search engines can read them */}
+                <div className="home-faq-answer" hidden={openFaq !== i}>{faq.a}</div>
               </div>
             ))}
           </div>

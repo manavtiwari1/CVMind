@@ -70,7 +70,6 @@ const Disclaimer = lazy(() => import('./pages/Disclaimer'));
 const Proofreading = lazy(() => import('./pages/Proofreading'));
 const AutoApply = lazy(() => import('./autoApply/AutoApply'));
 const CompanyPortal = lazy(() => import('./pages/CompanyPortal'));
-const ArticleAtsResume = lazy(() => import('./pages/ArticleAtsResume'));
 const CopyrightPolicy = lazy(() => import('./pages/CopyrightPolicy'));
 const ArticlePage = lazy(() => import('./pages/ArticlePage'));
 const CVmindCode = lazy(() => import('./pages/code/CVmindCode'));
@@ -452,7 +451,7 @@ export default function App() {
 
   // Helper to switch pages dynamically
   const renderPage = () => {
-    // Registry-driven articles render generically; bespoke ones fall through to the switch.
+    // Every blog article renders from the registry in data/articles.ts
     if (ARTICLES.some(a => a.slug === currentPage && a.sections)) {
       return <ArticlePage slug={currentPage} setCurrentPage={setCurrentPage} />;
     }
@@ -482,8 +481,6 @@ export default function App() {
         return <FAQ setCurrentPage={setCurrentPage} />;
       case 'blog':
         return <Blog setCurrentPage={setCurrentPage} />;
-      case 'how-to-create-an-ats-friendly-resume':
-        return <ArticleAtsResume setCurrentPage={setCurrentPage} />;
       case 'dashboard':
         return (
           <Dashboard 

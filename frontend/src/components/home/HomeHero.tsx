@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { ArrowRight, ShieldCheck, Sparkles, Target, Wand2 } from 'lucide-react';
 import { formatStat, useLiveStats } from '../../utils/stats';
+import { HOME_HERO } from '../../data/homeCopy';
 import ScaleToFit from './ScaleToFit';
 import SampleResume, { SAMPLE_RESUME_WIDTH } from './SampleResume';
 
@@ -32,12 +33,9 @@ export default function HomeHero({ setCurrentPage, onAnalyzeClick }: HomeHeroPro
       <div className="hp-hero-inner">
         <div className="hp-hero-copy">
           <h1 className="hp-h1">
-            Land more interviews with CVMind&rsquo;s <span className="hp-grad">Resume Builder</span>
+            {HOME_HERO.h1.lead} <span className="hp-grad">{HOME_HERO.h1.em}</span>
           </h1>
-          <p className="hp-lead">
-            Build an ATS-friendly resume from a template, let the AI rewrite the weak lines, and tailor it to a job post in one click.
-            Or upload the resume you already have and get a free score first.
-          </p>
+          <p className="hp-lead">{HOME_HERO.lead}</p>
           <div className="hp-actions">
             <button className="hp-btn hp-btn--primary" onClick={() => setCurrentPage('resume-editor')}>
               Build your resume

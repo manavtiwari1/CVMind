@@ -1,5 +1,5 @@
-// Central registry for blog articles. Articles with `sections` render through
-// the generic ArticlePage; entries without them use a bespoke page component.
+// Central registry for blog articles. Every article renders through ArticlePage, and the build
+// writes the same intro, sections and FAQs into each article's static HTML (seo/prerender.ts).
 
 export interface ArticleSection {
   id: string;
@@ -16,13 +16,25 @@ export interface ArticleDef {
   keywords: string;
   date: string;
   isoDate: string;
+  /** ISO date of the last real content change; leave out until the article is actually revised */
+  updated?: string;
   readTime: string;
   blurb: string;
+  /** Quick summary card; when left out, ArticlePage builds one from the first sections */
+  summary?: { lead: string; text: string }[];
   intro?: string;
   sections?: ArticleSection[];
   faqs?: { q: string; a: string }[];
   related?: string[];
 }
+
+// Byline and structured-data author for every article
+export const ARTICLE_AUTHOR = {
+  name: 'Manav Tiwari',
+  role: 'founder of CV Mind',
+  url: 'https://www.cvmind.in/about',
+  sameAs: ['https://www.manavtiwari.in', 'https://x.com/ManavAneja13'],
+};
 
 export const ARTICLES: ArticleDef[] = [
   {
@@ -34,8 +46,204 @@ export const ARTICLES: ArticleDef[] = [
     keywords: 'ATS Friendly Resume, ATS Resume Format, Resume Keywords, Applicant Tracking System, Resume Formatting Rules, ATS Resume Checker',
     date: 'July 8, 2026',
     isoDate: '2026-07-08',
+    updated: '2026-10-11',
     readTime: '12 min read',
-    blurb: 'Why 88% of qualified candidates get filtered out before a human sees their resume — and the exact formatting rules, keywords, and tests to get past the software.',
+    blurb: '88% of employers say their own hiring software screens out qualified candidates. Here are the formatting rules, keywords and tests that get your resume past it.',
+    related: ['resume-keywords-guide', 'ats-resume-checklist', 'pdf-vs-docx-resume'],
+    summary: [
+      { lead: 'Layout', text: 'Use a single-column layout with standard headings and fonts. Multi-column designs are the most common cause of parsing errors.' },
+      { lead: 'Keywords', text: 'Keywords are the biggest factor in how an ATS ranks you. Take them from the job description and use them naturally in your summary, skills and experience.' },
+      { lead: 'File format', text: 'Follow the posting first. Otherwise DOCX parses reliably almost everywhere, and a text-based PDF works for most modern systems.' },
+      { lead: 'Test first', text: 'Run the copy-paste test and an ATS checker before every application. It takes five minutes.' },
+    ],
+    intro: `<p><strong>An ATS-friendly resume is a single-column, text-based file that uses standard section headings and the job posting's own keywords, so applicant tracking software can read it correctly and rank it against the job.</strong> The rest of this guide shows how to build one, step by step.</p>
+<p>You spent hours perfecting your resume. You hit "Apply" on twenty jobs. Then… silence. No calls, no emails, not even a rejection.</p>
+<p>Here's what probably happened: a human never saw your resume. Before any recruiter opens your application, most companies run it through an Applicant Tracking System (ATS) — software that scans, sorts, and ranks resumes before a person gets involved. <a href="https://www.jobscan.co/blog/fortune-500-use-applicant-tracking-systems/" target="_blank" rel="noopener">Jobscan's 2026 count</a> found an ATS behind the careers pages of 97.4% of Fortune 500 companies, and in Harvard Business School's <a href="https://www.hbs.edu/managing-the-future-of-work/research/Pages/hidden-workers-untapped-talent.aspx" target="_blank" rel="noopener"><em>Hidden Workers</em> study</a>, 88% of employers said their systems screen out qualified candidates because their resumes don't match the exact criteria in the job description.</p>
+<p>The good news? Beating the ATS isn't about tricks. It's about understanding how the software reads your resume and formatting yours so nothing gets lost in translation. In this guide, you'll learn exactly how to do that, step by step.</p>`,
+    sections: [
+      {
+        id: 'what-is-ats',
+        heading: 'What Is an ATS and How Does It Work?',
+        html: `<p>An Applicant Tracking System is software that companies use to manage job applications. Popular systems include Workday, Greenhouse, Lever, Taleo, and iCIMS. When you apply for a job online, your resume usually lands in one of these systems first.</p>
+<p>Here's what happens next:</p>
+<ul>
+<li><strong>Parsing.</strong> The ATS converts your resume into plain text and tries to sort the information into fields: name, contact details, work history, education, skills.</li>
+<li><strong>Matching.</strong> The system compares your parsed resume against the job description, looking for relevant job titles, skills, and qualifications.</li>
+<li><strong>Ranking.</strong> Many systems score or rank candidates. Recruiters often review the highest-matching resumes first — and may never scroll to the bottom of the list.</li>
+</ul>
+<p>The key insight: <strong>the ATS doesn't see your resume the way you designed it.</strong> It sees raw text. If your beautiful two-column layout confuses the parser, your work experience might end up in the wrong field — or disappear entirely.</p>
+<p>And even when your resume passes the software, remember who's next: a recruiter. <a href="https://www.hrdive.com/news/eye-tracking-study-shows-recruiters-look-at-resumes-for-7-seconds/541582/" target="_blank" rel="noopener">Ladders' 2018 eye-tracking study</a> found that recruiters spend an average of just 7.4 seconds on their first scan of a resume. Your resume has to work for both audiences — machine first, human second.</p>`,
+      },
+      {
+        id: 'why-rejected',
+        heading: 'Why Do Good Candidates Get Rejected by an ATS?',
+        html: `<p>Most ATS rejections have nothing to do with your qualifications. They happen because of how the resume is built. The most common causes:</p>
+<ul>
+<li><strong>Complex formatting.</strong> Tables, text boxes, columns, and graphics can scramble the parsing process.</li>
+<li><strong>Missing keywords.</strong> If the job asks for "project management" and your resume only says "led teams," the match score drops.</li>
+<li><strong>Non-standard section headings.</strong> The ATS looks for headings like "Work Experience." If you write "My Journey" instead, it may not know what it's reading.</li>
+<li><strong>Headers and footers.</strong> Some parsers skip them completely — a problem if your phone number lives there.</li>
+<li><strong>Unusual fonts or characters.</strong> Decorative fonts and symbols can turn into gibberish after parsing.</li>
+<li><strong>Image-based resumes.</strong> A resume exported as an image or built in Photoshop is often unreadable to an ATS.</li>
+</ul>
+<p>None of these are skill problems. They're formatting problems — and every one of them is fixable in under an hour.</p>`,
+      },
+      {
+        id: 'formatting',
+        heading: 'ATS-Friendly Resume Formatting Rules',
+        html: `<h3>Layout</h3>
+<ul>
+<li>Use a <strong>single-column layout</strong>. Multi-column designs are the #1 cause of parsing errors.</li>
+<li>Keep margins between 0.5 and 1 inch.</li>
+<li>Left-align your text. Avoid centering body content.</li>
+<li>Don't use tables, text boxes, or graphics to organize information.</li>
+<li>Skip photos, logos, charts, and skill-rating bars entirely.</li>
+</ul>
+<h3>Fonts and Text</h3>
+<ul>
+<li>Stick to standard fonts: Calibri, Arial, Helvetica, Georgia, or Times New Roman.</li>
+<li>Use 10–12 pt for body text and 14–16 pt for headings.</li>
+<li>Use standard bullet points (round or square). Avoid arrows, stars, or emoji.</li>
+<li>Use bold for emphasis, not ALL CAPS or underlining everywhere.</li>
+</ul>
+<h3>Section Headings</h3>
+<p>Use conventional headings the software is trained to recognize:</p>
+<div class="art-table-wrap"><table>
+<thead><tr><th>Use This</th><th>Not This</th></tr></thead>
+<tbody>
+<tr><td>Work Experience</td><td>My Professional Journey</td></tr>
+<tr><td>Education</td><td>Where I Studied</td></tr>
+<tr><td>Skills</td><td>What I Bring to the Table</td></tr>
+<tr><td>Certifications</td><td>Badges &amp; Achievements</td></tr>
+<tr><td>Professional Summary</td><td>About Me</td></tr>
+</tbody>
+</table></div>
+<h3>Dates and Details</h3>
+<ul>
+<li>Format dates consistently: "Jan 2023 – Present" or "01/2023 – Present."</li>
+<li>Always include both month and year. Some systems calculate your experience duration automatically.</li>
+<li>Put your contact information in the main body of the document — never only in the header or footer.</li>
+</ul>`,
+      },
+      {
+        id: 'keywords',
+        heading: 'How Do You Find and Use the Right Keywords?',
+        html: `<p>Keywords are the single biggest factor in how an ATS ranks your resume. Here's a simple process that takes about 15 minutes per application.</p>
+<h3>Step 1: Mine the Job Description</h3>
+<p>Read the posting carefully and highlight:</p>
+<ul>
+<li><strong>Hard skills</strong> — tools, technologies, methods (e.g., SQL, Google Analytics, Agile)</li>
+<li><strong>Job titles</strong> — the exact title of the role and close variants</li>
+<li><strong>Qualifications</strong> — certifications, degrees, years of experience</li>
+<li><strong>Repeated words</strong> — anything mentioned two or more times is almost certainly weighted</li>
+</ul>
+<h3>Step 2: Match Naturally</h3>
+<p>Work those exact terms into your resume where they're true for you. Two rules:</p>
+<ul>
+<li><strong>Use the exact phrasing.</strong> If the posting says "customer relationship management," write that — don't rely on the ATS to know "CRM" means the same thing. When in doubt, use both: "customer relationship management (CRM)."</li>
+<li><strong>Never keyword-stuff.</strong> Don't paste an invisible block of white-text keywords or list skills you don't have. Modern systems detect stuffing, and recruiters certainly do.</li>
+</ul>
+<h3>Step 3: Place Keywords Where They Count</h3>
+<ul>
+<li><strong>Skills section</strong> — for scannability</li>
+<li><strong>Work experience bullets</strong> — for context and proof</li>
+<li><strong>Professional summary</strong> — for the role title and your top 2–3 skills</li>
+</ul>
+<div class="art-example">
+<p><strong>Example — turning a weak bullet into a keyword-rich one:</strong></p>
+<p>❌ <em>"Responsible for social media."</em></p>
+<p>✅ <em>"Managed social media marketing across Instagram and LinkedIn, growing engagement 42% in 6 months using content calendars and A/B testing."</em></p>
+</div>
+<p>The second version contains real keywords, a metric, and an outcome — which works for the algorithm and impresses the human who reads it next. Want this done automatically? <a href="/tailor">CV Mind's Resume Tailorer</a> matches your resume to any job description in seconds. The full method is in our <a href="/resume-keywords-guide">Resume Keywords Guide</a>.</p>`,
+      },
+      {
+        id: 'sections',
+        heading: 'How Should Each Resume Section Be Structured?',
+        html: `<h3>Contact Information</h3>
+<p>Name, phone, email, city, and LinkedIn URL at the top of the document body. Use a professional email address. No need for your full street address.</p>
+<h3>Professional Summary (3–4 lines)</h3>
+<p>Include your target job title, years of experience, and 2–3 top skills that mirror the job description.</p>
+<div class="art-example">
+<p><em>"Data Analyst with 3+ years of experience in SQL, Python, and Tableau. Built dashboards that cut reporting time by 60% at a fintech startup. Seeking to bring data-driven decision-making to a product analytics team."</em></p>
+</div>
+<h3>Work Experience</h3>
+<p>For each role: <strong>job title, company, location, dates</strong> — in that order, each on its own line or clearly separated. Under each role, 3–5 bullet points that:</p>
+<ul>
+<li>Start with a strong action verb (built, launched, reduced, negotiated)</li>
+<li>Include at least one number where possible (%, ₹/$, time saved, team size)</li>
+<li>Mirror the language of your target job description</li>
+</ul>
+<h3>Skills</h3>
+<p>A clean, simple list — comma-separated or plain bullets. Group by category if you have many. No rating bars or star graphics; the ATS can't read them, and recruiters don't trust them.</p>
+<h3>Education and Certifications</h3>
+<p>Degree, institution, and year. Spell out and abbreviate: "Bachelor of Technology (B.Tech), Computer Science." List certifications with their full official names.</p>`,
+      },
+      {
+        id: 'comparison',
+        heading: 'ATS-Friendly vs. ATS-Unfriendly: A Quick Comparison',
+        html: `<div class="art-table-wrap"><table>
+<thead><tr><th>Element</th><th>ATS-Friendly ✅</th><th>ATS-Unfriendly ❌</th></tr></thead>
+<tbody>
+<tr><td>Layout</td><td>Single column</td><td>Two/three columns, sidebars</td></tr>
+<tr><td>Fonts</td><td>Calibri, Arial, Georgia</td><td>Script or decorative fonts</td></tr>
+<tr><td>Headings</td><td>"Work Experience," "Skills"</td><td>Creative or clever headings</td></tr>
+<tr><td>Visuals</td><td>None</td><td>Photos, icons, charts, skill bars</td></tr>
+<tr><td>Keywords</td><td>Mirrored from job description</td><td>Generic buzzwords only</td></tr>
+<tr><td>Contact info</td><td>In document body</td><td>Only in header/footer</td></tr>
+<tr><td>File type</td><td>DOCX or text-based PDF</td><td>Image-based PDF, PNG, Canva export</td></tr>
+<tr><td>Dates</td><td>"Jan 2023 – Present"</td><td>"2023–now," missing months</td></tr>
+</tbody>
+</table></div>`,
+      },
+      {
+        id: 'file-format',
+        heading: 'PDF or DOCX: Which File Format Should You Use?',
+        html: `<p>The short answer: <strong>follow the job posting's instructions first.</strong> If it asks for a specific format, use that.</p>
+<p>If there's no instruction:</p>
+<ul>
+<li><strong>DOCX</strong> is the safest bet for older systems (like some Taleo versions) and parses reliably almost everywhere.</li>
+<li><strong>Text-based PDF</strong> is fine for most modern systems and preserves your formatting exactly. The test: if you can select and copy the text in your PDF, it's text-based. If you can't, it's an image — and an ATS can't read it either.</li>
+</ul>
+<p>Avoid: Pages files, Google Docs share links, JPG/PNG exports, and resumes designed in graphic tools that export flattened images. More detail in <a href="/pdf-vs-docx-resume">PDF vs DOCX</a>.</p>`,
+      },
+      {
+        id: 'test',
+        heading: 'How Do You Test Your Resume Before Applying?',
+        html: `<p>Don't guess — test. Three quick checks:</p>
+<ol>
+<li><strong>The copy-paste test.</strong> Copy your entire resume and paste it into a plain text editor (Notepad). If sections vanish, reorder, or turn into symbols, an ATS will likely have the same problems.</li>
+<li><strong>The 10-second human test.</strong> Hand it to a friend for 10 seconds. Can they tell you your target role, current job, and top skill? If not, tighten your summary and headings.</li>
+<li><strong>Run it through an ATS checker.</strong> An automated scan catches what your eyes miss — parsing errors, missing keywords, weak sections, and formatting risks. <a href="/">CV Mind's free ATS Resume Checker</a> scores your resume in seconds and shows exactly what to fix.</li>
+</ol>
+<p>Doing this before every application takes five minutes and can be the difference between the "reviewed" pile and the void.</p>`,
+      },
+      {
+        id: 'myths',
+        heading: 'Common Myths About ATS',
+        html: `<p><strong>Myth 1: "The ATS auto-rejects most resumes."</strong><br />Mostly false. In most companies, the ATS ranks and filters — humans still make the reject decision. But a low-ranked resume may simply never be opened, which feels identical to rejection.</p>
+<p><strong>Myth 2: "One perfect resume works for every job."</strong><br />No. Matching is per-job. Tailoring your resume to each posting — even 10 minutes of keyword adjustment — measurably improves your match score.</p>
+<p><strong>Myth 3: "Tricks like white-text keywords beat the system."</strong><br />Dangerous. Parsers convert everything to plain text, so hidden keywords become visible to recruiters — and instantly destroy your credibility.</p>
+<p><strong>Myth 4: "Creative resumes show personality, so they're worth the risk."</strong><br />For design roles, a portfolio is the place for creativity. Your resume's job is to be read — by software and by a tired recruiter on their 80th application of the day. Clear beats clever.</p>`,
+      },
+      {
+        id: 'conclusion',
+        heading: 'Conclusion',
+        html: `<p>An ATS isn't your enemy — it's a filter, and filters have rules. Once you know them, they're easy to follow: keep the layout simple, use standard headings, mirror the job description's language honestly, save in the right format, and test before you apply.</p>
+<p>Your skills deserve to be seen by a human. Don't let formatting be the reason they aren't.</p>`,
+      },
+    ],
+    faqs: [
+      { q: 'What does ATS-friendly resume mean?', a: 'It means a resume formatted so Applicant Tracking Systems can accurately read and categorize it — single-column layout, standard headings and fonts, no graphics, and keywords that match the job description.' },
+      { q: 'How do I know if my resume is ATS-friendly?', a: 'Run the copy-paste test (paste it into Notepad and check nothing breaks), then scan it with a free tool like CV Mind\'s ATS Resume Checker to get a score and a list of specific fixes.' },
+      { q: 'Do all companies use an ATS?', a: 'Not all, but most medium and large employers do — Jobscan\'s 2026 count found one at 97.4% of Fortune 500 companies. Even many startups use lightweight systems like Lever or Greenhouse. Assume your resume will be parsed.' },
+      { q: 'Should freshers worry about ATS too?', a: 'Yes — arguably more. Entry-level postings attract hundreds of applicants, so ranking matters most there. Freshers should emphasize skills, projects, and internships using the same keyword-matching approach.' },
+      { q: 'Can I use a resume template from Canva or Photoshop?', a: 'Usually not for online applications. Design-tool exports are often image-based or use layered layouts that parsers can\'t read. Use them for printed copies or portfolio sites; apply online with a text-based resume.' },
+      { q: 'How many keywords should my resume have?', a: 'There\'s no magic number. Cover the essential skills and qualifications mentioned in the job description — typically 10–20 relevant terms used naturally across your summary, skills, and experience bullets.' },
+      { q: 'Does an ATS reject resumes over one page?', a: 'No. Length is not a rejection factor for software. One page is convention for freshers and early-career candidates; two pages is normal for 8+ years of experience.' },
+      { q: 'Are two-column resumes always rejected?', a: 'Not always — modern parsers handle them better than older ones. But you can\'t know which system a company runs, so single-column remains the safe choice when a job matters to you.' },
+      { q: 'Do ATS systems read cover letters?', a: 'Some parse and index them for keywords; many simply store them for recruiters. Write your cover letter for humans, but include your key skills naturally in case it\'s scanned.' },
+      { q: 'How often should I update my resume for ATS?', a: 'Tailor it for every application — at minimum, adjust your summary and skills to mirror each job description. A master resume plus 10 minutes of per-job tailoring is the most efficient workflow.' },
+    ],
   },
   {
     slug: 'resume-keywords-guide',
@@ -174,7 +382,7 @@ export const ARTICLES: ArticleDef[] = [
     sections: [
       {
         id: 'formatting',
-        heading: 'Formatting Checks (1–7)',
+        heading: 'Is Your Resume Formatted for ATS? (Checks 1–7)',
         html: `<ol>
 <li><strong>Single-column layout.</strong> No sidebars, no two-column designs — the #1 cause of parsing failures.</li>
 <li><strong>No tables, text boxes, or graphics.</strong> Including skill bars, charts, photos, and icons.</li>
@@ -187,7 +395,7 @@ export const ARTICLES: ArticleDef[] = [
       },
       {
         id: 'content',
-        heading: 'Content Checks (8–14)',
+        heading: 'Does Your Content Hold Up? (Checks 8–14)',
         html: `<ol start="8">
 <li><strong>Professional summary states your target title.</strong> The job title is usually the heaviest-weighted keyword.</li>
 <li><strong>Every experience bullet starts with an action verb.</strong> Built, launched, reduced, negotiated — not "responsible for."</li>
@@ -200,7 +408,7 @@ export const ARTICLES: ArticleDef[] = [
       },
       {
         id: 'keywords',
-        heading: 'Keyword Checks (15–18)',
+        heading: 'Does Your Resume Use the Posting\'s Keywords? (Checks 15–18)',
         html: `<ol start="15">
 <li><strong>Job title from the posting appears in your resume.</strong> In the summary, ideally.</li>
 <li><strong>Top 5 required skills from the posting appear</strong> — in the exact phrasing the employer used.</li>
@@ -420,6 +628,7 @@ export const ARTICLES: ArticleDef[] = [
     keywords: 'Resume Format for Freshers, Fresher Resume, Resume Without Experience, First Job Resume, Campus Placement Resume, B.Tech Fresher Resume',
     date: 'July 8, 2026',
     isoDate: '2026-07-08',
+    updated: '2026-10-11',
     readTime: '9 min read',
     blurb: 'No work experience? No problem. The exact section order, project descriptions, and one-page format that gets freshers shortlisted — with real examples.',
     related: ['how-to-create-an-ats-friendly-resume', 'tell-me-about-yourself', 'resume-mistakes-to-avoid'],
@@ -428,8 +637,14 @@ export const ARTICLES: ArticleDef[] = [
 <p>This guide gives you the exact format that works for entry-level applications and campus placements, section by section, with examples you can adapt today.</p>`,
     sections: [
       {
+        id: 'short-answer',
+        heading: 'The Short Answer',
+        html: `<p><strong>A fresher resume should fit on one page, in this order: header, professional summary, skills, projects, internships and training, education, then achievements.</strong> Projects take the place of work experience: write each one like a job, with the tools you used, the dates, and two or three results with numbers. Put the job posting's keywords in your summary and skills.</p>
+<p>The sections below explain each part, with examples you can adapt.</p>`,
+      },
+      {
         id: 'structure',
-        heading: 'The Right Section Order for a Fresher Resume',
+        heading: 'What Is the Right Section Order for a Fresher Resume?',
         html: `<p>Order matters: put your strongest evidence first. For most freshers, that's <strong>not</strong> education — it's projects and skills.</p>
 <ol>
 <li><strong>Header</strong> — name, phone, email, LinkedIn, GitHub/portfolio (if technical)</li>
@@ -444,7 +659,7 @@ export const ARTICLES: ArticleDef[] = [
       },
       {
         id: 'summary',
-        heading: 'Writing a Summary With No Experience',
+        heading: 'How Do You Write a Summary With No Experience?',
         html: `<p>Skip the outdated "objective" ("Seeking a challenging role in a reputed organization…"). Write a summary that leads with what you <em>can do</em>:</p>
 <div class="art-example">
 <p>✅ <em>"Final-year B.Tech (Computer Science) student with strong foundations in Java, React, and SQL. Built 3 full-stack projects including a placement-portal app used by 400+ students. Seeking a Software Engineer role where I can ship production code from day one."</em></p>
@@ -610,7 +825,7 @@ export const ARTICLES: ArticleDef[] = [
     sections: [
       {
         id: 'headline',
-        heading: 'Steps 1–2: Headline and Photo',
+        heading: 'Steps 1–2: How to Write Your Headline and Choose a Photo',
         html: `<h3>1. Rewrite your headline (the highest-impact 220 characters on LinkedIn)</h3>
 <p>Your headline follows you everywhere — search results, comments, connection requests. "Student at XYZ College" or bare "Software Engineer" wastes it. Use this formula:</p>
 <div class="art-example">
@@ -625,7 +840,7 @@ export const ARTICLES: ArticleDef[] = [
       },
       {
         id: 'about',
-        heading: 'Steps 3–4: About Section and Experience',
+        heading: 'Steps 3–4: What to Write in Your About Section and Experience',
         html: `<h3>3. Write an About section that front-loads keywords</h3>
 <p>Only the first ~3 lines show before "…see more" — put your role, top skills, and best number there. A template that works:</p>
 <div class="art-example">

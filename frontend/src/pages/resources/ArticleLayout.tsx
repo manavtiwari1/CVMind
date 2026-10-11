@@ -1,10 +1,15 @@
 import type { ReactNode } from 'react';
 import { Home, ChevronRight, ListChecks, ArrowRight } from 'lucide-react';
-import { ARTICLES, getArticle, type ArticleDef } from '../../data/articles';
+import { ARTICLES, ARTICLE_AUTHOR, getArticle, type ArticleDef } from '../../data/articles';
 import cvmindIcon from '../../assets/cvmind_icon.png';
 import ArticleCover from './ArticleCover';
+import PageLink from '../../components/PageLink';
 import './Resources.css';
 import '../Article.css';
+
+// "2026-10-11" -> "October 11, 2026", matching how publish dates are written
+const formatDate = (iso: string) =>
+  new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
 interface ArticleLayoutProps {
   article: ArticleDef;
@@ -41,9 +46,9 @@ export default function ArticleLayout({ article, toc, summary, setCurrentPage, c
           </div>
           <div className="art-hero-text">
             <nav className="art-crumbs" aria-label="Breadcrumb">
-              <button type="button" onClick={() => setCurrentPage('home')} aria-label="Home"><Home size={15} /></button>
+              <PageLink page="home" onNavigate={setCurrentPage} aria-label="Home"><Home size={15} /></PageLink>
               <ChevronRight size={14} aria-hidden="true" />
-              <button type="button" onClick={() => setCurrentPage('blog')}>Blog</button>
+              <PageLink page="blog" onNavigate={setCurrentPage}>Blog</PageLink>
               <ChevronRight size={14} aria-hidden="true" />
               <span className="art-crumbs-tag">{article.tag}</span>
               <ChevronRight size={14} aria-hidden="true" />
@@ -56,8 +61,12 @@ export default function ArticleLayout({ article, toc, summary, setCurrentPage, c
           <div className="art-byline">
             <img src={cvmindIcon} alt="" />
             <div>
-              <span className="art-byline-by">Written by <strong>CV Mind Team</strong></span>
-              <span className="art-byline-meta">Published: {article.date} • {article.readTime}</span>
+              <span className="art-byline-by">
+                Written by <button type="button" className="art-byline-author" onClick={() => setCurrentPage('about')}><strong>{ARTICLE_AUTHOR.name}</strong></button>, {ARTICLE_AUTHOR.role}
+              </span>
+              <span className="art-byline-meta">
+                Published: {article.date}{article.updated ? ` • Updated: ${formatDate(article.updated)}` : ''} • {article.readTime}
+              </span>
             </div>
           </div>
         </div>
@@ -80,7 +89,7 @@ export default function ArticleLayout({ article, toc, summary, setCurrentPage, c
             <div className="art-promo">
               <h2>Upgrade your resume in minutes</h2>
               <p>Use the CV Mind resume builder to create an ATS-friendly resume and get more interviews.</p>
-              <button type="button" className="rsc-btn" onClick={() => setCurrentPage('resume-builder')}>Build your resume</button>
+              <PageLink page="resume-builder" onNavigate={setCurrentPage} className="rsc-btn">Build your resume</PageLink>
               <div className="art-promo-stage" aria-hidden="true">
               <div className="art-promo-paper">
                 <span className="art-promo-name" />
@@ -130,12 +139,12 @@ export default function ArticleLayout({ article, toc, summary, setCurrentPage, c
             <ul>
               {related.map(r => (
                 <li key={r.slug}>
-                  <button type="button" className="art-related-card" onClick={() => setCurrentPage(r.slug)}>
+                  <PageLink page={r.slug} onNavigate={setCurrentPage} className="art-related-card">
                     <ArticleCover slug={r.slug} tag={r.tag} className="art-related-cover" />
                     <span className="rsc-eyebrow">{r.tag}</span>
                     <span className="art-related-title">{r.title}</span>
                     <span className="art-related-more">Read article <ArrowRight size={15} /></span>
-                  </button>
+                  </PageLink>
                 </li>
               ))}
             </ul>
