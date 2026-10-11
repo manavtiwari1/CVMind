@@ -10,6 +10,7 @@ const LABELS: Record<string, string> = {
   'resume-format-for-freshers': 'FRESHERS',
   'tell-me-about-yourself': 'INTERVIEW',
   'linkedin-profile-optimization': 'LINKEDIN',
+  'management-of-cvmind': 'OUR TEAM',
 };
 
 interface Palette { bg: string; band: string; book: string; spine: string }
@@ -20,6 +21,7 @@ const PALETTES: Record<string, Palette> = {
   Freshers: { bg: '#8fc3ff', band: '#a8d1ff', book: '#ff8f7a', spine: '#e46b56' },
   Interview: { bg: '#ff9f8c', band: '#ffb5a6', book: '#56cfa3', spine: '#2fae84' },
   LinkedIn: { bg: '#7aa7ff', band: '#94b9ff', book: '#ffcf6b', spine: '#e7ae3c' },
+  Company: { bg: '#b49cff', band: '#c6b3ff', book: '#2dc08d', spine: '#22a577' },
 };
 
 interface ArticleCoverProps {

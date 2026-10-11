@@ -269,6 +269,41 @@
 .art-example p { margin-bottom: 0.5rem; }
 .art-example p:last-child { margin-bottom: 0; }
 
+/* Team cards (Management of CV Mind) */
+.art-team { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 1.6rem 0 1.4rem; }
+.art-team-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1.4rem 1rem;
+  text-align: center;
+  background: #fff;
+  border: 1px solid var(--art-line);
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(17, 24, 39, 0.06);
+}
+.art-team-card strong { font-size: 1.05rem; }
+.art-team-card span:last-child { font-size: 0.88rem; color: var(--art-muted); }
+.art-team-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 0.6rem;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #fff;
+  border-radius: 50%;
+}
+.art-team-avatar--green { background: var(--art-green); }
+.art-team-avatar--purple { background: var(--art-link); }
+.art-team-avatar--blue { background: #3a86d6; }
+@media (max-width: 640px) {
+  .art-team { grid-template-columns: 1fr; }
+}
+
 /* FAQ */
 .art-faq { border-bottom: 1px solid var(--art-line); }
 .art-faq summary { padding: 1rem 0; font-weight: 650; color: var(--art-strong); cursor: pointer; }

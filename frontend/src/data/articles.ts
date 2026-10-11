@@ -898,6 +898,100 @@ export const ARTICLES: ArticleDef[] = [
       { q: 'How long does LinkedIn optimization take to show results?', a: 'Search visibility improves within days of updating headline and skills. Recruiter messages typically follow within 2–6 weeks, depending on how in-demand your role and location are.' },
     ],
   },
+  {
+    slug: 'management-of-cvmind',
+    tag: 'Company',
+    title: 'Management of CV Mind: Meet the Leadership Team',
+    metaTitle: 'Management of CV Mind: CEO, CMO and CTO',
+    metaDescription: 'Meet the people who run CV Mind: Manav Tiwari (CEO), Vanshika Garg (Chief Management Officer) and Abhay Mishra (CTO), and what each is responsible for.',
+    keywords: 'CV Mind Management, CV Mind Leadership Team, CV Mind CEO, CVMind Founder, Manav Tiwari, Vanshika Garg, Abhay Mishra',
+    date: 'October 11, 2026',
+    isoDate: '2026-10-11',
+    readTime: '5 min read',
+    blurb: 'Who runs CV Mind, what each of them is responsible for, and how decisions about the product get made.',
+    related: ['how-to-create-an-ats-friendly-resume', 'resume-format-for-freshers', 'linkedin-profile-optimization'],
+    summary: [
+      { lead: 'Chief Executive Officer', text: 'Manav Tiwari founded CV Mind and sets its direction: what gets built, in what order, and why.' },
+      { lead: 'Chief Management Officer', text: 'Vanshika Garg runs the company day to day, from planning and coordination to how users are supported.' },
+      { lead: 'Chief Technology Officer', text: 'Abhay Mishra leads the technology behind every tool, including the AI, the infrastructure and the security of your documents.' },
+      { lead: 'How we decide', text: 'Feedback from the people using CV Mind decides what comes next. Each of the three owns a part of turning it into a better product.' },
+    ],
+    intro: `<p><strong>CV Mind is run by a three-person leadership team: Manav Tiwari, Chief Executive Officer; Vanshika Garg, Chief Management Officer; and Abhay Mishra, Chief Technology Officer.</strong> This page introduces each of them and explains what they are responsible for.</p>
+<p>CV Mind started in May 2026 as a free resume checker. It now covers the whole job search: a <a href="/resume-builder">resume builder</a>, cover letters, interview practice, LinkedIn tools, coding practice and an <a href="/ai-job-finder">AI job finder</a>. People use it at one of the most stressful points of their careers, so they should know who answers for it.</p>
+<div class="art-team">
+<div class="art-team-card"><span class="art-team-avatar art-team-avatar--green" aria-hidden="true">MT</span><strong>Manav Tiwari</strong><span>Chief Executive Officer</span></div>
+<div class="art-team-card"><span class="art-team-avatar art-team-avatar--purple" aria-hidden="true">VG</span><strong>Vanshika Garg</strong><span>Chief Management Officer</span></div>
+<div class="art-team-card"><span class="art-team-avatar art-team-avatar--blue" aria-hidden="true">AM</span><strong>Abhay Mishra</strong><span>Chief Technology Officer</span></div>
+</div>`,
+    sections: [
+      {
+        id: 'ceo',
+        heading: 'Manav Tiwari, Chief Executive Officer',
+        html: `<p>Manav Tiwari is the founder and Chief Executive Officer of CV Mind. He built the first version, the free resume checker, and still designs and engineers much of the product himself.</p>
+<p>As CEO, Manav is responsible for:</p>
+<ul>
+<li><strong>Direction.</strong> Deciding what CV Mind builds next and in what order, from the resume builder to Leo, the guide inside the Resume Tailorer, Interview Prep and Proofreading.</li>
+<li><strong>Product quality.</strong> Making sure every tool gives specific advice you can act on, not just a score.</li>
+<li><strong>Principles.</strong> Holding the company to its commitments: the basics stay free, and your documents stay yours.</li>
+</ul>
+<p>You can read more about Manav's work at <a href="https://www.manavtiwari.in" target="_blank" rel="noopener">manavtiwari.in</a>.</p>`,
+      },
+      {
+        id: 'cmo',
+        heading: 'Vanshika Garg, Chief Management Officer',
+        html: `<p>Vanshika Garg is CV Mind's Chief Management Officer. Where the CEO decides where the company is going, the Chief Management Officer makes sure it gets there in an orderly way.</p>
+<p>As Chief Management Officer, Vanshika is responsible for:</p>
+<ul>
+<li><strong>Operations.</strong> Planning, coordination and keeping launches on schedule.</li>
+<li><strong>Users and support.</strong> Making sure questions sent through the <a href="/help-center">Help Center</a> are answered and that recurring problems reach the people who can fix them.</li>
+<li><strong>Policies and process.</strong> Keeping the company's policies, pricing and day-to-day processes clear and consistent.</li>
+</ul>`,
+      },
+      {
+        id: 'cto',
+        heading: 'Abhay Mishra, Chief Technology Officer',
+        html: `<p>Abhay Mishra is CV Mind's Chief Technology Officer and leads the technology behind every tool on the site.</p>
+<p>As CTO, Abhay is responsible for:</p>
+<ul>
+<li><strong>AI and engineering.</strong> The systems that read resumes the way screening software does, suggest rewrites, generate interview questions and judge code in <a href="/code">CVMind Code</a>.</li>
+<li><strong>Reliability.</strong> Keeping the site fast and available, especially when people are racing an application deadline.</li>
+<li><strong>Security and privacy.</strong> Protecting your data: uploaded files are read and discarded, saved documents are visible only to you, and nothing you write is used to train AI models.</li>
+</ul>`,
+      },
+      {
+        id: 'how-we-work',
+        heading: 'How the Team Makes Decisions',
+        html: `<p>The leadership team shares three commitments, and every product decision is checked against them:</p>
+<div class="art-table-wrap"><table>
+<thead><tr><th>Commitment</th><th>What it means in practice</th></tr></thead>
+<tbody>
+<tr><td>Specific advice, not scores alone</td><td>We point to the line, explain why it matters and suggest a rewrite you can accept or change.</td></tr>
+<tr><td>Your documents stay yours</td><td>Uploaded files are read and discarded, and nothing you write is used to train AI models.</td></tr>
+<tr><td>The basics are free</td><td>The resume builder with every template, the resume checker and interview practice are on the Free plan.</td></tr>
+</tbody>
+</table></div>
+<p>What gets built next is decided by feedback from the people using CV Mind. That is how a single resume checker grew, in five months, into a full set of job-search tools:</p>
+<ul>
+<li><strong>May 2026:</strong> the free resume checker and resume tailorer.</li>
+<li><strong>June 2026:</strong> LinkedIn tools, interview practice, the portfolio generator, and a full resume builder with matching cover letters.</li>
+<li><strong>September 2026:</strong> CVMind Code, coding practice with an AI judge.</li>
+<li><strong>October 2026:</strong> step-by-step flows guided by Leo.</li>
+</ul>`,
+      },
+      {
+        id: 'contact',
+        heading: 'Get in Touch with the Team',
+        html: `<p>If something is missing, broken or confusing, the fastest way to reach the team is the <a href="/contact">contact form</a>. Every message is read, and many of the features listed above began as one. You can learn more about the company on the <a href="/about">About page</a>.</p>`,
+      },
+    ],
+    faqs: [
+      { q: 'Who is the CEO of CV Mind?', a: 'Manav Tiwari is the founder and Chief Executive Officer of CV Mind. He sets the company\'s direction and leads product decisions.' },
+      { q: 'Who founded CV Mind?', a: 'CV Mind was founded by Manav Tiwari, who built its first version, a free resume checker, in May 2026.' },
+      { q: 'Who is the Chief Management Officer of CV Mind?', a: 'Vanshika Garg is CV Mind\'s Chief Management Officer, responsible for operations, user support and the company\'s day-to-day processes.' },
+      { q: 'Who is the CTO of CV Mind?', a: 'Abhay Mishra is CV Mind\'s Chief Technology Officer, responsible for the AI, infrastructure, reliability and data security behind every tool.' },
+      { q: 'How can I contact the CV Mind team?', a: 'Use the contact form at cvmind.in/contact. Messages go to the team directly, and feedback shapes what gets built next.' },
+    ],
+  },
 ];
 
 export const getArticle = (slug: string) => ARTICLES.find(a => a.slug === slug);
