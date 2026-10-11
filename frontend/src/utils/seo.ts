@@ -14,10 +14,12 @@ export const SITE_URL = 'https://www.cvmind.in';
 export const NO_INDEX_PAGES = ['account', 'my-documents', 'admin', 'dashboard', 'resume-editor', 'cover-letter-start', 'cover-letter-editor', 'not-found', 'portfolio', 'cvmind-code'];
 
 const PAGE_SEO: Record<string, PageSEO> = {
+  // Keyword map: home = brand + ATS resume checker; /resume-builder = "resume builder" and "CV maker"
+  // (the same document in India). Keeping them apart stops the two pages competing for one term.
   home: {
-    title: 'Free AI Resume Builder & CV Maker Online | CV Mind',
-    description: "Make a professional resume or CV online in minutes with CV Mind's free AI Resume Builder. ATS-friendly templates, instant resume score, AI rewriting, and one-click job tailoring — no sign-up needed to start.",
-    keywords: 'Resume Builder, Free Resume Builder, CV Maker, CV Making Online, Online CV Builder, AI Resume Builder, ATS Resume Checker, Resume Maker Free, CV Builder India, Professional CV Format',
+    title: 'CV Mind: AI Resume Builder & Free ATS Resume Checker',
+    description: 'Check your resume free with an instant ATS score, then fix it with AI. Build an ATS-friendly resume or CV from templates and tailor it to any job.',
+    keywords: 'ATS Resume Checker, Resume Score, AI Resume Builder, Resume Checker Free, CV Mind',
   },
   about: {
     title: 'About Us | CV Mind',
@@ -90,9 +92,9 @@ const PAGE_SEO: Record<string, PageSEO> = {
     keywords: 'AI Career Tools, Resume Checker, Interview Prep, LinkedIn Optimizer, Career Roadmap, Voice Coach, Job Finder',
   },
   'resume-builder': {
-    title: 'Free Resume Builder - Make Your CV Online in Minutes | CV Mind',
-    description: 'Build a professional, ATS-friendly resume or CV online for free. Choose from 10+ recruiter-approved templates, get AI-powered writing help, and download as PDF or DOC in minutes.',
-    keywords: 'Free Resume Builder, CV Maker Online, Make CV Online Free, AI Resume Builder, ATS Resume Templates, Resume Maker, CV Format for Freshers, Professional Resume Builder',
+    title: 'Free Resume Builder & CV Maker Online | CV Mind',
+    description: 'Build a professional, ATS-friendly resume or CV online for free. Pick a template or upload your old CV, improve it with AI, and download as PDF or Word.',
+    keywords: 'Resume Builder, CV Maker, Free Resume Builder, CV Maker Online Free, AI Resume Builder, Make CV Online, Online CV Builder, Resume Templates, CV Format for Freshers',
   },
   tailor: {
     title: 'AI Resume Tailor - Match Your Resume to Any Job Description | CV Mind',

@@ -184,6 +184,28 @@
 .rbl-final { background: #0b101d; color: #fff; padding: 80px 0; }
 .rbl-final p { color: #aab5cc; margin: 14px 0 28px; }
 
+/* ── Guide sections (what it is, how to, format) ── */
+.rbl-guide-sec { padding-top: 24px; }
+.rbl-guide { max-width: 860px; display: grid; gap: 48px; }
+.rbl-guide h2 { margin-bottom: 16px; }
+.rbl-guide p, .rbl-guide li { color: var(--muted); line-height: 1.75; }
+.rbl-guide p + p, .rbl-guide p + ol, .rbl-guide p + ul, .rbl-guide ol + p, .rbl-guide ul + p, .rbl-guide .rbl-table + p { margin-top: 14px; }
+.rbl-guide strong { color: var(--ink); }
+.rbl-guide ol, .rbl-guide ul { margin: 14px 0 0; padding-left: 1.3rem; display: grid; gap: 10px; }
+.rbl-guide ol { list-style: decimal; }
+.rbl-guide ul { list-style: disc; }
+.rbl-guide li::marker { color: var(--green-dark); font-weight: 700; }
+.rbl-guide a { color: var(--green-dark); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.rbl-guide a:hover { opacity: 1; color: var(--ink); }
+.rbl-table { overflow-x: auto; margin-top: 16px; border: 1px solid var(--line); border-radius: 10px; }
+.rbl-table table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.rbl-table th, .rbl-table td { padding: 12px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+.rbl-table th { background: var(--bg); color: var(--ink); font-weight: 700; }
+.rbl-table tr:last-child td { border-bottom: 0; }
+.rbl-pill, .rbl-textlink { text-decoration: none; }
+.rbl-pill:hover, .rbl-textlink:hover { opacity: 1; }
+.rbl-crumb a { display: grid; place-items: center; color: #9d8cf0; }
+
 @media (max-width: 960px) {
   .rbl-hero-grid, .rbl-start, .rbl-feature, .rbl-level, .rbl-stage { grid-template-columns: 1fr; gap: 36px; }
   .rbl-feature.is-flip .rbl-feature-art { order: 0; }

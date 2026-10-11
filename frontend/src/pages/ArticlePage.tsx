@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { getArticle, type ArticleSection } from '../data/articles';
 import ArticleLayout from './resources/ArticleLayout';
 
@@ -17,44 +16,10 @@ interface ArticlePageProps {
   setCurrentPage: (page: string) => void;
 }
 
-// Generic renderer for registry-driven articles (those with `sections`).
+// Renders every blog article. Its structured data (BlogPosting) is written into the static HTML at
+// build time (seo/prerender.ts), so the page doesn't add a second copy here.
 export default function ArticlePage({ slug, setCurrentPage }: ArticlePageProps) {
   const article = getArticle(slug);
-
-  // Article + FAQ structured data for rich results
-  useEffect(() => {
-    if (!article) return;
-    const script = document.createElement('script');
-    script.type = 'application/ld+json';
-    script.id = 'article-jsonld';
-    const blocks: object[] = [
-      {
-        '@context': 'https://schema.org',
-        '@type': 'Article',
-        headline: article.title,
-        description: article.metaDescription,
-        author: { '@type': 'Organization', name: 'CV Mind Team', url: 'https://www.cvmind.in/' },
-        publisher: { '@type': 'Organization', name: 'CV Mind' },
-        datePublished: article.isoDate,
-        dateModified: article.isoDate,
-        mainEntityOfPage: `https://www.cvmind.in/${article.slug}`,
-      },
-    ];
-    if (article.faqs?.length) {
-      blocks.push({
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: article.faqs.map(f => ({
-          '@type': 'Question',
-          name: f.q,
-          acceptedAnswer: { '@type': 'Answer', text: f.a },
-        })),
-      });
-    }
-    script.text = JSON.stringify(blocks);
-    document.head.appendChild(script);
-    return () => { document.getElementById('article-jsonld')?.remove(); };
-  }, [article]);
 
   if (!article || !article.sections) return null;
 
@@ -76,7 +41,7 @@ export default function ArticlePage({ slug, setCurrentPage }: ArticlePageProps) 
   ];
 
   return (
-    <ArticleLayout article={article} toc={toc} summary={summarize(article.sections)} setCurrentPage={setCurrentPage}>
+    <ArticleLayout article={article} toc={toc} summary={article.summary ?? summarize(article.sections)} setCurrentPage={setCurrentPage}>
       <div onClick={handleClick}>
         <div dangerouslySetInnerHTML={{ __html: article.intro || '' }} />
 

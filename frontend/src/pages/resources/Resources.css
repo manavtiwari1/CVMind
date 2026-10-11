@@ -200,3 +200,7 @@
   .rsc-doc-toc ol { columns: 1; }
   .rsc-cta { padding: 1.75rem; }
 }
+
+/* Buttons that are links keep the button look */
+a.rsc-btn { text-decoration: none; }
+a.rsc-btn:hover, a.rsc-link:hover { opacity: 1; }

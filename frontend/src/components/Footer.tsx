@@ -1,5 +1,6 @@
 import cvmindLogo from '../assets/cvmind_logo_transparent.png';
 import { SOCIALS } from '../data/socials';
+import PageLink from './PageLink';
 import './Footer.css';
 
 interface FooterProps {
@@ -12,7 +13,8 @@ interface FooterLink {
   highlight?: boolean;
 }
 
-// Every page below is a route the app already serves (see validPages in App.tsx).
+// Every page below is a route the app already serves (VALID_PAGES in lib/routes.ts). These are
+// real links, so they are how search engines find and weigh the rest of the site.
 const TOOLS_LEFT: FooterLink[] = [
   { label: 'Create Resume', page: 'resume-builder', highlight: true },
   { label: 'ATS Resume Checker', page: 'home' },
@@ -31,7 +33,7 @@ const TOOLS_RIGHT: FooterLink[] = [
 ];
 
 const RESUME: FooterLink[] = [
-  { label: 'Resume Builder', page: 'resume-builder' },
+  { label: 'Resume Builder & CV Maker', page: 'resume-builder' },
   { label: 'Resume Templates', page: 'resume-editor' },
   { label: 'Pricing', page: 'pricing' },
 ];
@@ -79,9 +81,9 @@ export default function Footer({ setCurrentPage }: FooterProps) {
   const renderLinks = (links: FooterLink[]) =>
     links.map((l) => (
       <li key={`${l.page}-${l.label}`}>
-        <button type="button" className={`ft-link${l.highlight ? ' ft-link--accent' : ''}`} onClick={() => setCurrentPage(l.page)}>
+        <PageLink page={l.page} onNavigate={setCurrentPage} className={`ft-link${l.highlight ? ' ft-link--accent' : ''}`}>
           {l.label}
-        </button>
+        </PageLink>
       </li>
     ));
 
@@ -115,8 +117,8 @@ export default function Footer({ setCurrentPage }: FooterProps) {
         <div className="ft-mid">
           <p className="ft-note">Free ATS check, no account needed. Upload a PDF, DOCX or TXT resume and see your score in seconds.</p>
           <div className="ft-cta">
-            <button type="button" className="ft-pill" onClick={() => setCurrentPage('home')}>Check my resume</button>
-            <button type="button" className="ft-pill ft-pill--solid" onClick={() => setCurrentPage('resume-builder')}>Build a resume</button>
+            <PageLink page="home" onNavigate={setCurrentPage} className="ft-pill">Check my resume</PageLink>
+            <PageLink page="resume-builder" onNavigate={setCurrentPage} className="ft-pill ft-pill--solid">Build a resume</PageLink>
           </div>
         </div>
 

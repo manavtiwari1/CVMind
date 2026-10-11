@@ -35,7 +35,7 @@ export interface NavMenu {
   columns: NavColumn[];
 }
 
-// Every `page` below is a route the app already handles (see validPages in App.tsx).
+// Every `page` below is a route the app already handles (VALID_PAGES in lib/routes.ts).
 export const NAV_MENUS: NavMenu[] = [
   {
     label: 'Resume',
@@ -44,8 +44,8 @@ export const NAV_MENUS: NavMenu[] = [
       {
         heading: 'Tools',
         tiles: [
-          { page: 'resume-builder', title: 'Resume Builder', desc: 'Create a professional resume in minutes', icon: FileText },
-          { page: 'home', title: 'Resume Checker', desc: 'Is your resume good enough?', icon: ScanSearch },
+          { page: 'resume-builder', title: 'Resume Builder & CV Maker', desc: 'Create a professional resume or CV in minutes', icon: FileText },
+          { page: 'home', title: 'ATS Resume Checker', desc: 'Is your resume good enough?', icon: ScanSearch },
           { page: 'tailor', title: 'Resume Tailorer', desc: 'Match any job description instantly', icon: Target },
           { page: 'portfolio-gen', title: 'Portfolio Generator', desc: 'Build a shareable portfolio site', icon: Globe },
         ],

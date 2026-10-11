@@ -8,6 +8,8 @@ import TemplatePreview from '../components/TemplatePreview';
 import { TEMPLATES as ALL_TEMPLATES, RESUME_TEMPLATES, type Template } from '../data/resumeTemplates';
 import { pickTemplate } from '../lib/templatePick';
 import { LETTER_DESIGNS } from '../lib/coverLetter';
+import { BUILDER_COPY as copy, FEATURE_SECTIONS, LEVELS, STAGES } from '../data/landings';
+import PageLink from '../components/PageLink';
 import './ResumeBuilderLanding.css';
 
 interface ResumeBuilderLandingProps {
@@ -23,104 +25,6 @@ const FREE_TOOLS = [
   { label: 'Cover Letter', page: 'cover-letter-builder' },
   { label: 'Interview Prep', page: 'prep' },
   { label: 'LinkedIn Optimizer', page: 'linkedin' },
-];
-
-interface FeatureSection {
-  tag: string;
-  title: string;
-  accent: string;
-  body: string;
-  page: string;
-  cta: string;
-  card: { title: string; sub: string; lines: string[] };
-  points: { title: string; text: string }[];
-}
-
-const FEATURE_SECTIONS: FeatureSection[] = [
-  {
-    tag: 'Tailor to the job', title: 'Customize your resume for any role', accent: '#2f8fe0',
-    body: 'Paste a job description and CVMind compares it with your resume, then suggests the keywords, skills and wording that role is asking for. Keep one resume per job instead of one for everything.',
-    page: 'tailor', cta: 'Tailor my resume',
-    card: { title: 'Resume Tailor', sub: 'Upload resume and paste a job ad', lines: ['Upload your resume (PDF or DOCX)', 'Paste the job description', 'Get a tailored version to review'] },
-    points: [
-      { title: 'Keyword match', text: 'See which terms from the job ad your resume is missing.' },
-      { title: 'Your wording stays', text: 'Suggestions build on what you wrote, so it still sounds like you.' },
-      { title: 'Review before you use it', text: 'Accept the changes you like and ignore the rest.' },
-      { title: 'One per application', text: 'Make a separate version for every role you apply to.' },
-    ],
-  },
-  {
-    tag: 'ATS check', title: 'Know how a parser reads your resume', accent: '#1fa97a',
-    body: 'Run your resume through the ATS checker to see your score, the keywords you are missing and the formatting problems that can trip up applicant tracking systems, with a short list of fixes.',
-    page: 'home', cta: 'Check my resume',
-    card: { title: 'ATS Resume Checker', sub: 'Score and fix list', lines: ['Overall ATS score', 'Missing keywords', 'Formatting issues to fix'] },
-    points: [
-      { title: 'Score out of 100', text: 'A single number to track as you improve the resume.' },
-      { title: 'Keyword gaps', text: 'Compare against a job description of your choice.' },
-      { title: 'Plain-text readable', text: 'Spot layouts a parser may not read correctly.' },
-      { title: 'Clear next steps', text: 'Fixes are listed so you know what to change first.' },
-    ],
-  },
-  {
-    tag: 'Cover letters', title: 'A cover letter that matches your resume', accent: '#e9962b',
-    body: 'Pick a cover letter design or let the AI write one from your resume and the job ad, then edit it and download a PDF.',
-    page: 'cover-letter-builder', cta: 'Write a cover letter',
-    card: { title: 'Cover Letter Builder', sub: 'Pick a layout and edit', lines: [`${COVER_LETTER_COUNT} cover letter designs`, 'Examples for each role', 'AI generator and fixes'] },
-    points: [
-      { title: 'Layouts to match', text: 'Choose a style that pairs with your resume template.' },
-      { title: 'Edit freely', text: 'Fonts, tables, colors and headings, like a word processor.' },
-      { title: 'Refine with AI', text: 'Tell the AI what to change and it rewrites the draft.' },
-      { title: 'PDF and DOCX', text: 'Download in the format the employer asks for.' },
-    ],
-  },
-  {
-    tag: 'LinkedIn', title: 'Tidy up your LinkedIn profile too', accent: '#6f4fd6',
-    body: 'Recruiters look at your profile as well as your resume. Upload your profile PDF to get an audit, headline ideas, an About section draft and outreach messages.',
-    page: 'linkedin', cta: 'Open LinkedIn tools',
-    card: { title: 'LinkedIn Optimizer', sub: 'Audit your profile PDF', lines: ['Profile audit and score', 'Headline and About ideas', 'Recruiter outreach drafts'] },
-    points: [
-      { title: 'Profile audit', text: 'See what is missing or weak in your profile.' },
-      { title: 'Headline ideas', text: 'Several options built around your target role.' },
-      { title: 'About section', text: 'A draft you can edit and paste straight in.' },
-      { title: 'Outreach messages', text: 'Short notes for recruiters and new connections.' },
-    ],
-  },
-];
-
-const LEVELS = [
-  {
-    key: 'senior', label: 'Senior & Executive', templateId: 'cv-polished',
-    body: 'Fit a long career onto a page or two. The AI helps you tighten the experience section so recent, relevant impact comes first.',
-    points: ['Shorten older roles and keep the highlights', 'Draft a summary aimed at leadership roles', 'Choose an executive layout that stays ATS-readable'],
-  },
-  {
-    key: 'mid', label: 'Entry & Mid-Level', templateId: 'cv-double-column',
-    body: 'Not sure how to structure your resume yet? Start from a layout built for early careers and let the AI help with wording.',
-    points: ['Turn projects and internships into strong bullets', 'Pull a skills section from your experience', 'Tailor the resume to each job you apply for'],
-  },
-  {
-    key: 'change', label: 'Career Changers', templateId: 'cv-modern',
-    body: 'Moving to a new field means showing the skills that carry over. Tailor your resume to the new role and lead with those.',
-    points: ['Match transferable skills to the new job ad', 'Lead with skills instead of job titles', 'Keep the format simple for ATS parsing'],
-  },
-];
-
-const STAGES = [
-  { key: 'build', label: 'Resume Builder', page: 'resume-editor', title: 'Build the resume', text: 'Pick from ATS-friendly templates, fill in your details or upload an old resume, and edit everything in a Word-style editor.', points: ['Start from an existing resume or a blank page', 'Import details from a LinkedIn PDF', 'Download as PDF or DOCX'] },
-  { key: 'check', label: 'Resume Checker', page: 'home', title: 'Check it', text: 'Get an ATS score, keyword gaps and a fix list before a recruiter or parser sees it.', points: ['Overall score', 'Missing keywords', 'Formatting issues'] },
-  { key: 'cover', label: 'Cover Letter', page: 'cover-letter-builder', title: 'Write the cover letter', text: 'Pick a cover letter design that matches your resume, start from an example for your role or let the AI write a first draft, then fix it with AI.', points: ['Designs to match your resume', 'Examples for each role', 'AI generator and fixes'] },
-  { key: 'tailor', label: 'Tailor Resume', page: 'tailor', title: 'Tailor it to the job', text: 'Paste a job description and adjust your resume to match what the role asks for.', points: ['Keyword suggestions', 'Per-job versions', 'You approve every change'] },
-  { key: 'prep', label: 'Interview Prep', page: 'prep', title: 'Practice for the interview', text: 'Rehearse likely questions for the role and get feedback on your answers.', points: ['Role-specific questions', 'Feedback on answers', 'Voice practice'] },
-  { key: 'linkedin', label: 'LinkedIn', page: 'linkedin', title: 'Polish your profile', text: 'Audit your LinkedIn profile and draft a headline, About section and outreach messages.', points: ['Profile audit', 'Headline ideas', 'Outreach drafts'] },
-];
-
-const FAQS = [
-  { q: 'What is an AI resume builder?', a: 'It is a resume editor with AI built in. You choose a template, add your details (or upload an old resume), and the AI helps you rewrite bullet points, write a summary and tailor the resume to a job description.' },
-  { q: 'Are the templates ATS-friendly?', a: 'The templates use real text, standard section headings and a single readable flow, with no text inside images. Two-column and colored layouts are included too; if you only care about parsing, pick one of the plainer layouts. Running the finished resume through the ATS checker is a good final step.' },
-  { q: 'Can I start from my existing resume?', a: 'Yes. Upload a PDF or DOCX at the start and we pre-fill the form with the details we find. You can also import from a LinkedIn profile PDF. Check the filled-in fields before you generate the resume, since extraction can miss things.' },
-  { q: 'How does tailoring to a job work?', a: 'Paste the job description into the Tailor tool. It compares the posting with your resume and suggests changes to your summary, skills and bullet points. You decide which suggestions to keep.' },
-  { q: 'Can I download my resume?', a: 'Yes. You can download your resume as a PDF or a Word file from the editor. Free and paid limits are listed on the pricing page.' },
-  { q: 'Will it sound like AI wrote it?', a: 'The AI works from the details you give it, and you can edit every line afterwards. Reading it through and adding specifics only you know (numbers, tools, results) is the best way to make it sound like you.' },
 ];
 
 export default function ResumeBuilderLanding({ setCurrentPage }: ResumeBuilderLandingProps) {
@@ -151,6 +55,14 @@ export default function ResumeBuilderLanding({ setCurrentPage }: ResumeBuilderLa
     };
   }, []);
 
+  // Links inside the guide HTML (<a href="/page">) navigate inside the app
+  const keepInApp = (e: React.MouseEvent) => {
+    const href = (e.target as HTMLElement).closest('a')?.getAttribute('href') || '';
+    if (!href.startsWith('/') || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    e.preventDefault();
+    setCurrentPage(href === '/' ? 'home' : href.slice(1));
+  };
+
   const scrollRail = (dir: 1 | -1) => {
     const rail = railRef.current;
     if (rail) rail.scrollBy({ left: dir * rail.clientWidth * 0.8, behavior: 'smooth' });
@@ -164,17 +76,16 @@ export default function ResumeBuilderLanding({ setCurrentPage }: ResumeBuilderLa
         <div className="rbl-wrap rbl-hero-grid">
           <div className="rbl-hero-copy">
             <nav className="rbl-crumb" aria-label="Breadcrumb">
-              <button type="button" onClick={() => setCurrentPage('home')} aria-label="Home"><Home size={14} /></button>
+              <PageLink page="home" onNavigate={setCurrentPage} aria-label="Home"><Home size={14} /></PageLink>
               <span aria-hidden="true">›</span>
-              <span>AI Resume Builder</span>
+              <span>{copy.crumb}</span>
             </nav>
-            <h1>The AI resume builder that helps you <em>land more job interviews</em></h1>
+            <h1>{copy.h1.lead} <em>{copy.h1.em}</em></h1>
             <ul className="rbl-checks">
-              <li><CheckCircle2 size={18} />Build a professional resume with AI feedback on what you write, not a generic template filled with filler.</li>
-              <li><CheckCircle2 size={18} />Rewrite weak bullets, tailor to a job description, and export a clean PDF or DOCX.</li>
+              {copy.checks.map(c => <li key={c}><CheckCircle2 size={18} />{c}</li>)}
             </ul>
             <div className="rbl-hero-cta">
-              <button type="button" className="rbl-btn rbl-btn--hero" onClick={build}>Build Your Resume With AI</button>
+              <button type="button" className="rbl-btn rbl-btn--hero" onClick={build}>{copy.cta}</button>
               <span className="rbl-note">Takes a few minutes. No card needed to start.</span>
             </div>
             {analyzed && <p className="rbl-live"><strong>{analyzed}</strong> resumes analyzed on CVMind</p>}
@@ -228,7 +139,7 @@ export default function ResumeBuilderLanding({ setCurrentPage }: ResumeBuilderLa
           <p className="rbl-kicker">Free AI resume tools</p>
           <div className="rbl-pills">
             {FREE_TOOLS.map(t => (
-              <button key={t.label} type="button" className="rbl-pill" onClick={() => setCurrentPage(t.page)}>{t.label}</button>
+              <PageLink key={t.label} page={t.page} onNavigate={setCurrentPage} className="rbl-pill">{t.label}</PageLink>
             ))}
           </div>
 
@@ -248,6 +159,18 @@ export default function ResumeBuilderLanding({ setCurrentPage }: ResumeBuilderLa
         </div>
       </section>
 
+      {/* ── GUIDE: what it is, how to use it, format (also in the static HTML) ── */}
+      <section className="rbl-light rbl-guide-sec">
+        <div className="rbl-wrap rbl-guide" onClick={keepInApp}>
+          {copy.guide.map(g => (
+            <section key={g.id} id={g.id}>
+              <h2>{g.heading}</h2>
+              <div dangerouslySetInnerHTML={{ __html: g.html }} />
+            </section>
+          ))}
+        </div>
+      </section>
+
       {/* ── FEATURE ROWS ─────────────────────────────────────── */}
       <section className="rbl-light rbl-light--tint">
         <div className="rbl-wrap">
@@ -261,7 +184,7 @@ export default function ResumeBuilderLanding({ setCurrentPage }: ResumeBuilderLa
                       <div><strong>{f.card.title}</strong><small>{f.card.sub}</small></div>
                     </header>
                     <ul>
-                      {f.card.lines.map(l => <li key={l}><CheckCircle2 size={14} />{l}</li>)}
+                      {f.card.lines.map(l => <li key={l}><CheckCircle2 size={14} />{l.replace('{letters}', String(COVER_LETTER_COUNT))}</li>)}
                     </ul>
                     <span className="rbl-tool-btn">Open tool</span>
                   </div>
@@ -271,7 +194,7 @@ export default function ResumeBuilderLanding({ setCurrentPage }: ResumeBuilderLa
                 <span className="rbl-tag">{f.tag}</span>
                 <h2>{f.title}</h2>
                 <p>{f.body}</p>
-                <button type="button" className="rbl-textlink" onClick={() => setCurrentPage(f.page)}>{f.cta} <ArrowRight size={15} /></button>
+                <PageLink page={f.page} onNavigate={setCurrentPage} className="rbl-textlink">{f.cta} <ArrowRight size={15} /></PageLink>
               </div>
               <ul className="rbl-points">
                 {f.points.map(p => (
@@ -362,12 +285,13 @@ export default function ResumeBuilderLanding({ setCurrentPage }: ResumeBuilderLa
         <div className="rbl-wrap rbl-faq">
           <h2 className="rbl-center">Frequently asked questions</h2>
           <div>
-            {FAQS.map((f, i) => (
+            {copy.faqs.map((f, i) => (
               <div key={f.q} className={`rbl-faq-item${openFaq === i ? ' is-open' : ''}`}>
                 <button type="button" aria-expanded={openFaq === i} onClick={() => setOpenFaq(openFaq === i ? null : i)}>
                   <span>{f.q}</span><ChevronDown size={18} />
                 </button>
-                {openFaq === i && <p>{f.a}</p>}
+                {/* Answers stay in the page (hidden when closed) so search engines can read them */}
+                <p hidden={openFaq !== i}>{f.a}</p>
               </div>
             ))}
           </div>
@@ -377,9 +301,9 @@ export default function ResumeBuilderLanding({ setCurrentPage }: ResumeBuilderLa
       {/* ── FINAL CTA ────────────────────────────────────────── */}
       <section className="rbl-final">
         <div className="rbl-wrap rbl-center">
-          <h2>Ready to build your next resume?</h2>
-          <p>Pick the job you want, choose a template, and have a draft in a few minutes.</p>
-          <button type="button" className="rbl-btn rbl-btn--hero" onClick={build}>Build Your Resume With AI</button>
+          <h2>{copy.final.heading}</h2>
+          <p>{copy.final.text}</p>
+          <button type="button" className="rbl-btn rbl-btn--hero" onClick={build}>{copy.cta}</button>
         </div>
       </section>
     </div>

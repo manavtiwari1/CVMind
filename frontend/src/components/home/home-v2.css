@@ -394,3 +394,7 @@
   .hp-hero-visual { padding-bottom: 0; }
   .hp-section-card { transform: translateX(calc(var(--i, 0) * 0.6rem - 1.2rem)); width: calc(92% - var(--i, 0) * 2%); }
 }
+
+/* Guide cards and buttons that are links keep their own colors */
+a.hp-gitem, a.hp-btn { text-decoration: none; }
+a.hp-gitem:hover, a.hp-btn:hover, a.hp-gcard-link:hover { opacity: 1; }

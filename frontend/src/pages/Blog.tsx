@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { ARTICLES, type ArticleDef } from '../data/articles';
 import ArticleCover from './resources/ArticleCover';
+import PageLink from '../components/PageLink';
 import './resources/Resources.css';
 import './Blog.css';
 
@@ -25,7 +26,7 @@ export default function Blog({ setCurrentPage }: BlogProps) {
 
   const card = (a: ArticleDef) => (
     <li key={a.slug}>
-      <button type="button" className="blog-card" onClick={() => setCurrentPage(a.slug)}>
+      <PageLink page={a.slug} onNavigate={setCurrentPage} className="blog-card">
         <ArticleCover slug={a.slug} tag={a.tag} className="blog-card-cover" />
         <span className="blog-card-body">
           <span className="rsc-eyebrow blog-card-tag">{a.tag}</span>
@@ -36,7 +37,7 @@ export default function Blog({ setCurrentPage }: BlogProps) {
             {a.readTime}
           </span>
         </span>
-      </button>
+      </PageLink>
     </li>
   );
 
@@ -64,16 +65,16 @@ export default function Blog({ setCurrentPage }: BlogProps) {
         <section className="blog-feature" aria-label="Start here">
           <div className="blog-feature-strip"><span className="rsc-eyebrow">Start here</span></div>
           <div className="blog-feature-grid">
-            <button type="button" className="blog-feature-media" onClick={() => setCurrentPage(featured.slug)} aria-label={featured.title}>
+            <PageLink page={featured.slug} onNavigate={setCurrentPage} className="blog-feature-media" aria-label={featured.title}>
               <ArticleCover slug={featured.slug} tag={featured.tag} />
-            </button>
+            </PageLink>
             <div className="blog-feature-text">
               <h2>{featured.title}</h2>
               <p>{featured.blurb}</p>
               <p className="blog-card-meta">Published: {featured.date} • {featured.readTime}</p>
-              <button type="button" className="rsc-link" onClick={() => setCurrentPage(featured.slug)}>
+              <PageLink page={featured.slug} onNavigate={setCurrentPage} className="rsc-link">
                 Read Full Article <ArrowRight size={16} />
-              </button>
+              </PageLink>
             </div>
           </div>
         </section>
