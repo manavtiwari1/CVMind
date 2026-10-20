@@ -372,7 +372,7 @@ function MessageItem({ message: m, grouped, channel, highlight, inThread, onCrea
             <button type="button" className="tm-icon-btn sm" onClick={() => setMenu((v) => !v)} aria-label="More actions" aria-expanded={menu}><MoreHorizontal size={15} /></button>
             {menu && (
               <div className="tm-menu" role="menu" onMouseLeave={() => setMenu(false)}>
-                {onCreateTask && <button type="button" role="menuitem" onClick={() => { setMenu(false); onCreateTask(); }}><CheckSquare size={14} /> Create task</button>}
+                {onCreateTask && !me.teamOnly && <button type="button" role="menuitem" onClick={() => { setMenu(false); onCreateTask(); }}><CheckSquare size={14} /> Create task</button>}
                 {!inThread && <button type="button" role="menuitem" onClick={() => { setMenu(false); pin(); }}><Pin size={14} /> {m.pinnedAt ? 'Unpin' : 'Pin to channel'}</button>}
                 {mine && <button type="button" role="menuitem" onClick={() => { setMenu(false); setEditing(true); }}><Pencil size={14} /> Edit</button>}
                 {(mine || manager) && <button type="button" role="menuitem" className="danger" onClick={() => { setMenu(false); remove(); }}><Trash2 size={14} /> Delete</button>}

@@ -12,6 +12,8 @@ export interface TeamAccount {
   role: string;
   roleLabel: string;
   permissions: string[];
+  // Interns and other team-only roles: no admin panel, and they can't create tasks
+  teamOnly: boolean;
   chatAccess: boolean;
   mustChangePassword: boolean;
   notifyEmail: boolean;

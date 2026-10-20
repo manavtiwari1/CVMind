@@ -37,7 +37,7 @@ export function TaskRow({ task }: { task: Task }) {
 }
 
 function TaskList({ params }: { params: Record<string, string> }) {
-  const { manager } = useTeam();
+  const { manager, me } = useTeam();
   const [view, setView] = useState<View>((params.view as View) || 'mine');
   const [status, setStatus] = useState(params.status || 'open');
   const [due, setDue] = useState(params.due || '');
@@ -49,13 +49,17 @@ function TaskList({ params }: { params: Record<string, string> }) {
   const { data, error, loading, reload } = useLoad<{ data: Task[]; total: number }>('/tasks', { view, status, due, priority, assignee: view === 'mine' ? '' : assignee, sort, limit: 100 });
   useTeamEvent('task.updated', reload, reload);
 
-  const views: Array<{ id: View; label: string }> = [{ id: 'mine', label: 'My tasks' }, ...(manager ? [{ id: 'created' as View, label: 'Assigned by me' }, { id: 'all' as View, label: 'All tasks' }] : [{ id: 'created' as View, label: 'Created by me' }])];
+  // Interns only receive tasks, so they get just "My tasks"
+  const views: Array<{ id: View; label: string }> = [
+    { id: 'mine', label: 'My tasks' },
+    ...(manager ? [{ id: 'created' as View, label: 'Assigned by me' }, { id: 'all' as View, label: 'All tasks' }] : me.teamOnly ? [] : [{ id: 'created' as View, label: 'Created by me' }])
+  ];
 
   return (
     <div className="tm-page">
       <header className="tm-page-head row">
-        <div><h1>Tasks</h1><p className="tm-muted">{manager ? 'Assign work with @name, review submissions, and keep an eye on due dates.' : 'Your work, what is due, and feedback from your manager.'}</p></div>
-        <button type="button" className="tm-btn primary" onClick={() => setCreating(true)}><Plus size={16} /> New task</button>
+        <div><h1>Tasks</h1><p className="tm-muted">{manager ? 'Assign work with @name, review submissions, and keep an eye on due dates.' : me.teamOnly ? 'Tasks your manager assigned to you. Open one and press Submit work when it is done.' : 'Your work, what is due, and feedback from your manager.'}</p></div>
+        {!me.teamOnly && <button type="button" className="tm-btn primary" onClick={() => setCreating(true)}><Plus size={16} /> New task</button>}
       </header>
       <div className="tm-tabs" role="tablist">
         {views.map((v) => <button key={v.id} type="button" role="tab" aria-selected={view === v.id} className={view === v.id ? 'active' : ''} onClick={() => setView(v.id)}>{v.label}</button>)}

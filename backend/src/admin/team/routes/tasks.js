@@ -105,6 +105,8 @@ router.get('/tasks', team, handle(async (req, res) => {
 
 // ── Create ───────────────────────────────────────────────────────────────────
 router.post('/tasks', team, handle(async (req, res) => {
+  // Interns and other team-only roles receive tasks; they don't create them
+  if (req.admin.teamOnly) throw httpError(403, 'Only managers and staff can create tasks.');
   const title = clean(req.body?.title, MAX_TITLE);
   if (!title) throw httpError(400, 'Give the task a title.');
   const description = String(req.body?.description ?? '').trim().slice(0, MAX_DESCRIPTION);

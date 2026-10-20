@@ -180,8 +180,13 @@ test('team-only roles use CVMind Team but never the admin panel', async () => {
   const me = members.body.data.find((p) => p.id === intern.id);
   assert.equal(me.roleLabel, 'Content Writing Intern');
   assert.equal(me.manager, false);
-  // Interns plan only their own work
+  // Interns receive tasks but can't create any, not even for themselves
   assert.equal((await call('/team/tasks', { method: 'POST', token: intern.token, body: { title: 'x', assigneeIds: [owner.id] } })).status, 403);
+  assert.equal((await call('/team/tasks', { method: 'POST', token: intern.token, body: { title: 'my own', assigneeIds: [intern.id] } })).status, 403);
+  const assigned = await call('/team/tasks', { method: 'POST', token: owner.token, body: { title: 'Intern work', assigneeIds: [intern.id] } });
+  assert.equal(assigned.status, 200);
+  const file = await upload(intern.token, { scope: 'task', scopeId: assigned.body.data.id });
+  assert.equal((await call(`/team/tasks/${assigned.body.data.id}/submissions`, { method: 'POST', token: intern.token, body: { note: 'Done', fileIds: [file.id] } })).status, 200, 'interns can still submit work');
 });
 
 test('revoking an unaccepted invitation turns the account off', async () => {
