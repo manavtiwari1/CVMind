@@ -230,11 +230,23 @@
 .tm-stack { display: inline-flex; }
 .tm-stack .tm-avatar { margin-left: -6px; box-shadow: 0 0 0 2px var(--tm-surface); }
 .tm-person { display: inline-flex; align-items: center; gap: 6px; margin: 2px 8px 2px 0; }
-.tm-people { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-.tm-person-card { flex-direction: row !important; align-items: center; }
-.tm-person-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .tm-status-text { font-size: 13px; }
-.tm-search-inline { display: flex; align-items: center; gap: 8px; max-width: 360px; color: var(--tm-text-3); }
+.tm-search-inline { display: flex; align-items: center; gap: 8px; width: 100%; max-width: 320px; color: var(--tm-text-3); }
+
+/* People directory */
+.tm-dir { display: flex; flex-direction: column; gap: 8px; }
+.tm-dir-head { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--tm-text-3); display: flex; gap: 6px; }
+.tm-dir-head span { color: var(--tm-text-4); }
+.tm-dir-list { list-style: none; margin: 0; padding: 0; overflow: hidden; }
+.tm-dir-row { display: grid; grid-template-columns: 40px minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) 110px; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--tm-border); }
+.tm-dir-row:last-child { border-bottom: 0; }
+.tm-dir-row:hover { background: var(--tm-surface-2); }
+.tm-dir-who { display: flex; flex-direction: column; min-width: 0; }
+.tm-dir-name { font-weight: 700; display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tm-dir-you { font-size: 11px; font-weight: 700; color: var(--tm-purple); background: var(--tm-purple-soft); border-radius: 999px; padding: 1px 8px; }
+.tm-dir-role { justify-self: start; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; font-weight: 600; color: var(--tm-green-dark); background: var(--tm-green-soft); border-radius: 999px; padding: 3px 10px; }
+.tm-dir-status { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.tm-dir-action { display: flex; justify-content: flex-end; }
 
 /* Modal, popover, toasts */
 .tm-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(16, 24, 40, 0.45); display: flex; align-items: flex-start; justify-content: center; padding: 8vh 16px 16px; min-height: 0; }
@@ -458,6 +470,13 @@
   .tm-search-btn kbd { display: none; }
   .tm-page { padding: 16px 16px 40px; }
   .tm-form-row, .tm-ack-cols { grid-template-columns: 1fr; }
+  .tm-dir-row { grid-template-columns: 40px minmax(0, 1fr) auto; grid-template-areas: 'av who act' 'av role act' 'av status act'; row-gap: 4px; }
+  .tm-dir-row > .tm-avatar { grid-area: av; align-self: start; }
+  .tm-dir-who { grid-area: who; }
+  .tm-dir-role { grid-area: role; }
+  .tm-dir-status { grid-area: status; }
+  .tm-dir-action { grid-area: act; }
+  .tm-dir-action .tm-btn span { display: none; }
   .tm-msg { padding-left: 12px; padding-right: 12px; }
   .tm-msg-tools { display: flex; position: static; box-shadow: none; border: 0; background: transparent; margin-left: auto; align-self: flex-start; }
   .tm-msg-tools .tm-emoji, .tm-msg-tools > a { display: none; }
