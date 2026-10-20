@@ -112,9 +112,9 @@ let priya;
 
 test('an invitation creates the account, emails the sign-in details, and forces a new password', async () => {
   ownerPanel = await adminLogin('owner', 'owner-password-123');
-  owner = await onboard(ownerPanel, { username: 'founder', role: 'owner' });
+  owner = await onboard(ownerPanel, { username: 'founder', role: 'ceo' });
 
-  const invite = await call('/team/invitations', { method: 'POST', token: ownerPanel, body: { name: 'Riya', username: 'riya', email: 'riya@cvmind.test', role: 'admin', password: 'riya-temp-pass-1' } });
+  const invite = await call('/team/invitations', { method: 'POST', token: ownerPanel, body: { name: 'Riya', username: 'riya', email: 'riya@cvmind.test', role: 'cmo', password: 'riya-temp-pass-1' } });
   assert.equal(invite.status, 200);
   assert.equal(invite.body.data.status, 'sent');
 
@@ -161,12 +161,29 @@ test('a failed email keeps the account, and resend rotates the password', async 
   priya = await onboard(ownerPanel, { username: 'priya', role: 'support' });
 });
 
-test('only someone who manages the admin team can invite an owner or admin', async () => {
-  // Riya is an Admin: she manages the workspace but not the admin team
-  const res = await call('/team/invitations', { method: 'POST', token: riya.token, body: { name: 'X', username: 'sneaky', email: 'x@cvmind.test', role: 'owner', password: 'sneaky-pass-123' } });
+test('owner and admin are no longer offered for invites; only full-access people invite leadership', async () => {
+  const roles = (await call('/team/invitations', { token: ownerPanel })).body.roles;
+  assert.ok(roles.ceo && roles.cmo && roles.cto && roles.content_intern);
+  assert.equal(roles.owner, undefined);
+  assert.equal(roles.admin, undefined);
+  assert.equal((await call('/team/invitations', { method: 'POST', token: ownerPanel, body: { name: 'O', username: 'new-owner', email: 'o@cvmind.test', role: 'owner', password: 'owner-pass-12345' } })).status, 400);
+
+  // An Admin (made in Team & roles) manages the workspace but can't create leadership
+  await call('/team', { method: 'POST', token: ownerPanel, body: { name: 'Sam', username: 'sam', email: 'sam@cvmind.test', role: 'admin', password: 'sam-password-123' } });
+  const sam = (await teamLogin('sam', 'sam-password-123')).body.token;
+  const res = await call('/team/invitations', { method: 'POST', token: sam, body: { name: 'X', username: 'sneaky', email: 'x@cvmind.test', role: 'ceo', password: 'sneaky-pass-123' } });
   assert.equal(res.status, 403);
+  const samRoles = (await call('/team/invitations', { token: sam })).body.roles;
+  assert.equal(samRoles.ceo, undefined, 'leadership roles are hidden from people who cannot invite them');
   const member = await call('/team/invitations', { method: 'POST', token: aman.token, body: { name: 'Y', username: 'y-user', email: 'y@cvmind.test', role: 'support', password: 'y-pass-12345' } });
   assert.equal(member.status, 403, 'members cannot invite');
+});
+
+test('leadership roles have full access to the admin panel and manage the workspace', async () => {
+  const me = await call('/me', { token: await adminLogin('riya', 'riya-own-password') });
+  assert.equal(me.body.admin.roleLabel, 'Chief Management Officer');
+  assert.ok(me.body.admin.permissions.includes('team.manage'));
+  assert.ok(me.body.admin.permissions.includes('teamchat.manage'));
 });
 
 test('team-only roles use CVMind Team but never the admin panel', async () => {

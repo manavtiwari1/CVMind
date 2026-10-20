@@ -92,7 +92,7 @@ interface Invitation {
   invitedByName: string; status: 'sent' | 'failed' | 'accepted' | 'revoked'; lastError: string; resendCount: number;
   sentAt: string | null; acceptedAt: string | null; revokedAt: string | null; createdAt: string;
 }
-interface InviteRole { label: string; description: string; manager: boolean; teamOnly: boolean }
+interface InviteRole { label: string; description: string; manager: boolean; teamOnly: boolean; leadership: boolean }
 interface InvitationsResponse { data: Invitation[]; total: number; page: number; limit: number; counts: Record<string, number>; emailConfigured: boolean; roles: Record<string, InviteRole> }
 
 const INVITE_TONE: Record<Invitation['status'], Tone> = { sent: 'blue', failed: 'red', accepted: 'green', revoked: 'gray' };
@@ -179,8 +179,8 @@ function InvitationsTab({ onChanged }: { onChanged: () => void }) {
 
 const ROLE_GROUPS: Array<{ label: string; match: (r: InviteRole) => boolean }> = [
   { label: 'Team members (CVMind Team only)', match: (r) => r.teamOnly },
-  { label: 'Managers', match: (r) => r.manager },
-  { label: 'Admin panel staff', match: (r) => !r.teamOnly && !r.manager }
+  { label: 'Leadership (full access)', match: (r) => r.leadership },
+  { label: 'Admin panel staff', match: (r) => !r.teamOnly && !r.leadership }
 ];
 
 const generatePassword = () => {
@@ -248,8 +248,8 @@ function InviteForm({ roles, emailConfigured, onClose, onDone }: { roles: Record
           </select>
           <span className="ad-hint">{roles[form.role]?.teamOnly
             ? 'Uses CVMind Team only: chat, tasks and announcements. They cannot open the admin panel.'
-            : roles[form.role]?.manager
-              ? 'A manager in CVMind Team: assigns tasks, reviews work and posts announcements. Also gets admin panel access.'
+            : roles[form.role]?.leadership
+              ? 'Full access: the whole admin panel, team and roles, and manages CVMind Team (tasks, reviews, announcements).'
               : 'Uses CVMind Team, and also gets the admin panel access shown for this role.'}</span>
         </div>
         <div className="ad-field">

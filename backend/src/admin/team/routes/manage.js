@@ -21,9 +21,9 @@ const router = express.Router();
 const manage = requireTeam({ manage: true });
 
 const MAX_RESENDS = 5;
-// Roles that can manage the workspace. Only someone who can manage the admin team (team.manage)
-// may invite a person into one of these, so an admin can't create an owner.
-const PRIVILEGED_ROLES = ['owner', 'admin'];
+// Roles that can manage the workspace (owner, admin, CEO, CMO, CTO). Only someone who can manage
+// the admin team (team.manage) may invite a person into one of these, so an admin can't create an owner.
+const PRIVILEGED_ROLES = Object.keys(ROLES).filter((k) => ROLES[k].permissions.includes(MANAGE));
 
 const inviteLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -97,6 +97,10 @@ function publicInvitation(i) {
   };
 }
 
+// Owner and Admin stay for existing accounts (the env owner is always 'owner'), but new people are
+// invited with a leadership, staff or team role instead
+const NOT_INVITABLE = ['owner', 'admin'];
+
 const canInviteRole = (admin, role) => !PRIVILEGED_ROLES.includes(role) || admin.permissions.includes('team.manage');
 
 // ── Invitations ──────────────────────────────────────────────────────────────
@@ -121,13 +125,16 @@ router.get('/invitations', manage, handle(async (req, res) => {
     limit,
     counts: Object.fromEntries(counts.map((c) => [c._id, c.n])),
     emailConfigured: emailConfigured(),
-    roles: Object.fromEntries(Object.entries(ROLES).filter(([k]) => canInviteRole(req.admin, k)).map(([k, r]) => [k, { label: r.label, description: r.description, manager: r.permissions.includes(MANAGE), teamOnly: !!r.teamOnly }]))
+    roles: Object.fromEntries(Object.entries(ROLES)
+      .filter(([k]) => !NOT_INVITABLE.includes(k) && canInviteRole(req.admin, k))
+      .map(([k, r]) => [k, { label: r.label, description: r.description, manager: r.permissions.includes(MANAGE), teamOnly: !!r.teamOnly, leadership: !!r.leadership }]))
   });
 }));
 
 router.post('/invitations', manage, inviteLimiter, handle(async (req, res) => {
   const role = clean(req.body?.role, 20) || 'support';
-  if (!canInviteRole(req.admin, role)) throw httpError(403, 'Only an owner can invite someone as Owner or Admin.');
+  if (NOT_INVITABLE.includes(role)) throw httpError(400, 'Pick a leadership, staff or team role.');
+  if (!canInviteRole(req.admin, role)) throw httpError(403, 'Only someone with full access can invite a manager or a leadership role.');
   const password = String(req.body?.password || '');
   const member = await createAdminMember({ ...req.body, role, password }, { requireEmail: true, extra: { chatAccess: true, mustChangePassword: true } });
   const invitation = new TeamInvitation({
@@ -143,7 +150,7 @@ async function openInvitation(req) {
   if (!isId(req.params.id)) throw httpError(404, 'Invitation not found.');
   const invitation = await TeamInvitation.findById(req.params.id);
   if (!invitation) throw httpError(404, 'Invitation not found.');
-  if (!canInviteRole(req.admin, invitation.role)) throw httpError(403, 'Only an owner can change invitations for Owners and Admins.');
+  if (!canInviteRole(req.admin, invitation.role)) throw httpError(403, 'Only someone with full access can change invitations for managers and leadership.');
   return invitation;
 }
 
@@ -210,7 +217,7 @@ router.patch('/access/:adminId', manage, handle(async (req, res) => {
   if (typeof req.body?.chatAccess !== 'boolean') throw httpError(400, 'Say whether they should have access.');
   const member = await AdminUser.findById(req.params.adminId);
   if (!member) throw httpError(404, 'Person not found.');
-  if (PRIVILEGED_ROLES.includes(member.role) && !req.admin.permissions.includes('team.manage')) throw httpError(403, 'Only an owner can change access for Owners and Admins.');
+  if (PRIVILEGED_ROLES.includes(member.role) && !req.admin.permissions.includes('team.manage')) throw httpError(403, 'Only someone with full access can change access for managers and leadership.');
   member.chatAccess = req.body.chatAccess;
   await member.save();
   invalidateAdminCache(String(member._id));

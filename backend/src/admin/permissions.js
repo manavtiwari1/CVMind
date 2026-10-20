@@ -26,6 +26,10 @@ const ALL = [...PERMISSIONS];
 
 export const ROLES = {
   owner: { label: 'Owner', description: 'Full access, including the team and roles.', permissions: ALL },
+  // Leadership: full access, same as the owner
+  ceo: { label: 'Chief Executive Officer', description: 'Full access, including the team and roles.', permissions: ALL, leadership: true },
+  cmo: { label: 'Chief Management Officer', description: 'Full access, including the team and roles.', permissions: ALL, leadership: true },
+  cto: { label: 'Chief Technical Officer', description: 'Full access, including the team and roles.', permissions: ALL, leadership: true },
   admin: {
     label: 'Admin',
     description: 'Everything except managing the team.',
