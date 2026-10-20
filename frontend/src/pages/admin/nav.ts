@@ -1,6 +1,6 @@
 import {
   Activity, Bell, Briefcase, Building2, ClipboardList, CreditCard, Crown, FileDown, FileText, KeyRound, LayoutDashboard, LifeBuoy,
-  PanelsTopLeft, ReceiptText, ScrollText, ShieldAlert, SlidersHorizontal, Sparkles, TicketPercent, UserCheck, UserCog, Users
+  MessagesSquare, PanelsTopLeft, ReceiptText, ScrollText, ShieldAlert, SlidersHorizontal, Sparkles, TicketPercent, UserCheck, UserCog, Users
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -72,7 +72,8 @@ export const NAV: NavGroup[] = [
     label: 'Settings',
     items: [
       { id: 'settings', label: 'App config', icon: SlidersHorizontal, permission: 'settings.view' },
-      { id: 'team', label: 'Team & roles', icon: UserCog, permission: 'team.manage' }
+      { id: 'team', label: 'Team & roles', icon: UserCog, permission: 'team.manage' },
+      { id: 'team-workspace', label: 'Team workspace', icon: MessagesSquare, permission: 'teamchat.manage' }
     ]
   }
 ];

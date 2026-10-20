@@ -4,14 +4,23 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import './index.css'
 import App from './App.tsx'
 import { syncSessionFromCookie } from './lib/session'
-import { hostRedirectTarget } from './lib/hosts'
+import { hostRedirectTarget, isTeamHost } from './lib/hosts'
 import { pickTemplate } from './lib/templatePick'
 
 // Pick up a sign-in from the other cvmind.in host, then make sure this address is on the right one
 syncSessionFromCookie()
 const redirectTo = hostRedirectTarget(localStorage.getItem('cvmind_logged_in') === 'true')
 
-if (redirectTo) {
+if (isTeamHost()) {
+  // CVMind Team (team.cvmind.in) is its own app with its own sign-in, loaded on demand
+  import('./team').then(({ default: TeamApp }) => {
+    createRoot(document.getElementById('root')!).render(
+      <StrictMode>
+        <TeamApp />
+      </StrictMode>,
+    )
+  })
+} else if (redirectTo) {
   window.location.replace(redirectTo)
 } else {
   // A template picked on www arrives as ?template= (see setCurrentPage in App)

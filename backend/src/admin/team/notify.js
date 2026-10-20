@@ -1,0 +1,228 @@
+import { AdminUser, AppSetting } from '../models.js';
+import { emailConfigured, escapeHtml, renderEmail, sendEmail } from '../mailer.js';
+import { sameId } from './access.js';
+import { emitToUser } from './realtime.js';
+import { TeamChannel, TeamChannelMember, TeamNotification, TeamTask } from './models.js';
+
+export const TEAM_APP_URL = (process.env.TEAM_APP_URL || 'https://team.cvmind.in').replace(/\/$/, '');
+
+const DIGEST_DELAY_MS = 30 * 60 * 1000;
+const WORKER_INTERVAL_MS = 10 * 60 * 1000;
+const DUE_SOON_MS = 2 * 60 * 60 * 1000;
+// 09:00 IST is 03:30 UTC
+const REMINDER_UTC_MINUTES = 3 * 60 + 30;
+
+// People who can use the team app right now
+export const teamPeopleFilter = { active: true, chatAccess: { $ne: false } };
+
+// "@riya please check, @channel FYI" → admin ids of the mentioned people (and everyone in the channel
+// for @channel / @here, which only managers may use)
+export async function parseMentions(body, { channelId = null, allowChannel = false } = {}) {
+  const names = [...new Set([...String(body || '').matchAll(/(^|[^\w@.])@([a-z0-9._-]{2,40})/gi)].map((m) => m[2].toLowerCase()))];
+  if (!names.length) return [];
+  const ids = new Set();
+  if (allowChannel && channelId && names.some((n) => n === 'channel' || n === 'here')) {
+    const members = await TeamChannelMember.find({ channelId }, { adminId: 1 }).lean();
+    members.forEach((m) => ids.add(String(m.adminId)));
+  }
+  const people = await AdminUser.find({ username: { $in: names }, ...teamPeopleFilter }, { _id: 1 }).lean();
+  people.forEach((p) => ids.add(String(p._id)));
+  return [...ids];
+}
+
+// Stores one notification per recipient (never the actor) and pushes it live
+export async function notify(recipientIds, { type, actorId = null, refType = '', refId = null, channelId = null, taskId = null, preview = '' }) {
+  const ids = [...new Set((recipientIds || []).map(String))].filter((id) => !actorId || !sameId(id, actorId));
+  if (!ids.length) return;
+  // A muted channel only lets mentions through
+  let muted = new Set();
+  if (channelId && type !== 'mention') {
+    const rows = await TeamChannelMember.find({ channelId, adminId: { $in: ids }, muted: true }, { adminId: 1 }).lean();
+    muted = new Set(rows.map((r) => String(r.adminId)));
+  }
+  const docs = ids.filter((id) => !muted.has(id)).map((adminId) => ({
+    adminId, type, actorId, refType, refId, channelId, taskId, preview: String(preview || '').slice(0, 200)
+  }));
+  if (!docs.length) return;
+  const created = await TeamNotification.insertMany(docs);
+  for (const n of created) emitToUser(String(n.adminId), 'notification.new', { id: String(n._id), type: n.type });
+}
+
+const LABELS = {
+  mention: 'mentioned you',
+  dm: 'sent you a message',
+  thread_reply: 'replied in a thread',
+  task_assigned: 'assigned you a task',
+  task_unassigned: 'removed you from a task',
+  task_updated: 'updated a task',
+  task_comment: 'commented on a task',
+  submission: 'submitted work',
+  review_approved: 'approved your work',
+  review_changes: 'asked for changes',
+  announcement: 'posted an announcement',
+  task_due_soon: 'Task due soon',
+  added_to_channel: 'added you to a channel'
+};
+export const notificationLabel = (type) => LABELS[type] || 'New activity';
+
+// Emails a digest of notifications left unread for 30 minutes, at most one email per person per run
+export async function sendNotificationDigests(now = new Date()) {
+  if (!emailConfigured()) return { sent: 0 };
+  const pending = await TeamNotification.find({ readAt: null, emailedAt: null, createdAt: { $lte: new Date(now - DIGEST_DELAY_MS) } })
+    .sort({ createdAt: 1 }).limit(2000).lean();
+  if (!pending.length) return { sent: 0 };
+
+  const byPerson = new Map();
+  for (const n of pending) {
+    const key = String(n.adminId);
+    if (!byPerson.has(key)) byPerson.set(key, []);
+    byPerson.get(key).push(n);
+  }
+  const people = await AdminUser.find({ _id: { $in: [...byPerson.keys()] } }).lean();
+  const actorIds = [...new Set(pending.map((n) => String(n.actorId || '')).filter(Boolean))];
+  const actors = new Map((await AdminUser.find({ _id: { $in: actorIds } }, { name: 1, username: 1 }).lean()).map((a) => [String(a._id), a.name || a.username]));
+
+  let sent = 0;
+  for (const person of people) {
+    const items = byPerson.get(String(person._id));
+    const ids = items.map((n) => n._id);
+    const wantsEmail = person.active && person.chatAccess !== false && person.notifyEmail !== false && person.email;
+    if (wantsEmail) {
+      const rows = items.slice(0, 10).map((n) => {
+        const who = n.actorId ? actors.get(String(n.actorId)) || 'Someone' : '';
+        const line = who ? `${who} ${notificationLabel(n.type)}` : notificationLabel(n.type);
+        return `<tr><td style="padding:8px 0;border-bottom:1px solid #eef0f3;font-size:14px;line-height:1.5;color:#374151"><strong style="color:#111827">${escapeHtml(line)}</strong>${n.preview ? `<br>${escapeHtml(n.preview)}` : ''}</td></tr>`;
+      }).join('');
+      const more = items.length > 10 ? `<p style="margin:8px 0 16px;font-size:13px;color:#6b7280">and ${items.length - 10} more</p>` : '';
+      try {
+        await sendEmail({
+          to: person.email,
+          subject: `You have ${items.length} unread update${items.length === 1 ? '' : 's'} on CVMind Team`,
+          html: renderEmail({
+            preheader: 'Here is what you missed on CVMind Team.',
+            eyebrow: 'CVMind Team',
+            title: 'You have unread updates',
+            greetingName: person.name || person.username,
+            body: 'Here is what happened while you were away.',
+            htmlBlock: `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 12px">${rows}</table>${more}`,
+            ctaLabel: 'Open CVMind Team',
+            ctaUrl: TEAM_APP_URL,
+            footerReason: 'You get this because email notifications are on in your CVMind Team profile.'
+          })
+        });
+        sent += 1;
+      } catch (err) {
+        console.error('[team] digest email failed:', err.message);
+        continue;
+      }
+    }
+    // Marked either way, so someone with email off isn't re-checked every run
+    await TeamNotification.updateMany({ _id: { $in: ids } }, { emailedAt: new Date() });
+  }
+  return { sent };
+}
+
+// In-app reminder 2 hours before a task is due
+export async function sendDueSoonReminders(now = new Date()) {
+  const tasks = await TeamTask.find({
+    status: { $nin: ['approved', 'submitted'] },
+    dueAt: { $gt: now, $lte: new Date(+now + DUE_SOON_MS) },
+    dueSoonNotifiedAt: null
+  }).lean();
+  for (const task of tasks) {
+    await notify(task.assigneeIds, { type: 'task_due_soon', refType: 'task', refId: task._id, taskId: task._id, preview: task.title });
+    await TeamTask.updateOne({ _id: task._id }, { dueSoonNotifiedAt: now });
+  }
+  return { reminded: tasks.length };
+}
+
+const fmtDue = (d) => new Date(d).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+
+// Daily 09:00 IST email: tasks due in the next 24 hours and overdue tasks, per person
+export async function sendDailyTaskReminders(now = new Date()) {
+  if (!emailConfigured()) return { sent: 0 };
+  const open = await TeamTask.find({ status: { $nin: ['approved', 'submitted'] }, dueAt: { $ne: null, $lte: new Date(+now + 24 * 60 * 60 * 1000) } }).lean();
+  const byPerson = new Map();
+  for (const task of open) {
+    for (const id of task.assigneeIds) {
+      const key = String(id);
+      if (!byPerson.has(key)) byPerson.set(key, []);
+      byPerson.get(key).push(task);
+    }
+  }
+  const people = await AdminUser.find({ _id: { $in: [...byPerson.keys()] }, ...teamPeopleFilter, email: { $gt: '' } }).lean();
+  let sent = 0;
+  for (const person of people) {
+    const tasks = byPerson.get(String(person._id)).sort((a, b) => a.dueAt - b.dueAt);
+    const overdue = tasks.filter((t) => t.dueAt < now);
+    const soon = tasks.filter((t) => t.dueAt >= now);
+    const list = (title, rows, color) => rows.length
+      ? `<p style="margin:0 0 6px;font-size:13px;font-weight:700;color:${color}">${title}</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px">${rows.map((t) => `<tr><td style="padding:6px 0;border-bottom:1px solid #eef0f3;font-size:14px;color:#111827">${escapeHtml(t.title)}</td><td align="right" style="padding:6px 0;border-bottom:1px solid #eef0f3;font-size:13px;color:#6b7280;white-space:nowrap">${escapeHtml(fmtDue(t.dueAt))}</td></tr>`).join('')}</table>`
+      : '';
+    try {
+      await sendEmail({
+        to: person.email,
+        subject: overdue.length ? `${overdue.length} overdue task${overdue.length === 1 ? '' : 's'} on CVMind Team` : `${soon.length} task${soon.length === 1 ? '' : 's'} due today`,
+        html: renderEmail({
+          preheader: 'Your tasks for today on CVMind Team.',
+          eyebrow: 'Daily reminder',
+          title: 'Your tasks for today',
+          greetingName: person.name || person.username,
+          htmlBlock: list('Overdue', overdue, '#dc2626') + list('Due in the next 24 hours', soon, '#111827'),
+          ctaLabel: 'Open my tasks',
+          ctaUrl: `${TEAM_APP_URL}/#/tasks`,
+          footerReason: 'You get this daily when you have tasks due or overdue on CVMind Team.'
+        })
+      });
+      sent += 1;
+    } catch (err) {
+      console.error('[team] reminder email failed:', err.message);
+    }
+  }
+  return { sent };
+}
+
+// Runs the daily reminder once per IST day, after 09:00 IST. The last run day is stored so a
+// restart doesn't send it twice.
+async function maybeRunDailyReminders(now = new Date()) {
+  const minutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+  if (minutes < REMINDER_UTC_MINUTES) return;
+  const day = now.toISOString().slice(0, 10);
+  const claimed = await AppSetting.findOneAndUpdate(
+    { key: 'team.dailyReminderDay', value: { $ne: day } },
+    { value: day, updatedBy: 'team-worker' },
+    { new: true }
+  ).catch(() => null);
+  if (!claimed) {
+    // First run ever: create the row, claiming today
+    const exists = await AppSetting.exists({ key: 'team.dailyReminderDay' });
+    if (exists) return;
+    await AppSetting.create({ key: 'team.dailyReminderDay', value: day, updatedBy: 'team-worker' });
+  }
+  await sendDailyTaskReminders(now);
+}
+
+let timer = null;
+export function startTeamJobs() {
+  if (timer) return;
+  const tick = async () => {
+    try {
+      await sendDueSoonReminders();
+      await sendNotificationDigests();
+      await maybeRunDailyReminders();
+      const { sweepPendingFiles } = await import('./files.js');
+      await sweepPendingFiles();
+    } catch (err) {
+      console.error('[team] background job failed:', err.message);
+    }
+  };
+  timer = setInterval(tick, WORKER_INTERVAL_MS);
+  timer.unref?.();
+  setTimeout(tick, 15 * 1000).unref?.();
+}
+
+// Name of a channel for emails and previews: "#general" or "a direct message"
+export async function channelLabel(channelId) {
+  const c = await TeamChannel.findById(channelId, { name: 1, kind: 1 }).lean();
+  return !c ? '' : c.kind === 'dm' ? 'a direct message' : `#${c.name}`;
+}

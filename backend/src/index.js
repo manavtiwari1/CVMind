@@ -25,6 +25,9 @@ import { metricsMiddleware } from './admin/metrics.js';
 import { installSessionValidator, newSessionId, recordSession, revokeAllSessions, invalidateSessionCache } from './admin/sessions.js';
 import { ticketFromContact } from './admin/tickets.js';
 import { startInboxPolling } from './admin/inbox.js';
+import http from 'http';
+import { attachTeamRealtime } from './admin/team/realtime.js';
+import { startTeamJobs } from './admin/team/notify.js';
 import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser, userSessionStatus } from './services/authToken.js';
 import { verifiedGate } from './services/verifiedGate.js';
 import { productGate } from './services/productGate.js';
@@ -2988,23 +2991,30 @@ app.use((err, req, res, next) => {
 });
 
 // Tests import the app and listen on their own port
-if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
-  // Fill the live job-search cache so the first search in the resume builder is quick.
-  if (!process.env.VERCEL) warmJobSearch();
-  // Local dev convenience: run agent queue workers in the API process (production runs auto-apply-agent/src/worker.js)
-  // Pull the support inbox into tickets every 2 minutes (serverless hosts sync when Support is opened)
-  if (!process.env.VERCEL) startInboxPolling();
-  // Turn on Pro for paid orders whose webhook never came, and retry unsent invoices
-  if (!process.env.VERCEL) startOrderSweep();
-  // Send job alert emails that are due (on Vercel, Vercel Cron calls /api/cron/job-alerts instead)
-  if (!process.env.VERCEL) startJobAlerts();
-  if (process.env.INLINE_WORKERS === 'true' && !process.env.VERCEL) {
-    startWorkers().catch((err) => console.error('[agent] failed to start inline workers:', err.message));
-  } else if (!process.env.VERCEL) {
-    // Without a worker, agent jobs (resume parsing, scoring, tailoring) queue up and never run
-    console.log('[agent] queue workers are not running in this process; start them with "npm run worker" (or INLINE_WORKERS=true for local dev)');
-  }
-});
+if (process.env.NODE_ENV !== 'test') {
+  const server = http.createServer(app);
+  // Live chat for CVMind Team. Vercel's serverless functions can't hold sockets; the app falls back to polling there.
+  if (!process.env.VERCEL) attachTeamRealtime(server);
+  server.listen(PORT, () => {
+    console.log(`Server started on port ${PORT}`);
+    // CVMind Team: unread-notification emails, due-date reminders, upload cleanup
+    if (!process.env.VERCEL) startTeamJobs();
+    // Fill the live job-search cache so the first search in the resume builder is quick.
+    if (!process.env.VERCEL) warmJobSearch();
+    // Local dev convenience: run agent queue workers in the API process (production runs auto-apply-agent/src/worker.js)
+    // Pull the support inbox into tickets every 2 minutes (serverless hosts sync when Support is opened)
+    if (!process.env.VERCEL) startInboxPolling();
+    // Turn on Pro for paid orders whose webhook never came, and retry unsent invoices
+    if (!process.env.VERCEL) startOrderSweep();
+    // Send job alert emails that are due (on Vercel, Vercel Cron calls /api/cron/job-alerts instead)
+    if (!process.env.VERCEL) startJobAlerts();
+    if (process.env.INLINE_WORKERS === 'true' && !process.env.VERCEL) {
+      startWorkers().catch((err) => console.error('[agent] failed to start inline workers:', err.message));
+    } else if (!process.env.VERCEL) {
+      // Without a worker, agent jobs (resume parsing, scoring, tailoring) queue up and never run
+      console.log('[agent] queue workers are not running in this process; start them with "npm run worker" (or INLINE_WORKERS=true for local dev)');
+    }
+  });
+}
 
 export default app;

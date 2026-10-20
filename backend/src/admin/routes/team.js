@@ -3,9 +3,10 @@ import bcrypt from 'bcryptjs';
 import { rateLimit } from 'express-rate-limit';
 import { AdminUser, AdminAuditLog } from '../models.js';
 import { loginAdmin, requireAdmin, requireDb, toPublicAdmin, invalidateAdminCache } from '../auth.js';
-import { ROLES, ROLE_KEYS, PERMISSIONS } from '../permissions.js';
+import { ROLES, ROLE_KEYS, PERMISSIONS, isTeamOnlyRole } from '../permissions.js';
 import { audit } from '../audit.js';
-import { clean, handle, httpError, isId, paging, dateRange, escapeRegex, isEmail } from '../util.js';
+import { createAdminMember } from '../members.js';
+import { clean, handle, httpError, isId, paging, dateRange, escapeRegex } from '../util.js';
 
 const router = express.Router();
 
@@ -22,6 +23,9 @@ router.post('/login', loginLimiter, handle(async (req, res) => {
   const { username, password } = req.body || {};
   const result = await loginAdmin(username, password);
   if (!result) return res.status(401).json({ success: false, error: 'Invalid username or password.' });
+  if (isTeamOnlyRole(result.admin.role)) {
+    return res.status(403).json({ success: false, code: 'TEAM_ONLY', error: 'This account is for CVMind Team only. Sign in at team.cvmind.in.' });
+  }
   req.admin = result.admin;
   if (result.admin.id !== 'env-owner') await audit(req, 'admin.login', { targetType: 'admin', targetId: result.admin.id, targetLabel: result.admin.username });
   res.json({ success: true, token: result.token, admin: result.admin });
@@ -37,7 +41,9 @@ router.post('/me/password', requireAdmin(), requireDb, handle(async (req, res) =
   const admin = await AdminUser.findById(req.admin.id);
   if (!admin || !(await bcrypt.compare(String(currentPassword || ''), admin.passwordHash))) throw httpError(400, 'Your current password is not correct.');
   admin.passwordHash = await bcrypt.hash(String(newPassword), 10);
+  admin.mustChangePassword = false;
   await admin.save();
+  invalidateAdminCache(String(admin._id));
   await audit(req, 'admin.password_changed', { targetType: 'admin', targetId: admin._id, targetLabel: admin.username });
   res.json({ success: true });
 }));
@@ -49,18 +55,8 @@ router.get('/team', requireAdmin('team.manage'), requireDb, handle(async (req, r
 }));
 
 router.post('/team', requireAdmin('team.manage'), requireDb, handle(async (req, res) => {
-  const username = clean(req.body?.username, 40).toLowerCase();
-  const name = clean(req.body?.name, 80);
-  const email = clean(req.body?.email, 120).toLowerCase();
-  const role = clean(req.body?.role, 20);
-  const password = String(req.body?.password || '');
-  if (!/^[a-z0-9._-]{3,40}$/.test(username)) throw httpError(400, 'Username must be 3–40 characters: letters, numbers, dot, dash or underscore.');
-  if (!ROLE_KEYS.includes(role)) throw httpError(400, 'Pick a valid role.');
-  if (password.length < 10) throw httpError(400, 'Use at least 10 characters for the password.');
-  if (email && !isEmail(email)) throw httpError(400, 'Enter a valid email address.');
-  if (await AdminUser.exists({ username })) throw httpError(409, 'That username is already taken.');
-  const member = await AdminUser.create({ username, name, email, role, passwordHash: await bcrypt.hash(password, 10) });
-  await audit(req, 'team.member_added', { targetType: 'admin', targetId: member._id, targetLabel: username, details: { role } });
+  const member = await createAdminMember(req.body);
+  await audit(req, 'team.member_added', { targetType: 'admin', targetId: member._id, targetLabel: member.username, details: { role: member.role } });
   res.json({ success: true, data: toPublicAdmin(member) });
 }));
 
