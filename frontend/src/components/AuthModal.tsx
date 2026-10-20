@@ -7,7 +7,7 @@ import {
 import { Confetti, type ConfettiRef } from './ui/sign-up';
 import { getErrorMessage } from '../utils/errors';
 import { setSession } from '../lib/session';
-import { OAUTH_NONCE_KEY, isAppHost, siteOrigin } from '../lib/hosts';
+import { OAUTH_NONCE_KEY, siteOrigin, teamUrl } from '../lib/hosts';
 import { storedReferral } from '../lib/referralCapture';
 import { api as adminApi, saveSession as saveAdminSession, type AdminSession } from '../pages/admin/api';
 import VerifyEmailPanel from './VerifyEmailPanel';
@@ -358,12 +358,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     setSignupCaptcha(false);
   }
 
+  // CVMind employees sign in to the team workspace at team.cvmind.in
   function openTeamLogin() {
-    // The admin panel lives on the main site and its session is per site, so sign in there
-    if (isAppHost()) { window.location.assign(siteOrigin() + '/admin'); return; }
-    setUsername('');
-    setRemember(false);
-    switchMode('team');
+    window.location.assign(teamUrl());
   }
 
   function validate(): string | null {

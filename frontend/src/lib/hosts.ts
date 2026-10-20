@@ -29,7 +29,7 @@ export const isAppHost = () => isSplitHost() && hostname().startsWith('app.');
 // it opens at /team.
 export const isTeamHost = () => (isSplitHost() && hostname().startsWith('team.')) || (!isSplitHost() && window.location.pathname.replace(/\/$/, '') === '/team');
 
-const originFor = (sub: 'www' | 'app') => {
+const originFor = (sub: 'www' | 'app' | 'team') => {
   const base = baseDomain();
   if (!base) return window.location.origin;
   const { protocol, port } = window.location;
@@ -38,6 +38,9 @@ const originFor = (sub: 'www' | 'app') => {
 
 export const siteOrigin = () => originFor('www');
 export const appOrigin = () => originFor('app');
+
+// CVMind Team: team.cvmind.in, or /team where there is no host split (localhost, previews)
+export const teamUrl = () => (isSplitHost() ? `${originFor('team')}/` : `${window.location.origin}/team`);
 
 export const isAppPage = (page: string) => APP_PAGES.includes(page) || PUBLIC_APP_PAGES.includes(page);
 
