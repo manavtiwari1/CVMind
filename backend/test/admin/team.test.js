@@ -457,6 +457,18 @@ test('people edit their own profile', async () => {
   assert.equal((await call('/team', { token: ownerPanel })).status, 200);
 });
 
+test('the owner can switch their own title to CEO without losing access', async () => {
+  const me = (await call('/me', { token: ownerPanel })).body.admin;
+  assert.equal((await call(`/team/${me.id}`, { method: 'PATCH', token: ownerPanel, body: { role: 'support' } })).status, 400, 'never below full access');
+  const res = await call(`/team/${me.id}`, { method: 'PATCH', token: ownerPanel, body: { role: 'ceo' } });
+  assert.equal(res.status, 200);
+  // Same access, so the current session keeps working
+  assert.equal((await call('/me', { token: ownerPanel })).body.admin.roleLabel, 'Chief Executive Officer');
+  // Signing in again with the .env credentials keeps the CEO title
+  const again = await adminLogin('owner', 'owner-password-123');
+  assert.equal((await call('/me', { token: again })).body.admin.role, 'ceo');
+});
+
 test('overview counts for the admin panel', async () => {
   const res = await call('/team/overview', { token: ownerPanel });
   assert.equal(res.status, 200);

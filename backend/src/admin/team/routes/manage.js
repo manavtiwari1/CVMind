@@ -7,7 +7,7 @@ import { invalidateAdminCache } from '../../auth.js';
 import { audit } from '../../audit.js';
 import { emailConfigured, escapeHtml, renderEmail, sendEmail } from '../../mailer.js';
 import { createAdminMember } from '../../members.js';
-import { ROLES } from '../../permissions.js';
+import { FULL_ACCESS_ROLES, ROLES, isFullAccess } from '../../permissions.js';
 import { clean, escapeRegex, handle, httpError, isId, paging } from '../../util.js';
 import { MANAGE, oid, requireTeam } from '../access.js';
 import { publicFile } from '../files.js';
@@ -182,7 +182,7 @@ router.delete('/invitations/:id', manage, handle(async (req, res) => {
   if (invitation.status === 'revoked') return res.json({ success: true, data: publicInvitation(invitation) });
   const member = await AdminUser.findById(invitation.adminId);
   if (member) {
-    if (member.role === 'owner' && (await AdminUser.countDocuments({ role: 'owner', active: true, _id: { $ne: member._id } })) === 0) {
+    if (isFullAccess(member.role) && (await AdminUser.countDocuments({ role: { $in: FULL_ACCESS_ROLES }, active: true, _id: { $ne: member._id } })) === 0) {
       throw httpError(400, 'There must always be at least one active owner.');
     }
     member.active = false;

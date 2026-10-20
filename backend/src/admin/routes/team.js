@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { rateLimit } from 'express-rate-limit';
 import { AdminUser, AdminAuditLog } from '../models.js';
 import { loginAdmin, requireAdmin, requireDb, toPublicAdmin, invalidateAdminCache } from '../auth.js';
-import { ROLES, ROLE_KEYS, PERMISSIONS, isTeamOnlyRole } from '../permissions.js';
+import { ROLES, ROLE_KEYS, PERMISSIONS, FULL_ACCESS_ROLES, isFullAccess, isTeamOnlyRole } from '../permissions.js';
 import { audit } from '../audit.js';
 import { createAdminMember } from '../members.js';
 import { clean, handle, httpError, isId, paging, dateRange, escapeRegex } from '../util.js';
@@ -67,8 +67,11 @@ router.patch('/team/:id', requireAdmin('team.manage'), requireDb, handle(async (
   const changes = {};
   const { role, active, name, password } = req.body || {};
 
+  const self = String(member._id) === req.admin.id;
   if (role !== undefined && role !== member.role) {
     if (!ROLE_KEYS.includes(role)) throw httpError(400, 'Pick a valid role.');
+    // Your own title can change (Owner → CEO) but never to less than full access
+    if (self && !isFullAccess(role)) throw httpError(400, 'You can only switch yourself to another full-access role.');
     changes.role = { from: member.role, to: role };
     member.role = role;
   }
@@ -83,14 +86,16 @@ router.patch('/team/:id', requireAdmin('team.manage'), requireDb, handle(async (
     changes.password = 'reset';
   }
 
-  // Never leave the panel without an active owner
-  if ((changes.role || changes.active) && (await AdminUser.countDocuments({ role: 'owner', active: true, _id: { $ne: member._id } })) === 0
-    && (member.role !== 'owner' || !member.active)) {
-    throw httpError(400, 'There must always be at least one active owner.');
+  // Never leave the panel without an active full-access account (Owner, CEO, CMO or CTO)
+  if ((changes.role || changes.active) && (await AdminUser.countDocuments({ role: { $in: FULL_ACCESS_ROLES }, active: true, _id: { $ne: member._id } })) === 0
+    && (!isFullAccess(member.role) || !member.active)) {
+    throw httpError(400, 'There must always be at least one active Owner, CEO, CMO or CTO.');
   }
 
-  // Role, status or password changes sign the member out everywhere
-  if (changes.role || changes.active || changes.password) member.tokenVersion = (member.tokenVersion || 0) + 1;
+  // Role, status or password changes sign the member out everywhere. Switching between full-access
+  // roles changes only the title, so nobody is signed out for it.
+  const sameAccess = changes.role && isFullAccess(changes.role.from) && isFullAccess(changes.role.to);
+  if ((changes.role && !sameAccess) || changes.active || changes.password) member.tokenVersion = (member.tokenVersion || 0) + 1;
   await member.save();
   invalidateAdminCache(String(member._id));
   await audit(req, 'team.member_updated', { targetType: 'admin', targetId: member._id, targetLabel: member.username, details: changes });
@@ -102,7 +107,7 @@ router.delete('/team/:id', requireAdmin('team.manage'), requireDb, handle(async 
   if (req.params.id === req.admin.id) throw httpError(400, "You can't remove your own account.");
   const member = await AdminUser.findById(req.params.id);
   if (!member) throw httpError(404, 'Team member not found.');
-  if (member.role === 'owner' && (await AdminUser.countDocuments({ role: 'owner', active: true })) <= 1) {
+  if (isFullAccess(member.role) && (await AdminUser.countDocuments({ role: { $in: FULL_ACCESS_ROLES }, active: true })) <= 1) {
     throw httpError(400, 'There must always be at least one active owner.');
   }
   await member.deleteOne();

@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 import { signToken, verifyToken } from '../services/authToken.js';
 import { AdminUser } from './models.js';
-import { permissionsFor, ROLES } from './permissions.js';
+import { isFullAccess, permissionsFor, ROLES } from './permissions.js';
 
 const ADMIN_TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
 // Used when MongoDB isn't configured: the env owner can still sign in to read stats
@@ -71,7 +71,8 @@ async function seedEnvOwner(env) {
     if (!(await bcrypt.compare(env.password, existing.passwordHash))) {
       existing.passwordHash = await bcrypt.hash(env.password, 10);
     }
-    if (existing.role !== 'owner') existing.role = 'owner';
+    // Keeps a full-access title the owner picked (CEO, CMO, CTO); anything less goes back to owner
+    if (!isFullAccess(existing.role)) existing.role = 'owner';
     existing.active = true;
     await existing.save();
     return existing;

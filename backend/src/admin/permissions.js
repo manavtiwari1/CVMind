@@ -68,6 +68,10 @@ export function permissionsFor(role) {
   return ROLES[role]?.permissions || [];
 }
 
+// Roles with every permission (owner, CEO, CMO, CTO). The panel always keeps at least one active.
+export const FULL_ACCESS_ROLES = Object.keys(ROLES).filter((k) => ROLES[k].permissions.includes('team.manage'));
+export const isFullAccess = (role) => FULL_ACCESS_ROLES.includes(role);
+
 // Roles that only open CVMind Team, never the admin panel
 export const isTeamOnlyRole = (role) => !!ROLES[role]?.teamOnly;
 

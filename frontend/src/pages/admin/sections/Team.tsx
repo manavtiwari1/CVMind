@@ -75,8 +75,9 @@ function Members({ data, error, loading, reload }: { data?: TeamResponse; error?
               </span>
             ) },
             { key: 'role', header: 'Role', render: (m) => (
-              <select className="ad-select sm" style={{ width: 'auto' }} value={m.role} aria-label={`${m.name} role`} disabled={busy === m.id || m.id === admin.id} onChange={(e) => patch(m, { role: e.target.value }, 'Role updated')}>
-                {Object.entries(roles).map(([key, r]) => <option key={key} value={key}>{r.label}</option>)}
+              <select className="ad-select sm" style={{ width: 'auto' }} value={m.role} aria-label={`${m.name} role`} disabled={busy === m.id} onChange={(e) => patch(m, { role: e.target.value }, 'Role updated')}>
+                {/* Your own role can only move between full-access roles, so you never lock yourself out */}
+                {Object.entries(roles).filter(([, r]) => m.id !== admin.id || r.permissions.includes('team.manage')).map(([key, r]) => <option key={key} value={key}>{r.label}</option>)}
               </select>
             ) },
             { key: 'last', header: 'Last sign-in', render: (m) => <span className="muted">{m.lastLoginAt ? ago(m.lastLoginAt) : 'Never'}</span> },
