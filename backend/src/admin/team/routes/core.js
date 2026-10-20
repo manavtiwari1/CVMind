@@ -4,7 +4,7 @@ import { rateLimit } from 'express-rate-limit';
 import { AdminUser } from '../../models.js';
 import { invalidateAdminCache, loginAdmin, toPublicAdmin } from '../../auth.js';
 import { audit } from '../../audit.js';
-import { clean, dateRange, escapeRegex, handle, httpError, isId, paging } from '../../util.js';
+import { clean, dateRange, escapeRegex, handle, httpError, isEmail, isId, paging } from '../../util.js';
 import { ROLES } from '../../permissions.js';
 import { isManager, MANAGE, oid, readableChannelIds, requireTeam, visibleTaskFilter } from '../access.js';
 import { attachFiles, canOpenFile, checkUploadScope, newFileKey, publicFile, visibleFileFilter } from '../files.js';
@@ -76,6 +76,12 @@ router.patch('/me', profile, handle(async (req, res) => {
     const name = clean(req.body.name, 80);
     if (!name) throw httpError(400, 'Enter your name.');
     update.name = name;
+  }
+  if (req.body?.email !== undefined) {
+    const email = clean(req.body.email, 120).toLowerCase();
+    if (email && !isEmail(email)) throw httpError(400, 'Enter a valid email address.');
+    if (email && (await AdminUser.exists({ email, _id: { $ne: req.admin.id } }))) throw httpError(409, 'Someone on the team already uses that email.');
+    update.email = email;
   }
   if (typeof req.body?.notifyEmail === 'boolean') update.notifyEmail = req.body.notifyEmail;
   if (req.body?.statusText !== undefined) update.statusText = clean(req.body.statusText, 80);

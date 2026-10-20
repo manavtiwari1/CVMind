@@ -451,6 +451,11 @@ test('people edit their own profile', async () => {
   const res = await call('/team/me', { method: 'PATCH', token: priya.token, body: { name: 'Priya Nair', statusText: 'On leave till Friday', notifyEmail: false } });
   assert.equal(res.status, 200);
   assert.equal(res.body.admin.statusText, 'On leave till Friday');
+  assert.equal((await call('/team/me', { method: 'PATCH', token: priya.token, body: { email: 'aman@cvmind.test' } })).status, 409, 'emails stay unique');
+  assert.equal((await call('/team/me', { method: 'PATCH', token: priya.token, body: { email: 'not-an-email' } })).status, 400);
+  const changed = await call('/team/me', { method: 'PATCH', token: priya.token, body: { email: 'Priya.Nair@CVMind.test' } });
+  assert.equal(changed.body.admin.email, 'priya.nair@cvmind.test');
+  assert.equal((await teamLogin('priya.nair@cvmind.test', 'real-priya-password')).status, 200, 'can sign in with the new email');
   const members = await call('/team/members', { token: riya.token });
   assert.equal(members.body.data.find((p) => p.id === priya.id).name, 'Priya Nair');
   // The admin panel's own team routes still work alongside
