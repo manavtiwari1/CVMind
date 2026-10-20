@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { Camera, Trash2 } from 'lucide-react';
 import { PhotoDialog } from '../../components/ResumePhoto';
 import { api, saveSession, loadSession } from '../api';
+import { confirmDialog } from '../confirm';
 import type { TeamAccount } from '../api';
 import { useTeam } from '../store';
 import { Avatar, Spinner } from '../ui';
@@ -74,7 +75,7 @@ export default function Profile() {
   };
 
   const removePhoto = async () => {
-    if (!window.confirm('Remove your profile photo?')) return;
+    if (!(await confirmDialog({ title: 'Remove your profile photo?', message: 'Your initials will show instead. You can add a new photo any time.', confirmLabel: 'Remove photo', danger: true }))) return;
     setBusy('remove');
     try {
       const { admin } = await api<{ admin: TeamAccount }>('/me', { method: 'PATCH', body: { avatarFileId: null } });

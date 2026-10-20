@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, ArrowLeft, CheckCircle2, CheckSquare, Clock, MessageSquare, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 import { api } from '../api';
+import { confirmDialog } from '../confirm';
 import type { Activity, Comment, Submission, Task, TaskStatus } from '../api';
 import { go, hrefFor, useLoad, useTeam, useTeamEvent } from '../store';
 import { useAttachments } from '../attachments';
@@ -163,7 +164,7 @@ function TaskDetail({ id }: { id: string }) {
     }
   };
   const remove = async () => {
-    if (!window.confirm('Delete this task, its submissions and comments?')) return;
+    if (!(await confirmDialog({ title: 'Delete this task?', message: 'Its submissions, comments and files are deleted too. This cannot be undone.', confirmLabel: 'Delete task', danger: true }))) return;
     await api(`/tasks/${t.id}`, { method: 'DELETE' }).then(() => go('tasks')).catch((err: Error) => toast(err.message, 'error'));
   };
 

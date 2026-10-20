@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { CheckSquare, ExternalLink, Hash, HardDrive, Lock, Mail, Megaphone, Pin, Plus, RefreshCw, Send, Trash2, Users } from 'lucide-react';
+import { CheckSquare, Copy, ExternalLink, Hash, HardDrive, Lock, Mail, Megaphone, Pin, Plus, RefreshCw, Send, Trash2, Users } from 'lucide-react';
 import { api } from '../api';
 import { useAction, useAdmin, useApi, useDebounced } from '../hooks';
 import { ago, count, dateTime } from '../format';
@@ -194,16 +194,31 @@ function InviteForm({ roles, emailConfigured, onClose, onDone }: { roles: Record
   const firstTeamRole = Object.keys(roles).find((k) => roles[k].teamOnly);
   const [form, setForm] = useState({ name: '', email: '', username: '', role: firstTeamRole || Object.keys(roles)[0], password: generatePassword() });
   const [usernameTouched, setUsernameTouched] = useState(false);
-  const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const [failed, setFailed] = useState<string | null>(null);
+  const set =(k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const slug = (v: string) => v.toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 40);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const res = await run('invite', () => api<{ data: Invitation }>('/team/invitations', { method: 'POST', body: form }));
     if (!res) return;
-    if (res.data.status === 'failed') window.alert(`The account was created, but the email could not be sent: ${res.data.lastError}\n\nUsername: ${form.username}\nTemporary password: ${form.password}\n\nShare these privately, or press Resend later.`);
-    onDone();
+    // The account exists even when the email fails; show the details here so they can be shared
+    if (res.data.status === 'failed') setFailed(res.data.lastError || 'The email could not be sent.');
+    else onDone();
   };
+
+  if (failed !== null) {
+    const details = `Website: team.cvmind.in\nUsername: ${form.username}\nTemporary password: ${form.password}`;
+    return (
+      <Modal title="Account created, but the email didn't go out" description={failed} onClose={onDone} footer={<>
+        <button type="button" className="ad-btn" onClick={() => navigator.clipboard?.writeText(details).catch(() => {})}><Copy size={14} /> Copy details</button>
+        <button type="button" className="ad-btn primary" onClick={onDone}>Done</button>
+      </>}>
+        <p className="muted" style={{ marginBottom: 12 }}>Share these with {form.name || form.username} privately, or press Resend in the Invitations table once email works.</p>
+        <pre style={{ background: '#f6f7f9', border: '1px solid #e8ebef', borderRadius: 8, padding: 12, fontSize: 13, whiteSpace: 'pre-wrap', margin: 0 }}>{details}</pre>
+      </Modal>
+    );
+  }
 
   return (
     <Modal

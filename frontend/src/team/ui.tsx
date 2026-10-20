@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Download, FileText, Image as ImageIcon, Loader2, Paperclip, Smile, X } from 'lucide-react';
 import type { Person, Priority, TaskStatus, TeamFile } from './api';
 import type { PendingFile } from './attachments';
+import { answerConfirm, currentConfirm, subscribeConfirm } from './confirm';
 import { ago, EMOJIS, PRIORITY_LABELS, STATUS_LABELS } from './format';
 import { useTeam } from './store';
 import { ACCEPT, fileUrl, formatBytes, isImage, openFile } from './upload';
@@ -72,6 +73,20 @@ export function Modal({ title, onClose, children, footer, wide }: { title: React
       </div>
     </div>,
     document.body
+  );
+}
+
+// Shows whatever confirmDialog() asked for, inside the app instead of the browser's popup
+export function ConfirmHost() {
+  const request = useSyncExternalStore(subscribeConfirm, currentConfirm);
+  if (!request) return null;
+  return (
+    <Modal title={request.title} onClose={() => answerConfirm(false)} footer={<>
+      <button type="button" className="tm-btn" onClick={() => answerConfirm(false)}>Cancel</button>
+      <button type="button" className={`tm-btn ${request.danger ? 'danger' : 'primary'}`} onClick={() => answerConfirm(true)} autoFocus>{request.confirmLabel || 'OK'}</button>
+    </>}>
+      {request.message && <p className="tm-muted">{request.message}</p>}
+    </Modal>
   );
 }
 

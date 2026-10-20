@@ -8,7 +8,7 @@ import type { Session, TeamAccount } from './api';
 import type { Toast } from './store';
 import TeamProvider from './TeamProvider';
 import Shell from './Shell';
-import { Spinner } from './ui';
+import { ConfirmHost, Spinner } from './ui';
 
 type Phase = 'checking' | 'signed-out' | 'set-password' | 'signed-in';
 
@@ -87,6 +87,7 @@ export default function TeamApp() {
   return (
     <div className="tm-app">
       {screen}
+      <ConfirmHost />
       <div className="tm-toasts" role="status" aria-live="polite">
         {toasts.map((t) => <div key={t.id} className={`tm-toast ${t.tone}`}>{t.message}</div>)}
       </div>

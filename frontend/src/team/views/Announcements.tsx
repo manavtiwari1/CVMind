@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { ArrowLeft, Check, Megaphone, Pencil, Pin, Plus, Trash2 } from 'lucide-react';
 import { api } from '../api';
+import { confirmDialog } from '../confirm';
 import type { Announcement } from '../api';
 import { go, hrefFor, useLoad, useTeam, useTeamEvent } from '../store';
 import { useAttachments } from '../attachments';
@@ -63,7 +64,7 @@ function AnnouncementCard({ a, onChanged, full }: { a: Announcement; onChanged: 
   const react = (emoji: string) => api(`/announcements/${a.id}/reactions`, { method: 'POST', body: { emoji } }).then(onChanged).catch(() => {});
   const togglePin = () => api(`/announcements/${a.id}`, { method: 'PATCH', body: { pinned: !a.pinned } }).then(onChanged).catch((err: Error) => toast(err.message, 'error'));
   const remove = async () => {
-    if (!window.confirm('Delete this announcement for everyone?')) return;
+    if (!(await confirmDialog({ title: 'Delete this announcement?', message: 'It disappears for everyone. This is recorded in the audit log.', confirmLabel: 'Delete', danger: true }))) return;
     await api(`/announcements/${a.id}`, { method: 'DELETE' }).catch((err: Error) => toast(err.message, 'error'));
     if (full) go('announcements'); else onChanged();
   };

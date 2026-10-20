@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import type { DragEvent } from 'react';
 import { ArrowDown, BellOff, Bell, CheckSquare, Hash, Lock, LogOut, MessageSquare, MoreHorizontal, Pencil, Pin, Send, Trash2, UserPlus, Users, X } from 'lucide-react';
 import { api } from '../api';
+import { confirmDialog } from '../confirm';
 import type { Channel, Message } from '../api';
 import { getSocket } from '../socket';
 import { go, hrefFor, useDmName, useTeam, useTeamEvent } from '../store';
@@ -304,7 +305,9 @@ function MessageItem({ message: m, grouped, channel, highlight, inThread, onCrea
 
   const react = (emoji: string) => api(`/messages/${m.id}/reactions`, { method: 'POST', body: { emoji } }).catch((err: Error) => toast(err.message, 'error'));
   const remove = async () => {
-    if (!window.confirm(mine ? 'Delete this message?' : 'Delete this message for everyone? This is recorded in the audit log.')) return;
+    if (!(await confirmDialog(mine
+      ? { title: 'Delete this message?', message: 'It will be removed for everyone in the conversation.', confirmLabel: 'Delete', danger: true }
+      : { title: 'Delete this message for everyone?', message: 'This is recorded in the audit log.', confirmLabel: 'Delete', danger: true }))) return;
     await api(`/messages/${m.id}`, { method: 'DELETE' }).catch((err: Error) => toast(err.message, 'error'));
   };
   const saveEdit = async () => {

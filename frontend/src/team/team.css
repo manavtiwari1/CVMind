@@ -77,6 +77,8 @@
 .tm-btn:hover:not(:disabled) { background: var(--tm-hover) !important; }
 .tm-btn.primary { background: var(--tm-green) !important; border-color: var(--tm-green) !important; color: #fff; }
 .tm-btn.primary:hover:not(:disabled) { background: var(--tm-green-dark) !important; }
+.tm-btn.danger { background: var(--tm-red) !important; border-color: var(--tm-red) !important; color: #fff; }
+.tm-btn.danger:hover:not(:disabled) { background: #b91c1c !important; }
 .tm-btn.ghost { border-color: transparent !important; background: transparent !important; }
 .tm-btn.sm { height: 30px; padding: 0 10px; font-size: 12.5px; }
 .tm-btn.block { width: 100%; }
