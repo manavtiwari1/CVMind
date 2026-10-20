@@ -1,11 +1,25 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Camera } from 'lucide-react';
+import { Camera, Trash2 } from 'lucide-react';
+import { PhotoDialog } from '../../components/ResumePhoto';
 import { api, saveSession, loadSession } from '../api';
 import type { TeamAccount } from '../api';
 import { useTeam } from '../store';
 import { Avatar, Spinner } from '../ui';
-import { checkFile, uploadFile } from '../upload';
+import { fileUrl, uploadFile } from '../upload';
+
+// Grey circle with initials, shown in the photo dialog when there is no photo yet
+const placeholder = (name: string) => {
+  const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('') || '?';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#e5e7eb"/><text x="50%" y="54%" font-family="Inter,Arial,sans-serif" font-size="72" font-weight="700" fill="#6b7280" text-anchor="middle" dominant-baseline="middle">${initials.replace(/[<&>]/g, '')}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+};
+
+// The dialog hands back a cropped JPEG as a data URL; upload it like any other file
+async function dataUrlToFile(dataUrl: string) {
+  const blob = await (await fetch(dataUrl)).blob();
+  return new File([blob], 'profile-photo.jpg', { type: 'image/jpeg' });
+}
 
 export default function Profile() {
   const { me, setMe, person, toast, reloadPeople } = useTeam();
@@ -14,7 +28,7 @@ export default function Profile() {
   const [email, setEmail] = useState(me.email);
   const [notifyEmail, setNotifyEmail] = useState(me.notifyEmail);
   const [busy, setBusy] = useState('');
-  const fileInput = useRef<HTMLInputElement>(null);
+  const [photoDialog, setPhotoDialog] = useState<string | null>(null);
 
   const apply = (admin: TeamAccount) => {
     setMe(admin);
@@ -37,17 +51,37 @@ export default function Profile() {
     }
   };
 
-  const changePhoto = async (file: File) => {
-    const problem = checkFile(file, 2 * 1024 * 1024);
-    if (problem || !file.type.startsWith('image/')) { toast(problem || 'Profile photos must be PNG or JPG.', 'error'); return; }
+  // Same flow as the resume builder: preview → upload → drag and zoom to crop → accept → save
+  const openPhoto = async () => {
+    let current = placeholder(me.name);
+    if (me.avatarFileId) current = await fileUrl(me.avatarFileId).catch(() => current);
+    setPhotoDialog(current);
+  };
+
+  const savePhoto = async (dataUrl: string) => {
+    setPhotoDialog(null);
     setBusy('photo');
     try {
-      const uploaded = await uploadFile(file, { scope: 'avatar' });
+      const uploaded = await uploadFile(await dataUrlToFile(dataUrl), { scope: 'avatar' });
       const { admin } = await api<{ admin: TeamAccount }>('/me', { method: 'PATCH', body: { avatarFileId: uploaded.id } });
       apply(admin);
       toast('Photo updated');
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Could not upload the photo.', 'error');
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const removePhoto = async () => {
+    if (!window.confirm('Remove your profile photo?')) return;
+    setBusy('remove');
+    try {
+      const { admin } = await api<{ admin: TeamAccount }>('/me', { method: 'PATCH', body: { avatarFileId: null } });
+      apply(admin);
+      toast('Photo removed');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Could not remove the photo.', 'error');
     } finally {
       setBusy('');
     }
@@ -59,9 +93,11 @@ export default function Profile() {
       <form className="tm-card pad tm-form" onSubmit={save}>
         <div className="tm-profile-photo">
           <Avatar person={person(me.id)} size={72} />
-          <button type="button" className="tm-btn sm" onClick={() => fileInput.current?.click()} disabled={busy === 'photo'}>{busy === 'photo' ? <Spinner size={14} /> : <Camera size={14} />} Change photo</button>
-          <input ref={fileInput} type="file" accept=".png,.jpg,.jpeg,.webp" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) changePhoto(f); e.target.value = ''; }} />
-          <span className="tm-hint">PNG or JPG, up to 2 MB.</span>
+          <div className="tm-photo-actions">
+            <button type="button" className="tm-btn sm" onClick={openPhoto} disabled={!!busy}>{busy === 'photo' ? <Spinner size={14} /> : <Camera size={14} />} {me.avatarFileId ? 'Change photo' : 'Add photo'}</button>
+            {me.avatarFileId && <button type="button" className="tm-btn sm ghost tm-danger" onClick={removePhoto} disabled={!!busy}>{busy === 'remove' ? <Spinner size={14} /> : <Trash2 size={14} />} Remove photo</button>}
+          </div>
+          <span className="tm-hint">JPG, PNG or WebP. You can drag and zoom to fit it in the circle.</span>
         </div>
         <div className="tm-field">
           <label htmlFor="pf-name">Display name</label>
@@ -84,6 +120,7 @@ export default function Profile() {
         <div><button type="submit" className="tm-btn primary" disabled={busy === 'profile'}>{busy === 'profile' && <Spinner size={14} />} Save</button></div>
       </form>
       <PasswordCard />
+      {photoDialog && <PhotoDialog currentSrc={photoDialog} onSave={savePhoto} onClose={() => setPhotoDialog(null)} />}
     </div>
   );
 }

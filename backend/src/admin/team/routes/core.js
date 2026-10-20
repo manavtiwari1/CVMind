@@ -7,7 +7,7 @@ import { audit } from '../../audit.js';
 import { clean, dateRange, escapeRegex, handle, httpError, isEmail, isId, paging } from '../../util.js';
 import { ROLES } from '../../permissions.js';
 import { isManager, MANAGE, oid, readableChannelIds, requireTeam, visibleTaskFilter } from '../access.js';
-import { attachFiles, canOpenFile, checkUploadScope, newFileKey, publicFile, visibleFileFilter } from '../files.js';
+import { attachFiles, canOpenFile, checkUploadScope, newFileKey, publicFile, softDeleteFiles, visibleFileFilter } from '../files.js';
 import { TeamAnnouncement, TeamChannel, TeamChannelMember, TeamFile, TeamInvitation, TeamMessage, TeamNotification, TeamSubmission, TeamTask } from '../models.js';
 import { teamPeopleFilter } from '../notify.js';
 import { presenceOf } from '../realtime.js';
@@ -92,6 +92,8 @@ router.patch('/me', profile, handle(async (req, res) => {
       const [id] = await attachFiles(req.admin, [req.body.avatarFileId], { scope: 'avatar', type: 'avatar', id: oid(req.admin.id) }, { max: 1 });
       update.avatarFileId = id;
     }
+    // The old photo is removed from storage by the cleanup job
+    if (req.admin.avatarFileId && req.admin.avatarFileId !== String(update.avatarFileId || '')) await softDeleteFiles([req.admin.avatarFileId]);
   }
   const admin = await AdminUser.findByIdAndUpdate(req.admin.id, update, { new: true }).lean();
   invalidateAdminCache(req.admin.id);

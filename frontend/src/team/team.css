@@ -452,6 +452,8 @@
 
 /* Profile */
 .tm-profile-photo { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.tm-photo-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.tm-btn.tm-danger { color: var(--tm-red); }
 
 /* ── Responsive ───────────────────────────────────────────────── */
 @media (max-width: 1100px) {
