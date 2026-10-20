@@ -39,19 +39,26 @@ export function toPublicAdmin(admin) {
     email: admin.email || '',
     role: admin.role,
     roleLabel: ROLES[admin.role]?.label || admin.role,
+    teamOnly: !!ROLES[admin.role]?.teamOnly,
     active: admin.active !== false,
     lastLoginAt: admin.lastLoginAt || null,
     createdAt: admin.createdAt || null,
-    permissions: permissionsFor(admin.role)
+    permissions: permissionsFor(admin.role),
+    chatAccess: admin.chatAccess !== false,
+    mustChangePassword: !!admin.mustChangePassword,
+    notifyEmail: admin.notifyEmail !== false,
+    statusText: admin.statusText || '',
+    avatarFileId: admin.avatarFileId ? String(admin.avatarFileId) : null
   };
 }
 
-function issueToken(admin) {
+// kind 'team' tokens only open the team app (team.cvmind.in), never the admin panel
+function issueToken(admin, { kind = 'admin', ttlMs = ADMIN_TOKEN_TTL_MS } = {}) {
   return signToken({
     sub: String(admin._id || admin.id),
-    kind: 'admin',
+    kind,
     email: admin.username,
-    ttlMs: ADMIN_TOKEN_TTL_MS,
+    ttlMs,
     jti: `v${admin.tokenVersion || 0}`
   });
 }
@@ -77,8 +84,8 @@ async function seedEnvOwner(env) {
   });
 }
 
-// Returns { token, admin } or null for bad credentials
-export async function loginAdmin(username, password) {
+// Returns { token, admin } or null for bad credentials. tokenOptions picks the token kind and lifetime.
+export async function loginAdmin(username, password, tokenOptions) {
   const cleanUser = String(username || '').trim().toLowerCase();
   const cleanPass = String(password || '');
   if (!cleanUser || !cleanPass) return null;
@@ -87,7 +94,7 @@ export async function loginAdmin(username, password) {
   const isEnvOwner = !!env && cleanUser === env.username && cleanPass === env.password;
 
   if (!(await dbReady())) {
-    if (!isEnvOwner) return null;
+    if (!isEnvOwner || tokenOptions?.kind === 'team') return null;
     const admin = { id: ENV_OWNER_ID, username: env.username, name: 'Owner', role: 'owner', tokenVersion: 0 };
     return { token: issueToken(admin), admin: toPublicAdmin(admin) };
   }
@@ -96,7 +103,8 @@ export async function loginAdmin(username, password) {
   if (isEnvOwner) {
     admin = await seedEnvOwner(env);
   } else {
-    admin = await AdminUser.findOne({ username: cleanUser });
+    // The team app signs in with username or work email
+    admin = await AdminUser.findOne(cleanUser.includes('@') ? { email: cleanUser } : { username: cleanUser });
     if (!admin || !admin.active) return null;
     if (!(await bcrypt.compare(cleanPass, admin.passwordHash))) return null;
   }
@@ -104,7 +112,7 @@ export async function loginAdmin(username, password) {
   admin.lastLoginAt = new Date();
   await admin.save();
   invalidateAdminCache(String(admin._id));
-  return { token: issueToken(admin), admin: toPublicAdmin(admin) };
+  return { token: issueToken(admin, tokenOptions), admin: toPublicAdmin(admin) };
 }
 
 // Short cache so every admin request doesn't hit the database for the same account
@@ -126,8 +134,13 @@ async function loadAdmin(id) {
 
 async function resolveAdmin(req) {
   const header = req.headers.authorization || '';
-  const payload = header.startsWith('Bearer ') ? verifyToken(header.slice(7).trim()) : null;
-  if (!payload || payload.kind !== 'admin') return null;
+  return adminFromToken(header.startsWith('Bearer ') ? header.slice(7).trim() : '');
+}
+
+// The signed-in admin for a raw token, or null. The team app passes kind 'team' (REST and socket).
+export async function adminFromToken(token, kind = 'admin') {
+  const payload = token ? verifyToken(token) : null;
+  if (!payload || payload.kind !== kind) return null;
 
   if (payload.sub === ENV_OWNER_ID) {
     // Only valid while the database is down; once it's up the seeded account takes over
@@ -149,7 +162,7 @@ export function requireAdmin(permission) {
   return async (req, res, next) => {
     try {
       const admin = await resolveAdmin(req);
-      if (!admin) {
+      if (!admin || admin.teamOnly) {
         return res.status(401).json({ success: false, code: 'ADMIN_AUTH', error: 'Your admin session has expired. Please sign in again.' });
       }
       if (permission && !admin.permissions.includes(permission)) {

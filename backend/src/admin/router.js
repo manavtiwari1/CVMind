@@ -18,6 +18,7 @@ import orderRoutes from './routes/orders.js';
 import partnerRoutes from './routes/partners.js';
 import systemRoutes from './routes/system.js';
 import exportRoutes, { REPORT_LIST } from './routes/exports.js';
+import teamWorkspaceRoutes from './team/router.js';
 import { requireAdmin } from './auth.js';
 import { ContentReport, Ticket } from './models.js';
 import { dbReady } from './auth.js';
@@ -26,6 +27,8 @@ import { handle } from './util.js';
 // Everything under /api/admin
 const router = express.Router();
 
+// Before teamRoutes: its PATCH /team/:id would otherwise catch PATCH /team/me
+router.use('/team', teamWorkspaceRoutes);
 router.use('/', teamRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/users', userRoutes);

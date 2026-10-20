@@ -44,7 +44,8 @@ export function handle(fn) {
       }
       const status = err.status || (err.name === 'ValidationError' || err.name === 'CastError' ? 400 : 500);
       if (status >= 500) console.error('[admin]', req.method, req.path, err);
-      res.status(status).json({ success: false, error: status >= 500 ? 'Something went wrong. Please try again.' : err.message });
+      // `expose` marks a server-side error whose message is safe and useful to show (e.g. a missing setup)
+      res.status(status).json({ success: false, error: status >= 500 && !err.expose ? 'Something went wrong. Please try again.' : err.message });
     }
   };
 }

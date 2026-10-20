@@ -17,7 +17,9 @@ export const PERMISSIONS = [
   'settings.view', 'settings.manage',
   'system.view',
   'audit.view',
-  'team.manage'
+  'team.manage',
+  // Manage CVMind Team (team.cvmind.in): invitations, channels, announcements, task review
+  'teamchat.manage'
 ];
 
 const ALL = [...PERMISSIONS];
@@ -48,7 +50,12 @@ export const ROLES = {
     label: 'Viewer',
     description: 'Read-only access to dashboards and lists.',
     permissions: ['dashboard.view', 'users.view', 'payments.view', 'tickets.view', 'orders.view', 'partners.view', 'settings.view', 'system.view']
-  }
+  },
+  // CVMind Team members: they use team.cvmind.in only and can't sign in to the admin panel
+  content_intern: { label: 'Content Writing Intern', description: 'CVMind Team only. No admin panel access.', permissions: [], teamOnly: true },
+  graphic_designer: { label: 'Graphic Designer', description: 'CVMind Team only. No admin panel access.', permissions: [], teamOnly: true },
+  frontend_intern: { label: 'Frontend Developer Intern', description: 'CVMind Team only. No admin panel access.', permissions: [], teamOnly: true },
+  fullstack_developer: { label: 'Full Stack Developer', description: 'CVMind Team only. No admin panel access.', permissions: [], teamOnly: true }
 };
 
 export const ROLE_KEYS = Object.keys(ROLES);
@@ -56,6 +63,9 @@ export const ROLE_KEYS = Object.keys(ROLES);
 export function permissionsFor(role) {
   return ROLES[role]?.permissions || [];
 }
+
+// Roles that only open CVMind Team, never the admin panel
+export const isTeamOnlyRole = (role) => !!ROLES[role]?.teamOnly;
 
 export function can(role, permission) {
   return permissionsFor(role).includes(permission);

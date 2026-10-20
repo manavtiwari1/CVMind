@@ -25,6 +25,10 @@ export const isSplitHost = () => baseDomain() !== null;
 
 export const isAppHost = () => isSplitHost() && hostname().startsWith('app.');
 
+// team.cvmind.in is CVMind Team, the internal workspace. Without the split (localhost, previews)
+// it opens at /team.
+export const isTeamHost = () => (isSplitHost() && hostname().startsWith('team.')) || (!isSplitHost() && window.location.pathname.replace(/\/$/, '') === '/team');
+
 const originFor = (sub: 'www' | 'app') => {
   const base = baseDomain();
   if (!base) return window.location.origin;
@@ -49,7 +53,7 @@ export const isCrossHost = (page: string) => isSplitHost() && isAppPage(page) !=
 // Where an address typed on this host should really live, or null to stay. Runs before React
 // renders so visitors never see the wrong site flash.
 export function hostRedirectTarget(signedIn: boolean): string | null {
-  if (!isSplitHost()) return null;
+  if (!isSplitHost() || isTeamHost()) return null;
   const { pathname, search, hash } = window.location;
   const page = pathname.replace(/^\//, '');
 

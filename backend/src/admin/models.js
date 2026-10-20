@@ -15,7 +15,14 @@ const adminUserSchema = new Schema({
   active: { type: Boolean, default: true },
   lastLoginAt: { type: Date, default: null },
   // Bumped to sign this admin out everywhere (role change, deactivation, password reset)
-  tokenVersion: { type: Number, default: 0 }
+  tokenVersion: { type: Number, default: 0 },
+  // CVMind Team (team.cvmind.in)
+  chatAccess: { type: Boolean, default: true },
+  mustChangePassword: { type: Boolean, default: false },
+  notifyEmail: { type: Boolean, default: true },
+  statusText: { type: String, default: '' },
+  avatarFileId: { type: Schema.Types.ObjectId, default: null },
+  lastSeenAt: { type: Date, default: null }
 }, { timestamps: true });
 export const AdminUser = mongoose.models.AdminUser || mongoose.model('AdminUser', adminUserSchema);
 
