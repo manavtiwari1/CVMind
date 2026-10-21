@@ -1,6 +1,6 @@
 import { requireFreeUse, codeHintFeature } from '../billing/gate.js';
 import express from 'express';
-import { runJudgeSubmission, notJudged, nativeRunnersEnabled, NATIVE_LANGUAGES } from '../services/codeJudge.js';
+import { runJudgeSubmission, notJudged, nativeRunnersEnabled, NATIVE_LANGUAGES, judgeMeta } from '../services/codeJudge.js';
 import { getSettings } from '../admin/settings.js';
 import { 
   generateCodeHint, 
@@ -100,17 +100,6 @@ router.get('/problems/:id', async (req, res) => {
 });
 
 // How a problem's data maps onto its function (linked lists, trees, design classes, answer ordering)
-function judgeMeta(problem) {
-  return {
-    kind: problem?.kind,
-    adapter: problem?.adapter,
-    argTypes: problem?.argTypes,
-    returnType: problem?.returnType,
-    compare: problem?.compare,
-    cppSpec: problem?.cppSpec,
-  };
-}
-
 // Run Code (sample test cases only, or one custom input)
 router.post('/run', optionalUser, async (req, res) => {
   try {

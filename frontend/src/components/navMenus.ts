@@ -101,7 +101,7 @@ export const NAV_MENUS: NavMenu[] = [
   },
   {
     label: 'Career',
-    pages: ['linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'elevator-pitch', 'career-roadmap'],
+    pages: ['linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'career-courses', 'ai-tutor', 'learn-with-leo', 'elevator-pitch', 'career-roadmap'],
     columns: [
       {
         heading: 'LinkedIn',
@@ -115,6 +115,7 @@ export const NAV_MENUS: NavMenu[] = [
         heading: 'Career Path',
         tiles: [
           { page: 'career-courses', title: 'Skill Gaps & Courses', desc: 'Find what to learn next', icon: GraduationCap },
+          { page: 'ai-tutor', title: 'Learn with Leo', desc: 'Visual lessons on DSA and CS basics', icon: BookOpen, badge: 'soon' },
           { page: 'elevator-pitch', title: 'Elevator Pitch Builder', desc: 'Introduce yourself in 30 seconds', icon: Presentation },
           { page: 'career-roadmap', title: 'Career Roadmap', desc: 'Plan your next moves', icon: MapIcon },
         ],

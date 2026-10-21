@@ -33,6 +33,9 @@ export const FREE_WEEKLY = {
   negotiation: { label: 'Offer negotiation', limit: 1 }
 };
 
+// New Learn with Leo lessons a day (replays are always free). Pro is fair use; revisit once cost per lesson is known.
+export const LEARN_LEO_DAILY = { free: 1, pro: 10 };
+
 // AI tokens each account can use in a rolling 3-day window
 export const TOKEN_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
 export const TOKEN_LIMITS = { free: 75000, pro: 200000 };

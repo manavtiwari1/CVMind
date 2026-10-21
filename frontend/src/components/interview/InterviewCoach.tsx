@@ -134,13 +134,22 @@ function fromSaved(raw: unknown, mode: InterviewMode): SavedInterview | null {
 
 export default function InterviewCoach({ mode, customApiKey, resumeText: appResumeText, setResumeText, setCurrentPage, loadedWork, setLoadedWork, onFocusChange }: InterviewCoachProps) {
   const copy = COPY[mode];
-  const [flow, setFlow] = useState<Flow>(null);
+  // Arriving from a finished Learn with Leo lesson (?topic=…&from=leo): straight into a technical round on that topic
+  const [handoffTopic] = useState(() => {
+    const q = new URLSearchParams(window.location.search);
+    return q.get('from') === 'leo' ? (q.get('topic') || '').trim().slice(0, 120) : '';
+  });
+  const [flow, setFlow] = useState<Flow>(handoffTopic ? 'cv' : null);
   const [cvSource, setCvSource] = useState<CvSource>(appResumeText.trim().length >= 50 ? 'saved' : 'file');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [resumeUrl, setResumeUrl] = useState('');
   const [dragActive, setDragActive] = useState(false);
-  const [settings, setSettings] = useState<InterviewSettings>({ role: '', level: 'Mid-level', round: 'Mixed', count: 5 });
-  const [jobDescription, setJobDescription] = useState('');
+  const [settings, setSettings] = useState<InterviewSettings>(() => (handoffTopic
+    ? { role: '', level: 'Fresher', round: 'Technical', count: 5 }
+    : { role: '', level: 'Mid-level', round: 'Mixed', count: 5 }));
+  const [jobDescription, setJobDescription] = useState(() => (handoffTopic
+    ? `Focus every question on ${handoffTopic}. I just finished a lesson on it and want to check I can explain and apply it in an interview.`
+    : ''));
   const [jobBusy, setJobBusy] = useState(false);
   const [leoSpeaks, setLeoSpeaks] = useState(true);
   const [phase, setPhase] = useState(0);

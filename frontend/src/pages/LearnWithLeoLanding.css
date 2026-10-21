@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@700&display=swap');
+
+/* Learn with Leo marketing page (www.cvmind.in/ai-tutor). Plain classes with explicit spacing:
+   theme.css resets margin/padding on every element, so Tailwind spacing utilities don't apply.
+   Real screenshots carry the page; sections are separated by space and rules, not boxed cards. */
+
+.llm {
+  --llm-teal: #03c39a;
+  --llm-ink: #0f172a;
+  --llm-teal-ink: #04745d;
+  --llm-muted: #4f5b6b;
+  --llm-rule: #e5e9ee;
+  background: #fff;
+  color: var(--llm-ink);
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+.llm-wrap { max-width: 1680px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 96px); }
+.llm h2 { color: var(--llm-ink); }
+
+.llm-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 12px 22px; border-radius: 10px; background: var(--llm-ink); color: #fff; font-weight: 700; font-size: 1rem; text-decoration: none; transition: background .15s; }
+.llm-btn:hover { background: #1e293b; }
+.llm-btn--light { background: #fff; color: var(--llm-ink); }
+.llm-btn--light:hover { background: #e9f8f3; }
+.llm-btn:focus-visible, .llm-topic-list a:focus-visible, .llm-faq-item button:focus-visible { outline: 3px solid var(--llm-teal); outline-offset: 2px; }
+
+/* hero: copy on the left, two real screens on the right */
+.llm-hero { padding: 64px 0 72px; border-bottom: 1px solid var(--llm-rule); background: #fbfaf6; }
+.llm-hero-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(40px, 5vw, 96px); align-items: center; }
+.llm-eyebrow { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--llm-ink); }
+.llm-soon { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; padding: 3px 8px; border-radius: 999px; background: #fff1c7; color: #6b4300; }
+.llm-hero h1 { font-size: clamp(2.1rem, 4.4vw, 3.4rem); line-height: 1.08; font-weight: 800; letter-spacing: -0.025em; margin: 18px 0 18px; color: var(--llm-ink); }
+.llm-hand { display: block; font-family: 'Kalam', 'Segoe Print', cursive; font-weight: 700; letter-spacing: 0; color: var(--llm-teal-ink); }
+.llm-lead { font-size: 1.15rem; line-height: 1.7; color: var(--llm-muted); max-width: 620px; }
+.llm-cta-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 28px; }
+.llm-note { color: var(--llm-muted); font-size: .92rem; }
+.llm-hero-shots { position: relative; padding: 0 70px 60px 0; }
+.llm-shot { display: block; height: auto; border-radius: 14px; border: 1px solid #e3e1d8; box-shadow: 0 18px 40px rgba(15, 23, 42, .12); }
+.llm-shot--plan { width: 100%; }
+.llm-shot--phone { position: absolute; right: 0; bottom: 0; width: 34%; border-radius: 22px; border: 6px solid #111827; box-shadow: 0 22px 44px rgba(15, 23, 42, .28); }
+
+/* lesson rows: text and a real screenshot, alternating sides */
+.llm-rows { padding: 24px 0; }
+.llm-row { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: clamp(40px, 5vw, 96px); align-items: center; padding: 64px 0; border-bottom: 1px solid var(--llm-rule); }
+.llm-row:last-child { border-bottom: 0; }
+.llm-row--flip { grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); }
+.llm-row--flip .llm-row-copy { order: 2; }
+.llm-num { display: block; font-family: 'Kalam', cursive; font-weight: 700; font-size: 1.6rem; color: var(--llm-teal-ink); margin-bottom: 6px; }
+.llm-row h2 { font-size: clamp(1.5rem, 2.6vw, 2rem); line-height: 1.2; font-weight: 800; margin-bottom: 12px; }
+.llm-row p { color: var(--llm-muted); line-height: 1.7; font-size: 1.04rem; }
+.llm-row-shot { margin: 0; }
+.llm-row-shot img { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid #e3e1d8; box-shadow: 0 12px 30px rgba(15, 23, 42, .08); }
+
+/* where to find Leo: three columns under a rule */
+.llm-where { background: #fbfaf6; border-top: 1px solid var(--llm-rule); border-bottom: 1px solid var(--llm-rule); padding: 64px 0; }
+.llm-where h2, .llm-topics-grid h2, .llm-faq-wrap h2 { font-size: clamp(1.5rem, 2.6vw, 2rem); line-height: 1.2; font-weight: 800; }
+.llm-where-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(32px, 4vw, 72px); margin-top: 30px; }
+.llm-where-grid > div { border-top: 2px solid var(--llm-ink); padding-top: 16px; }
+.llm-where h3 { font-size: 1.06rem; font-weight: 800; margin-bottom: 6px; }
+.llm-where p { color: var(--llm-muted); line-height: 1.65; }
+
+/* topics: a plain list of links */
+.llm-topics-section { padding: 64px 0; }
+.llm-topics-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 9fr); gap: clamp(32px, 4vw, 72px); }
+.llm-topics-grid > div p { color: var(--llm-muted); line-height: 1.65; margin-top: 10px; }
+.llm-topic-list { list-style: none; columns: 3; column-gap: clamp(28px, 3vw, 56px); }
+.llm-topic-list li { break-inside: avoid; border-bottom: 1px solid var(--llm-rule); }
+.llm-topic-list a { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; color: var(--llm-ink); text-decoration: none; font-weight: 600; }
+.llm-topic-list a::after { content: '→'; color: #94a3b8; transition: transform .15s, color .15s; }
+.llm-topic-list a:hover { color: var(--llm-teal-ink); }
+.llm-topic-list a:hover::after { color: var(--llm-teal-ink); transform: translateX(3px); }
+
+/* FAQ: rules between questions */
+.llm-faq-section { padding: 24px 0 72px; }
+.llm-faq-wrap { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 9fr); gap: clamp(32px, 4vw, 72px); align-items: start; }
+.llm-faq { border-top: 1px solid var(--llm-rule); }
+.llm-faq-item { border-bottom: 1px solid var(--llm-rule); }
+.llm-faq-item button { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 0; background: none; border: 0; font: inherit; font-weight: 700; font-size: 1.04rem; text-align: left; color: var(--llm-ink); cursor: pointer; }
+.llm-faq-item svg { flex: none; transition: transform .2s; color: var(--llm-muted); }
+.llm-faq-item.is-open svg { transform: rotate(180deg); }
+.llm-faq-item p { padding: 0 0 18px; color: var(--llm-muted); line-height: 1.7; max-width: 720px; }
+
+.llm-final { background: #0f2f28; padding: 48px 0; }
+.llm-final-inner { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.llm-final-inner > div { flex: 1; min-width: 240px; }
+.llm-final h2 { font-size: 1.6rem; font-weight: 800; margin-bottom: 6px; color: #fff; }
+.llm-final p { color: #c8e8df; line-height: 1.6; }
+
+@media (max-width: 1023px) {
+  .llm-hero-grid { grid-template-columns: minmax(0, 1fr); gap: 40px; }
+  .llm-hero-shots { max-width: 620px; }
+  .llm-row, .llm-row--flip { grid-template-columns: minmax(0, 1fr); gap: 28px; padding: 48px 0; }
+  .llm-row--flip .llm-row-copy { order: 0; }
+  .llm-where-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .llm-topics-grid, .llm-faq-wrap { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .llm-topic-list { columns: 2; }
+}
+@media (max-width: 640px) {
+  .llm-hero { padding: 40px 0 48px; }
+  .llm-wrap { padding: 0 16px; }
+  .llm-hero-shots { padding: 0 44px 44px 0; }
+  .llm-btn { width: 100%; justify-content: center; }
+  .llm-topic-list { columns: 1; }
+}

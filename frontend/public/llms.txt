@@ -6,6 +6,7 @@
 - [Resume Tailor](https://www.cvmind.in/tailor): Rewrite a resume for a specific job description
 - [Interview Prep](https://www.cvmind.in/prep): Mock interview built from your CV and the job
 - [AI Job Finder](https://www.cvmind.in/ai-job-finder): Live jobs ranked against your resume
+- [Learn with Leo](https://www.cvmind.in/ai-tutor): AI tutor that explains DSA and CS topics out loud while drawing on a board, with checkpoints
 - [Pricing](https://www.cvmind.in/pricing): Free and Pro plans
 
 ## Guides

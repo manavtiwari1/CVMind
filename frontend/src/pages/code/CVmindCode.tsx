@@ -15,6 +15,7 @@ import { computeStreak, problemsFor, setTrack, summarize, syncProgress, useProgr
 interface CVmindCodeProps {
   customApiKey?: string;
   initialTab?: string;
+  setCurrentPage?: (page: string) => void;
 }
 
 const THEME_KEY = 'cvmind_code_theme';
@@ -69,7 +70,7 @@ function initialTheme(): 'light' | 'dark' {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-export default function CVmindCode({ customApiKey = '', initialTab = 'problems' }: CVmindCodeProps) {
+export default function CVmindCode({ customApiKey = '', initialTab = 'problems', setCurrentPage }: CVmindCodeProps) {
   const [language, setLanguage] = useState<Language | null>(initialTrack);
   // set during render so the very first read of the store already sees the chosen track
   setTrack(language);
@@ -192,6 +193,7 @@ export default function CVmindCode({ customApiKey = '', initialTab = 'problems' 
             customApiKey={customApiKey}
             onOpen={openProblem}
             onBack={() => changeView('problems')}
+            openPage={setCurrentPage}
           />
         )}
         {activeView === 'roadmap' && <RoadmapPage problems={problems} onOpen={openProblem} />}

@@ -304,6 +304,9 @@ export default function Navbar({
                     <button className={`mobile-drawer-link mobile-sub-sub-link${currentPage === 'career-courses' ? ' active' : ''}`} onClick={() => go('career-courses')}>
                       Skill Gaps &amp; Courses
                     </button>
+                    <button className={`mobile-drawer-link mobile-sub-sub-link${currentPage === 'ai-tutor' || currentPage === 'learn-with-leo' ? ' active' : ''}`} onClick={() => go('ai-tutor')}>
+                      Learn with Leo
+                    </button>
                     <button className={`mobile-drawer-link mobile-sub-sub-link${currentPage === 'elevator-pitch' ? ' active' : ''}`} onClick={() => go('elevator-pitch')}>
                       Elevator Pitch Builder
                     </button>

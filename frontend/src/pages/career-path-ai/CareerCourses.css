@@ -3,6 +3,10 @@
 .cc-gaps li { display: grid; gap: 6px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcfe; }
 .cc-gap-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .cc-gap-top strong { font-size: .95rem; }
+.cc-gap-side { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cc-leo-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px; border: 1px solid #9fe3cf; background: #ecfbf6; color: #04745d; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.cc-leo-btn:hover { background: #d8f6ec; }
+.cc-leo-btn:focus-visible { outline: 2px solid #03a583; outline-offset: 2px; }
 .cc-gaps p { font-size: .88rem; line-height: 1.55; color: var(--muted); }
 
 .cc-courses { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }

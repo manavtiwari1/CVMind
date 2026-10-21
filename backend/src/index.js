@@ -8,6 +8,7 @@ import jobFinderRouter from './routes/jobFinder.js';
 import { startWorkers } from '@cvmind/auto-apply-agent/queue/workers.js';
 import companyRouter from './routes/company.js';
 import codeRouter from './routes/code.js';
+import learnLeoRouter from './routes/learnLeo.js';
 import growthRouter from './routes/growth.js';
 import { previousScan, scoreChange } from './growth/scans.js';
 import { startJobAlerts } from './growth/alerts.js';
@@ -157,6 +158,7 @@ const AI_ROUTE_PATHS = [
   '/api/job-finder',
   '/api/ai',
   '/api/code/ai',
+  '/api/leo',
 ];
 const aiRateLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -2974,6 +2976,8 @@ app.use('/api/company', companyRouter);
 app.use('/_/backend/api/company', companyRouter);
 app.use('/api/code', codeRouter);
 app.use('/_/backend/api/code', codeRouter);
+app.use('/api/leo', learnLeoRouter);
+app.use('/_/backend/api/leo', learnLeoRouter);
 app.use('/api/job-finder', jobFinderRouter);
 app.use('/_/backend/api/job-finder', jobFinderRouter);
 
