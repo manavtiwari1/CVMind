@@ -38,6 +38,18 @@ export const nativeRunnersEnabled = () => process.env.CODE_NATIVE_RUNNERS === 't
  *   compare     'exact' (default) | 'unordered' | 'unordered-deep' | 'float'
  *   cppSpec     signature types for C++ (see scripts/build-problems.mjs); without it C++ is reported as not judged
  */
+// The judge options a problem from the bank (or a custom problem) carries
+export function judgeMeta(problem) {
+  return {
+    kind: problem?.kind,
+    adapter: problem?.adapter,
+    argTypes: problem?.argTypes,
+    returnType: problem?.returnType,
+    compare: problem?.compare,
+    cppSpec: problem?.cppSpec,
+  };
+}
+
 export async function runJudgeSubmission({ code, language, testCases, functionName, meta = {} }) {
   const lang = String(language || 'javascript').toLowerCase();
 

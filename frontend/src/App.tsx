@@ -23,6 +23,7 @@ import { authFetch, AUTH_REQUIRED_EVENT, VERIFY_REQUIRED_EVENT } from './lib/aut
 import { useProductLock } from './lib/productAccess';
 import ProductLocked from './components/ProductLocked';
 import UpgradeModal from './components/UpgradeModal';
+import ComingSoonModal from './learnLeo/ComingSoonModal';
 import { readUser, saveUser, USER_CHANGE_EVENT } from './lib/currentUser';
 import type { LoadedWork, ResumeAnalysis } from './types/api';
 import './styles/theme.css';
@@ -80,6 +81,8 @@ const InvitePage = lazy(() => import('./pages/growth/InvitePage'));
 const JobFinderLanding = lazy(() => import('./pages/jobFinder/JobFinderLanding'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const LeoLessonPage = lazy(() => import('./learnLeo/LeoLessonPage'));
+const LearnWithLeoLanding = lazy(() => import('./pages/LearnWithLeoLanding'));
 
 // VALID_PAGES and AUTH_PATHS live in lib/routes.ts, which the build also reads
 
@@ -667,7 +670,11 @@ export default function App() {
         return <CVmindCodeLanding />;
       case 'code-arena':
       case 'cvmind-code-arena':
-        return <CVmindCode customApiKey={customApiKey} />;
+        return <CVmindCode customApiKey={customApiKey} setCurrentPage={setCurrentPage} />;
+      case 'ai-tutor':
+        return <LearnWithLeoLanding />;
+      case 'learn-with-leo':
+        return <LeoLessonPage setCurrentPage={setCurrentPage} />;
       case 'verify-email':
         // Full-screen like the sign-in overlay, so it renders outside <main> (see below)
         return null;
@@ -694,14 +701,14 @@ export default function App() {
   // The Portfolio Generator is a full-screen chat with its own top bar and Back button
   const isPortfolioStudio = currentPage === 'portfolio-gen';
   // Job Finder has its own top bar
-  const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && currentPage !== 'job-finder' && !isFocusFlow && !isPortfolioStudio;
+  const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && currentPage !== 'job-finder' && currentPage !== 'learn-with-leo' && !isFocusFlow && !isPortfolioStudio;
   const isMinimalPage = currentPage === 'dashboard' || currentPage === 'admin' || currentPage === 'portfolio' || currentPage === 'verify-email' || isCodePage || isFocusFlow || isAppPage || isPortfolioStudio;
   // The resume report has its own top bar instead of the site header and footer
   const isReportPage = currentPage === 'dashboard';
   // The Help Center (and its Contact form) is full-width with its own top bar and footer instead of the site ones
   const isHelpPage = currentPage === 'help-center' || currentPage === 'contact';
   // Landing pages that run edge to edge under the site navbar
-  const isWidePage = currentPage === 'cover-letter-generator' || currentPage === 'cover-letter-builder' || currentPage === 'resume-builder' || currentPage === 'pricing';
+  const isWidePage = currentPage === 'cover-letter-generator' || currentPage === 'cover-letter-builder' || currentPage === 'resume-builder' || currentPage === 'pricing' || currentPage === 'ai-tutor';
 
   // Unverified accounts see the verify screen over locked app pages, or when the server refused a request
   const unverified = isLoggedIn && emailVerified === false;
@@ -761,6 +768,7 @@ export default function App() {
       {routeLoading && <PageLoader />}
 
       <UpgradeModal setCurrentPage={setCurrentPage} />
+      <ComingSoonModal currentPage={currentPage} setCurrentPage={setCurrentPage} />
 
       {!isMinimalPage && !isHelpPage && !isNotFound && !isProductPage && <Footer setCurrentPage={setCurrentPage} />}
 

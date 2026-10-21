@@ -30,6 +30,7 @@ const TOOLS_RIGHT: FooterLink[] = [
   { label: 'AI Job Finder', page: 'ai-job-finder' },
   { label: 'Auto Apply Agent', page: 'auto-apply' },
   { label: 'CVMind Code', page: 'code' },
+  { label: 'Learn with Leo', page: 'ai-tutor' },
 ];
 
 const RESUME: FooterLink[] = [

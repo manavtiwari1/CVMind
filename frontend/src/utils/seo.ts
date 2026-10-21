@@ -116,6 +116,16 @@ const PAGE_SEO: Record<string, PageSEO> = {
     description: 'Search live jobs from job sites, company careers pages and CVMind recruiters. See a match score and the missing skills for every job, and never apply to the same job twice.',
     keywords: 'AI Job Finder, Job Search India, Resume Job Match, Jobs for Freshers, Remote Jobs, Match Score, CVMind Pro',
   },
+  'ai-tutor': {
+    title: 'Learn with Leo - AI Tutor for DSA & Placement Prep | CV Mind',
+    description: 'Leo explains one technical topic at a time, out loud, while drawing code and diagrams on a board. Quick checkpoints, then practise it in Interview Prep. 1 free lesson a day.',
+    keywords: 'AI Tutor, Learn DSA, Binary Search Explained, Placement Preparation, Coding Interview Preparation, Learn with Leo',
+  },
+  'learn-with-leo': {
+    title: 'Learn with Leo - Visual Lessons for Placements | CV Mind',
+    description: 'Leo teaches one technical topic at a time: he talks you through it, draws it on a board, and checks you understood before you practise it in Interview Prep.',
+    keywords: 'Learn DSA, Binary Search Explained, Placement Preparation, Coding Lessons, Interview Preparation',
+  },
   'job-finder': {
     title: 'AI Job Finder | CV Mind',
     description: 'Search live jobs ranked against your resume. Part of CVMind Pro.',

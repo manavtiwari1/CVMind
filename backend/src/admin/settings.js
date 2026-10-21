@@ -17,6 +17,7 @@ export const FEATURES = {
   negotiation: { label: 'Offer negotiation', description: 'Counter-offer email and call script', paths: ['/api/negotiation'] },
   chat: { label: 'AI assistant', description: 'Site chat assistant', paths: ['/api/chat'] },
   code: { label: 'CVMind Code', description: 'Coding practice and judge', paths: ['/api/code'] },
+  'learn-leo': { label: 'Learn with Leo', description: 'Visual lessons with voice, board and checkpoints', paths: ['/api/leo'] },
   'auto-apply': { label: 'Auto Apply', description: 'Auto Apply agent and extension', paths: ['/api/auto-apply', '/api/agent'] },
   'company-portal': { label: 'Company portal', description: 'Recruiter sign-up and job posting', paths: ['/api/company'] },
   signups: { label: 'New sign-ups', description: 'New accounts by email or social login', paths: ['/api/auth/signup'] }

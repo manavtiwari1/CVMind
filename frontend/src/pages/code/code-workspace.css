@@ -184,3 +184,12 @@
   .cx-console-slot { height: 40% !important; }
   .cx-ws-bar-right .cx-icon-btn { display: none; }
 }
+
+/* "Stuck? Learn with Leo": quiet until the student is stuck (2 failed submits or 10 minutes) */
+.cx-leo-btn { color: #04745d; border-color: #9fe3cf; background: #f2fcf9; }
+.cx-leo-btn:hover:not(:disabled) { background: #dcf7ee; }
+.cx-leo-btn.is-stuck { color: #fff; background: #04745d; border-color: #04745d; box-shadow: 0 0 0 0 rgba(3, 195, 154, .5); animation: cx-leo-pulse 2s ease-out 3; }
+.cx-leo-btn.is-stuck:hover:not(:disabled) { background: #035e4b; }
+@keyframes cx-leo-pulse { 70% { box-shadow: 0 0 0 10px rgba(3, 195, 154, 0); } 100% { box-shadow: 0 0 0 0 rgba(3, 195, 154, 0); } }
+@media (max-width: 900px) { .cx-leo-label { display: none; } }
+@media (prefers-reduced-motion: reduce) { .cx-leo-btn.is-stuck { animation: none; } }

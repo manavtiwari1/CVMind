@@ -8,6 +8,7 @@ import {
 import type { IntroCopy } from '../../components/career/CareerKit';
 import { cvLabel, downloadText, postCareer, resultKey, useCareerRun, useChecklist, useCvInput } from '../../components/career/careerApi';
 import { readUser } from '../../lib/currentUser';
+import { openLearnWithLeo } from '../../lib/leoAccess';
 import { parseSavedContent } from '../../utils/savedWork';
 import type { LoadedWork } from '../../types/api';
 import './CareerCourses.css';
@@ -156,6 +157,7 @@ export default function CareerCourses({ customApiKey, resumeText, setCurrentPage
       <CoursesView
         result={result}
         targetJob={targetJob}
+        level={level}
         meta={[targetJob, level, sourceName].filter(Boolean).join(' · ')}
         onAgain={runner.toIntro}
         setCurrentPage={setCurrentPage}
@@ -191,12 +193,20 @@ export default function CareerCourses({ customApiKey, resumeText, setCurrentPage
 interface CoursesViewProps {
   result: CoursesResult;
   targetJob: string;
+  level: string;
   meta: string;
   onAgain: () => void;
   setCurrentPage?: (page: string) => void;
 }
 
-function CoursesView({ result, targetJob, meta, onAgain, setCurrentPage }: CoursesViewProps) {
+// Skill Gap levels mapped to how deep a Learn with Leo lesson goes
+const LEO_LEVEL: Record<string, string> = { 'Entry level': 'beginner', 'Mid-level': 'intermediate', Senior: 'advanced' };
+
+function CoursesView({ result, targetJob, level, meta, onAgain, setCurrentPage }: CoursesViewProps) {
+  const learnWithLeo = (skill: string) => {
+    const q = new URLSearchParams({ topic: skill, source: 'skill_gap', role: targetJob, level: LEO_LEVEL[level] || 'beginner' });
+    void openLearnWithLeo(() => setCurrentPage?.(`learn-with-leo?${q.toString()}`));
+  };
   const courses = result.courses ?? [];
   const strengths = result.strengths ?? [];
   const projects = result.projects ?? [];
@@ -244,7 +254,14 @@ function CoursesView({ result, targetJob, meta, onAgain, setCurrentPage }: Cours
                 <li key={g.skill}>
                   <div className="cc-gap-top">
                     <strong>{g.skill}</strong>
-                    {g.priority && <span className={`crt-tag crt-tag--${priorityTone(g.priority)}`}>{g.priority} priority</span>}
+                    <span className="cc-gap-side">
+                      {g.priority && <span className={`crt-tag crt-tag--${priorityTone(g.priority)}`}>{g.priority} priority</span>}
+                      {setCurrentPage && (
+                        <button type="button" className="cc-leo-btn" onClick={() => learnWithLeo(g.skill)}>
+                          <GraduationCap size={14} aria-hidden="true" /> Learn with Leo
+                        </button>
+                      )}
+                    </span>
                   </div>
                   {g.why && <p>{g.why}</p>}
                 </li>

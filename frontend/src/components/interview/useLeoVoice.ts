@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 const synth = typeof window !== 'undefined' && 'speechSynthesis' in window ? window.speechSynthesis : null;
 
 /** Picks a natural-sounding English voice, preferring Indian English, then the browser's "Natural"/Google voices. */
-function pickVoice(): SpeechSynthesisVoice | null {
+export function pickVoice(): SpeechSynthesisVoice | null {
   if (!synth) return null;
   const voices = synth.getVoices().filter(v => v.lang.toLowerCase().startsWith('en'));
   if (!voices.length) return null;

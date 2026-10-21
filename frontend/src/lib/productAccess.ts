@@ -20,6 +20,7 @@ export const PRODUCT_LABELS: Record<string, string> = {
   negotiation: 'Offer negotiation',
   chat: 'AI assistant',
   code: 'CVMind Code',
+  'learn-leo': 'Learn with Leo',
   leo: 'Leo AI'
 };
 
@@ -49,7 +50,8 @@ const PAGE_PRODUCTS: Record<string, string> = {
   code: 'code',
   'cvmind-code': 'code',
   'code-arena': 'code',
-  'cvmind-code-arena': 'code'
+  'cvmind-code-arena': 'code',
+  'learn-with-leo': 'learn-leo'
 };
 
 export const productForPage = (page: string): string | null => PAGE_PRODUCTS[page] || null;

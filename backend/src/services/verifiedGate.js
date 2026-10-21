@@ -27,6 +27,7 @@ const VERIFIED_ONLY = [
   { path: '/api/chat' },
   { path: '/api/ai' },
   { path: '/api/code/ai' },
+  { path: '/api/leo' },
   { path: '/api/negotiation' },
   { path: '/api/user/work', methods: ['POST'] },
   { path: '/api/user/share', methods: ['PUT'] },
@@ -35,7 +36,7 @@ const VERIFIED_ONLY = [
 
 // Exceptions inside the paths above: no AI and nothing saved, so anyone can use them
 // (the Cover Letter Generator reads the uploaded resume before asking the visitor to sign in)
-const ALWAYS_OPEN = ['/api/cover-letter/read-resume'];
+const ALWAYS_OPEN = ['/api/cover-letter/read-resume', '/api/leo/access'];
 
 // Open to signed-out visitors (or other token kinds, e.g. the extension), but closed to signed-in unverified accounts
 const UNVERIFIED_BLOCKED = [

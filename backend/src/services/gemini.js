@@ -511,7 +511,7 @@ const WRITING_STYLE = `WRITING STYLE (applies to all text you write):
 - Vary sentence length. Prefer short, direct sentences.`;
 
 // ─── DEEPSEEK GENERIC API CALL HELPER ─────────────────────────────────────────
-async function callDeepSeek({
+export async function callDeepSeek({
   systemInstruction,
   prompt,
   responseSchema,

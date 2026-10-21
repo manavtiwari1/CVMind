@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Editor, { type OnMount } from '@monaco-editor/react';
 import confetti from 'canvas-confetti';
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Clock, Copy, Lock, Maximize2, Minimize2, Play, RotateCcw, Send, Settings2 } from 'lucide-react';
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Clock, Copy, GraduationCap, Lock, Maximize2, Minimize2, Play, RotateCcw, Send, Settings2 } from 'lucide-react';
 import type { CodingProblem } from '../../data/codingProblems';
 import { getErrorMessage } from '../../utils/errors';
 import {
@@ -11,6 +11,8 @@ import {
 import { loadDraft, recordSubmission, saveDraft, clearDraft, setLastProblem, syncProgress, useProgress } from './codeStore';
 import DescriptionPane, { type LeftTab } from './workspace/DescriptionPane';
 import ConsolePane, { type AiState, type ConsoleTab, type ResultState } from './workspace/ConsolePane';
+import { PROBLEM_HANDOFF_KEY, type ProblemHandoff } from '../../learnLeo/learnLeoApi';
+import { openLearnWithLeo } from '../../lib/leoAccess';
 import './code-workspace.css';
 
 interface WorkspaceProps {
@@ -26,7 +28,13 @@ interface WorkspaceProps {
   backLabel?: string;
   /** Extra controls in the top bar, for example a countdown. */
   barExtra?: ReactNode;
+  /** Opens another app page; enables "Stuck? Learn with Leo". */
+  openPage?: (page: string) => void;
 }
+
+// "Stuck? Learn with Leo" lights up after this many failed submissions or this long on the problem
+const STUCK_FAILS = 2;
+const STUCK_MS = 10 * 60 * 1000;
 
 interface EditorPrefs { fontSize: number; wrap: boolean; tabSize: number }
 interface LayoutPrefs { left: number; console: number }
@@ -67,7 +75,7 @@ function formatClock(total: number) {
 
 const idleAi = <T,>(): AiState<T> => ({ loading: false, data: null, error: '' });
 
-export default function Workspace({ problem, problems, language, theme, customApiKey = '', onOpen, onBack, backLabel = 'Problems', barExtra }: WorkspaceProps) {
+export default function Workspace({ problem, problems, language, theme, customApiKey = '', onOpen, onBack, backLabel = 'Problems', barExtra, openPage }: WorkspaceProps) {
   const progress = useProgress();
   const rootRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -98,6 +106,13 @@ export default function Workspace({ problem, problems, language, theme, customAp
   const [confirmReset, setConfirmReset] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [mobilePane, setMobilePane] = useState<'problem' | 'code'>('problem');
+
+  const [failedSubmits, setFailedSubmits] = useState(0);
+  const [longStay, setLongStay] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setLongStay(true), STUCK_MS);
+    return () => window.clearTimeout(t);
+  }, []);
 
   const [clockOn, setClockOn] = useState(false);
   const [clockRunning, setClockRunning] = useState(false);
@@ -205,12 +220,31 @@ export default function Workspace({ problem, problems, language, theme, customAp
         passedTests: data.passedTests, totalTests: data.totalTests, runtimeMs: data.runtimeMs, code, verified,
       });
       if (verified && data.verdict === 'Accepted') confetti({ particleCount: 90, spread: 70, origin: { y: 0.7 } });
+      else if (verified) setFailedSubmits((n) => n + 1);
     } catch (err) {
       setResult({ kind: 'submit', data: { verdict: 'Could not submit', error: getErrorMessage(err) } });
     } finally {
       setBusy(null);
     }
   }, [busy, problem.id, problem.title, code, language]);
+
+  // Hands the problem, the code and the first failing test to Learn with Leo; the draft is saved first
+  // so "Back to problem" finds the code exactly as it was
+  const learnWithLeo = () => openLearnWithLeo(() => {
+    if (!openPage) return;
+    saveDraft(problem.id, language, code);
+    const failed = result?.data.results?.find((r) => !r.passed && r.expected !== null);
+    const handoff: ProblemHandoff = {
+      problemId: problem.id,
+      title: problem.title,
+      code,
+      codeLanguage: language,
+      failingTest: failed ? { input: failed.input, expected: failed.expected, actual: failed.actual, error: failed.error ?? null } : null,
+    };
+    try { sessionStorage.setItem(PROBLEM_HANDOFF_KEY, JSON.stringify(handoff)); } catch { /* storage blocked: Leo plans from the problem alone */ }
+    openPage(`learn-with-leo?problem=${encodeURIComponent(problem.id)}`);
+  });
+  const stuck = failedSubmits >= STUCK_FAILS || longStay;
 
   // Monaco lives outside React's event system, so shortcuts call the latest handlers through refs.
   const runRef = useRef(handleRun);
@@ -310,6 +344,17 @@ export default function Workspace({ problem, problems, language, theme, customAp
           <button type="button" className="cx-btn cx-btn--primary" onClick={() => void handleSubmit()} disabled={!!busy} title="Submit for judging (Ctrl/Cmd + Enter)">
             <Send size={15} /> {busy === 'submit' ? 'Judging…' : 'Submit'}
           </button>
+          {openPage && (
+            <button
+              type="button"
+              className={`cx-btn cx-leo-btn${stuck ? ' is-stuck' : ''}`}
+              onClick={learnWithLeo}
+              aria-label="Stuck? Learn with Leo"
+              title="Leo explains the idea behind this problem and where your code goes wrong, with hints first"
+            >
+              <GraduationCap size={15} /> <span className="cx-leo-label">Stuck? Learn with Leo</span>
+            </button>
+          )}
         </div>
 
         <div className="cx-ws-bar-right">
