@@ -13,13 +13,15 @@ const TYPES = [
   { id: 'image', label: 'Images' },
   { id: 'pdf', label: 'PDF' },
   { id: 'doc', label: 'Docs' },
-  { id: 'text', label: 'Text' }
+  { id: 'text', label: 'Text' },
+  { id: 'video', label: 'Recordings' }
 ];
 
 function sourceHref(f: MediaFile) {
   if (f.scope === 'channel' && f.scopeId) return hrefFor('chat', f.scopeId, f.parentId ? { thread: f.parentId } : { m: f.attachedTo?.id || '' });
   if (f.scope === 'task' && f.scopeId) return hrefFor('tasks', f.scopeId);
   if (f.scope === 'announcement' && f.attachedTo) return hrefFor('announcements', f.attachedTo.id);
+  if (f.scope === 'meeting' && f.scopeId) return hrefFor('meet', f.scopeId);
   return '';
 }
 
@@ -45,6 +47,7 @@ export default function Media() {
       return c.kind === 'dm' ? `DM with ${(c.memberIds || []).filter((m) => m !== me.id).map(nameOf).join(', ')}` : `#${c.name}`;
     }
     if (f.scope === 'task') return f.version ? `Task submission v${f.version}` : 'a task';
+    if (f.scope === 'meeting') return 'a meeting recording';
     return 'an announcement';
   };
   const open = (f: MediaFile, download = false) => openFile(f.id, download).catch((err: Error) => toast(err.message, 'error'));
@@ -62,6 +65,7 @@ export default function Media() {
           <option value="">Shared anywhere</option>
           <option value="task">Tasks</option>
           <option value="announcement">Announcements</option>
+          <option value="meeting">Meetings</option>
           {channels.filter((c) => c.kind !== 'dm').map((c) => <option key={c.id} value={`channel:${c.id}`}>#{c.name}</option>)}
         </select>
         <select className="tm-input sm" value={uploadedBy} onChange={(e) => { setUploadedBy(e.target.value); setPage(1); }} aria-label="Shared by">

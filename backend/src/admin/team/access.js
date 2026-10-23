@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { adminFromToken, dbReady } from '../auth.js';
 import { httpError, isId } from '../util.js';
-import { TeamChannel, TeamChannelMember, TeamTask } from './models.js';
+import { TeamChannel, TeamChannelMember, TeamMeeting, TeamTask } from './models.js';
 
 export const MANAGE = 'teamchat.manage';
 export const isManager = (admin) => !!admin?.permissions?.includes(MANAGE);
@@ -70,3 +70,30 @@ export async function taskFor(admin, taskId) {
 
 // Tasks this person can see, as a Mongo filter
 export const visibleTaskFilter = (admin) => (isManager(admin) ? {} : { $or: [{ assigneeIds: oid(admin.id) }, { createdBy: oid(admin.id) }] });
+
+// ── Meetings ─────────────────────────────────────────────────────────────────
+// A channel meeting is open to everyone who can read the channel (a DM's only to its members);
+// a scheduled meeting also to its invitees; one without a channel to its invitees and managers.
+export async function canJoinMeeting(admin, meeting) {
+  if (!meeting) return false;
+  if (sameId(meeting.hostId, admin.id) || sameId(meeting.createdBy, admin.id)) return true;
+  if ((meeting.inviteeIds || []).some((i) => sameId(i, admin.id))) return true;
+  if (meeting.channelId) return channelFor(admin, meeting.channelId).then(() => true, () => false);
+  return isManager(admin);
+}
+
+// The meeting if this person can join it, else a 404 (never a 403, so ids can't be probed)
+export async function meetingFor(admin, meetingId) {
+  if (!isId(meetingId)) throw httpError(404, 'Meeting not found.');
+  const meeting = await TeamMeeting.findById(meetingId);
+  if (!meeting || !(await canJoinMeeting(admin, meeting))) throw httpError(404, 'Meeting not found.');
+  return meeting;
+}
+
+// Meetings this person can see, as a Mongo filter
+export async function visibleMeetingFilter(admin) {
+  const me = oid(admin.id);
+  const or = [{ channelId: { $in: await readableChannelIds(admin) } }, { inviteeIds: me }, { hostId: me }, { createdBy: me }];
+  if (isManager(admin)) or.push({ channelId: null });
+  return { $or: or };
+}

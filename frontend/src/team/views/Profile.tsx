@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Camera, Trash2 } from 'lucide-react';
+import { Bell, BellOff, Camera, Shield, Trash2 } from 'lucide-react';
+import { disablePush, enablePush, isInstalled, isIos, pushState } from '../push';
 import { PhotoDialog } from '../../components/ResumePhoto';
 import { api, saveSession, loadSession } from '../api';
 import { confirmDialog } from '../confirm';
@@ -120,9 +121,77 @@ export default function Profile() {
         <label className="tm-check"><input type="checkbox" checked={notifyEmail} onChange={(e) => setNotifyEmail(e.target.checked)} /> <span><strong>Email me</strong> about mentions, messages and tasks I haven't seen for 30 minutes</span></label>
         <div><button type="submit" className="tm-btn primary" disabled={busy === 'profile'}>{busy === 'profile' && <Spinner size={14} />} Save</button></div>
       </form>
+      <PushCard onAccount={apply} />
       <PasswordCard />
+      <PrivacyCard />
       {photoDialog && <PhotoDialog currentSrc={photoDialog} onSave={savePhoto} onClose={() => setPhotoDialog(null)} />}
     </div>
+  );
+}
+
+// What CVMind Team keeps and who sees it, in plain words
+function PrivacyCard() {
+  return (
+    <section className="tm-card pad tm-privacy">
+      <h2 className="tm-h2"><Shield size={16} /> Your data on CVMind Team</h2>
+      <ul>
+        <li><strong>Check-ins, leave and attendance</strong> are seen by you and by managers only.</li>
+        <li><strong>Leo</strong> reads only what you can already see. When someone presses Summarise, Draft task or Progress report, that text is sent to DeepSeek, our AI provider, to write the answer.</li>
+        <li><strong>Meetings</strong> go directly between browsers. When live captions are on, your browser turns your speech into text; the text is saved with the meeting and sent to DeepSeek for Leo's notes. You can stop being transcribed from the meeting's ⋮ menu.</li>
+        <li><strong>Recordings</strong> are only made by the host, with a banner for everyone, and are visible to the people who could join the meeting.</li>
+        <li><strong>Browser notifications</strong> go to the devices you turn them on for, and stop when you sign out there.</li>
+      </ul>
+    </section>
+  );
+}
+
+// Browser notifications are per device: each browser or phone is turned on here separately
+function PushCard({ onAccount }: { onAccount: (a: TeamAccount) => void }) {
+  const { me, toast } = useTeam();
+  const [state, setState] = useState<'on' | 'off' | 'denied' | 'unsupported' | 'loading'>('loading');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { pushState().then(setState).catch(() => setState('unsupported')); }, []);
+  const iosNeedsInstall = isIos() && !isInstalled();
+
+  const turnOn = async () => {
+    setBusy(true);
+    try {
+      await enablePush();
+      if (!me.notifyPush) onAccount((await api<{ admin: TeamAccount }>('/me', { method: 'PATCH', body: { notifyPush: true } })).admin);
+      setState('on');
+      toast('Notifications are on for this browser');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Could not turn on notifications.', 'error');
+      setState(await pushState().catch(() => 'unsupported' as const));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const turnOff = async () => {
+    setBusy(true);
+    await disablePush();
+    setState('off');
+    setBusy(false);
+    toast('Notifications are off for this browser');
+  };
+
+  return (
+    <section className="tm-card pad tm-form">
+      <h2 className="tm-h2"><Bell size={16} /> Browser notifications</h2>
+      <p className="tm-muted">Get mentions, messages, tasks, check-in reminders and leave decisions on this device, even when CVMind Team is closed.</p>
+      {state === 'loading' && <Spinner />}
+      {state === 'unsupported' && (iosNeedsInstall
+        ? <p className="tm-notice">On iPhone, first add CVMind Team to your Home Screen: tap <strong>Share</strong> in Safari, then <strong>Add to Home Screen</strong>. Open it from there and turn notifications on.</p>
+        : <p className="tm-notice">This browser doesn't support notifications. Try Chrome, Edge or Firefox.</p>)}
+      {state === 'denied' && <p className="tm-notice amber"><BellOff size={15} /> Notifications are blocked for this site. Allow them in your browser's site settings, then reload.</p>}
+      {state === 'off' && <div><button type="button" className="tm-btn primary" disabled={busy} onClick={turnOn}>{busy && <Spinner size={14} />} <Bell size={15} /> Turn on for this browser</button></div>}
+      {state === 'on' && (
+        <div className="tm-inline">
+          <span className="tm-badge status-approved">On for this browser</span>
+          <button type="button" className="tm-btn ghost" disabled={busy} onClick={turnOff}><BellOff size={15} /> Turn off</button>
+        </div>
+      )}
+    </section>
   );
 }
 

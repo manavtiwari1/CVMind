@@ -17,6 +17,7 @@ export interface TeamAccount {
   chatAccess: boolean;
   mustChangePassword: boolean;
   notifyEmail: boolean;
+  notifyPush: boolean;
   statusText: string;
   avatarFileId: string | null;
 }
@@ -70,6 +71,7 @@ export interface Message {
   reactions: Reaction[];
   files: TeamFile[];
   taskId: string | null;
+  meetingId: string | null;
   pinnedAt: string | null;
   editedAt: string | null;
   deletedAt: string | null;
@@ -108,10 +110,16 @@ export interface Task {
   sourceChannelId: string | null;
   files: TeamFile[];
   blockedReason: string;
+  checklist: ChecklistItem[];
+  recurrence: { freq: Repeat; until: string | null } | null;
+  recurrenceOf: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
+
+export type Repeat = 'daily' | 'weekly' | 'monthly';
+export interface ChecklistItem { id: string; text: string; done: boolean; doneBy: string | null; doneAt: string | null }
 
 export interface Submission {
   id: string;
@@ -162,6 +170,42 @@ export interface Notification {
   taskId: string | null;
   preview: string;
   readAt: string | null;
+  createdAt: string;
+}
+
+export interface Meeting {
+  id: string;
+  title: string;
+  channelId: string | null;
+  createdBy: string;
+  hostId: string;
+  scheduledAt: string | null;
+  durationMin: number;
+  inviteeIds: string[];
+  status: 'scheduled' | 'live' | 'ended' | 'cancelled';
+  startedAt: string | null;
+  endedAt: string | null;
+  participantIds: string[];
+  liveIds: string[];
+  recordingFileIds: string[];
+  notes: { status: 'pending' | 'ready' | 'failed'; summary: string; decisions: string[]; actionItems: Array<{ text: string; owner: string }>; openQuestions: string[]; error: string; at: string | null } | null;
+  createdAt: string;
+}
+
+export interface Standup { id: string; adminId: string; day: string; done: string; doing: string; blockers: string; createdAt: string; updatedAt: string }
+
+export type LeaveKind = 'casual' | 'sick' | 'wfh';
+export interface Leave {
+  id: string;
+  adminId: string;
+  from: string;
+  to: string;
+  kind: LeaveKind;
+  reason: string;
+  status: 'pending' | 'approved' | 'declined' | 'cancelled';
+  reviewedBy: string | null;
+  reviewComment: string;
+  reviewedAt: string | null;
   createdAt: string;
 }
 

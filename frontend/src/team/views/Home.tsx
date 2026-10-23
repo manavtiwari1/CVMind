@@ -1,9 +1,10 @@
-import { AtSign, CheckSquare, Megaphone, MessageSquare, Pin } from 'lucide-react';
-import type { Notification, Task } from '../api';
+import { AtSign, CheckSquare, ClipboardCheck, Megaphone, MessageSquare, Pin, Video } from 'lucide-react';
+import type { Leave, Meeting, Notification, Standup, Task } from '../api';
 import { hrefFor, useLoad, useTeam, useTeamEvent } from '../store';
 import { ago, isOverdue, notificationHref } from '../format';
 import { Empty, Spinner } from '../ui';
 import { TaskRow } from './Tasks';
+import { MeetingRow } from './Meetings';
 
 interface HomeData {
   tasks: Task[];
@@ -18,6 +19,10 @@ const startOfTomorrow = () => { const d = new Date(); d.setHours(24, 0, 0, 0); r
 export default function Home() {
   const { me, nameOf, channels } = useTeam();
   const { data, loading, reload } = useLoad<HomeData>('/home');
+  const checkin = useLoad<{ workingDay: boolean; data: Standup | null; leave: Leave | null }>('/checkin');
+  const liveMeetings = useLoad<{ data: Meeting[] }>('/meetings', { scope: 'live' });
+  const nextMeetings = useLoad<{ data: Meeting[] }>('/meetings', { scope: 'upcoming', limit: 3 });
+  useTeamEvent('meeting.updated', () => { liveMeetings.reload(); nextMeetings.reload(); });
   useTeamEvent('task.updated', reload, reload);
   useTeamEvent('announcement.created', reload);
   useTeamEvent('notification.new', reload);
@@ -42,6 +47,14 @@ export default function Home() {
   return (
     <div className="tm-page">
       <header className="tm-page-head"><h1>{hello}, {me.name.split(' ')[0]}</h1><p className="tm-muted">Here is what needs your attention.</p></header>
+
+      {checkin.data && checkin.data.workingDay && !checkin.data.data && !(checkin.data.leave && checkin.data.leave.kind !== 'wfh') && (
+        <a className="tm-checkin-cta" href={hrefFor('checkin')}>
+          <ClipboardCheck size={20} />
+          <span><strong>Post today's check-in</strong><span className="tm-muted small">What you finished, what you're doing today, and anything blocking you.</span></span>
+          <span className="tm-btn primary sm">Check in</span>
+        </a>
+      )}
 
       {data.manager && (
         <div className="tm-stats">
@@ -69,6 +82,13 @@ export default function Home() {
         </section>
 
         <div className="tm-home-side">
+          {(!!liveMeetings.data?.data.length || !!nextMeetings.data?.data.length) && (
+            <section className="tm-card tm-list">
+              <h2 className="tm-h2 pad"><Video size={16} /> Meetings</h2>
+              {[...(liveMeetings.data?.data || []), ...(nextMeetings.data?.data || [])].slice(0, 4).map((m) => <MeetingRow key={m.id} m={m} />)}
+              <a className="tm-link pad-link" href={hrefFor('meetings')}>All meetings</a>
+            </section>
+          )}
           <section className="tm-card pad">
             <h2 className="tm-h2"><Megaphone size={16} /> Announcements</h2>
             {!data.announcements.length && <p className="tm-muted">No announcements yet.</p>}

@@ -4,8 +4,8 @@ import { audit } from '../../audit.js';
 import { clean, handle, httpError, isId, paging } from '../../util.js';
 import { channelFor, isManager, MANAGE, oid, requireTeam, sameId, taskFor, visibleTaskFilter } from '../access.js';
 import { attachFiles, softDeleteFiles } from '../files.js';
-import { TASK_PRIORITIES, TeamChannel, TeamFile, TeamMessage, TeamSubmission, TeamTask, TeamTaskActivity, TeamTaskComment } from '../models.js';
-import { notify, parseMentions, teamPeopleFilter } from '../notify.js';
+import { TASK_PRIORITIES, TASK_REPEATS, TeamChannel, TeamFile, TeamMessage, TeamSubmission, TeamTask, TeamTaskActivity, TeamTaskComment } from '../models.js';
+import { managerIds, notify, parseMentions, teamPeopleFilter } from '../notify.js';
 import { emitToChannel, emitToUser } from '../realtime.js';
 import { filesFor, publicComment, publicSubmission, publicTask } from '../serialize.js';
 import { ROLES } from '../../permissions.js';
@@ -13,12 +13,16 @@ import { ROLES } from '../../permissions.js';
 const router = express.Router();
 const team = requireTeam();
 const manage = requireTeam({ manage: true });
+// Read routes the admin panel's Team workspace section also uses
+const panel = requireTeam({ adminPanel: true });
 
 const MAX_TITLE = 200;
 const MAX_DESCRIPTION = 5000;
 const MAX_COMMENT = 4000;
 const MAX_NOTE = 2000;
 const MAX_TASK_FILES = 5;
+const MAX_CHECKLIST = 30;
+const MAX_CHECK_TEXT = 200;
 // Statuses an assignee moves a task through by hand; Submitted and the review results come from actions
 const WORK_STATUSES = ['todo', 'in_progress', 'blocked'];
 const PRIORITY_RANK = { urgent: 0, high: 1, normal: 2, low: 3 };
@@ -27,6 +31,25 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
 // Start of today in India, as a UTC Date
 const istDayStart = (now = new Date()) => new Date(Math.floor((+now + IST_OFFSET_MS) / DAY_MS) * DAY_MS - IST_OFFSET_MS);
+
+// [" Draft ", "", "Review"] → [{ text: 'Draft' }, { text: 'Review' }]
+function parseChecklist(items) {
+  if (!Array.isArray(items)) return [];
+  const list = items.map((t) => clean(typeof t === 'string' ? t : t?.text, MAX_CHECK_TEXT)).filter(Boolean);
+  if (list.length > MAX_CHECKLIST) throw httpError(400, `A checklist can have up to ${MAX_CHECKLIST} items.`);
+  return list.map((text) => ({ text }));
+}
+
+// { freq, until } → a stored recurrence; no freq means "doesn't repeat"
+function parseRecurrence(value, dueAt) {
+  if (!value || !value.freq) return { freq: null, until: null };
+  if (!TASK_REPEATS.includes(value.freq)) throw httpError(400, 'Pick daily, weekly or monthly.');
+  if (!dueAt) throw httpError(400, 'A repeating task needs a due date.');
+  const until = value.until ? new Date(value.until) : null;
+  if (until && isNaN(until)) throw httpError(400, 'Pick a valid end date.');
+  if (until && until < dueAt) throw httpError(400, 'The end date must be after the first due date.');
+  return { freq: value.freq, until };
+}
 
 function parseDue(value) {
   if (value === null || value === '') return null;
@@ -43,11 +66,6 @@ async function teamPeople(ids) {
   return clean;
 }
 
-const managerIds = async () => {
-  const roles = Object.entries(ROLES).filter(([, r]) => r.permissions.includes(MANAGE)).map(([k]) => k);
-  return (await AdminUser.find({ role: { $in: roles }, ...teamPeopleFilter }, { _id: 1 }).lean()).map((a) => String(a._id));
-};
-
 const log = (taskId, actorId, type, from = null, to = null) => TeamTaskActivity.create({ taskId, actorId, type, from, to });
 
 // Everyone on a task gets live updates of it
@@ -60,7 +78,7 @@ function emitTask(task) {
 const onTask = (task, ids) => ids.filter((id) => sameId(id, task.createdBy) || task.assigneeIds.some((a) => sameId(a, id)));
 
 // ── List ─────────────────────────────────────────────────────────────────────
-router.get('/tasks', team, handle(async (req, res) => {
+router.get('/tasks', panel, handle(async (req, res) => {
   const { page, limit, skip } = paging(req.query, { defaultLimit: 50 });
   const view = ['mine', 'created', 'all'].includes(req.query.view) ? req.query.view : 'mine';
   const me = oid(req.admin.id);
@@ -80,6 +98,12 @@ router.get('/tasks', team, handle(async (req, res) => {
   if (req.query.due === 'today') filter.dueAt = { $gte: today, $lt: new Date(+today + DAY_MS) };
   if (req.query.due === 'week') filter.dueAt = { $gte: today, $lt: new Date(+today + 7 * DAY_MS) };
   if (req.query.due === 'none') filter.dueAt = null;
+  // The calendar asks for one month at a time
+  const from = req.query.from ? new Date(req.query.from) : null;
+  const to = req.query.to ? new Date(req.query.to) : null;
+  if ((from && !isNaN(from)) || (to && !isNaN(to))) {
+    filter.dueAt = { ...(from && !isNaN(from) ? { $gte: from } : {}), ...(to && !isNaN(to) ? { $lt: to } : {}) };
+  }
 
   // Sorted in the database through a computed key, so every page is in order. Tasks without a
   // due date go last when sorting by due date.
@@ -112,6 +136,8 @@ router.post('/tasks', team, handle(async (req, res) => {
   const description = String(req.body?.description ?? '').trim().slice(0, MAX_DESCRIPTION);
   const priority = TASK_PRIORITIES.includes(req.body?.priority) ? req.body.priority : 'normal';
   const dueAt = req.body?.dueAt ? parseDue(req.body.dueAt) : null;
+  const checklist = parseChecklist(req.body?.checklist);
+  const recurrence = parseRecurrence(req.body?.recurrence, dueAt);
 
   let assigneeIds = await teamPeople(req.body?.assigneeIds);
   if (!isManager(req.admin)) {
@@ -130,7 +156,7 @@ router.post('/tasks', team, handle(async (req, res) => {
   }
 
   const task = new TeamTask({
-    title, description, priority, dueAt, assigneeIds, createdBy: req.admin.id,
+    title, description, priority, dueAt, assigneeIds, createdBy: req.admin.id, checklist, recurrence,
     sourceMessageId: source?._id || null, sourceChannelId: source?.channelId || null
   });
   task.fileIds = await attachFiles(req.admin, req.body?.fileIds, { scope: 'task', scopeId: null, type: 'task', id: task._id, setScopeId: task._id }, { max: MAX_TASK_FILES });
@@ -155,7 +181,7 @@ router.post('/tasks', team, handle(async (req, res) => {
 }));
 
 // ── Detail ───────────────────────────────────────────────────────────────────
-router.get('/tasks/:id', team, handle(async (req, res) => {
+router.get('/tasks/:id', panel, handle(async (req, res) => {
   const task = await taskFor(req.admin, req.params.id);
   const [submissions, activity] = await Promise.all([
     TeamSubmission.find({ taskId: task._id }).sort({ version: -1 }).lean(),
@@ -192,7 +218,7 @@ router.patch('/tasks/:id', team, handle(async (req, res) => {
   const actor = req.admin.id;
   const changes = [];
 
-  if (body.title !== undefined || body.description !== undefined || body.priority !== undefined || body.dueAt !== undefined || body.assigneeIds !== undefined) {
+  if (body.title !== undefined || body.description !== undefined || body.priority !== undefined || body.dueAt !== undefined || body.assigneeIds !== undefined || body.recurrence !== undefined) {
     if (!canEdit) throw httpError(403, 'Only the person who created the task or a manager can change it.');
   }
   if (body.title !== undefined) {
@@ -220,6 +246,17 @@ router.patch('/tasks/:id', team, handle(async (req, res) => {
       changes.push(['due', task.dueAt, dueAt]);
       task.dueAt = dueAt;
       task.dueSoonNotifiedAt = null;
+    }
+  }
+  let stopSeries = false;
+  if (body.recurrence !== undefined) {
+    if (req.admin.teamOnly) throw httpError(403, 'Only managers and staff can make a task repeat.');
+    const next = parseRecurrence(body.recurrence, task.dueAt);
+    const before = task.recurrence?.freq || null;
+    if (next.freq !== before || String(next.until?.getTime() ?? '') !== String(task.recurrence?.until?.getTime() ?? '')) {
+      changes.push(['recurrence', before, next.freq]);
+      stopSeries = !next.freq && !!before;
+      task.recurrence = next;
     }
   }
   let added = [];
@@ -263,6 +300,11 @@ router.patch('/tasks/:id', team, handle(async (req, res) => {
   if (!changes.length) return res.json({ success: true, data: publicTask(task.toObject(), await filesFor([task])) });
   await task.save();
   for (const [type, from, to] of changes) await log(task._id, actor, type, from, to);
+  // Stopping one copy stops the whole series
+  if (stopSeries) {
+    const root = task.recurrenceOf || task._id;
+    await TeamTask.updateMany({ $or: [{ _id: root }, { recurrenceOf: root }] }, { $set: { 'recurrence.freq': null, 'recurrence.until': null } });
+  }
 
   const base = { actorId: actor, refType: 'task', refId: task._id, taskId: task._id, preview: task.title };
   await notify(added, { ...base, type: 'task_assigned' });
@@ -277,6 +319,64 @@ router.patch('/tasks/:id', team, handle(async (req, res) => {
   emitTask(task);
   for (const id of removed) emitToUser(id, 'task.updated', { taskId: String(task._id) });
   res.json({ success: true, data: publicTask(task.toObject(), await filesFor([task])) });
+}));
+
+// ── Checklist ────────────────────────────────────────────────────────────────
+// Everyone on the task ticks items; the creator, managers and staff assignees add, rename and remove them
+function checklistRights(admin, task) {
+  const manager = isManager(admin);
+  const creator = sameId(task.createdBy, admin.id);
+  const assignee = task.assigneeIds.some((a) => sameId(a, admin.id));
+  return { tick: manager || creator || assignee, edit: manager || creator || (assignee && !admin.teamOnly) };
+}
+
+async function checklistChanged(req, res, task, type, text) {
+  await task.save();
+  await log(task._id, req.admin.id, type, null, text);
+  emitTask(task);
+  res.json({ success: true, data: publicTask(task.toObject(), await filesFor([task])) });
+}
+
+router.post('/tasks/:id/checklist', team, handle(async (req, res) => {
+  const task = await taskFor(req.admin, req.params.id);
+  if (!checklistRights(req.admin, task).edit) throw httpError(403, 'Only managers and staff can add checklist items.');
+  const text = clean(req.body?.text, MAX_CHECK_TEXT);
+  if (!text) throw httpError(400, 'Write the checklist item.');
+  if (task.checklist.length >= MAX_CHECKLIST) throw httpError(400, `A checklist can have up to ${MAX_CHECKLIST} items.`);
+  task.checklist.push({ text });
+  await checklistChanged(req, res, task, 'checklist_added', text);
+}));
+
+router.patch('/tasks/:id/checklist/:itemId', team, handle(async (req, res) => {
+  const task = await taskFor(req.admin, req.params.id);
+  const item = isId(req.params.itemId) ? task.checklist.id(req.params.itemId) : null;
+  if (!item) throw httpError(404, 'Checklist item not found.');
+  const rights = checklistRights(req.admin, task);
+  let type = 'checklist_renamed';
+  if (req.body?.text !== undefined) {
+    if (!rights.edit) throw httpError(403, 'Only managers and staff can rename checklist items.');
+    const text = clean(req.body.text, MAX_CHECK_TEXT);
+    if (!text) throw httpError(400, 'Write the checklist item.');
+    item.text = text;
+  }
+  if (req.body?.done !== undefined) {
+    if (!rights.tick) throw httpError(403, 'Only the people on this task can tick items.');
+    item.done = !!req.body.done;
+    item.doneBy = item.done ? req.admin.id : null;
+    item.doneAt = item.done ? new Date() : null;
+    type = item.done ? 'checklist_done' : 'checklist_undone';
+  }
+  await checklistChanged(req, res, task, type, item.text);
+}));
+
+router.delete('/tasks/:id/checklist/:itemId', team, handle(async (req, res) => {
+  const task = await taskFor(req.admin, req.params.id);
+  if (!checklistRights(req.admin, task).edit) throw httpError(403, 'Only managers and staff can remove checklist items.');
+  const item = isId(req.params.itemId) ? task.checklist.id(req.params.itemId) : null;
+  if (!item) throw httpError(404, 'Checklist item not found.');
+  const text = item.text;
+  item.deleteOne();
+  await checklistChanged(req, res, task, 'checklist_removed', text);
 }));
 
 router.delete('/tasks/:id', manage, handle(async (req, res) => {

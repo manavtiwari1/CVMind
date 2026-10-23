@@ -1,15 +1,19 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent } from 'react';
-import { ArrowDown, BellOff, Bell, CheckSquare, Hash, Lock, LogOut, MessageSquare, MoreHorizontal, Pencil, Pin, Send, Trash2, UserPlus, Users, X } from 'lucide-react';
+import { ArrowDown, BellOff, Bell, CheckSquare, Hash, Lock, LogOut, MessageSquare, MoreHorizontal, Pencil, Pin, Send, Sparkles, Trash2, UserPlus, Users, Video, X } from 'lucide-react';
 import { api } from '../api';
 import { confirmDialog } from '../confirm';
 import type { Channel, Message } from '../api';
 import { getSocket } from '../socket';
-import { go, hrefFor, useDmName, useTeam, useTeamEvent } from '../store';
+import { go, hrefFor, useDmName, useLoad, useTeam, useTeamEvent } from '../store';
+import type { Meeting } from '../api';
+import { useStartMeeting } from '../meet/start';
 import { useAttachments } from '../attachments';
 import { ago, clock, dayLabel } from '../format';
 import { AttachButton, Avatar, Empty, EmojiPicker, FileList, MentionInput, Modal, PeoplePicker, PendingFiles, RichText, Spinner } from '../ui';
 import TaskForm from './TaskForm';
+import { draftTask, LeoSummaryPanel } from './Leo';
+import type { TaskDraft } from './Leo';
 
 export default function Chat({ channelId, params }: { channelId: string; params: Record<string, string> }) {
   if (!channelId || params.browse) return <Browse />;
@@ -86,6 +90,11 @@ function ChannelView({ channelId, params }: { channelId: string; params: Record<
   const [showPins, setShowPins] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   const [taskFrom, setTaskFrom] = useState<Message | null>(null);
+  const [taskDraft, setTaskDraft] = useState<{ draft: TaskDraft; source?: Message } | null>(null);
+  const [showLeo, setShowLeo] = useState(false);
+  const startMeeting = useStartMeeting();
+  const liveMeeting = useLoad<{ data: Meeting[] }>('/meetings', { scope: 'live', channelId });
+  useTeamEvent('meeting.updated', (p) => { if (p.channelId === channelId) liveMeeting.reload(); }, liveMeeting.reload);
   const [atBottom, setAtBottom] = useState(true);
   const listRef = useRef<HTMLDivElement>(null);
   const typingText = useTyping(channelId);
@@ -231,8 +240,18 @@ function ChannelView({ channelId, params }: { channelId: string; params: Record<
     reloadChannels();
   };
 
+  // Leo fills in a task from the message; nothing is saved until Create is pressed
+  const draftFrom = async (m: Message) => {
+    toast('Leo is drafting the task…');
+    try {
+      setTaskDraft({ draft: await draftTask(m.id), source: m });
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Leo could not draft a task.', 'error');
+    }
+  };
+
   return (
-    <div className={`tm-chat ${threadId || showPins ? 'with-panel' : ''}`}>
+    <div className={`tm-chat ${threadId || showPins || showLeo ? 'with-panel' : ''}`}>
       <section className="tm-chat-main">
         <header className="tm-chat-head">
           <div className="tm-chat-title">
@@ -243,13 +262,22 @@ function ChannelView({ channelId, params }: { channelId: string; params: Record<
             </div>
           </div>
           <div className="tm-chat-actions">
-            <button type="button" className={`tm-icon-btn ${showPins ? 'on' : ''}`} onClick={() => { setShowPins((v) => !v); if (threadId) go('chat', channelId); }} aria-label="Pinned messages" title="Pinned messages"><Pin size={17} /></button>
+            {!channel.archivedAt && (channel.joined || channel.kind === 'public') && <button type="button" className="tm-icon-btn" onClick={() => startMeeting(channelId)} aria-label={isDm ? 'Start a call' : 'Start a meeting'} title={isDm ? 'Start a call' : 'Start a meeting'}><Video size={18} /></button>}
+            <button type="button" className={`tm-btn sm ghost tm-leo-btn ${showLeo ? 'on' : ''}`} onClick={() => { setShowLeo((v) => !v); setShowPins(false); if (threadId) go('chat', channelId); }} title="Summarise with Leo"><Sparkles size={15} /> <span>Summarise</span></button>
+            <button type="button" className={`tm-icon-btn ${showPins ? 'on' : ''}`} onClick={() => { setShowPins((v) => !v); setShowLeo(false); if (threadId) go('chat', channelId); }} aria-label="Pinned messages" title="Pinned messages"><Pin size={17} /></button>
             {!isDm && <button type="button" className="tm-icon-btn" onClick={() => setShowMembers(true)} aria-label="Members" title="Members"><Users size={17} /></button>}
             {channel.joined && <button type="button" className="tm-icon-btn" onClick={toggleMute} aria-label={channel.muted ? 'Unmute' : 'Mute'} title={channel.muted ? 'Unmute notifications' : 'Mute notifications'}>{channel.muted ? <BellOff size={17} /> : <Bell size={17} />}</button>}
             {!isDm && channel.joined && channel.name !== 'general' && <button type="button" className="tm-icon-btn" onClick={leave} aria-label="Leave channel" title="Leave channel"><LogOut size={17} /></button>}
           </div>
         </header>
 
+        {liveMeeting.data?.data[0] && (
+          <a className="tm-live-meeting" href={hrefFor('meet', liveMeeting.data.data[0].id)}>
+            <span className="tm-live-dot" aria-hidden /> <strong>{liveMeeting.data.data[0].title || 'Meeting'}</strong>
+            <span className="tm-muted small">{liveMeeting.data.data[0].liveIds.length ? `${liveMeeting.data.data[0].liveIds.map(nameOf).join(', ')} ${liveMeeting.data.data[0].liveIds.length === 1 ? 'is' : 'are'} in the call` : 'Live now'}</span>
+            <span className="tm-btn primary sm"><Video size={14} /> Join</span>
+          </a>
+        )}
         <div className="tm-messages" ref={listRef} onScroll={(e) => {
           const el = e.currentTarget;
           if (el.scrollTop < 120) loadOlder();
@@ -266,7 +294,7 @@ function ChannelView({ channelId, params }: { channelId: string; params: Record<
               <Fragment key={m.id}>
                 {newDay && <div className="tm-day"><span>{dayLabel(m.createdAt)}</span></div>}
                 {showUnread && <div className="tm-day unread"><span>New messages</span></div>}
-                <MessageItem message={m} grouped={!!grouped} channel={channel} highlight={m.id === focusId} onCreateTask={() => setTaskFrom(m)} />
+                <MessageItem message={m} grouped={!!grouped} channel={channel} highlight={m.id === focusId} onCreateTask={() => setTaskFrom(m)} onDraftTask={() => draftFrom(m)} />
               </Fragment>
             );
           })}
@@ -287,15 +315,17 @@ function ChannelView({ channelId, params }: { channelId: string; params: Record<
             : <div className="tm-composer-note">{channel.kind === 'private' ? 'You can read this channel as a manager. Add yourself from Members to post.' : <button type="button" className="tm-btn primary" onClick={join}>Join #{channel.name}</button>}</div>}
       </section>
 
-      {threadId && <Thread channel={channel} parentId={threadId} typingText={typingText(threadId)} onCreateTask={setTaskFrom} />}
+      {threadId && <Thread channel={channel} parentId={threadId} typingText={typingText(threadId)} onCreateTask={setTaskFrom} onDraftTask={draftFrom} onTask={(draft) => setTaskDraft({ draft })} />}
       {showPins && !threadId && <Pins channelId={channelId} onClose={() => setShowPins(false)} />}
+      {showLeo && !threadId && <LeoSummaryPanel channelId={channelId} onClose={() => setShowLeo(false)} onTask={me.teamOnly ? undefined : (draft) => setTaskDraft({ draft })} />}
       {showMembers && <Members channel={channel} manager={manager} onClose={() => setShowMembers(false)} onChanged={loadChannel} />}
       {taskFrom && <TaskForm onClose={() => setTaskFrom(null)} source={taskFrom} />}
+      {taskDraft && <TaskForm onClose={() => setTaskDraft(null)} source={taskDraft.source} draft={taskDraft.draft} />}
     </div>
   );
 }
 
-function MessageItem({ message: m, grouped, channel, highlight, inThread, onCreateTask }: { message: Message; grouped: boolean; channel: Channel; highlight?: boolean; inThread?: boolean; onCreateTask?: () => void }) {
+function MessageItem({ message: m, grouped, channel, highlight, inThread, onCreateTask, onDraftTask }: { message: Message; grouped: boolean; channel: Channel; highlight?: boolean; inThread?: boolean; onCreateTask?: () => void; onDraftTask?: () => void }) {
   const { me, manager, person, nameOf, toast } = useTeam();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(m.body);
@@ -319,6 +349,15 @@ function MessageItem({ message: m, grouped, channel, highlight, inThread, onCrea
     }
   };
   const pin = () => api(`/messages/${m.id}/pin`, { method: 'POST', body: { pinned: !m.pinnedAt } }).then(() => toast(m.pinnedAt ? 'Unpinned' : 'Pinned')).catch((err: Error) => toast(err.message, 'error'));
+
+  if (m.kind === 'system' && m.meetingId) {
+    return (
+      <div className="tm-msg system" id={`msg-${m.id}`}>
+        <Video size={14} /> <span><strong>{nameOf(m.authorId)}</strong> · {m.body}</span>
+        <a className="tm-link" href={hrefFor('meet', m.meetingId)}>Open meeting</a>
+      </div>
+    );
+  }
 
   if (m.kind === 'system') {
     return (
@@ -376,6 +415,7 @@ function MessageItem({ message: m, grouped, channel, highlight, inThread, onCrea
             {menu && (
               <div className="tm-menu" role="menu" onMouseLeave={() => setMenu(false)}>
                 {onCreateTask && !me.teamOnly && <button type="button" role="menuitem" onClick={() => { setMenu(false); onCreateTask(); }}><CheckSquare size={14} /> Create task</button>}
+                {onDraftTask && !me.teamOnly && m.body && <button type="button" role="menuitem" onClick={() => { setMenu(false); onDraftTask(); }}><Sparkles size={14} /> Draft task with Leo</button>}
                 {!inThread && <button type="button" role="menuitem" onClick={() => { setMenu(false); pin(); }}><Pin size={14} /> {m.pinnedAt ? 'Unpin' : 'Pin to channel'}</button>}
                 {mine && <button type="button" role="menuitem" onClick={() => { setMenu(false); setEditing(true); }}><Pencil size={14} /> Edit</button>}
                 {(mine || manager) && <button type="button" role="menuitem" className="danger" onClick={() => { setMenu(false); remove(); }}><Trash2 size={14} /> Delete</button>}
@@ -448,7 +488,9 @@ function Composer({ channel, parentId, placeholder, onSent }: { channel: Channel
   );
 }
 
-function Thread({ channel, parentId, typingText, onCreateTask }: { channel: Channel; parentId: string; typingText: string; onCreateTask: (m: Message) => void }) {
+function Thread({ channel, parentId, typingText, onCreateTask, onDraftTask, onTask }: { channel: Channel; parentId: string; typingText: string; onCreateTask: (m: Message) => void; onDraftTask: (m: Message) => void; onTask: (draft: TaskDraft) => void }) {
+  const { me } = useTeam();
+  const [leo, setLeo] = useState(false);
   const [parent, setParent] = useState<Message | null>(null);
   const [replies, setReplies] = useState<Message[]>([]);
   const [error, setError] = useState('');
@@ -476,14 +518,16 @@ function Thread({ channel, parentId, typingText, onCreateTask }: { channel: Chan
     <aside className="tm-panel" aria-label="Thread">
       <header className="tm-panel-head">
         <h2>Thread</h2>
+        {replies.length > 0 && <button type="button" className={`tm-btn sm ghost tm-leo-btn ${leo ? 'on' : ''}`} onClick={() => setLeo((v) => !v)} title="Summarise this thread with Leo"><Sparkles size={14} /> <span>Summarise</span></button>}
         <a className="tm-icon-btn" href={hrefFor('chat', channel.id)} aria-label="Close thread"><X size={18} /></a>
       </header>
       <div className="tm-panel-body">
+        {leo && <div className="tm-card pad tm-leo-inline"><LeoSummaryPanel channelId={channel.id} threadId={parentId} onTask={me.teamOnly ? undefined : onTask} /></div>}
         {error && <p className="tm-muted">{error}</p>}
         {!parent && !error && <Spinner />}
-        {parent && <MessageItem message={parent} grouped={false} channel={channel} inThread onCreateTask={() => onCreateTask(parent)} />}
+        {parent && <MessageItem message={parent} grouped={false} channel={channel} inThread onCreateTask={() => onCreateTask(parent)} onDraftTask={() => onDraftTask(parent)} />}
         {parent && <div className="tm-day"><span>{replies.length} {replies.length === 1 ? 'reply' : 'replies'}</span></div>}
-        {replies.map((r, i) => <MessageItem key={r.id} message={r} channel={channel} inThread grouped={i > 0 && replies[i - 1].authorId === r.authorId && r.kind === 'user' && replies[i - 1].kind === 'user'} onCreateTask={() => onCreateTask(r)} />)}
+        {replies.map((r, i) => <MessageItem key={r.id} message={r} channel={channel} inThread grouped={i > 0 && replies[i - 1].authorId === r.authorId && r.kind === 'user' && replies[i - 1].kind === 'user'} onCreateTask={() => onCreateTask(r)} onDraftTask={() => onDraftTask(r)} />)}
         <div ref={endRef} />
       </div>
       <div className="tm-typing">{typingText}</div>

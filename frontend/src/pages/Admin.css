@@ -1867,3 +1867,49 @@
     max-width: none;
   }
 }
+
+/* ── Team workspace: attendance, check-ins, leave, meetings, tasks ── */
+.ad-app .muted { color: var(--ad-text-3); }
+.ad-app .red { color: var(--ad-red); }
+.ad-inline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ad-month { min-width: 130px; text-align: center; font-size: 0.9rem; }
+.ad-pad { padding: 16px 20px; display: flex; align-items: center; gap: 8px; }
+.ad-stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.ad-simple-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 0.88rem; }
+.ad-att-wrap { overflow-x: auto; padding-bottom: 12px; }
+.ad-att { border-collapse: collapse; font-size: 0.78rem; min-width: 100%; }
+.ad-att th, .ad-att td { border-bottom: 1px solid var(--ad-border); padding: 6px 3px; text-align: center; white-space: nowrap; }
+.ad-att thead th { font-weight: 700; color: var(--ad-text-3); background: var(--ad-bg); }
+.ad-att thead th.off { opacity: 0.55; }
+.ad-att th[scope='row'], .ad-att thead th:first-child { text-align: left; padding-left: 20px; position: sticky; left: 0; background: var(--ad-surface); z-index: 1; min-width: 140px; font-weight: 600; color: var(--ad-text); }
+.ad-att thead th:first-child { background: var(--ad-bg); color: var(--ad-text-3); }
+.ad-att td.num { font-weight: 700; padding: 6px 10px; }
+.ad-att-cell { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 5px; font-style: normal; font-weight: 700; font-size: 0.7rem; }
+.ad-att-cell.present { background: var(--ad-green-soft); color: var(--ad-green-dark); }
+.ad-att-cell.wfh { background: var(--ad-blue-soft); color: var(--ad-blue); }
+.ad-att-cell.casual, .ad-att-cell.sick { background: var(--ad-amber-soft); color: var(--ad-amber); }
+.ad-att-cell.missing { background: var(--ad-red-soft); color: var(--ad-red); }
+.ad-att-cell.off { background: var(--ad-bg); }
+.ad-att-cell.today { color: var(--ad-text-3); }
+.ad-att-legend { display: flex; flex-wrap: wrap; gap: 12px; padding: 12px 20px 0; font-size: 0.78rem; color: var(--ad-text-3); }
+.ad-att-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.ad-standups { display: flex; flex-direction: column; gap: 10px; }
+.ad-standup { border: 1px solid var(--ad-border); border-radius: var(--ad-radius-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 5px; }
+.ad-standup header { display: flex; justify-content: space-between; gap: 8px; font-size: 0.88rem; }
+.ad-standup p { margin: 0; font-size: 0.86rem; line-height: 1.5; color: var(--ad-text-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.ad-standup p > span { display: inline-block; min-width: 54px; margin-right: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ad-text-3); }
+.ad-standup p.blocker { color: var(--ad-red); background: var(--ad-red-soft); border-radius: 6px; padding: 5px 8px; }
+.ad-standup p.blocker > span { color: var(--ad-red); }
+.ad-report { display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem; line-height: 1.55; color: var(--ad-text-2); margin-top: 12px; }
+.ad-report p { margin: 0; }
+.ad-report h4 { margin: 8px 0 0; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ad-text-3); }
+.ad-report ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.ad-report-stats { display: flex; flex-wrap: wrap; gap: 8px; }
+.ad-report-stats span { background: var(--ad-bg); border: 1px solid var(--ad-border); border-radius: 999px; padding: 3px 10px; font-size: 0.82rem; }
+.ad-field > span { font-size: 0.82rem; font-weight: 600; color: var(--ad-text-2); }
+.ad-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; max-height: 260px; overflow-y: auto; }
+.ad-pick label { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid var(--ad-border); border-radius: var(--ad-radius-sm); font-size: 0.86rem; cursor: pointer; }
+.ad-pick label.on { border-color: var(--ad-green); background: var(--ad-green-soft); }
+.ad-pick .muted { margin-left: auto; font-size: 0.75rem; }
+.ad-plain { display: block; width: 100%; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; border-radius: var(--ad-radius); }
+.ad-plain:focus-visible { outline: 2px solid var(--ad-green); outline-offset: 2px; }

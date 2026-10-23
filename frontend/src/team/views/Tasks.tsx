@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, ArrowLeft, CheckCircle2, CheckSquare, Clock, MessageSquare, Pencil, Plus, Trash2, Upload } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle2, CheckSquare, Clock, Columns3, List, ListChecks, MessageSquare, Pencil, Plus, Repeat, Trash2, Upload, X } from 'lucide-react';
 import { api } from '../api';
 import { confirmDialog } from '../confirm';
-import type { Activity, Comment, Submission, Task, TaskStatus } from '../api';
+import type { Activity, Comment, Meeting, Submission, Task, TaskStatus } from '../api';
 import { go, hrefFor, useLoad, useTeam, useTeamEvent } from '../store';
 import { useAttachments } from '../attachments';
 import { ago, dueLabel, isOverdue, STATUS_LABELS } from '../format';
 import { AttachButton, Avatar, Empty, FileList, MentionInput, Modal, PendingFiles, PriorityBadge, RichText, Spinner, StatusBadge } from '../ui';
 import TaskForm from './TaskForm';
+import { checklistProgress, monthRange, TaskBoard, TaskCalendar, thisMonth } from './TaskBoard';
 
 type View = 'mine' | 'created' | 'all';
+type Layout = 'list' | 'board' | 'calendar';
+export const REPEAT_LABELS = { daily: 'Every day', weekly: 'Every week', monthly: 'Every month' };
 
 export default function Tasks({ id, params }: { id: string; params: Record<string, string> }) {
   if (id) return <TaskDetail key={id} id={id} />;
@@ -28,6 +31,8 @@ export function TaskRow({ task }: { task: Task }) {
           <StatusBadge status={task.status} />
           {task.priority !== 'normal' && <PriorityBadge priority={task.priority} />}
           <span className={overdue ? 'tm-overdue' : 'tm-muted'}><Clock size={12} /> {overdue ? 'Overdue · ' : ''}{dueLabel(task.dueAt)}</span>
+          {task.checklist.length > 0 && <span className="tm-muted"><ListChecks size={12} /> {checklistProgress(task)}</span>}
+          {task.recurrence && <span className="tm-muted"><Repeat size={12} /> {REPEAT_LABELS[task.recurrence.freq]}</span>}
         </span>
       </span>
       <span className="tm-stack" aria-label={`Assigned to ${task.assigneeIds.map((a) => person(a)?.name).join(', ')}`}>
@@ -46,9 +51,23 @@ function TaskList({ params }: { params: Record<string, string> }) {
   const [assignee, setAssignee] = useState('');
   const [sort, setSort] = useState('due');
   const [creating, setCreating] = useState(false);
+  const [layout, setLayoutState] = useState<Layout>(() => (['board', 'calendar'].includes(params.layout) ? params.layout as Layout : 'list'));
+  const [month, setMonth] = useState(params.month || thisMonth());
   const { people } = useTeam();
-  const { data, error, loading, reload } = useLoad<{ data: Task[]; total: number }>('/tasks', { view, status, due, priority, assignee: view === 'mine' ? '' : assignee, sort, limit: 100 });
+  // The board shows every status as a column; the calendar shows one month of due dates
+  const range = layout === 'calendar' ? monthRange(month) : null;
+  const { data, error, loading, reload } = useLoad<{ data: Task[]; total: number }>('/tasks', {
+    view, status: layout === 'list' ? status : '', due: layout === 'list' ? due : '', priority, assignee: view === 'mine' ? '' : assignee, sort,
+    from: range?.from.toISOString(), to: range?.to.toISOString(), limit: 100
+  });
   useTeamEvent('task.updated', reload, reload);
+  // Scheduled meetings show on the calendar too
+  const meetings = useLoad<{ data: Meeting[] }>(range ? '/meetings' : null, { from: range?.from.toISOString(), to: range?.to.toISOString(), limit: 100 });
+  // Remembered in the URL so a refresh or a shared link keeps the layout
+  const setLayout = (next: Layout) => {
+    setLayoutState(next);
+    window.history.replaceState(null, '', hrefFor('tasks', '', { ...params, layout: next === 'list' ? '' : next }));
+  };
 
   // Interns only receive tasks, so they get just "My tasks"
   const views: Array<{ id: View; label: string }> = [
@@ -66,18 +85,27 @@ function TaskList({ params }: { params: Record<string, string> }) {
         {views.map((v) => <button key={v.id} type="button" role="tab" aria-selected={view === v.id} className={view === v.id ? 'active' : ''} onClick={() => setView(v.id)}>{v.label}</button>)}
       </div>
       <div className="tm-filters">
-        <select className="tm-input sm" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">
-          <option value="open">Open</option>
-          <option value="">All statuses</option>
-          {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-        <select className="tm-input sm" value={due} onChange={(e) => setDue(e.target.value)} aria-label="Due">
-          <option value="">Any due date</option>
-          <option value="overdue">Overdue</option>
-          <option value="today">Due today</option>
-          <option value="week">Due this week</option>
-          <option value="none">No due date</option>
-        </select>
+        <div className="tm-segment tm-layouts" role="radiogroup" aria-label="Layout">
+          {([['list', 'List', List], ['board', 'Board', Columns3], ['calendar', 'Calendar', CalendarDays]] as const).map(([id, label, Icon]) => (
+            <button key={id} type="button" role="radio" aria-checked={layout === id} className={layout === id ? 'active' : ''} onClick={() => setLayout(id)}><Icon size={15} /> {label}</button>
+          ))}
+        </div>
+        {layout === 'list' && (
+          <>
+            <select className="tm-input sm" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">
+              <option value="open">Open</option>
+              <option value="">All statuses</option>
+              {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+            <select className="tm-input sm" value={due} onChange={(e) => setDue(e.target.value)} aria-label="Due">
+              <option value="">Any due date</option>
+              <option value="overdue">Overdue</option>
+              <option value="today">Due today</option>
+              <option value="week">Due this week</option>
+              <option value="none">No due date</option>
+            </select>
+          </>
+        )}
         <select className="tm-input sm" value={priority} onChange={(e) => setPriority(e.target.value)} aria-label="Priority">
           <option value="">Any priority</option>
           <option value="urgent">Urgent</option><option value="high">High</option><option value="normal">Normal</option><option value="low">Low</option>
@@ -88,16 +116,26 @@ function TaskList({ params }: { params: Record<string, string> }) {
             {[...people.values()].filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         )}
-        <select className="tm-input sm" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort">
-          <option value="due">Sort: due date</option><option value="priority">Sort: priority</option><option value="updated">Sort: last updated</option>
-        </select>
+        {layout !== 'calendar' && (
+          <select className="tm-input sm" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort">
+            <option value="due">Sort: due date</option><option value="priority">Sort: priority</option><option value="updated">Sort: last updated</option>
+          </select>
+        )}
       </div>
-      <div className="tm-card tm-list">
-        {error && <p className="tm-notice red">{error}</p>}
-        {loading && !data && <div className="tm-center"><Spinner /></div>}
-        {data?.data.map((t) => <TaskRow key={t.id} task={t} />)}
-        {data && !data.data.length && <Empty icon={<CheckSquare size={22} />} title="No tasks here" text={view === 'mine' ? 'Nothing assigned to you with these filters.' : 'Try other filters.'} />}
-      </div>
+      {error && <p className="tm-notice red">{error}</p>}
+      {loading && !data && <div className="tm-center"><Spinner /></div>}
+      {data && layout === 'board' && <TaskBoard tasks={data.data} onChanged={reload} />}
+      {data && layout === 'calendar' && (
+        <TaskCalendar tasks={data.data} month={month} onMonth={setMonth} extra={(day) => (meetings.data?.data || [])
+          .filter((m) => m.scheduledAt && new Date(m.scheduledAt).toDateString() === day.toDateString())
+          .map((m) => <span key={m.id} className="tm-cal-item meeting" title={m.title}>{new Date(m.scheduledAt!).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })} {m.title}</span>)} />
+      )}
+      {data && layout === 'list' && (
+        <div className="tm-card tm-list">
+          {data.data.map((t) => <TaskRow key={t.id} task={t} />)}
+          {!data.data.length && <Empty icon={<CheckSquare size={22} />} title="No tasks here" text={view === 'mine' ? 'Nothing assigned to you with these filters.' : 'Try other filters.'} />}
+        </div>
+      )}
       {creating && <TaskForm onClose={() => setCreating(false)} />}
     </div>
   );
@@ -114,10 +152,17 @@ interface Detail {
 
 const ACTIVITY: Record<string, string> = {
   created: 'created the task', status: 'changed the status', title: 'renamed the task', description: 'edited the details', priority: 'changed the priority',
-  due: 'changed the due date', assignees: 'changed who is assigned', submitted: 'submitted work', approved: 'approved the work', changes_requested: 'asked for changes'
+  due: 'changed the due date', assignees: 'changed who is assigned', submitted: 'submitted work', approved: 'approved the work', changes_requested: 'asked for changes',
+  repeated: 'created this copy of a repeating task'
 };
 
 function activityText(a: Activity) {
+  if (a.type === 'checklist_added') return `added "${a.to}" to the checklist`;
+  if (a.type === 'checklist_done') return `ticked "${a.to}"`;
+  if (a.type === 'checklist_undone') return `unticked "${a.to}"`;
+  if (a.type === 'checklist_renamed') return `renamed a checklist item to "${a.to}"`;
+  if (a.type === 'checklist_removed') return `removed "${a.to}" from the checklist`;
+  if (a.type === 'recurrence') return a.to ? `made it repeat ${a.to}` : 'stopped it repeating';
   if (a.type === 'status') return `moved it to ${STATUS_LABELS[a.to as TaskStatus] || a.to}`;
   if (a.type === 'priority') return `set priority to ${a.to}`;
   if (a.type === 'due') return a.to ? `set the due date to ${dueLabel(a.to as string)}` : 'removed the due date';
@@ -199,6 +244,8 @@ function TaskDetail({ id }: { id: string }) {
             <FileList files={t.files} />
           </section>
 
+          <Checklist task={t} canEdit={detail.canEdit || (assignee && !me.teamOnly)} canTick={assignee || detail.canEdit} onChanged={load} />
+
           <section className="tm-card pad">
             <h2 className="tm-h2">Submissions</h2>
             {!detail.submissions.length && <p className="tm-muted">{assignee ? 'When you finish, press Submit work and attach your files.' : 'Nothing submitted yet.'}</p>}
@@ -230,6 +277,12 @@ function TaskDetail({ id }: { id: string }) {
             <dd><span className="tm-person"><Avatar person={person(t.createdBy)} size={22} /> {nameOf(t.createdBy)}</span></dd>
             <dt>Due</dt>
             <dd className={overdue ? 'tm-overdue' : ''}>{dueLabel(t.dueAt)}</dd>
+            {t.recurrence && (
+              <>
+                <dt>Repeats</dt>
+                <dd><Repeat size={13} /> {REPEAT_LABELS[t.recurrence.freq]}{t.recurrence.until ? ` until ${new Date(t.recurrence.until).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}</dd>
+              </>
+            )}
             <dt>Created</dt>
             <dd>{new Date(t.createdAt).toLocaleString('en-IN')}</dd>
             {t.completedAt && <><dt>Completed</dt><dd>{new Date(t.completedAt).toLocaleString('en-IN')}</dd></>}
@@ -253,6 +306,55 @@ function TaskDetail({ id }: { id: string }) {
       {submitting && <SubmitWork task={t} onClose={() => setSubmitting(false)} onDone={load} />}
       {blocking && <BlockedDialog onClose={() => setBlocking(false)} onSave={(reason) => { setBlocking(false); setStatus('blocked', reason); }} />}
     </div>
+  );
+}
+
+function Checklist({ task, canEdit, canTick, onChanged }: { task: Task; canEdit: boolean; canTick: boolean; onChanged: () => void }) {
+  const { nameOf, toast } = useTeam();
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  if (!task.checklist.length && !canEdit) return null;
+  const run = async (path: string, method: string, body?: unknown) => {
+    setBusy(true);
+    try {
+      await api(`/tasks/${task.id}/checklist${path}`, { method, body });
+      onChanged();
+      return true;
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Could not update the checklist.', 'error');
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  };
+  const add = async () => {
+    if (!text.trim()) return;
+    if (await run('', 'POST', { text })) setText('');
+  };
+  const done = task.checklist.filter((c) => c.done).length;
+  return (
+    <section className="tm-card pad">
+      <h2 className="tm-h2"><ListChecks size={16} /> Checklist {task.checklist.length > 0 && <span className="tm-muted small">{done} of {task.checklist.length} done</span>}</h2>
+      {task.checklist.length > 0 && <div className="tm-progress" aria-hidden><span style={{ width: `${(done / task.checklist.length) * 100}%` }} /></div>}
+      <ul className="tm-checklist">
+        {task.checklist.map((c) => (
+          <li key={c.id} className={c.done ? 'done' : ''}>
+            <label>
+              <input type="checkbox" checked={c.done} disabled={!canTick || busy} onChange={(e) => run(`/${c.id}`, 'PATCH', { done: e.target.checked })} />
+              <span>{c.text}</span>
+            </label>
+            {c.done && c.doneBy && <span className="tm-muted small">{nameOf(c.doneBy)}</span>}
+            {canEdit && <button type="button" className="tm-icon-btn sm" disabled={busy} onClick={() => run(`/${c.id}`, 'DELETE')} aria-label={`Remove ${c.text}`}><X size={14} /></button>}
+          </li>
+        ))}
+      </ul>
+      {canEdit && task.checklist.length < 30 && (
+        <div className="tm-inline">
+          <input className="tm-input sm" value={text} maxLength={200} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }} placeholder="Add an item" aria-label="New checklist item" />
+          <button type="button" className="tm-btn sm" disabled={busy || !text.trim()} onClick={add}><Plus size={14} /> Add</button>
+        </div>
+      )}
+    </section>
   );
 }
 

@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { MessageSquare, Search } from 'lucide-react';
+import { MessageSquare, Search, Sparkles } from 'lucide-react';
+import { ProgressReport } from './Leo';
 import { api } from '../api';
 import type { Person } from '../api';
 import { go, useTeam } from '../store';
 import { Avatar, PresenceLabel } from '../ui';
 
 export default function People() {
-  const { people, me, toast } = useTeam();
+  const { people, me, manager, toast } = useTeam();
   const [q, setQ] = useState('');
+  const [report, setReport] = useState<string | null>(null);
   const query = q.trim().toLowerCase();
   const list = [...people.values()]
     .filter((p) => p.active)
@@ -35,6 +37,7 @@ export default function People() {
       <span className="tm-dir-role">{p.roleLabel}</span>
       <span className="tm-dir-status">{p.statusText ? <span className="tm-status-text">{p.statusText}</span> : <PresenceLabel person={p} />}</span>
       <span className="tm-dir-action">
+        {manager && p.id !== me.id && <button type="button" className="tm-btn sm ghost" onClick={() => setReport(p.id)} aria-label={`Progress report for ${p.name}`} title="Progress report by Leo"><Sparkles size={14} /> <span>Report</span></button>}
         {p.id !== me.id && <button type="button" className="tm-btn sm" onClick={() => message(p.id)} aria-label={`Message ${p.name}`}><MessageSquare size={14} /> <span>Message</span></button>}
       </span>
     </li>
@@ -59,6 +62,7 @@ export default function People() {
         </section>
       )}
       {!list.length && <p className="tm-muted">Nobody matches “{q}”.</p>}
+      {report && <ProgressReport adminId={report} onClose={() => setReport(null)} />}
     </div>
   );
 }

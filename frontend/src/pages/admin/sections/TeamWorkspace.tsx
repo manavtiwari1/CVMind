@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { CheckSquare, Copy, ExternalLink, Hash, HardDrive, Lock, Mail, Megaphone, Pin, Plus, RefreshCw, Send, Trash2, Users } from 'lucide-react';
+import { CalendarOff, CheckSquare, ClipboardCheck, Copy, ExternalLink, Hash, HardDrive, Lock, Mail, Megaphone, Pin, Plus, RefreshCw, Send, Trash2, Users, Video } from 'lucide-react';
+import { AttendanceTab, CheckInsTab, LeaveTab, MeetingsTab, TasksTab } from './TeamOps';
 import { api } from '../api';
 import { useAction, useAdmin, useApi, useDebounced } from '../hooks';
 import { ago, count, dateTime } from '../format';
 import { Badge, BarList, Card, ConfirmDialog, DataTable, Empty, Modal, Notice, PageHeader, Pagination, SearchInput, Segment, Spinner, StatCard, Switch, Tabs } from '../ui';
 import type { Tone } from '../ui';
 
-// CVMind Team (team.cvmind.in): invitations, access, channels, announcements and moderation
+// CVMind Team (team.cvmind.in): attendance, check-ins, leave, meetings, tasks, invitations, access,
+// channels, announcements and moderation
 
-type View = 'overview' | 'invitations' | 'access' | 'channels' | 'announcements' | 'moderation';
+type View = 'overview' | 'attendance' | 'checkins' | 'leave' | 'meetings' | 'tasks' | 'invitations' | 'access' | 'channels' | 'announcements' | 'moderation';
 
 interface Person { id: string; name: string; username: string; roleLabel: string; active: boolean }
 const usePeople = () => {
@@ -25,7 +27,7 @@ export default function TeamWorkspace() {
     <>
       <PageHeader
         title="Team workspace"
-        description="CVMind Team at team.cvmind.in: announcements, tasks and chat for the team. Invite people, decide who has access, and moderate it here."
+        description="CVMind Team at team.cvmind.in: chat, tasks, check-ins, leave and meetings for the team. See attendance, decide leave, run meetings, invite people and moderate it here."
         actions={<a className="ad-btn" href={overview.data?.data.appUrl || 'https://team.cvmind.in'} target="_blank" rel="noreferrer"><ExternalLink size={14} /> Open team.cvmind.in</a>}
       />
       <Tabs<View>
@@ -33,6 +35,11 @@ export default function TeamWorkspace() {
         onChange={setView}
         tabs={[
           { id: 'overview', label: 'Overview' },
+          { id: 'attendance', label: 'Attendance' },
+          { id: 'checkins', label: 'Check-ins' },
+          { id: 'leave', label: 'Leave', count: overview.data?.data.pendingLeave || undefined },
+          { id: 'meetings', label: 'Meetings', count: overview.data?.data.liveMeetings || undefined },
+          { id: 'tasks', label: 'Tasks' },
           { id: 'invitations', label: 'Invitations', count: overview.data?.data.pendingInvites || undefined },
           { id: 'access', label: 'Access' },
           { id: 'channels', label: 'Channels' },
@@ -40,7 +47,12 @@ export default function TeamWorkspace() {
           { id: 'moderation', label: 'Moderation' }
         ]}
       />
-      {view === 'overview' && <OverviewTab data={overview.data?.data} loading={overview.loading} />}
+      {view === 'overview' && <OverviewTab data={overview.data?.data} loading={overview.loading} onOpen={setView} />}
+      {view === 'attendance' && <AttendanceTab />}
+      {view === 'checkins' && <CheckInsTab />}
+      {view === 'leave' && <LeaveTab onChanged={overview.reload} />}
+      {view === 'meetings' && <MeetingsTab />}
+      {view === 'tasks' && <TasksTab />}
       {view === 'invitations' && <InvitationsTab onChanged={overview.reload} />}
       {view === 'access' && <AccessTab />}
       {view === 'channels' && <ChannelsTab />}
@@ -53,6 +65,7 @@ export default function TeamWorkspace() {
 // ── Overview ─────────────────────────────────────────────────────────────────
 interface Overview {
   members: number; active7: number; overdue: number; pendingInvites: number; storageBytes: number; files: number; appUrl: string;
+  today: string; workingDay: boolean; checkedIn: number; pendingLeave: number; onLeave: number; liveMeetings: number; upcomingMeetings: number;
   messagesPerDay: Array<{ day: string; count: number }>;
   tasksByStatus: Record<string, number>;
 }
@@ -61,9 +74,15 @@ const STATUS_LABELS: Record<string, string> = { todo: 'To do', in_progress: 'In 
 const R2_FREE_BYTES = 10 * 1024 * 1024 * 1024;
 const gb = (bytes: number) => `${(bytes / 1024 / 1024 / 1024).toFixed(bytes > 1024 ** 3 ? 1 : 2)} GB`;
 
-function OverviewTab({ data, loading }: { data?: Overview; loading: boolean }) {
+function OverviewTab({ data, loading, onOpen }: { data?: Overview; loading: boolean; onOpen: (v: View) => void }) {
   return (
     <>
+      <div className="ad-grid cols-4">
+        <button type="button" className="ad-plain" onClick={() => onOpen('checkins')}><StatCard label="Checked in today" value={data ? `${count(data.checkedIn)} / ${count(Math.max(0, data.members - data.onLeave))}` : '—'} icon={<ClipboardCheck size={18} />} tone={data && data.workingDay && data.checkedIn < data.members - data.onLeave ? 'amber' : 'green'} loading={loading && !data} foot={<span>{data?.workingDay ? `${count(data?.onLeave)} on leave today` : 'Sunday: no check-in needed'}</span>} /></button>
+        <button type="button" className="ad-plain" onClick={() => onOpen('leave')}><StatCard label="Leave waiting for you" value={count(data?.pendingLeave)} icon={<CalendarOff size={18} />} tone={data?.pendingLeave ? 'purple' : 'green'} loading={loading && !data} /></button>
+        <button type="button" className="ad-plain" onClick={() => onOpen('meetings')}><StatCard label="Meetings" value={count(data?.liveMeetings)} icon={<Video size={18} />} tone={data?.liveMeetings ? 'red' : 'blue'} loading={loading && !data} foot={<span>live now · {count(data?.upcomingMeetings)} scheduled</span>} /></button>
+        <button type="button" className="ad-plain" onClick={() => onOpen('attendance')}><StatCard label="Attendance" value="Month" icon={<Users size={18} />} tone="blue" loading={loading && !data} foot={<span>Grid, CSV and Leo progress reports</span>} /></button>
+      </div>
       <div className="ad-grid cols-4">
         <StatCard label="People with access" value={count(data?.members)} icon={<Users size={18} />} loading={loading && !data} foot={<span>{count(data?.active7)} active this week</span>} />
         <StatCard label="Overdue tasks" value={count(data?.overdue)} icon={<CheckSquare size={18} />} tone={data?.overdue ? 'red' : 'green'} loading={loading && !data} />

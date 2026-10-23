@@ -1,8 +1,10 @@
 import { AdminUser, AppSetting } from '../models.js';
 import { emailConfigured, escapeHtml, renderEmail, sendEmail } from '../mailer.js';
-import { sameId } from './access.js';
+import { ROLES } from '../permissions.js';
+import { MANAGE, sameId } from './access.js';
+import { pushConfigured, sendPush } from './push.js';
 import { emitToUser } from './realtime.js';
-import { TeamChannel, TeamChannelMember, TeamNotification, TeamTask } from './models.js';
+import { TeamChannel, TeamChannelMember, TeamLeave, TeamNotification, TeamStandup, TeamTask } from './models.js';
 
 export const TEAM_APP_URL = (process.env.TEAM_APP_URL || 'https://team.cvmind.in').replace(/\/$/, '');
 
@@ -11,6 +13,8 @@ const WORKER_INTERVAL_MS = 10 * 60 * 1000;
 const DUE_SOON_MS = 2 * 60 * 60 * 1000;
 // 09:00 IST is 03:30 UTC
 const REMINDER_UTC_MINUTES = 3 * 60 + 30;
+// 10:30 IST is 05:00 UTC
+const STANDUP_UTC_MINUTES = 5 * 60;
 
 // People who can use the team app right now
 export const teamPeopleFilter = { active: true, chatAccess: { $ne: false } };
@@ -46,6 +50,46 @@ export async function notify(recipientIds, { type, actorId = null, refType = '',
   if (!docs.length) return;
   const created = await TeamNotification.insertMany(docs);
   for (const n of created) emitToUser(String(n.adminId), 'notification.new', { id: String(n._id), type: n.type });
+  // Push runs in the background so it never slows down the request that caused it
+  lastPush = pushNotifications(created).catch((err) => console.error('[team] push failed:', err.message));
+}
+
+// The latest background push, so tests can wait for it
+let lastPush = Promise.resolve();
+export const pushSettled = () => lastPush;
+
+// The app link a notification opens (hash routes, relative to the app)
+export function notificationPath(n) {
+  if (n.taskId) return `#/tasks/${n.taskId}`;
+  if (n.refType === 'meeting' && n.refId) return `#/meet/${n.refId}`;
+  if (n.type === 'standup_blocker') return '#/checkin?tab=team';
+  if (n.refType === 'standup') return '#/checkin';
+  if (n.type === 'leave_requested') return '#/checkin?tab=requests';
+  if (n.refType === 'leave') return '#/checkin?tab=leave';
+  if (n.refType === 'announcement' && n.refId) return `#/announcements/${n.refId}`;
+  if (n.channelId && n.refType === 'message' && n.refId) return `#/chat/${n.channelId}?m=${n.refId}`;
+  if (n.channelId) return `#/chat/${n.channelId}`;
+  return '#/home';
+}
+
+async function pushNotifications(created) {
+  if (!pushConfigured()) return;
+  const actorIds = [...new Set(created.map((n) => String(n.actorId || '')).filter(Boolean))];
+  const actors = new Map((await AdminUser.find({ _id: { $in: actorIds } }, { name: 1, username: 1 }).lean()).map((a) => [String(a._id), a.name || a.username]));
+  await sendPush(created.map((n) => {
+    const who = n.actorId ? actors.get(String(n.actorId)) : '';
+    return {
+      adminId: n.adminId,
+      payload: {
+        title: who ? `${who} ${notificationLabel(n.type)}` : notificationLabel(n.type),
+        body: n.preview || 'Open CVMind Team to see it.',
+        url: notificationPath(n),
+        // Updates from the same task or chat replace each other instead of piling up
+        tag: n.taskId ? `task-${n.taskId}` : n.channelId ? `chat-${n.channelId}` : `n-${n._id}`,
+        id: String(n._id)
+      }
+    };
+  }));
 }
 
 const LABELS = {
@@ -61,7 +105,19 @@ const LABELS = {
   review_changes: 'asked for changes',
   announcement: 'posted an announcement',
   task_due_soon: 'Task due soon',
-  added_to_channel: 'added you to a channel'
+  added_to_channel: 'added you to a channel',
+  standup_reminder: 'Time for your daily check-in',
+  standup_blocker: 'reported a blocker in their check-in',
+  leave_requested: 'requested leave',
+  leave_approved: 'approved your leave',
+  leave_declined: 'declined your leave',
+  meeting_started: 'started a call',
+  meeting_scheduled: 'invited you to a meeting',
+  meeting_moved: 'moved a meeting',
+  meeting_cancelled: 'cancelled a meeting',
+  meeting_soon: 'Meeting starts in 10 minutes',
+  meeting_notes: "Leo's meeting notes are ready",
+  meeting_recording: 'saved a meeting recording'
 };
 export const notificationLabel = (type) => LABELS[type] || 'New activity';
 
@@ -182,24 +238,55 @@ export async function sendDailyTaskReminders(now = new Date()) {
   return { sent };
 }
 
-// Runs the daily reminder once per IST day, after 09:00 IST. The last run day is stored so a
-// restart doesn't send it twice.
-async function maybeRunDailyReminders(now = new Date()) {
+// Runs `job` once per day, after `utcMinutes` past midnight UTC. The last run day is stored under
+// `key` so a restart (or a second server) doesn't run it twice.
+async function onceADay(key, utcMinutes, job, now = new Date()) {
   const minutes = now.getUTCHours() * 60 + now.getUTCMinutes();
-  if (minutes < REMINDER_UTC_MINUTES) return;
+  if (minutes < utcMinutes) return;
   const day = now.toISOString().slice(0, 10);
   const claimed = await AppSetting.findOneAndUpdate(
-    { key: 'team.dailyReminderDay', value: { $ne: day } },
+    { key, value: { $ne: day } },
     { value: day, updatedBy: 'team-worker' },
     { new: true }
   ).catch(() => null);
   if (!claimed) {
     // First run ever: create the row, claiming today
-    const exists = await AppSetting.exists({ key: 'team.dailyReminderDay' });
+    const exists = await AppSetting.exists({ key });
     if (exists) return;
-    await AppSetting.create({ key: 'team.dailyReminderDay', value: day, updatedBy: 'team-worker' });
+    await AppSetting.create({ key, value: day, updatedBy: 'team-worker' });
   }
-  await sendDailyTaskReminders(now);
+  await job(now);
+}
+
+// ── Check-ins ────────────────────────────────────────────────────────────────
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+// The India date of a moment, "YYYY-MM-DD"
+export const istDay = (now = new Date()) => new Date(+now + IST_OFFSET_MS).toISOString().slice(0, 10);
+// Mon–Sat are working days; Sunday is off
+export const isWorkingDay = (day) => new Date(`${day}T00:00:00Z`).getUTCDay() !== 0;
+
+// Everyone who can use the team app (never the .env owner, which has no account)
+export const teamPeople = () => AdminUser.find(teamPeopleFilter, { _id: 1, name: 1, username: 1, role: 1, createdAt: 1 }).sort({ name: 1, username: 1 }).lean();
+
+export const managerIds = async () => {
+  const roles = Object.entries(ROLES).filter(([, r]) => r.permissions.includes(MANAGE)).map(([k]) => k);
+  return (await AdminUser.find({ role: { $in: roles }, ...teamPeopleFilter }, { _id: 1 }).lean()).map((a) => String(a._id));
+};
+
+// 10:30 IST on working days: an in-app nudge for everyone who hasn't checked in and isn't on leave
+export async function sendStandupReminders(now = new Date()) {
+  const day = istDay(now);
+  if (!isWorkingDay(day)) return { reminded: 0 };
+  const [people, posted, leaves] = await Promise.all([
+    teamPeople(),
+    TeamStandup.find({ day }, { adminId: 1 }).lean(),
+    TeamLeave.find({ status: 'approved', from: { $lte: day }, to: { $gte: day } }, { adminId: 1, kind: 1 }).lean()
+  ]);
+  // Working from home still means checking in
+  const skip = new Set([...posted.map((s) => String(s.adminId)), ...leaves.filter((l) => l.kind !== 'wfh').map((l) => String(l.adminId))]);
+  const ids = people.map((p) => String(p._id)).filter((id) => !skip.has(id));
+  await notify(ids, { type: 'standup_reminder', refType: 'standup', preview: 'Post your check-in for today' });
+  return { reminded: ids.length };
 }
 
 let timer = null;
@@ -208,8 +295,11 @@ export function startTeamJobs() {
   const tick = async () => {
     try {
       await sendDueSoonReminders();
+      const { spawnRecurringTasks } = await import('./recurring.js');
+      await spawnRecurringTasks();
       await sendNotificationDigests();
-      await maybeRunDailyReminders();
+      await onceADay('team.dailyReminderDay', REMINDER_UTC_MINUTES, sendDailyTaskReminders);
+      await onceADay('team.standupReminderDay', STANDUP_UTC_MINUTES, sendStandupReminders);
       const { sweepPendingFiles } = await import('./files.js');
       await sweepPendingFiles();
     } catch (err) {
@@ -218,6 +308,16 @@ export function startTeamJobs() {
   };
   timer = setInterval(tick, WORKER_INTERVAL_MS);
   timer.unref?.();
+  // Meeting reminders go out 10 minutes before, so they're checked every minute
+  const meetings = setInterval(async () => {
+    try {
+      const { sendMeetingReminders } = await import('./meetings.js');
+      await sendMeetingReminders();
+    } catch (err) {
+      console.error('[team] meeting reminders failed:', err.message);
+    }
+  }, 60 * 1000);
+  meetings.unref?.();
   setTimeout(tick, 15 * 1000).unref?.();
 }
 

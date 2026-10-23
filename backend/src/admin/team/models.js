@@ -8,6 +8,7 @@ const Id = Schema.Types.ObjectId;
 
 export const TASK_STATUSES = ['todo', 'in_progress', 'blocked', 'submitted', 'changes_requested', 'approved'];
 export const TASK_PRIORITIES = ['low', 'normal', 'high', 'urgent'];
+export const TASK_REPEATS = ['daily', 'weekly', 'monthly'];
 
 // Public and private channels have a unique name; DMs have a dmKey (the sorted member ids) instead
 const channelSchema = new Schema({
@@ -47,6 +48,8 @@ const messageSchema = new Schema({
   reactions: [{ _id: false, emoji: String, adminIds: [{ type: Id }] }],
   fileIds: [{ type: Id }],
   taskId: { type: Id, default: null },
+  // System messages about a meeting (started, ended, notes, recording)
+  meetingId: { type: Id, default: null },
   pinnedAt: { type: Date, default: null },
   pinnedBy: { type: Id, default: null },
   editedAt: { type: Date, default: null },
@@ -87,9 +90,24 @@ const taskSchema = new Schema({
   blockedReason: { type: String, default: '' },
   completedAt: { type: Date, default: null },
   // Set when the "due in 2 hours" reminder went out; cleared when the due date changes
-  dueSoonNotifiedAt: { type: Date, default: null }
+  dueSoonNotifiedAt: { type: Date, default: null },
+  checklist: [{
+    text: { type: String, required: true },
+    done: { type: Boolean, default: false },
+    doneBy: { type: Id, default: null },
+    doneAt: { type: Date, default: null }
+  }],
+  // A repeating task: the next copy is made when this one's due date passes
+  recurrence: {
+    freq: { type: String, enum: [...TASK_REPEATS, null], default: null },
+    until: { type: Date, default: null }
+  },
+  // The first task of a repeating series, and when this copy's successor was made
+  recurrenceOf: { type: Id, default: null },
+  nextSpawnedAt: { type: Date, default: null }
 }, { timestamps: true });
 taskSchema.index({ status: 1, dueAt: 1 });
+taskSchema.index({ 'recurrence.freq': 1, nextSpawnedAt: 1, dueAt: 1 });
 taskSchema.index({ assigneeIds: 1, status: 1 });
 taskSchema.index({ createdBy: 1, updatedAt: -1 });
 export const TeamTask = mongoose.models.TeamTask || mongoose.model('TeamTask', taskSchema);
@@ -141,10 +159,10 @@ const fileSchema = new Schema({
   mime: { type: String, required: true },
   size: { type: Number, required: true },
   uploadedBy: { type: Id, required: true },
-  scope: { type: String, enum: ['channel', 'task', 'announcement', 'avatar'], required: true },
+  scope: { type: String, enum: ['channel', 'task', 'announcement', 'avatar', 'meeting'], required: true },
   scopeId: { type: Id, default: null },
   attachedTo: {
-    type: { type: String, enum: ['message', 'task', 'comment', 'submission', 'announcement', 'avatar', null], default: null },
+    type: { type: String, enum: ['message', 'task', 'comment', 'submission', 'announcement', 'avatar', 'recording', null], default: null },
     id: { type: Id, default: null }
   },
   status: { type: String, enum: ['pending', 'ready', 'deleted'], default: 'pending' },
@@ -191,3 +209,110 @@ const invitationSchema = new Schema({
 invitationSchema.index({ status: 1, createdAt: -1 });
 invitationSchema.index({ adminId: 1 });
 export const TeamInvitation = mongoose.models.TeamInvitation || mongoose.model('TeamInvitation', invitationSchema);
+
+// ── Daily check-ins and leave ────────────────────────────────────────────────
+// `day` is the India date, "YYYY-MM-DD"
+const standupSchema = new Schema({
+  adminId: { type: Id, required: true },
+  day: { type: String, required: true },
+  done: { type: String, default: '' },
+  doing: { type: String, default: '' },
+  blockers: { type: String, default: '' }
+}, { timestamps: true });
+standupSchema.index({ adminId: 1, day: 1 }, { unique: true });
+standupSchema.index({ day: 1 });
+export const TeamStandup = mongoose.models.TeamStandup || mongoose.model('TeamStandup', standupSchema);
+
+export const LEAVE_KINDS = ['casual', 'sick', 'wfh'];
+export const LEAVE_STATUSES = ['pending', 'approved', 'declined', 'cancelled'];
+
+const leaveSchema = new Schema({
+  adminId: { type: Id, required: true },
+  from: { type: String, required: true },
+  to: { type: String, required: true },
+  kind: { type: String, enum: LEAVE_KINDS, required: true },
+  reason: { type: String, default: '' },
+  status: { type: String, enum: LEAVE_STATUSES, default: 'pending' },
+  reviewedBy: { type: Id, default: null },
+  reviewComment: { type: String, default: '' },
+  reviewedAt: { type: Date, default: null }
+}, { timestamps: true });
+leaveSchema.index({ adminId: 1, from: 1 });
+leaveSchema.index({ status: 1, from: 1 });
+export const TeamLeave = mongoose.models.TeamLeave || mongoose.model('TeamLeave', leaveSchema);
+
+// ── Browser push ─────────────────────────────────────────────────────────────
+// One row per browser or phone that turned notifications on
+const pushSubscriptionSchema = new Schema({
+  adminId: { type: Id, required: true },
+  endpoint: { type: String, required: true, unique: true },
+  keys: { p256dh: { type: String, required: true }, auth: { type: String, required: true } },
+  userAgent: { type: String, default: '' },
+  lastUsedAt: { type: Date, default: null }
+}, { timestamps: true });
+pushSubscriptionSchema.index({ adminId: 1 });
+export const TeamPushSubscription = mongoose.models.TeamPushSubscription || mongoose.model('TeamPushSubscription', pushSubscriptionSchema);
+
+// ── Leo ──────────────────────────────────────────────────────────────────────
+// Leo calls per person per India day, for the daily limit
+const aiUsageSchema = new Schema({
+  adminId: { type: Id, required: true },
+  day: { type: String, required: true },
+  count: { type: Number, default: 0 }
+}, { timestamps: true });
+aiUsageSchema.index({ adminId: 1, day: 1 }, { unique: true });
+export const TeamAiUsage = mongoose.models.TeamAiUsage || mongoose.model('TeamAiUsage', aiUsageSchema);
+
+// ── Meetings ─────────────────────────────────────────────────────────────────
+// A call in a channel or DM (started on the spot), or scheduled by a manager with invitees.
+// Video and audio go browser to browser; the server only relays connection setup.
+export const MEETING_STATUSES = ['scheduled', 'live', 'ended', 'cancelled'];
+
+const meetingSchema = new Schema({
+  title: { type: String, default: '' },
+  channelId: { type: Id, default: null },
+  createdBy: { type: Id, required: true },
+  hostId: { type: Id, required: true },
+  scheduledAt: { type: Date, default: null },
+  durationMin: { type: Number, default: 30 },
+  inviteeIds: [{ type: Id }],
+  status: { type: String, enum: MEETING_STATUSES, default: 'live' },
+  startedAt: { type: Date, default: null },
+  endedAt: { type: Date, default: null },
+  participantIds: [{ type: Id }],
+  // The channel message the meeting's updates are threaded under
+  threadMessageId: { type: Id, default: null },
+  recordingFileIds: [{ type: Id }],
+  notes: {
+    status: { type: String, enum: ['none', 'pending', 'ready', 'failed'], default: 'none' },
+    summary: { type: String, default: '' },
+    decisions: [{ type: String }],
+    actionItems: [{ _id: false, text: String, owner: String }],
+    openQuestions: [{ type: String }],
+    error: { type: String, default: '' },
+    at: { type: Date, default: null }
+  },
+  reminderSentAt: { type: Date, default: null }
+}, { timestamps: true });
+meetingSchema.index({ status: 1, scheduledAt: 1 });
+meetingSchema.index({ channelId: 1, status: 1 });
+meetingSchema.index({ inviteeIds: 1, scheduledAt: 1 });
+export const TeamMeeting = mongoose.models.TeamMeeting || mongoose.model('TeamMeeting', meetingSchema);
+
+const meetingMessageSchema = new Schema({
+  meetingId: { type: Id, required: true },
+  authorId: { type: Id, required: true },
+  body: { type: String, required: true }
+}, { timestamps: true });
+meetingMessageSchema.index({ meetingId: 1, createdAt: 1 });
+export const TeamMeetingMessage = mongoose.models.TeamMeetingMessage || mongoose.model('TeamMeetingMessage', meetingMessageSchema);
+
+// Final caption lines, the transcript Leo writes the notes from
+const meetingCaptionSchema = new Schema({
+  meetingId: { type: Id, required: true },
+  adminId: { type: Id, required: true },
+  text: { type: String, required: true },
+  at: { type: Date, default: Date.now }
+});
+meetingCaptionSchema.index({ meetingId: 1, at: 1 });
+export const TeamMeetingCaption = mongoose.models.TeamMeetingCaption || mongoose.model('TeamMeetingCaption', meetingCaptionSchema);

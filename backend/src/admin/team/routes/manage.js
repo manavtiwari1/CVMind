@@ -11,8 +11,8 @@ import { FULL_ACCESS_ROLES, ROLES, isFullAccess } from '../../permissions.js';
 import { clean, escapeRegex, handle, httpError, isId, paging } from '../../util.js';
 import { MANAGE, oid, requireTeam } from '../access.js';
 import { publicFile } from '../files.js';
-import { INVITE_STATUSES, TeamChannel, TeamChannelMember, TeamFile, TeamInvitation, TeamMessage, TeamTask } from '../models.js';
-import { TEAM_APP_URL } from '../notify.js';
+import { INVITE_STATUSES, TeamChannel, TeamChannelMember, TeamFile, TeamInvitation, TeamLeave, TeamMeeting, TeamMessage, TeamStandup, TeamTask } from '../models.js';
+import { istDay, isWorkingDay, TEAM_APP_URL } from '../notify.js';
 import { disconnectUser, emitToChannel } from '../realtime.js';
 
 // Managing CVMind Team from the admin panel (and the team app's manager screens).
@@ -231,7 +231,8 @@ router.get('/overview', manage, handle(async (req, res) => {
   const now = new Date();
   const since30 = new Date(+now - 30 * 24 * 60 * 60 * 1000);
   const since7 = new Date(+now - 7 * 24 * 60 * 60 * 1000);
-  const [members, active7, perDay, byStatus, overdue, storage, pendingInvites] = await Promise.all([
+  const today = istDay(now);
+  const [members, active7, perDay, byStatus, overdue, storage, pendingInvites, checkedIn, pendingLeave, onLeave, liveMeetings, upcomingMeetings] = await Promise.all([
     AdminUser.countDocuments({ active: true, chatAccess: { $ne: false } }),
     AdminUser.countDocuments({ active: true, chatAccess: { $ne: false }, $or: [{ lastSeenAt: { $gte: since7 } }, { lastLoginAt: { $gte: since7 } }] }),
     TeamMessage.aggregate([
@@ -242,12 +243,18 @@ router.get('/overview', manage, handle(async (req, res) => {
     TeamTask.aggregate([{ $group: { _id: '$status', n: { $sum: 1 } } }]),
     TeamTask.countDocuments({ status: { $ne: 'approved' }, dueAt: { $lt: now } }),
     TeamFile.aggregate([{ $match: { status: { $ne: 'deleted' } } }, { $group: { _id: null, bytes: { $sum: '$size' }, files: { $sum: 1 } } }]),
-    TeamInvitation.countDocuments({ status: { $in: ['sent', 'failed'] } })
+    TeamInvitation.countDocuments({ status: { $in: ['sent', 'failed'] } }),
+    TeamStandup.countDocuments({ day: today }),
+    TeamLeave.countDocuments({ status: 'pending' }),
+    TeamLeave.countDocuments({ status: 'approved', kind: { $ne: 'wfh' }, from: { $lte: today }, to: { $gte: today } }),
+    TeamMeeting.countDocuments({ status: 'live' }),
+    TeamMeeting.countDocuments({ status: 'scheduled', scheduledAt: { $gte: now } })
   ]);
   res.json({
     success: true,
     data: {
       members, active7, overdue, pendingInvites,
+      today, workingDay: isWorkingDay(today), checkedIn, pendingLeave, onLeave, liveMeetings, upcomingMeetings,
       messagesPerDay: perDay.map((d) => ({ day: d._id, count: d.n })),
       tasksByStatus: Object.fromEntries(byStatus.map((s) => [s._id, s.n])),
       storageBytes: storage[0]?.bytes || 0,

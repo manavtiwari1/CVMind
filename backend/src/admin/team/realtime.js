@@ -3,9 +3,11 @@ import { adminFromToken } from '../auth.js';
 import { AdminUser } from '../models.js';
 import { channelFor } from './access.js';
 import { TeamChannel, TeamChannelMember } from './models.js';
+import { registerMeetingHandlers } from './meetRealtime.js';
 
 // Socket.IO for the team app. Events carry ids and small hints; the client loads the record over
-// REST, where the access checks live. Rooms: u:<adminId> (one person), c:<channelId>, team (everyone).
+// REST, where the access checks live. Rooms: u:<adminId> (one person), c:<channelId>, m:<meetingId>
+// (a live call), team (everyone).
 
 let io = null;
 // adminId → { sockets, away }
@@ -88,6 +90,8 @@ export function attachTeamRealtime(httpServer, { origins = ALLOWED_ORIGINS } = {
       broadcastPresence(id);
     });
 
+    registerMeetingHandlers(io, socket);
+
     // Handlers are registered before this await, so nothing the client sends right away is lost
     memberChannelIds(id).then((ids) => ids.forEach((channelId) => socket.join(`c:${channelId}`))).catch(() => {});
 
@@ -116,6 +120,7 @@ export function closeTeamRealtime() {
 export const emitToChannel = (channelId, event, payload) => io?.to(`c:${channelId}`).emit(event, payload);
 export const emitToUser = (adminId, event, payload) => io?.to(`u:${adminId}`).emit(event, payload);
 export const emitToTeam = (event, payload) => io?.to('team').emit(event, payload);
+export const emitToMeeting = (meetingId, event, payload) => io?.to(`m:${meetingId}`).emit(event, payload);
 export const joinChannelRoom = (adminId, channelId) => io?.in(`u:${adminId}`).socketsJoin(`c:${channelId}`);
 export const leaveChannelRoom = (adminId, channelId) => io?.in(`u:${adminId}`).socketsLeave(`c:${channelId}`);
 export const disconnectUser = (adminId) => io?.in(`u:${adminId}`).disconnectSockets(true);

@@ -28,6 +28,7 @@ export function publicMessage(m, files = new Map()) {
     reactions: deleted ? [] : (m.reactions || []).filter((r) => r.adminIds?.length).map((r) => ({ emoji: r.emoji, adminIds: r.adminIds.map(String) })),
     files: deleted ? [] : pick(m.fileIds, files),
     taskId: str(m.taskId),
+    meetingId: str(m.meetingId),
     pinnedAt: m.pinnedAt || null,
     editedAt: m.editedAt || null,
     deletedAt: m.deletedAt || null,
@@ -49,6 +50,9 @@ export function publicTask(t, files = new Map()) {
     sourceChannelId: str(t.sourceChannelId),
     files: pick(t.fileIds, files),
     blockedReason: t.blockedReason || '',
+    checklist: (t.checklist || []).map((c) => ({ id: String(c._id), text: c.text, done: !!c.done, doneBy: str(c.doneBy), doneAt: c.doneAt || null })),
+    recurrence: t.recurrence?.freq ? { freq: t.recurrence.freq, until: t.recurrence.until || null } : null,
+    recurrenceOf: str(t.recurrenceOf),
     completedAt: t.completedAt || null,
     createdAt: t.createdAt,
     updatedAt: t.updatedAt

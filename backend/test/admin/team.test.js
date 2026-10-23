@@ -481,3 +481,417 @@ test('overview counts for the admin panel', async () => {
   assert.ok(res.body.data.files >= 1);
   assert.equal((await call('/team/overview', { token: priya.token })).status, 403);
 });
+
+let kabir;
+// priya is staff (support); new sign-ins are kept to one because of the login rate limit
+test('checklists: assignees tick items, interns cannot add them', async () => {
+  const staff = priya;
+  const panel = await adminLogin('owner', 'owner-password-123');
+  const intern = await onboard(panel, { username: 'kabir', role: 'frontend_intern' });
+  kabir = intern;
+  const other = await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'Not yours', assigneeIds: [staff.id], checklist: ['One'] } });
+  const created = await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'Landing page', assigneeIds: [intern.id, staff.id], checklist: ['Hero', ' ', 'Footer'] } });
+  assert.equal(created.status, 200, JSON.stringify(created.body));
+  const task = created.body.data;
+  assert.deepEqual(task.checklist.map((c) => c.text), ['Hero', 'Footer']);
+
+  const ticked = await call(`/team/tasks/${task.id}/checklist/${task.checklist[0].id}`, { method: 'PATCH', token: intern.token, body: { done: true } });
+  assert.equal(ticked.status, 200);
+  assert.equal(ticked.body.data.checklist[0].done, true);
+  assert.equal(ticked.body.data.checklist[0].doneBy, intern.id);
+
+  assert.equal((await call(`/team/tasks/${task.id}/checklist`, { method: 'POST', token: intern.token, body: { text: 'Extra' } })).status, 403);
+  assert.equal((await call(`/team/tasks/${task.id}/checklist/${task.checklist[1].id}`, { method: 'DELETE', token: intern.token })).status, 403);
+  assert.equal((await call(`/team/tasks/${task.id}/checklist`, { method: 'POST', token: staff.token, body: { text: 'Mobile layout' } })).status, 200, 'staff assignees can add items');
+  // Someone not on the task can't see it, so can't tick it either
+  const o = other.body.data;
+  assert.equal((await call(`/team/tasks/${o.id}/checklist/${o.checklist[0].id}`, { method: 'PATCH', token: intern.token, body: { done: true } })).status, 404);
+
+  const detail = await call(`/team/tasks/${task.id}`, { token: riya.token });
+  assert.ok(detail.body.activity.some((a) => a.type === 'checklist_done'));
+  assert.equal((await call(`/team/tasks/${task.id}`, { method: 'PATCH', token: intern.token, body: { recurrence: { freq: 'daily' } } })).status, 403);
+});
+
+test('a repeating task makes its next copy when the due date passes, and stopping it stops the series', async () => {
+  const { spawnRecurringTasks, nextDue } = await import('../../src/admin/team/recurring.js');
+  assert.equal(nextDue('2026-01-31T12:00:00Z', 'monthly').toISOString(), '2026-02-28T12:00:00.000Z');
+
+  assert.equal((await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'No date', assigneeIds: [priya.id], recurrence: { freq: 'daily' } } })).status, 400);
+  const due = new Date(Date.now() - 60_000);
+  const created = await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'Daily report', assigneeIds: [priya.id], dueAt: due.toISOString(), recurrence: { freq: 'daily' }, checklist: ['Numbers'] } });
+  assert.equal(created.status, 200);
+  const first = created.body.data;
+  await call(`/team/tasks/${first.id}/checklist/${first.checklist[0].id}`, { method: 'PATCH', token: priya.token, body: { done: true } });
+
+  const run = await spawnRecurringTasks();
+  assert.equal(run.spawned, 1);
+  assert.equal((await spawnRecurringTasks()).spawned, 0, 'a copy is made only once');
+
+  const copies = (await call('/team/tasks?view=mine&status=&limit=100', { token: priya.token })).body.data.filter((t) => t.title === 'Daily report');
+  assert.equal(copies.length, 2);
+  const copy = copies.find((t) => t.id !== first.id);
+  assert.equal(copy.recurrenceOf, first.id);
+  assert.equal(copy.checklist[0].done, false, 'the checklist starts fresh');
+  assert.equal(new Date(copy.dueAt).getTime(), due.getTime() + 24 * 60 * 60 * 1000);
+
+  // Stopping the copy stops the series
+  const stopped = await call(`/team/tasks/${copy.id}`, { method: 'PATCH', token: riya.token, body: { recurrence: null } });
+  assert.equal(stopped.status, 200);
+  assert.equal(stopped.body.data.recurrence, null);
+  assert.equal((await call(`/team/tasks/${first.id}`, { token: riya.token })).body.data.recurrence, null);
+});
+
+test('the calendar loads tasks due in a date range', async () => {
+  const at = new Date('2030-05-15T06:00:00Z');
+  await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'May launch', assigneeIds: [priya.id], dueAt: at.toISOString() } });
+  const may = await call('/team/tasks?view=all&status=&from=2030-05-01T00:00:00Z&to=2030-06-01T00:00:00Z', { token: riya.token });
+  assert.deepEqual(may.body.data.map((t) => t.title), ['May launch']);
+  const june = await call('/team/tasks?view=all&status=&from=2030-06-01T00:00:00Z&to=2030-07-01T00:00:00Z', { token: riya.token });
+  assert.equal(june.body.data.length, 0);
+});
+
+test('daily check-in: one per day, blockers reach managers, managers see everyone', async () => {
+  const first = await call('/team/checkin', { method: 'PUT', token: priya.token, body: { done: 'Replied to tickets', doing: 'Refund emails' } });
+  assert.equal(first.status, 200);
+  const again = await call('/team/checkin', { method: 'PUT', token: priya.token, body: { done: 'Replied to tickets', doing: 'Refund emails', blockers: 'Need access to Razorpay' } });
+  assert.equal(again.body.data.id, first.body.data.id, 'posting again updates the same check-in');
+  assert.equal((await call('/team/checkin', { method: 'PUT', token: priya.token, body: { blockers: 'only blockers' } })).status, 400);
+
+  const mine = await call('/team/checkin', { token: priya.token });
+  assert.equal(mine.body.data.blockers, 'Need access to Razorpay');
+  const riyaNotes = (await call('/team/notifications', { token: riya.token })).body.data;
+  assert.ok(riyaNotes.some((n) => n.type === 'standup_blocker' && n.preview === 'Need access to Razorpay'));
+
+  assert.equal((await call('/team/checkins', { token: priya.token })).status, 403, 'members only see their own');
+  const day = await call('/team/checkins', { token: riya.token });
+  assert.ok(day.body.data.some((s) => s.adminId === priya.id));
+  assert.ok(!day.body.missing.includes(priya.id));
+  assert.ok(day.body.missing.includes(riya.id));
+
+  assert.equal((await call(`/team/checkins/history?adminId=${riya.id}`, { token: priya.token })).status, 403);
+  assert.equal((await call('/team/checkins/history', { token: priya.token })).body.data.length, 1);
+});
+
+test('leave: members request, another manager decides, managers\' own leave is approved', async () => {
+  const { istDay } = await import('../../src/admin/team/notify.js');
+  const today = istDay();
+  const later = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  const asked = await call('/team/leaves', { method: 'POST', token: priya.token, body: { from: later, to: later, kind: 'casual', reason: 'Family function' } });
+  assert.equal(asked.status, 200);
+  assert.equal(asked.body.data.status, 'pending');
+  assert.equal((await call('/team/leaves', { method: 'POST', token: priya.token, body: { from: later, to: later, kind: 'sick' } })).status, 400, 'no overlapping requests');
+  assert.ok((await call('/team/notifications', { token: riya.token })).body.data.some((n) => n.type === 'leave_requested'));
+
+  assert.equal((await call(`/team/leaves/${asked.body.data.id}/review`, { method: 'POST', token: priya.token, body: { decision: 'approve' } })).status, 403);
+  assert.equal((await call('/team/leaves?scope=team', { token: priya.token })).status, 403);
+  const approved = await call(`/team/leaves/${asked.body.data.id}/review`, { method: 'POST', token: riya.token, body: { decision: 'approve', comment: 'Enjoy' } });
+  assert.equal(approved.body.data.status, 'approved');
+  assert.ok((await call('/team/notifications', { token: priya.token })).body.data.some((n) => n.type === 'leave_approved'));
+  assert.equal((await call(`/team/leaves/${asked.body.data.id}`, { method: 'DELETE', token: priya.token })).status, 400, 'approved leave is not cancelled by the member');
+
+  // The CEO is off sick today: approved straight away, and can't review their own
+  const own = await call('/team/leaves', { method: 'POST', token: owner.token, body: { from: today, to: today, kind: 'sick' } });
+  assert.equal(own.body.data.status, 'approved');
+  assert.equal((await call(`/team/leaves/${own.body.data.id}/review`, { method: 'POST', token: owner.token, body: { decision: 'cancel' } })).status, 403);
+});
+
+test('the 10:30 reminder skips people who checked in or are on leave; attendance shows it', async () => {
+  const { istDay, isWorkingDay, sendStandupReminders } = await import('../../src/admin/team/notify.js');
+  const today = istDay();
+  const before = (await call('/team/notifications', { token: riya.token })).body.data.filter((n) => n.type === 'standup_reminder').length;
+  const run = await sendStandupReminders();
+  if (isWorkingDay(today)) {
+    assert.ok(run.reminded >= 1);
+    assert.equal((await call('/team/notifications', { token: riya.token })).body.data.filter((n) => n.type === 'standup_reminder').length, before + 1);
+    assert.ok(!(await call('/team/notifications', { token: priya.token })).body.data.some((n) => n.type === 'standup_reminder'), 'checked in');
+    assert.ok(!(await call('/team/notifications', { token: owner.token })).body.data.some((n) => n.type === 'standup_reminder'), 'on sick leave');
+  } else {
+    assert.equal(run.reminded, 0, 'no reminder on Sunday');
+  }
+
+  const grid = await call(`/team/attendance?month=${today.slice(0, 7)}`, { token: riya.token });
+  assert.equal(grid.status, 200);
+  const col = grid.body.days.findIndex((d) => d.day === today);
+  assert.equal(grid.body.people.find((p) => p.id === priya.id).cells[col], 'present');
+  assert.equal(grid.body.people.find((p) => p.id === owner.id).cells[col], 'sick');
+  assert.equal((await call('/team/attendance', { token: priya.token })).status, 403);
+});
+
+test('browser push: reaches each device, respects the setting, and forgets dead devices', async () => {
+  const { setPushSender } = await import('../../src/admin/team/push.js');
+  const { pushSettled } = await import('../../src/admin/team/notify.js');
+  const sent = [];
+  let fail = null;
+  setPushSender(async (subscription, body) => {
+    if (fail) throw Object.assign(new Error('gone'), { statusCode: fail });
+    sent.push({ endpoint: subscription.endpoint, ...JSON.parse(body) });
+  });
+
+  assert.equal((await call('/team/push/key', { token: priya.token })).body.enabled, false, 'off without VAPID keys');
+  process.env.VAPID_PUBLIC_KEY = 'test-public-key';
+  process.env.VAPID_PRIVATE_KEY = 'test-private-key';
+  try {
+    assert.equal((await call('/team/push/key', { token: priya.token })).body.publicKey, 'test-public-key');
+    assert.equal((await call('/team/push/subscribe', { method: 'POST', token: priya.token, body: { subscription: { endpoint: 'http://insecure' } } })).status, 400);
+    const device = { endpoint: 'https://push.test/priya-phone', keys: { p256dh: 'p', auth: 'a' } };
+    assert.equal((await call('/team/push/subscribe', { method: 'POST', token: priya.token, body: { subscription: device } })).status, 200);
+
+    const task = await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'Push me', assigneeIds: [priya.id] } });
+    await pushSettled();
+    const msg = sent.find((m) => m.endpoint === device.endpoint);
+    assert.ok(msg, 'pushed to the phone');
+    assert.match(msg.title, /assigned you a task/);
+    assert.equal(msg.body, 'Push me');
+    assert.equal(msg.url, `#/tasks/${task.body.data.id}`);
+
+    // Turned off in Profile → nothing is sent
+    await call('/team/me', { method: 'PATCH', token: priya.token, body: { notifyPush: false } });
+    sent.length = 0;
+    await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'Quiet', assigneeIds: [priya.id] } });
+    await pushSettled();
+    assert.equal(sent.length, 0);
+
+    // A device the push service no longer knows is removed
+    await call('/team/me', { method: 'PATCH', token: priya.token, body: { notifyPush: true } });
+    fail = 410;
+    await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'Gone', assigneeIds: [priya.id] } });
+    await pushSettled();
+    const mongooseLib = (await import('mongoose')).default;
+    assert.equal(await mongooseLib.model('TeamPushSubscription').countDocuments({ endpoint: device.endpoint }), 0);
+  } finally {
+    delete process.env.VAPID_PUBLIC_KEY;
+    delete process.env.VAPID_PRIVATE_KEY;
+  }
+});
+
+test('Leo summarises what you can read, drafts tasks for staff, reports for managers, and has a daily limit', async () => {
+  const { setLeoModel } = await import('../../src/admin/team/routes/leo.js');
+  const prompts = [];
+  setLeoModel(async ({ prompt, systemInstruction }) => {
+    prompts.push(prompt);
+    if (/Turn a chat message into one clear task/.test(systemInstruction)) return { title: 'Fix the pricing page', description: 'Update the Pro price', priority: 'high', dueAt: '2099-01-01T18:00:00+05:30', assignees: ['@priya', 'nobody'] };
+    if (/progress report/.test(systemInstruction)) return { headline: 'Steady week', highlights: ['Closed tickets'], concerns: [], suggestions: ['Keep going'] };
+    return { summary: 'They discussed pricing.', decisions: ['Pro stays at 299'], actionItems: [{ text: 'Update the page', owner: '@priya' }], openQuestions: [] };
+  });
+  try {
+    const channels = (await call('/team/channels', { token: riya.token })).body.data;
+    const general = channels.find((c) => c.kind === 'public');
+    const first = await call(`/team/channels/${general.id}/messages`, { method: 'POST', token: riya.token, body: { body: 'Pro plan price stays at 299' } });
+    await call(`/team/channels/${general.id}/messages`, { method: 'POST', token: owner.token, body: { body: '@priya please update the pricing page by Friday' } });
+
+    const summary = await call('/team/leo/summary', { method: 'POST', token: priya.token, body: { channelId: general.id } });
+    assert.equal(summary.status, 200, JSON.stringify(summary.body));
+    assert.equal(summary.body.data.summary, 'They discussed pricing.');
+    assert.deepEqual(summary.body.data.actionItems, [{ text: 'Update the page', owner: 'priya' }]);
+    assert.match(prompts.at(-1), /Pro plan price stays at 299/);
+
+    // A DM between two other people stays private from Leo too
+    const dm = await call('/team/dm', { method: 'POST', token: riya.token, body: { adminIds: [owner.id] } });
+    assert.equal((await call('/team/leo/summary', { method: 'POST', token: priya.token, body: { channelId: dm.body.data.id } })).status, 404);
+
+    // Drafts: staff get themselves as assignee, managers get the suggested people; interns can't
+    const asStaff = await call('/team/leo/task-draft', { method: 'POST', token: priya.token, body: { messageId: first.body.data.id } });
+    assert.equal(asStaff.status, 200);
+    assert.deepEqual(asStaff.body.data.assigneeIds, [priya.id]);
+    const asManager = await call('/team/leo/task-draft', { method: 'POST', token: riya.token, body: { messageId: first.body.data.id } });
+    assert.deepEqual(asManager.body.data.assigneeIds, [priya.id], 'unknown usernames are dropped');
+    assert.equal(asManager.body.data.priority, 'high');
+    assert.equal((await call('/team/leo/task-draft', { method: 'POST', token: kabir.token, body: { messageId: first.body.data.id } })).status, 403);
+
+    const report = await call(`/team/leo/report?adminId=${priya.id}`, { token: riya.token });
+    assert.equal(report.status, 200);
+    assert.equal(report.body.data.headline, 'Steady week');
+    assert.equal(report.body.data.stats.checkIns, 1);
+    assert.equal((await call(`/team/leo/report?adminId=${riya.id}`, { token: priya.token })).status, 403);
+
+    // The 31st call of the day is refused
+    const mongooseLib = (await import('mongoose')).default;
+    const { istDay } = await import('../../src/admin/team/notify.js');
+    await mongooseLib.model('TeamAiUsage').updateOne({ adminId: priya.id, day: istDay() }, { count: 30 });
+    const limited = await call('/team/leo/summary', { method: 'POST', token: priya.token, body: { channelId: general.id } });
+    assert.equal(limited.status, 429);
+    assert.equal((await call('/team/leo/usage', { token: priya.token })).body.remaining, 0);
+  } finally {
+    setLeoModel(null);
+  }
+});
+
+// ── Meetings ─────────────────────────────────────────────────────────────────
+const meetSocket = (token) => new Promise((resolve, reject) => {
+  const socket = ioClient(base, { path: '/team-socket', auth: { token }, transports: ['websocket'], reconnection: false, forceNew: true });
+  socket.on('connect', () => resolve(socket));
+  socket.on('connect_error', reject);
+});
+const emitAck = (socket, event, payload) => new Promise((resolve) => socket.emit(event, payload, resolve));
+const nextEvent = (socket, event, ms = 3000) => new Promise((resolve, reject) => {
+  const t = setTimeout(() => reject(new Error(`no ${event}`)), ms);
+  socket.once(event, (p) => { clearTimeout(t); resolve(p); });
+});
+
+test('only managers schedule meetings; invitees and managers can open them', async () => {
+  const at = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  assert.equal((await call('/team/meetings', { method: 'POST', token: priya.token, body: { title: 'Sync', scheduledAt: at, inviteeIds: [kabir.id] } })).status, 403);
+  assert.equal((await call('/team/meetings', { method: 'POST', token: kabir.token, body: { title: 'Sync', scheduledAt: at, inviteeIds: [priya.id] } })).status, 403);
+
+  const made = await call('/team/meetings', { method: 'POST', token: riya.token, body: { title: 'Design review', scheduledAt: at, durationMin: 45, inviteeIds: [kabir.id] } });
+  assert.equal(made.status, 200, JSON.stringify(made.body));
+  const m = made.body.data;
+  assert.equal(m.status, 'scheduled');
+  assert.ok((await call('/team/notifications', { token: kabir.token })).body.data.some((n) => n.type === 'meeting_scheduled' && n.refId === m.id));
+  assert.ok((await call('/team/meetings?scope=upcoming', { token: kabir.token })).body.data.some((x) => x.id === m.id));
+  assert.equal((await call(`/team/meetings/${m.id}`, { token: priya.token })).status, 404, 'not invited, not a manager');
+  assert.equal((await call(`/team/meetings/${m.id}`, { token: owner.token })).status, 200, 'managers can open any meeting');
+  assert.equal((await call(`/team/meetings/${m.id}`, { method: 'PATCH', token: kabir.token, body: { title: 'x' } })).status, 403);
+
+  const moved = await call(`/team/meetings/${m.id}`, { method: 'PATCH', token: owner.token, body: { scheduledAt: new Date(Date.now() + 5 * 60 * 1000).toISOString() } });
+  assert.equal(moved.status, 200);
+  const { sendMeetingReminders } = await import('../../src/admin/team/meetings.js');
+  await sendMeetingReminders();
+  assert.equal((await sendMeetingReminders()).reminded, 0, 'one reminder only');
+  assert.ok((await call('/team/notifications', { token: kabir.token })).body.data.some((n) => n.type === 'meeting_soon'));
+  assert.equal((await call(`/team/meetings/${m.id}/cancel`, { method: 'POST', token: riya.token })).body.data.status, 'cancelled');
+});
+
+test('a live meeting: join, relay setup, reactions, chat, captions, host controls, cap and end', async () => {
+  const { setLeoModel } = await import('../../src/admin/team/routes/leo.js');
+  const { notesSettled } = await import('../../src/admin/team/meetings.js');
+  setLeoModel(async () => ({ summary: 'We agreed to ship Friday.', decisions: ['Ship Friday'], actionItems: [{ text: 'Write release notes', owner: 'priya' }], openQuestions: [] }));
+  const sockets = [];
+  try {
+    const general = (await call('/team/channels', { token: priya.token })).body.data.find((c) => c.kind === 'public');
+    const started = await call('/team/meetings', { method: 'POST', token: priya.token, body: { channelId: general.id } });
+    assert.equal(started.status, 200, JSON.stringify(started.body));
+    const meeting = started.body.data;
+    assert.equal(meeting.status, 'live');
+    assert.equal((await call('/team/meetings', { method: 'POST', token: riya.token, body: { channelId: general.id } })).body.data.id, meeting.id, 'one live meeting per channel');
+
+    const ice = await call(`/team/meetings/${meeting.id}/ice`, { token: priya.token });
+    assert.equal(ice.body.turn, false);
+    assert.ok(ice.body.iceServers[0].urls[0].startsWith('stun:'));
+
+    const p = await meetSocket(priya.token);
+    const r = await meetSocket(riya.token);
+    const k = await meetSocket(kabir.token);
+    sockets.push(p, r, k);
+    const pj = await emitAck(p, 'meet:join', { meetingId: meeting.id });
+    assert.equal(pj.ok, true, JSON.stringify(pj));
+    assert.equal(pj.hostId, priya.id);
+    const joined = nextEvent(p, 'meet:peer-joined');
+    const rj = await emitAck(r, 'meet:join', { meetingId: meeting.id });
+    assert.equal(rj.peers.length, 1);
+    assert.equal((await joined).adminId, riya.id);
+
+    // Offers and answers go to one peer only
+    const signal = nextEvent(p, 'meet:signal');
+    r.emit('meet:signal', { to: pj.selfId, data: { type: 'offer', sdp: 'v=0' } });
+    assert.deepEqual((await signal), { from: rj.selfId, data: { type: 'offer', sdp: 'v=0' } });
+
+    const reaction = nextEvent(r, 'meet:reaction');
+    p.emit('meet:reaction', { emoji: '🎉' });
+    assert.equal((await reaction).emoji, '🎉');
+    assert.equal((await emitAck(r, 'meet:chat', { body: 'Can everyone see my screen?' })).ok, true);
+    p.emit('meet:caption', { text: 'Let us ship on Friday', final: true });
+    await new Promise((res) => setTimeout(res, 150));
+    assert.equal((await call(`/team/meetings/${meeting.id}/chat`, { token: priya.token })).body.data[0].body, 'Can everyone see my screen?');
+
+    // Host controls: not for an intern; the host can remove someone, who then cannot come back
+    const kj = await emitAck(k, 'meet:join', { meetingId: meeting.id });
+    assert.equal(kj.ok, true);
+    assert.equal((await emitAck(k, 'meet:host', { action: 'mute', target: pj.selfId })).ok, false);
+    const removed = nextEvent(k, 'meet:removed');
+    assert.equal((await emitAck(p, 'meet:host', { action: 'remove', target: kj.selfId })).ok, true);
+    await removed;
+    assert.equal((await emitAck(k, 'meet:join', { meetingId: meeting.id })).code, 'REMOVED');
+
+    // Six at most (each browser counts)
+    const extra = [];
+    for (let i = 0; i < 4; i++) {
+      const s = await meetSocket(owner.token);
+      sockets.push(s);
+      extra.push(await emitAck(s, 'meet:join', { meetingId: meeting.id }));
+    }
+    assert.ok(extra.every((x) => x.ok));
+    const seventh = await meetSocket(owner.token);
+    sockets.push(seventh);
+    assert.equal((await emitAck(seventh, 'meet:join', { meetingId: meeting.id })).code, 'FULL');
+
+    // The host leaves: the earliest manager (Riya) takes over
+    const handover = nextEvent(r, 'meet:host');
+    await emitAck(p, 'meet:leave', {});
+    assert.equal((await handover).hostId, riya.id);
+
+    // Riya ends it for everyone; Leo writes notes into the channel thread
+    const ended = nextEvent(r, 'meet:ended');
+    assert.equal((await emitAck(r, 'meet:host', { action: 'end' })).ok, true);
+    await ended;
+    await notesSettled();
+    const after = (await call(`/team/meetings/${meeting.id}`, { token: priya.token })).body.data;
+    assert.equal(after.status, 'ended');
+    assert.equal(after.notes.status, 'ready');
+    assert.deepEqual(after.notes.actionItems, [{ text: 'Write release notes', owner: 'priya' }]);
+    assert.ok(after.participantIds.includes(kabir.id));
+    assert.ok((await call('/team/notifications', { token: priya.token })).body.data.some((n) => n.type === 'meeting_notes'));
+    const { body: channelHistory } = await call(`/team/channels/${general.id}/messages`, { token: priya.token });
+    const parent = channelHistory.data.find((msg) => msg.meetingId === meeting.id);
+    assert.ok(parent && parent.replyCount >= 2, 'ended and notes reply in the meeting thread');
+  } finally {
+    sockets.forEach((s) => s.close());
+    setLeoModel(null);
+  }
+});
+
+test('recordings: the host uploads, people who can open the meeting see it in Media', async () => {
+  const general = (await call('/team/channels', { token: riya.token })).body.data.find((c) => c.kind === 'public');
+  const meeting = (await call('/team/meetings', { method: 'POST', token: riya.token, body: { channelId: general.id } })).body.data;
+  const bad = await upload(riya.token, { name: 'call.pdf', mime: 'application/pdf', scope: 'meeting', scopeId: meeting.id });
+  assert.equal(bad.status, 400, 'only video');
+  assert.equal((await upload(priya.token, { name: 'call.webm', mime: 'video/webm', size: 5_000_000, scope: 'meeting', scopeId: meeting.id })).status, 403, 'not the host');
+  const big = await upload(riya.token, { name: 'call.webm', mime: 'video/webm', size: 2 * 1024 * 1024 * 1024, scope: 'meeting', scopeId: meeting.id });
+  assert.equal(big.status, 400, 'over 1 GB');
+  const file = await upload(riya.token, { name: 'call.webm', mime: 'video/webm', size: 300 * 1024 * 1024, scope: 'meeting', scopeId: meeting.id });
+  assert.equal(file.status, 200, JSON.stringify(file.body));
+  const saved = await call(`/team/meetings/${meeting.id}/recording`, { method: 'POST', token: riya.token, body: { fileId: file.id } });
+  assert.equal(saved.status, 200);
+  assert.deepEqual(saved.body.data.recordingFileIds, [file.id]);
+  const media = await call('/team/media?type=video', { token: priya.token });
+  assert.ok(media.body.data.some((f) => f.id === file.id));
+  assert.equal((await call(`/team/files/${file.id}`, { token: priya.token })).status, 200);
+  await call(`/team/meetings/${meeting.id}/end`, { method: 'POST', token: riya.token });
+});
+
+test('TURN credentials come from Cloudflare when configured', async () => {
+  const { iceServers, setTurnFetch } = await import('../../src/admin/team/routes/meetings.js');
+  process.env.CF_TURN_KEY_ID = 'key';
+  process.env.CF_TURN_API_TOKEN = 'token';
+  let asked = '';
+  setTurnFetch(async (url) => { asked = url; return new Response(JSON.stringify({ iceServers: [{ urls: ['turn:turn.cloudflare.com:3478'], username: 'u', credential: 'c' }] }), { status: 200 }); });
+  try {
+    const out = await iceServers();
+    assert.equal(out.turn, true);
+    assert.match(asked, /turn\/keys\/key\/credentials\/generate-ice-servers/);
+    assert.equal(out.iceServers.at(-1).username, 'u');
+    setTurnFetch(async () => new Response('nope', { status: 500 }));
+    assert.equal((await iceServers()).turn, false, 'falls back to STUN');
+  } finally {
+    delete process.env.CF_TURN_KEY_ID;
+    delete process.env.CF_TURN_API_TOKEN;
+    setTurnFetch(null);
+  }
+});
+
+test('the admin panel sees attendance, check-ins, leave, meetings and tasks', async () => {
+  const panel = await adminLogin('owner', 'owner-password-123');
+  const { istDay } = await import('../../src/admin/team/notify.js');
+  const overview = (await call('/team/overview', { token: panel })).body.data;
+  assert.equal(overview.today, istDay());
+  assert.ok(overview.checkedIn >= 1);
+  assert.ok('pendingLeave' in overview && 'liveMeetings' in overview);
+  for (const path of ['/team/attendance', '/team/checkins', '/team/leaves?scope=team', '/team/meetings?scope=past', '/team/tasks?view=all&status=', `/team/checkins/history?adminId=${priya.id}`]) {
+    const res = await call(path, { token: panel });
+    assert.equal(res.status, 200, `${path}: ${JSON.stringify(res.body)}`);
+  }
+  const past = (await call('/team/meetings?scope=past', { token: panel })).body.data;
+  assert.ok(past.length >= 1);
+  assert.equal((await call(`/team/meetings/${past[0].id}/chat`, { token: panel })).status, 200);
+});
