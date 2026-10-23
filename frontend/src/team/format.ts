@@ -42,6 +42,10 @@ export const EMOJIS = ['👍', '❤️', '😂', '🎉', '🙏', '🔥', '👀',
 // Where opening a notification takes you
 export function notificationHref(n: Notification) {
   if (n.taskId) return hrefFor('tasks', n.taskId);
+  if (n.type === 'standup_blocker') return hrefFor('checkin', '', { tab: 'team' });
+  if (n.refType === 'standup') return hrefFor('checkin');
+  if (n.type === 'leave_requested') return hrefFor('checkin', '', { tab: 'requests' });
+  if (n.refType === 'leave') return hrefFor('checkin', '', { tab: 'leave' });
   if (n.refType === 'announcement' && n.refId) return hrefFor('announcements', n.refId);
   if (n.channelId && n.refType === 'message' && n.refId) return hrefFor('chat', n.channelId, { m: n.refId });
   if (n.channelId) return hrefFor('chat', n.channelId);

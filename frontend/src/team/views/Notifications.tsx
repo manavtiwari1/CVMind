@@ -20,7 +20,12 @@ const LABELS: Record<string, string> = {
   review_changes: 'asked for changes',
   announcement: 'posted an announcement',
   task_due_soon: 'Due in 2 hours',
-  added_to_channel: 'added you to a channel'
+  added_to_channel: 'added you to a channel',
+  standup_reminder: 'Time for your daily check-in',
+  standup_blocker: 'reported a blocker',
+  leave_requested: 'requested leave',
+  leave_approved: 'approved your leave',
+  leave_declined: 'declined your leave'
 };
 
 export default function Notifications({ onClose }: { onClose: () => void }) {

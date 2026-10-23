@@ -1,8 +1,9 @@
 import { AdminUser, AppSetting } from '../models.js';
 import { emailConfigured, escapeHtml, renderEmail, sendEmail } from '../mailer.js';
-import { sameId } from './access.js';
+import { ROLES } from '../permissions.js';
+import { MANAGE, sameId } from './access.js';
 import { emitToUser } from './realtime.js';
-import { TeamChannel, TeamChannelMember, TeamNotification, TeamTask } from './models.js';
+import { TeamChannel, TeamChannelMember, TeamLeave, TeamNotification, TeamStandup, TeamTask } from './models.js';
 
 export const TEAM_APP_URL = (process.env.TEAM_APP_URL || 'https://team.cvmind.in').replace(/\/$/, '');
 
@@ -11,6 +12,8 @@ const WORKER_INTERVAL_MS = 10 * 60 * 1000;
 const DUE_SOON_MS = 2 * 60 * 60 * 1000;
 // 09:00 IST is 03:30 UTC
 const REMINDER_UTC_MINUTES = 3 * 60 + 30;
+// 10:30 IST is 05:00 UTC
+const STANDUP_UTC_MINUTES = 5 * 60;
 
 // People who can use the team app right now
 export const teamPeopleFilter = { active: true, chatAccess: { $ne: false } };
@@ -61,7 +64,12 @@ const LABELS = {
   review_changes: 'asked for changes',
   announcement: 'posted an announcement',
   task_due_soon: 'Task due soon',
-  added_to_channel: 'added you to a channel'
+  added_to_channel: 'added you to a channel',
+  standup_reminder: 'Time for your daily check-in',
+  standup_blocker: 'reported a blocker in their check-in',
+  leave_requested: 'requested leave',
+  leave_approved: 'approved your leave',
+  leave_declined: 'declined your leave'
 };
 export const notificationLabel = (type) => LABELS[type] || 'New activity';
 
@@ -182,24 +190,55 @@ export async function sendDailyTaskReminders(now = new Date()) {
   return { sent };
 }
 
-// Runs the daily reminder once per IST day, after 09:00 IST. The last run day is stored so a
-// restart doesn't send it twice.
-async function maybeRunDailyReminders(now = new Date()) {
+// Runs `job` once per day, after `utcMinutes` past midnight UTC. The last run day is stored under
+// `key` so a restart (or a second server) doesn't run it twice.
+async function onceADay(key, utcMinutes, job, now = new Date()) {
   const minutes = now.getUTCHours() * 60 + now.getUTCMinutes();
-  if (minutes < REMINDER_UTC_MINUTES) return;
+  if (minutes < utcMinutes) return;
   const day = now.toISOString().slice(0, 10);
   const claimed = await AppSetting.findOneAndUpdate(
-    { key: 'team.dailyReminderDay', value: { $ne: day } },
+    { key, value: { $ne: day } },
     { value: day, updatedBy: 'team-worker' },
     { new: true }
   ).catch(() => null);
   if (!claimed) {
     // First run ever: create the row, claiming today
-    const exists = await AppSetting.exists({ key: 'team.dailyReminderDay' });
+    const exists = await AppSetting.exists({ key });
     if (exists) return;
-    await AppSetting.create({ key: 'team.dailyReminderDay', value: day, updatedBy: 'team-worker' });
+    await AppSetting.create({ key, value: day, updatedBy: 'team-worker' });
   }
-  await sendDailyTaskReminders(now);
+  await job(now);
+}
+
+// ── Check-ins ────────────────────────────────────────────────────────────────
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+// The India date of a moment, "YYYY-MM-DD"
+export const istDay = (now = new Date()) => new Date(+now + IST_OFFSET_MS).toISOString().slice(0, 10);
+// Mon–Sat are working days; Sunday is off
+export const isWorkingDay = (day) => new Date(`${day}T00:00:00Z`).getUTCDay() !== 0;
+
+// Everyone who can use the team app (never the .env owner, which has no account)
+export const teamPeople = () => AdminUser.find(teamPeopleFilter, { _id: 1, name: 1, username: 1, role: 1 }).sort({ name: 1, username: 1 }).lean();
+
+export const managerIds = async () => {
+  const roles = Object.entries(ROLES).filter(([, r]) => r.permissions.includes(MANAGE)).map(([k]) => k);
+  return (await AdminUser.find({ role: { $in: roles }, ...teamPeopleFilter }, { _id: 1 }).lean()).map((a) => String(a._id));
+};
+
+// 10:30 IST on working days: an in-app nudge for everyone who hasn't checked in and isn't on leave
+export async function sendStandupReminders(now = new Date()) {
+  const day = istDay(now);
+  if (!isWorkingDay(day)) return { reminded: 0 };
+  const [people, posted, leaves] = await Promise.all([
+    teamPeople(),
+    TeamStandup.find({ day }, { adminId: 1 }).lean(),
+    TeamLeave.find({ status: 'approved', from: { $lte: day }, to: { $gte: day } }, { adminId: 1, kind: 1 }).lean()
+  ]);
+  // Working from home still means checking in
+  const skip = new Set([...posted.map((s) => String(s.adminId)), ...leaves.filter((l) => l.kind !== 'wfh').map((l) => String(l.adminId))]);
+  const ids = people.map((p) => String(p._id)).filter((id) => !skip.has(id));
+  await notify(ids, { type: 'standup_reminder', refType: 'standup', preview: 'Post your check-in for today' });
+  return { reminded: ids.length };
 }
 
 let timer = null;
@@ -211,7 +250,8 @@ export function startTeamJobs() {
       const { spawnRecurringTasks } = await import('./recurring.js');
       await spawnRecurringTasks();
       await sendNotificationDigests();
-      await maybeRunDailyReminders();
+      await onceADay('team.dailyReminderDay', REMINDER_UTC_MINUTES, sendDailyTaskReminders);
+      await onceADay('team.standupReminderDay', STANDUP_UTC_MINUTES, sendStandupReminders);
       const { sweepPendingFiles } = await import('./files.js');
       await sweepPendingFiles();
     } catch (err) {

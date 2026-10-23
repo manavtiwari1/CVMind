@@ -207,3 +207,34 @@ const invitationSchema = new Schema({
 invitationSchema.index({ status: 1, createdAt: -1 });
 invitationSchema.index({ adminId: 1 });
 export const TeamInvitation = mongoose.models.TeamInvitation || mongoose.model('TeamInvitation', invitationSchema);
+
+// ── Daily check-ins and leave ────────────────────────────────────────────────
+// `day` is the India date, "YYYY-MM-DD"
+const standupSchema = new Schema({
+  adminId: { type: Id, required: true },
+  day: { type: String, required: true },
+  done: { type: String, default: '' },
+  doing: { type: String, default: '' },
+  blockers: { type: String, default: '' }
+}, { timestamps: true });
+standupSchema.index({ adminId: 1, day: 1 }, { unique: true });
+standupSchema.index({ day: 1 });
+export const TeamStandup = mongoose.models.TeamStandup || mongoose.model('TeamStandup', standupSchema);
+
+export const LEAVE_KINDS = ['casual', 'sick', 'wfh'];
+export const LEAVE_STATUSES = ['pending', 'approved', 'declined', 'cancelled'];
+
+const leaveSchema = new Schema({
+  adminId: { type: Id, required: true },
+  from: { type: String, required: true },
+  to: { type: String, required: true },
+  kind: { type: String, enum: LEAVE_KINDS, required: true },
+  reason: { type: String, default: '' },
+  status: { type: String, enum: LEAVE_STATUSES, default: 'pending' },
+  reviewedBy: { type: Id, default: null },
+  reviewComment: { type: String, default: '' },
+  reviewedAt: { type: Date, default: null }
+}, { timestamps: true });
+leaveSchema.index({ adminId: 1, from: 1 });
+leaveSchema.index({ status: 1, from: 1 });
+export const TeamLeave = mongoose.models.TeamLeave || mongoose.model('TeamLeave', leaveSchema);

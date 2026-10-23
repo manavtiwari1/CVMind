@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
-import { Bell, CheckSquare, FolderOpen, Hash, Home, Lock, LogOut, Megaphone, Menu, MessageSquarePlus, Plus, Search, Settings, Users, WifiOff, X } from 'lucide-react';
+import { Bell, CheckSquare, ClipboardCheck, FolderOpen, Hash, Home, Lock, LogOut, Megaphone, Menu, MessageSquarePlus, Plus, Search, Settings, Users, WifiOff, X } from 'lucide-react';
 import cvmindIcon from '../assets/cvmind_icon.png';
 import { api } from './api';
 import type { Channel } from './api';
@@ -15,6 +15,7 @@ const Tasks = lazy(() => import('./views/Tasks'));
 const Chat = lazy(() => import('./views/Chat'));
 const Media = lazy(() => import('./views/Media'));
 const People = lazy(() => import('./views/People'));
+const CheckIn = lazy(() => import('./views/CheckIn'));
 const Profile = lazy(() => import('./views/Profile'));
 
 export default function Shell() {
@@ -54,6 +55,7 @@ export default function Shell() {
     { view: 'home', label: 'Home', icon: Home },
     { view: 'announcements', label: 'Announcements', icon: Megaphone },
     { view: 'tasks', label: 'Tasks', icon: CheckSquare },
+    { view: 'checkin', label: 'Check-in', icon: ClipboardCheck },
     { view: 'media', label: 'Media', icon: FolderOpen },
     { view: 'people', label: 'People', icon: Users }
   ];
@@ -76,6 +78,7 @@ export default function Shell() {
     case 'chat': content = <Chat channelId={route.id} params={route.params} />; break;
     case 'media': content = <Media />; break;
     case 'people': content = <People />; break;
+    case 'checkin': content = <CheckIn params={route.params} />; break;
     case 'profile': content = <Profile />; break;
     default: content = <HomeView />;
   }

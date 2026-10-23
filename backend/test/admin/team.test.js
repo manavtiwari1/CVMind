@@ -547,3 +547,71 @@ test('the calendar loads tasks due in a date range', async () => {
   const june = await call('/team/tasks?view=all&status=&from=2030-06-01T00:00:00Z&to=2030-07-01T00:00:00Z', { token: riya.token });
   assert.equal(june.body.data.length, 0);
 });
+
+test('daily check-in: one per day, blockers reach managers, managers see everyone', async () => {
+  const first = await call('/team/checkin', { method: 'PUT', token: priya.token, body: { done: 'Replied to tickets', doing: 'Refund emails' } });
+  assert.equal(first.status, 200);
+  const again = await call('/team/checkin', { method: 'PUT', token: priya.token, body: { done: 'Replied to tickets', doing: 'Refund emails', blockers: 'Need access to Razorpay' } });
+  assert.equal(again.body.data.id, first.body.data.id, 'posting again updates the same check-in');
+  assert.equal((await call('/team/checkin', { method: 'PUT', token: priya.token, body: { blockers: 'only blockers' } })).status, 400);
+
+  const mine = await call('/team/checkin', { token: priya.token });
+  assert.equal(mine.body.data.blockers, 'Need access to Razorpay');
+  const riyaNotes = (await call('/team/notifications', { token: riya.token })).body.data;
+  assert.ok(riyaNotes.some((n) => n.type === 'standup_blocker' && n.preview === 'Need access to Razorpay'));
+
+  assert.equal((await call('/team/checkins', { token: priya.token })).status, 403, 'members only see their own');
+  const day = await call('/team/checkins', { token: riya.token });
+  assert.ok(day.body.data.some((s) => s.adminId === priya.id));
+  assert.ok(!day.body.missing.includes(priya.id));
+  assert.ok(day.body.missing.includes(riya.id));
+
+  assert.equal((await call(`/team/checkins/history?adminId=${riya.id}`, { token: priya.token })).status, 403);
+  assert.equal((await call('/team/checkins/history', { token: priya.token })).body.data.length, 1);
+});
+
+test('leave: members request, another manager decides, managers\' own leave is approved', async () => {
+  const { istDay } = await import('../../src/admin/team/notify.js');
+  const today = istDay();
+  const later = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  const asked = await call('/team/leaves', { method: 'POST', token: priya.token, body: { from: later, to: later, kind: 'casual', reason: 'Family function' } });
+  assert.equal(asked.status, 200);
+  assert.equal(asked.body.data.status, 'pending');
+  assert.equal((await call('/team/leaves', { method: 'POST', token: priya.token, body: { from: later, to: later, kind: 'sick' } })).status, 400, 'no overlapping requests');
+  assert.ok((await call('/team/notifications', { token: riya.token })).body.data.some((n) => n.type === 'leave_requested'));
+
+  assert.equal((await call(`/team/leaves/${asked.body.data.id}/review`, { method: 'POST', token: priya.token, body: { decision: 'approve' } })).status, 403);
+  assert.equal((await call('/team/leaves?scope=team', { token: priya.token })).status, 403);
+  const approved = await call(`/team/leaves/${asked.body.data.id}/review`, { method: 'POST', token: riya.token, body: { decision: 'approve', comment: 'Enjoy' } });
+  assert.equal(approved.body.data.status, 'approved');
+  assert.ok((await call('/team/notifications', { token: priya.token })).body.data.some((n) => n.type === 'leave_approved'));
+  assert.equal((await call(`/team/leaves/${asked.body.data.id}`, { method: 'DELETE', token: priya.token })).status, 400, 'approved leave is not cancelled by the member');
+
+  // The CEO is off sick today: approved straight away, and can't review their own
+  const own = await call('/team/leaves', { method: 'POST', token: owner.token, body: { from: today, to: today, kind: 'sick' } });
+  assert.equal(own.body.data.status, 'approved');
+  assert.equal((await call(`/team/leaves/${own.body.data.id}/review`, { method: 'POST', token: owner.token, body: { decision: 'cancel' } })).status, 403);
+});
+
+test('the 10:30 reminder skips people who checked in or are on leave; attendance shows it', async () => {
+  const { istDay, isWorkingDay, sendStandupReminders } = await import('../../src/admin/team/notify.js');
+  const today = istDay();
+  const before = (await call('/team/notifications', { token: riya.token })).body.data.filter((n) => n.type === 'standup_reminder').length;
+  const run = await sendStandupReminders();
+  if (isWorkingDay(today)) {
+    assert.ok(run.reminded >= 1);
+    assert.equal((await call('/team/notifications', { token: riya.token })).body.data.filter((n) => n.type === 'standup_reminder').length, before + 1);
+    assert.ok(!(await call('/team/notifications', { token: priya.token })).body.data.some((n) => n.type === 'standup_reminder'), 'checked in');
+    assert.ok(!(await call('/team/notifications', { token: owner.token })).body.data.some((n) => n.type === 'standup_reminder'), 'on sick leave');
+  } else {
+    assert.equal(run.reminded, 0, 'no reminder on Sunday');
+  }
+
+  const grid = await call(`/team/attendance?month=${today.slice(0, 7)}`, { token: riya.token });
+  assert.equal(grid.status, 200);
+  const col = grid.body.days.findIndex((d) => d.day === today);
+  assert.equal(grid.body.people.find((p) => p.id === priya.id).cells[col], 'present');
+  assert.equal(grid.body.people.find((p) => p.id === owner.id).cells[col], 'sick');
+  assert.equal((await call('/team/attendance', { token: priya.token })).status, 403);
+});

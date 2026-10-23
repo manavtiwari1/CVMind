@@ -171,6 +171,23 @@ export interface Notification {
   createdAt: string;
 }
 
+export interface Standup { id: string; adminId: string; day: string; done: string; doing: string; blockers: string; createdAt: string; updatedAt: string }
+
+export type LeaveKind = 'casual' | 'sick' | 'wfh';
+export interface Leave {
+  id: string;
+  adminId: string;
+  from: string;
+  to: string;
+  kind: LeaveKind;
+  reason: string;
+  status: 'pending' | 'approved' | 'declined' | 'cancelled';
+  reviewedBy: string | null;
+  reviewComment: string;
+  reviewedAt: string | null;
+  createdAt: string;
+}
+
 const SESSION_KEY = 'cvmind_team_session';
 
 export function loadSession(): Session | null {

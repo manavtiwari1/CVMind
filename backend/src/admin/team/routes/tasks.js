@@ -5,7 +5,7 @@ import { clean, handle, httpError, isId, paging } from '../../util.js';
 import { channelFor, isManager, MANAGE, oid, requireTeam, sameId, taskFor, visibleTaskFilter } from '../access.js';
 import { attachFiles, softDeleteFiles } from '../files.js';
 import { TASK_PRIORITIES, TASK_REPEATS, TeamChannel, TeamFile, TeamMessage, TeamSubmission, TeamTask, TeamTaskActivity, TeamTaskComment } from '../models.js';
-import { notify, parseMentions, teamPeopleFilter } from '../notify.js';
+import { managerIds, notify, parseMentions, teamPeopleFilter } from '../notify.js';
 import { emitToChannel, emitToUser } from '../realtime.js';
 import { filesFor, publicComment, publicSubmission, publicTask } from '../serialize.js';
 import { ROLES } from '../../permissions.js';
@@ -63,11 +63,6 @@ async function teamPeople(ids) {
   if (found.length !== clean.length) throw httpError(400, 'One of the assignees is not on CVMind Team.');
   return clean;
 }
-
-const managerIds = async () => {
-  const roles = Object.entries(ROLES).filter(([, r]) => r.permissions.includes(MANAGE)).map(([k]) => k);
-  return (await AdminUser.find({ role: { $in: roles }, ...teamPeopleFilter }, { _id: 1 }).lean()).map((a) => String(a._id));
-};
 
 const log = (taskId, actorId, type, from = null, to = null) => TeamTaskActivity.create({ taskId, actorId, type, from, to });
 
