@@ -8,6 +8,8 @@ import { istDay, isWorkingDay, managerIds, notify, teamPeople } from '../notify.
 const router = express.Router();
 const team = requireTeam();
 const manage = requireTeam({ manage: true });
+// Read routes the admin panel's Team workspace section also uses
+const panel = requireTeam({ adminPanel: true });
 
 const MAX_FIELD = 1500;
 const MAX_REASON = 500;
@@ -84,7 +86,7 @@ router.get('/checkins', manage, handle(async (req, res) => {
 }));
 
 // Past check-ins: your own, or anyone's for managers
-router.get('/checkins/history', team, handle(async (req, res) => {
+router.get('/checkins/history', panel, handle(async (req, res) => {
   const adminId = isId(req.query.adminId) ? String(req.query.adminId) : req.admin.id;
   if (!sameId(adminId, req.admin.id) && !isManager(req.admin)) throw httpError(403, 'You can only see your own check-ins.');
   const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 30, 1), 90);
@@ -95,7 +97,7 @@ router.get('/checkins/history', team, handle(async (req, res) => {
 
 // ── Attendance ───────────────────────────────────────────────────────────────
 // A person × day grid for one month. Cells: present, wfh, casual, sick, missing, off (Sunday),
-// today (not posted yet) and future.
+// today (not posted yet), future, and none (before the person joined, or before anyone used check-ins).
 router.get('/attendance', manage, handle(async (req, res) => {
   const today = istDay();
   const month = /^\d{4}-\d{2}$/.test(req.query.month || '') ? req.query.month : today.slice(0, 7);
@@ -105,14 +107,19 @@ router.get('/attendance', manage, handle(async (req, res) => {
   const last = addDays(next.toISOString().slice(0, 10), -1);
   const days = Array.from({ length: daysBetween(first, last) + 1 }, (_, i) => addDays(first, i));
 
-  const [people, standups, leaves] = await Promise.all([
+  const [people, standups, leaves, firstEver] = await Promise.all([
     teamPeople(),
     TeamStandup.find({ day: { $gte: first, $lte: last } }, { adminId: 1, day: 1 }).lean(),
-    TeamLeave.find({ status: 'approved', from: { $lte: last }, to: { $gte: first } }).lean()
+    TeamLeave.find({ status: 'approved', from: { $lte: last }, to: { $gte: first } }).lean(),
+    TeamStandup.findOne({}, { day: 1 }).sort({ day: 1 }).lean()
   ]);
+  // Nobody is "missing" before check-ins started, or before they joined
+  const trackingFrom = firstEver?.day || today;
+  const joined = new Map(people.map((p) => [String(p._id), p.createdAt ? istDay(p.createdAt) : first]));
   const posted = new Set(standups.map((s) => `${s.adminId}:${s.day}`));
   const cell = (id, day) => {
     if (day > today) return 'future';
+    if (day < trackingFrom || day < joined.get(String(id))) return 'none';
     const leave = leaves.find((l) => sameId(l.adminId, id) && l.from <= day && l.to >= day);
     const checkedIn = posted.has(`${id}:${day}`);
     if (leave && leave.kind !== 'wfh') return leave.kind;
@@ -133,7 +140,7 @@ router.get('/attendance', manage, handle(async (req, res) => {
 }));
 
 // ── Leave ────────────────────────────────────────────────────────────────────
-router.get('/leaves', team, handle(async (req, res) => {
+router.get('/leaves', panel, handle(async (req, res) => {
   const scope = req.query.scope === 'team' ? 'team' : 'mine';
   if (scope === 'team' && !isManager(req.admin)) throw httpError(403, 'Only managers can see everyone\'s leave.');
   const filter = scope === 'mine' ? { adminId: oid(req.admin.id) } : {};

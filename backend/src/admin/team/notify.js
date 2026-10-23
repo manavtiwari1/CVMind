@@ -266,7 +266,7 @@ export const istDay = (now = new Date()) => new Date(+now + IST_OFFSET_MS).toISO
 export const isWorkingDay = (day) => new Date(`${day}T00:00:00Z`).getUTCDay() !== 0;
 
 // Everyone who can use the team app (never the .env owner, which has no account)
-export const teamPeople = () => AdminUser.find(teamPeopleFilter, { _id: 1, name: 1, username: 1, role: 1 }).sort({ name: 1, username: 1 }).lean();
+export const teamPeople = () => AdminUser.find(teamPeopleFilter, { _id: 1, name: 1, username: 1, role: 1, createdAt: 1 }).sort({ name: 1, username: 1 }).lean();
 
 export const managerIds = async () => {
   const roles = Object.entries(ROLES).filter(([, r]) => r.permissions.includes(MANAGE)).map(([k]) => k);

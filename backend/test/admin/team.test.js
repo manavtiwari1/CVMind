@@ -879,3 +879,19 @@ test('TURN credentials come from Cloudflare when configured', async () => {
     setTurnFetch(null);
   }
 });
+
+test('the admin panel sees attendance, check-ins, leave, meetings and tasks', async () => {
+  const panel = await adminLogin('owner', 'owner-password-123');
+  const { istDay } = await import('../../src/admin/team/notify.js');
+  const overview = (await call('/team/overview', { token: panel })).body.data;
+  assert.equal(overview.today, istDay());
+  assert.ok(overview.checkedIn >= 1);
+  assert.ok('pendingLeave' in overview && 'liveMeetings' in overview);
+  for (const path of ['/team/attendance', '/team/checkins', '/team/leaves?scope=team', '/team/meetings?scope=past', '/team/tasks?view=all&status=', `/team/checkins/history?adminId=${priya.id}`]) {
+    const res = await call(path, { token: panel });
+    assert.equal(res.status, 200, `${path}: ${JSON.stringify(res.body)}`);
+  }
+  const past = (await call('/team/meetings?scope=past', { token: panel })).body.data;
+  assert.ok(past.length >= 1);
+  assert.equal((await call(`/team/meetings/${past[0].id}/chat`, { token: panel })).status, 200);
+});

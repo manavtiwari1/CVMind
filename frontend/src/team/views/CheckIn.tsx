@@ -303,7 +303,7 @@ function LeaveRequests() {
 interface AttendanceData { month: string; days: Array<{ day: string; working: boolean }>; people: Array<{ id: string; cells: string[]; present: number; missing: number }> }
 const CELL: Record<string, { label: string; short: string }> = {
   present: { label: 'Present', short: '✓' }, wfh: { label: 'Work from home', short: 'H' }, casual: { label: 'Casual leave', short: 'C' },
-  sick: { label: 'Sick leave', short: 'S' }, missing: { label: 'Missing', short: '✕' }, off: { label: 'Sunday', short: '' }, today: { label: 'Not yet today', short: '·' }, future: { label: '', short: '' }
+  sick: { label: 'Sick leave', short: 'S' }, missing: { label: 'Missing', short: '✕' }, off: { label: 'Sunday', short: '' }, today: { label: 'Not yet today', short: '·' }, future: { label: '', short: '' }, none: { label: 'Not tracked yet', short: '' }
 };
 
 function Attendance() {

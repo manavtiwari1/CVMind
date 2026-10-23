@@ -11,6 +11,8 @@ import { notify, teamPeopleFilter } from '../notify.js';
 const router = express.Router();
 const team = requireTeam();
 const manage = requireTeam({ manage: true });
+// Routes the admin panel's Team workspace section also uses
+const panel = requireTeam({ adminPanel: true });
 
 const MAX_TITLE = 120;
 const MAX_INVITEES = 50;
@@ -45,7 +47,7 @@ function parseSchedule(body, { partial = false } = {}) {
 }
 
 // ── List ─────────────────────────────────────────────────────────────────────
-router.get('/meetings', team, handle(async (req, res) => {
+router.get('/meetings', panel, handle(async (req, res) => {
   const filter = await visibleMeetingFilter(req.admin);
   const scope = ['live', 'upcoming', 'past'].includes(req.query.scope) ? req.query.scope : 'upcoming';
   if (isId(req.query.channelId)) {
@@ -70,7 +72,7 @@ router.get('/meetings', team, handle(async (req, res) => {
 }));
 
 // ── Start now, or schedule (managers) ────────────────────────────────────────
-router.post('/meetings', team, handle(async (req, res) => {
+router.post('/meetings', panel, handle(async (req, res) => {
   const body = req.body || {};
   const title = clean(body.title, MAX_TITLE);
   const scheduled = !!body.scheduledAt;
@@ -115,7 +117,7 @@ router.post('/meetings', team, handle(async (req, res) => {
 }));
 
 // ── One meeting ──────────────────────────────────────────────────────────────
-router.get('/meetings/:id', team, handle(async (req, res) => {
+router.get('/meetings/:id', panel, handle(async (req, res) => {
   const meeting = await meetingFor(req.admin, req.params.id);
   res.json({ success: true, data: publicMeeting(meeting.toObject()), canHost: canHost(req.admin, meeting), canEdit: isManager(req.admin) && meeting.status === 'scheduled' });
 }));
@@ -163,7 +165,7 @@ router.post('/meetings/:id/cancel', manage, handle(async (req, res) => {
 }));
 
 // End for everyone (the host or a manager)
-router.post('/meetings/:id/end', team, handle(async (req, res) => {
+router.post('/meetings/:id/end', panel, handle(async (req, res) => {
   const meeting = await meetingFor(req.admin, req.params.id);
   if (!canHost(req.admin, meeting)) throw httpError(403, 'Only the host can end the meeting for everyone.');
   if (meeting.status !== 'live') throw httpError(400, 'This meeting is not running.');
@@ -204,7 +206,7 @@ router.get('/meetings/:id/ice', team, handle(async (req, res) => {
 }));
 
 // ── Chat, recording and notes ────────────────────────────────────────────────
-router.get('/meetings/:id/chat', team, handle(async (req, res) => {
+router.get('/meetings/:id/chat', panel, handle(async (req, res) => {
   const meeting = await meetingFor(req.admin, req.params.id);
   const rows = await TeamMeetingMessage.find({ meetingId: meeting._id }).sort({ createdAt: 1 }).limit(1000).lean();
   res.json({ success: true, data: rows.map((m) => ({ id: String(m._id), authorId: String(m.authorId), body: m.body, createdAt: m.createdAt })) });

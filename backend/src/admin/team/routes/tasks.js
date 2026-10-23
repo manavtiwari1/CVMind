@@ -13,6 +13,8 @@ import { ROLES } from '../../permissions.js';
 const router = express.Router();
 const team = requireTeam();
 const manage = requireTeam({ manage: true });
+// Read routes the admin panel's Team workspace section also uses
+const panel = requireTeam({ adminPanel: true });
 
 const MAX_TITLE = 200;
 const MAX_DESCRIPTION = 5000;
@@ -76,7 +78,7 @@ function emitTask(task) {
 const onTask = (task, ids) => ids.filter((id) => sameId(id, task.createdBy) || task.assigneeIds.some((a) => sameId(a, id)));
 
 // ── List ─────────────────────────────────────────────────────────────────────
-router.get('/tasks', team, handle(async (req, res) => {
+router.get('/tasks', panel, handle(async (req, res) => {
   const { page, limit, skip } = paging(req.query, { defaultLimit: 50 });
   const view = ['mine', 'created', 'all'].includes(req.query.view) ? req.query.view : 'mine';
   const me = oid(req.admin.id);
@@ -179,7 +181,7 @@ router.post('/tasks', team, handle(async (req, res) => {
 }));
 
 // ── Detail ───────────────────────────────────────────────────────────────────
-router.get('/tasks/:id', team, handle(async (req, res) => {
+router.get('/tasks/:id', panel, handle(async (req, res) => {
   const task = await taskFor(req.admin, req.params.id);
   const [submissions, activity] = await Promise.all([
     TeamSubmission.find({ taskId: task._id }).sort({ version: -1 }).lean(),
