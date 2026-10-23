@@ -546,6 +546,24 @@ p.pad { padding: 0 16px 14px; }
 .tm-att-legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--tm-text-3); }
 .tm-att-legend span { display: inline-flex; align-items: center; gap: 4px; }
 
+/* Leo */
+.tm-leo-btn { color: var(--tm-purple) !important; border-color: transparent !important; }
+.tm-leo-btn.on, .tm-leo-btn:hover { background: var(--tm-purple-soft) !important; }
+.tm-panel-head h2 { display: inline-flex; align-items: center; gap: 6px; }
+.tm-panel-head .tm-leo-btn { margin-left: auto; }
+.tm-leo { display: flex; flex-direction: column; gap: 12px; }
+.tm-leo-inline { margin-bottom: 12px; border-color: var(--tm-purple-soft); }
+.tm-leo-result { display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 1.55; color: var(--tm-text-2); }
+.tm-leo-result p { margin: 0; }
+.tm-leo-result h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tm-text-3); margin: 6px 0 0; }
+.tm-leo-result ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.tm-leo-result .tm-btn { align-self: flex-start; }
+.tm-leo-actions { list-style: none; padding-left: 0 !important; }
+.tm-leo-actions li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--tm-border); }
+.tm-leo-actions li:last-child { border-bottom: 0; }
+.tm-report-stats { display: flex; flex-wrap: wrap; gap: 8px; }
+.tm-report-stats span { background: var(--tm-surface-2); border: 1px solid var(--tm-border); border-radius: 999px; padding: 4px 10px; font-size: 13px; }
+
 /* ── Responsive ───────────────────────────────────────────────── */
 @media (max-width: 1100px) {
   .tm-home-grid, .tm-task-grid { grid-template-columns: minmax(0, 1fr); }
@@ -578,6 +596,7 @@ p.pad { padding: 0 16px 14px; }
   .tm-overlay { padding: 0; align-items: flex-end; }
   .tm-modal, .tm-modal.wide { max-width: none; max-height: 92vh; border-radius: 14px 14px 0 0; }
   .tm-thumb { width: 130px; height: 100px; }
+  .tm-leo-btn span { display: none; }
   .tm-board { grid-auto-columns: minmax(78vw, 1fr); scroll-snap-type: x mandatory; }
   .tm-board-col { scroll-snap-align: start; max-height: none; }
   .tm-cal { padding: 8px; }

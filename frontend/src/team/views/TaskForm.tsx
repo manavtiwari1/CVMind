@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import type { TaskDraft } from './Leo';
 import { api } from '../api';
 import type { Message, Priority, Repeat, Task } from '../api';
 import { go, useTeam } from '../store';
@@ -14,14 +15,14 @@ const toLocalInput = (iso: string | null) => {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
 
-// Create a task (optionally from a chat message), or edit one
-export default function TaskForm({ onClose, source, task, onSaved }: { onClose: () => void; source?: Message; task?: Task; onSaved?: (t: Task) => void }) {
+// Create a task (optionally from a chat message, or from a Leo draft), or edit one
+export default function TaskForm({ onClose, source, task, draft, onSaved }: { onClose: () => void; source?: Message; task?: Task; draft?: TaskDraft; onSaved?: (t: Task) => void }) {
   const { me, manager, toast, nameOf } = useTeam();
-  const [title, setTitle] = useState(task?.title || (source ? source.body.split('\n')[0].slice(0, 120) : ''));
-  const [description, setDescription] = useState(task?.description || (source ? `From ${nameOf(source.authorId)}: "${source.body}"` : ''));
-  const [assigneeIds, setAssigneeIds] = useState<string[]>(task?.assigneeIds || (manager ? [] : [me.id]));
-  const [priority, setPriority] = useState<Priority>(task?.priority || 'normal');
-  const [due, setDue] = useState(toLocalInput(task?.dueAt || null));
+  const [title, setTitle] = useState(task?.title || draft?.title || (source ? source.body.split('\n')[0].slice(0, 120) : ''));
+  const [description, setDescription] = useState(task?.description || draft?.description || (source ? `From ${nameOf(source.authorId)}: "${source.body}"` : ''));
+  const [assigneeIds, setAssigneeIds] = useState<string[]>(task?.assigneeIds || (draft?.assigneeIds.length ? draft.assigneeIds : manager ? [] : [me.id]));
+  const [priority, setPriority] = useState<Priority>(task?.priority || draft?.priority || 'normal');
+  const [due, setDue] = useState(toLocalInput(task?.dueAt || draft?.dueAt || null));
   const [repeat, setRepeat] = useState<Repeat | ''>(task?.recurrence?.freq || '');
   const [until, setUntil] = useState(task?.recurrence?.until ? task.recurrence.until.slice(0, 10) : '');
   const [checklist, setChecklist] = useState('');
@@ -50,7 +51,7 @@ export default function TaskForm({ onClose, source, task, onSaved }: { onClose: 
   };
 
   return (
-    <Modal title={task ? 'Edit task' : source ? 'Create task from message' : 'New task'} onClose={onClose} wide footer={<>
+    <Modal title={task ? 'Edit task' : draft ? 'Task drafted by Leo' : source ? 'Create task from message' : 'New task'} onClose={onClose} wide footer={<>
       <button type="button" className="tm-btn" onClick={onClose}>Cancel</button>
       <button type="submit" form="tm-task-form" className="tm-btn primary" disabled={busy || files.uploading || !title.trim() || !assigneeIds.length || (!!repeat && !due)}>{busy && <Spinner size={14} />} {task ? 'Save' : 'Create task'}</button>
     </>}>

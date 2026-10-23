@@ -250,3 +250,13 @@ const pushSubscriptionSchema = new Schema({
 }, { timestamps: true });
 pushSubscriptionSchema.index({ adminId: 1 });
 export const TeamPushSubscription = mongoose.models.TeamPushSubscription || mongoose.model('TeamPushSubscription', pushSubscriptionSchema);
+
+// ── Leo ──────────────────────────────────────────────────────────────────────
+// Leo calls per person per India day, for the daily limit
+const aiUsageSchema = new Schema({
+  adminId: { type: Id, required: true },
+  day: { type: String, required: true },
+  count: { type: Number, default: 0 }
+}, { timestamps: true });
+aiUsageSchema.index({ adminId: 1, day: 1 }, { unique: true });
+export const TeamAiUsage = mongoose.models.TeamAiUsage || mongoose.model('TeamAiUsage', aiUsageSchema);

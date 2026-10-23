@@ -482,11 +482,13 @@ test('overview counts for the admin panel', async () => {
   assert.equal((await call('/team/overview', { token: priya.token })).status, 403);
 });
 
+let kabir;
 // priya is staff (support); new sign-ins are kept to one because of the login rate limit
 test('checklists: assignees tick items, interns cannot add them', async () => {
   const staff = priya;
   const panel = await adminLogin('owner', 'owner-password-123');
   const intern = await onboard(panel, { username: 'kabir', role: 'frontend_intern' });
+  kabir = intern;
   const other = await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'Not yours', assigneeIds: [staff.id], checklist: ['One'] } });
   const created = await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'Landing page', assigneeIds: [intern.id, staff.id], checklist: ['Hero', ' ', 'Footer'] } });
   assert.equal(created.status, 200, JSON.stringify(created.body));
@@ -660,5 +662,57 @@ test('browser push: reaches each device, respects the setting, and forgets dead 
   } finally {
     delete process.env.VAPID_PUBLIC_KEY;
     delete process.env.VAPID_PRIVATE_KEY;
+  }
+});
+
+test('Leo summarises what you can read, drafts tasks for staff, reports for managers, and has a daily limit', async () => {
+  const { setLeoModel } = await import('../../src/admin/team/routes/leo.js');
+  const prompts = [];
+  setLeoModel(async ({ prompt, systemInstruction }) => {
+    prompts.push(prompt);
+    if (/Turn a chat message into one clear task/.test(systemInstruction)) return { title: 'Fix the pricing page', description: 'Update the Pro price', priority: 'high', dueAt: '2099-01-01T18:00:00+05:30', assignees: ['@priya', 'nobody'] };
+    if (/progress report/.test(systemInstruction)) return { headline: 'Steady week', highlights: ['Closed tickets'], concerns: [], suggestions: ['Keep going'] };
+    return { summary: 'They discussed pricing.', decisions: ['Pro stays at 299'], actionItems: [{ text: 'Update the page', owner: '@priya' }], openQuestions: [] };
+  });
+  try {
+    const channels = (await call('/team/channels', { token: riya.token })).body.data;
+    const general = channels.find((c) => c.kind === 'public');
+    const first = await call(`/team/channels/${general.id}/messages`, { method: 'POST', token: riya.token, body: { body: 'Pro plan price stays at 299' } });
+    await call(`/team/channels/${general.id}/messages`, { method: 'POST', token: owner.token, body: { body: '@priya please update the pricing page by Friday' } });
+
+    const summary = await call('/team/leo/summary', { method: 'POST', token: priya.token, body: { channelId: general.id } });
+    assert.equal(summary.status, 200, JSON.stringify(summary.body));
+    assert.equal(summary.body.data.summary, 'They discussed pricing.');
+    assert.deepEqual(summary.body.data.actionItems, [{ text: 'Update the page', owner: 'priya' }]);
+    assert.match(prompts.at(-1), /Pro plan price stays at 299/);
+
+    // A DM between two other people stays private from Leo too
+    const dm = await call('/team/dm', { method: 'POST', token: riya.token, body: { adminIds: [owner.id] } });
+    assert.equal((await call('/team/leo/summary', { method: 'POST', token: priya.token, body: { channelId: dm.body.data.id } })).status, 404);
+
+    // Drafts: staff get themselves as assignee, managers get the suggested people; interns can't
+    const asStaff = await call('/team/leo/task-draft', { method: 'POST', token: priya.token, body: { messageId: first.body.data.id } });
+    assert.equal(asStaff.status, 200);
+    assert.deepEqual(asStaff.body.data.assigneeIds, [priya.id]);
+    const asManager = await call('/team/leo/task-draft', { method: 'POST', token: riya.token, body: { messageId: first.body.data.id } });
+    assert.deepEqual(asManager.body.data.assigneeIds, [priya.id], 'unknown usernames are dropped');
+    assert.equal(asManager.body.data.priority, 'high');
+    assert.equal((await call('/team/leo/task-draft', { method: 'POST', token: kabir.token, body: { messageId: first.body.data.id } })).status, 403);
+
+    const report = await call(`/team/leo/report?adminId=${priya.id}`, { token: riya.token });
+    assert.equal(report.status, 200);
+    assert.equal(report.body.data.headline, 'Steady week');
+    assert.equal(report.body.data.stats.checkIns, 1);
+    assert.equal((await call(`/team/leo/report?adminId=${riya.id}`, { token: priya.token })).status, 403);
+
+    // The 31st call of the day is refused
+    const mongooseLib = (await import('mongoose')).default;
+    const { istDay } = await import('../../src/admin/team/notify.js');
+    await mongooseLib.model('TeamAiUsage').updateOne({ adminId: priya.id, day: istDay() }, { count: 30 });
+    const limited = await call('/team/leo/summary', { method: 'POST', token: priya.token, body: { channelId: general.id } });
+    assert.equal(limited.status, 429);
+    assert.equal((await call('/team/leo/usage', { token: priya.token })).body.remaining, 0);
+  } finally {
+    setLeoModel(null);
   }
 });
