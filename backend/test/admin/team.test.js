@@ -481,3 +481,69 @@ test('overview counts for the admin panel', async () => {
   assert.ok(res.body.data.files >= 1);
   assert.equal((await call('/team/overview', { token: priya.token })).status, 403);
 });
+
+// priya is staff (support); new sign-ins are kept to one because of the login rate limit
+test('checklists: assignees tick items, interns cannot add them', async () => {
+  const staff = priya;
+  const panel = await adminLogin('owner', 'owner-password-123');
+  const intern = await onboard(panel, { username: 'kabir', role: 'frontend_intern' });
+  const other = await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'Not yours', assigneeIds: [staff.id], checklist: ['One'] } });
+  const created = await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'Landing page', assigneeIds: [intern.id, staff.id], checklist: ['Hero', ' ', 'Footer'] } });
+  assert.equal(created.status, 200, JSON.stringify(created.body));
+  const task = created.body.data;
+  assert.deepEqual(task.checklist.map((c) => c.text), ['Hero', 'Footer']);
+
+  const ticked = await call(`/team/tasks/${task.id}/checklist/${task.checklist[0].id}`, { method: 'PATCH', token: intern.token, body: { done: true } });
+  assert.equal(ticked.status, 200);
+  assert.equal(ticked.body.data.checklist[0].done, true);
+  assert.equal(ticked.body.data.checklist[0].doneBy, intern.id);
+
+  assert.equal((await call(`/team/tasks/${task.id}/checklist`, { method: 'POST', token: intern.token, body: { text: 'Extra' } })).status, 403);
+  assert.equal((await call(`/team/tasks/${task.id}/checklist/${task.checklist[1].id}`, { method: 'DELETE', token: intern.token })).status, 403);
+  assert.equal((await call(`/team/tasks/${task.id}/checklist`, { method: 'POST', token: staff.token, body: { text: 'Mobile layout' } })).status, 200, 'staff assignees can add items');
+  // Someone not on the task can't see it, so can't tick it either
+  const o = other.body.data;
+  assert.equal((await call(`/team/tasks/${o.id}/checklist/${o.checklist[0].id}`, { method: 'PATCH', token: intern.token, body: { done: true } })).status, 404);
+
+  const detail = await call(`/team/tasks/${task.id}`, { token: riya.token });
+  assert.ok(detail.body.activity.some((a) => a.type === 'checklist_done'));
+  assert.equal((await call(`/team/tasks/${task.id}`, { method: 'PATCH', token: intern.token, body: { recurrence: { freq: 'daily' } } })).status, 403);
+});
+
+test('a repeating task makes its next copy when the due date passes, and stopping it stops the series', async () => {
+  const { spawnRecurringTasks, nextDue } = await import('../../src/admin/team/recurring.js');
+  assert.equal(nextDue('2026-01-31T12:00:00Z', 'monthly').toISOString(), '2026-02-28T12:00:00.000Z');
+
+  assert.equal((await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'No date', assigneeIds: [priya.id], recurrence: { freq: 'daily' } } })).status, 400);
+  const due = new Date(Date.now() - 60_000);
+  const created = await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'Daily report', assigneeIds: [priya.id], dueAt: due.toISOString(), recurrence: { freq: 'daily' }, checklist: ['Numbers'] } });
+  assert.equal(created.status, 200);
+  const first = created.body.data;
+  await call(`/team/tasks/${first.id}/checklist/${first.checklist[0].id}`, { method: 'PATCH', token: priya.token, body: { done: true } });
+
+  const run = await spawnRecurringTasks();
+  assert.equal(run.spawned, 1);
+  assert.equal((await spawnRecurringTasks()).spawned, 0, 'a copy is made only once');
+
+  const copies = (await call('/team/tasks?view=mine&status=&limit=100', { token: priya.token })).body.data.filter((t) => t.title === 'Daily report');
+  assert.equal(copies.length, 2);
+  const copy = copies.find((t) => t.id !== first.id);
+  assert.equal(copy.recurrenceOf, first.id);
+  assert.equal(copy.checklist[0].done, false, 'the checklist starts fresh');
+  assert.equal(new Date(copy.dueAt).getTime(), due.getTime() + 24 * 60 * 60 * 1000);
+
+  // Stopping the copy stops the series
+  const stopped = await call(`/team/tasks/${copy.id}`, { method: 'PATCH', token: riya.token, body: { recurrence: null } });
+  assert.equal(stopped.status, 200);
+  assert.equal(stopped.body.data.recurrence, null);
+  assert.equal((await call(`/team/tasks/${first.id}`, { token: riya.token })).body.data.recurrence, null);
+});
+
+test('the calendar loads tasks due in a date range', async () => {
+  const at = new Date('2030-05-15T06:00:00Z');
+  await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'May launch', assigneeIds: [priya.id], dueAt: at.toISOString() } });
+  const may = await call('/team/tasks?view=all&status=&from=2030-05-01T00:00:00Z&to=2030-06-01T00:00:00Z', { token: riya.token });
+  assert.deepEqual(may.body.data.map((t) => t.title), ['May launch']);
+  const june = await call('/team/tasks?view=all&status=&from=2030-06-01T00:00:00Z&to=2030-07-01T00:00:00Z', { token: riya.token });
+  assert.equal(june.body.data.length, 0);
+});

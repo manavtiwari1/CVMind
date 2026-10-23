@@ -108,10 +108,16 @@ export interface Task {
   sourceChannelId: string | null;
   files: TeamFile[];
   blockedReason: string;
+  checklist: ChecklistItem[];
+  recurrence: { freq: Repeat; until: string | null } | null;
+  recurrenceOf: string | null;
   completedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
+
+export type Repeat = 'daily' | 'weekly' | 'monthly';
+export interface ChecklistItem { id: string; text: string; done: boolean; doneBy: string | null; doneAt: string | null }
 
 export interface Submission {
   id: string;

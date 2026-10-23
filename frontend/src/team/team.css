@@ -457,6 +457,58 @@
 .tm-photo-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .tm-btn.tm-danger { color: var(--tm-red); }
 
+/* Tasks: layout switch, board, calendar, checklist */
+.tm-layouts { border: 1px solid var(--tm-border); border-radius: var(--tm-radius-sm); padding: 2px; gap: 2px; }
+.tm-layouts button { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 5px; font-weight: 600; font-size: 13px; color: var(--tm-text-3); }
+.tm-board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(240px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 8px; align-items: start; }
+.tm-board-col { background: var(--tm-surface-2); border: 1px solid var(--tm-border); border-radius: var(--tm-radius); display: flex; flex-direction: column; min-height: 220px; max-height: calc(100vh - 260px); transition: background 0.12s, border-color 0.12s; }
+.tm-board-col.over { background: var(--tm-green-soft); border-color: var(--tm-green); }
+.tm-board-col.locked { opacity: 0.55; }
+.tm-board-col h3 { font-size: 13px; font-weight: 700; padding: 10px 12px; display: flex; align-items: center; gap: 7px; border-bottom: 1px solid var(--tm-border); }
+.tm-board-col h3 .tm-muted { margin-left: auto; font-weight: 600; }
+.tm-board-dot { width: 9px; height: 9px; border-radius: 50%; }
+.tm-board-cards { display: flex; flex-direction: column; gap: 8px; padding: 10px; overflow-y: auto; }
+.tm-board-card { display: flex; flex-direction: column; gap: 8px; background: var(--tm-surface); border: 1px solid var(--tm-border); border-radius: var(--tm-radius-sm); padding: 10px 12px; box-shadow: var(--tm-shadow); cursor: grab; color: var(--tm-text); }
+.tm-board-card:hover { border-color: var(--tm-border-strong); }
+.tm-board-card > a { color: var(--tm-text); }
+.tm-board-card > a:hover strong { color: var(--tm-green-dark); }
+.tm-board-card strong { font-size: 13.5px; line-height: 1.35; overflow-wrap: anywhere; }
+.tm-board-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+/* Touch screens can't drag, so they get a menu instead */
+.tm-board-move { display: none; height: 28px; font-size: 12px; max-width: 120px; }
+@media (pointer: coarse) { .tm-board-move { display: block; } .tm-board-card { cursor: default; } }
+.tm-board-card.dragging { opacity: 0.4; }
+.tm-board-card.saving { opacity: 0.7; }
+.tm-board-empty { font-size: 12.5px; color: var(--tm-text-4); text-align: center; padding: 18px 0; border: 1px dashed var(--tm-border-strong); border-radius: var(--tm-radius-sm); }
+
+.tm-cal { padding: 12px; }
+.tm-cal-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.tm-cal-head h2 { font-size: 16px; font-weight: 700; min-width: 150px; text-align: center; }
+.tm-cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-top: 1px solid var(--tm-border); border-left: 1px solid var(--tm-border); }
+.tm-cal-wd { font-size: 12px; font-weight: 700; color: var(--tm-text-3); padding: 6px 8px; border-right: 1px solid var(--tm-border); border-bottom: 1px solid var(--tm-border); background: var(--tm-surface-2); }
+.tm-cal-day { display: flex; flex-direction: column; align-items: stretch; gap: 3px; min-height: 96px; padding: 6px; text-align: left; border-right: 1px solid var(--tm-border) !important; border-bottom: 1px solid var(--tm-border) !important; background: var(--tm-surface); min-width: 0; }
+.tm-cal-day:hover { background: var(--tm-hover); }
+.tm-cal-day.other { background: var(--tm-surface-2); color: var(--tm-text-4); }
+.tm-cal-num { font-size: 12.5px; font-weight: 700; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; }
+.tm-cal-day.today .tm-cal-num { background: var(--tm-green); color: #fff; }
+.tm-cal-item { font-size: 11.5px; font-weight: 600; padding: 2px 6px; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tm-cal-item.overdue { background: var(--tm-red-soft); color: var(--tm-red); }
+.tm-cal-more { font-size: 11.5px; color: var(--tm-text-3); padding-left: 4px; }
+.tm-cal-daylist { display: flex; flex-direction: column; gap: 6px; }
+.tm-cal-dayitem { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--tm-border); border-radius: var(--tm-radius-sm); color: var(--tm-text); }
+.tm-cal-dayitem:hover { background: var(--tm-hover); }
+.tm-cal-dayitem strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.tm-progress { height: 6px; border-radius: 999px; background: var(--tm-hover); overflow: hidden; margin-bottom: 10px; }
+.tm-progress span { display: block; height: 100%; background: var(--tm-green); transition: width 0.2s; }
+.tm-checklist { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; }
+.tm-checklist li { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--tm-border); }
+.tm-checklist li:last-child { border-bottom: 0; }
+.tm-checklist label { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; cursor: pointer; }
+.tm-checklist input[type='checkbox'] { width: 16px; height: 16px; accent-color: var(--tm-green); flex-shrink: 0; }
+.tm-checklist li.done label span { color: var(--tm-text-3); text-decoration: line-through; }
+.tm-icon-btn.sm { width: 26px; height: 26px; }
+
 /* ── Responsive ───────────────────────────────────────────────── */
 @media (max-width: 1100px) {
   .tm-home-grid, .tm-task-grid { grid-template-columns: minmax(0, 1fr); }
@@ -489,4 +541,10 @@
   .tm-overlay { padding: 0; align-items: flex-end; }
   .tm-modal, .tm-modal.wide { max-width: none; max-height: 92vh; border-radius: 14px 14px 0 0; }
   .tm-thumb { width: 130px; height: 100px; }
+  .tm-board { grid-auto-columns: minmax(78vw, 1fr); scroll-snap-type: x mandatory; }
+  .tm-board-col { scroll-snap-align: start; max-height: none; }
+  .tm-cal { padding: 8px; }
+  .tm-cal-day { min-height: 64px; padding: 4px; }
+  .tm-cal-item { font-size: 0; padding: 0; height: 6px; }
+  .tm-cal-more { display: none; }
 }

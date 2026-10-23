@@ -208,6 +208,8 @@ export function startTeamJobs() {
   const tick = async () => {
     try {
       await sendDueSoonReminders();
+      const { spawnRecurringTasks } = await import('./recurring.js');
+      await spawnRecurringTasks();
       await sendNotificationDigests();
       await maybeRunDailyReminders();
       const { sweepPendingFiles } = await import('./files.js');

@@ -8,6 +8,7 @@ const Id = Schema.Types.ObjectId;
 
 export const TASK_STATUSES = ['todo', 'in_progress', 'blocked', 'submitted', 'changes_requested', 'approved'];
 export const TASK_PRIORITIES = ['low', 'normal', 'high', 'urgent'];
+export const TASK_REPEATS = ['daily', 'weekly', 'monthly'];
 
 // Public and private channels have a unique name; DMs have a dmKey (the sorted member ids) instead
 const channelSchema = new Schema({
@@ -87,9 +88,24 @@ const taskSchema = new Schema({
   blockedReason: { type: String, default: '' },
   completedAt: { type: Date, default: null },
   // Set when the "due in 2 hours" reminder went out; cleared when the due date changes
-  dueSoonNotifiedAt: { type: Date, default: null }
+  dueSoonNotifiedAt: { type: Date, default: null },
+  checklist: [{
+    text: { type: String, required: true },
+    done: { type: Boolean, default: false },
+    doneBy: { type: Id, default: null },
+    doneAt: { type: Date, default: null }
+  }],
+  // A repeating task: the next copy is made when this one's due date passes
+  recurrence: {
+    freq: { type: String, enum: [...TASK_REPEATS, null], default: null },
+    until: { type: Date, default: null }
+  },
+  // The first task of a repeating series, and when this copy's successor was made
+  recurrenceOf: { type: Id, default: null },
+  nextSpawnedAt: { type: Date, default: null }
 }, { timestamps: true });
 taskSchema.index({ status: 1, dueAt: 1 });
+taskSchema.index({ 'recurrence.freq': 1, nextSpawnedAt: 1, dueAt: 1 });
 taskSchema.index({ assigneeIds: 1, status: 1 });
 taskSchema.index({ createdBy: 1, updatedAt: -1 });
 export const TeamTask = mongoose.models.TeamTask || mongoose.model('TeamTask', taskSchema);
