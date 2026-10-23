@@ -1,11 +1,13 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent } from 'react';
-import { ArrowDown, BellOff, Bell, CheckSquare, Hash, Lock, LogOut, MessageSquare, MoreHorizontal, Pencil, Pin, Send, Sparkles, Trash2, UserPlus, Users, X } from 'lucide-react';
+import { ArrowDown, BellOff, Bell, CheckSquare, Hash, Lock, LogOut, MessageSquare, MoreHorizontal, Pencil, Pin, Send, Sparkles, Trash2, UserPlus, Users, Video, X } from 'lucide-react';
 import { api } from '../api';
 import { confirmDialog } from '../confirm';
 import type { Channel, Message } from '../api';
 import { getSocket } from '../socket';
-import { go, hrefFor, useDmName, useTeam, useTeamEvent } from '../store';
+import { go, hrefFor, useDmName, useLoad, useTeam, useTeamEvent } from '../store';
+import type { Meeting } from '../api';
+import { useStartMeeting } from '../meet/start';
 import { useAttachments } from '../attachments';
 import { ago, clock, dayLabel } from '../format';
 import { AttachButton, Avatar, Empty, EmojiPicker, FileList, MentionInput, Modal, PeoplePicker, PendingFiles, RichText, Spinner } from '../ui';
@@ -90,6 +92,9 @@ function ChannelView({ channelId, params }: { channelId: string; params: Record<
   const [taskFrom, setTaskFrom] = useState<Message | null>(null);
   const [taskDraft, setTaskDraft] = useState<{ draft: TaskDraft; source?: Message } | null>(null);
   const [showLeo, setShowLeo] = useState(false);
+  const startMeeting = useStartMeeting();
+  const liveMeeting = useLoad<{ data: Meeting[] }>('/meetings', { scope: 'live', channelId });
+  useTeamEvent('meeting.updated', (p) => { if (p.channelId === channelId) liveMeeting.reload(); }, liveMeeting.reload);
   const [atBottom, setAtBottom] = useState(true);
   const listRef = useRef<HTMLDivElement>(null);
   const typingText = useTyping(channelId);
@@ -257,6 +262,7 @@ function ChannelView({ channelId, params }: { channelId: string; params: Record<
             </div>
           </div>
           <div className="tm-chat-actions">
+            {!channel.archivedAt && (channel.joined || channel.kind === 'public') && <button type="button" className="tm-icon-btn" onClick={() => startMeeting(channelId)} aria-label={isDm ? 'Start a call' : 'Start a meeting'} title={isDm ? 'Start a call' : 'Start a meeting'}><Video size={18} /></button>}
             <button type="button" className={`tm-btn sm ghost tm-leo-btn ${showLeo ? 'on' : ''}`} onClick={() => { setShowLeo((v) => !v); setShowPins(false); if (threadId) go('chat', channelId); }} title="Summarise with Leo"><Sparkles size={15} /> <span>Summarise</span></button>
             <button type="button" className={`tm-icon-btn ${showPins ? 'on' : ''}`} onClick={() => { setShowPins((v) => !v); setShowLeo(false); if (threadId) go('chat', channelId); }} aria-label="Pinned messages" title="Pinned messages"><Pin size={17} /></button>
             {!isDm && <button type="button" className="tm-icon-btn" onClick={() => setShowMembers(true)} aria-label="Members" title="Members"><Users size={17} /></button>}
@@ -265,6 +271,13 @@ function ChannelView({ channelId, params }: { channelId: string; params: Record<
           </div>
         </header>
 
+        {liveMeeting.data?.data[0] && (
+          <a className="tm-live-meeting" href={hrefFor('meet', liveMeeting.data.data[0].id)}>
+            <span className="tm-live-dot" aria-hidden /> <strong>{liveMeeting.data.data[0].title || 'Meeting'}</strong>
+            <span className="tm-muted small">{liveMeeting.data.data[0].liveIds.length ? `${liveMeeting.data.data[0].liveIds.map(nameOf).join(', ')} ${liveMeeting.data.data[0].liveIds.length === 1 ? 'is' : 'are'} in the call` : 'Live now'}</span>
+            <span className="tm-btn primary sm"><Video size={14} /> Join</span>
+          </a>
+        )}
         <div className="tm-messages" ref={listRef} onScroll={(e) => {
           const el = e.currentTarget;
           if (el.scrollTop < 120) loadOlder();
@@ -336,6 +349,15 @@ function MessageItem({ message: m, grouped, channel, highlight, inThread, onCrea
     }
   };
   const pin = () => api(`/messages/${m.id}/pin`, { method: 'POST', body: { pinned: !m.pinnedAt } }).then(() => toast(m.pinnedAt ? 'Unpinned' : 'Pinned')).catch((err: Error) => toast(err.message, 'error'));
+
+  if (m.kind === 'system' && m.meetingId) {
+    return (
+      <div className="tm-msg system" id={`msg-${m.id}`}>
+        <Video size={14} /> <span><strong>{nameOf(m.authorId)}</strong> · {m.body}</span>
+        <a className="tm-link" href={hrefFor('meet', m.meetingId)}>Open meeting</a>
+      </div>
+    );
+  }
 
   if (m.kind === 'system') {
     return (

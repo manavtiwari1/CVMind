@@ -28,6 +28,7 @@ export function publicMessage(m, files = new Map()) {
     reactions: deleted ? [] : (m.reactions || []).filter((r) => r.adminIds?.length).map((r) => ({ emoji: r.emoji, adminIds: r.adminIds.map(String) })),
     files: deleted ? [] : pick(m.fileIds, files),
     taskId: str(m.taskId),
+    meetingId: str(m.meetingId),
     pinnedAt: m.pinnedAt || null,
     editedAt: m.editedAt || null,
     deletedAt: m.deletedAt || null,

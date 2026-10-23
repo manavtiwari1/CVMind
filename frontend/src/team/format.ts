@@ -42,6 +42,7 @@ export const EMOJIS = ['👍', '❤️', '😂', '🎉', '🙏', '🔥', '👀',
 // Where opening a notification takes you
 export function notificationHref(n: Notification) {
   if (n.taskId) return hrefFor('tasks', n.taskId);
+  if (n.refType === 'meeting' && n.refId) return hrefFor('meet', n.refId);
   if (n.type === 'standup_blocker') return hrefFor('checkin', '', { tab: 'team' });
   if (n.refType === 'standup') return hrefFor('checkin');
   if (n.type === 'leave_requested') return hrefFor('checkin', '', { tab: 'requests' });

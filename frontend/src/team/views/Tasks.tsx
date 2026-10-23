@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle2, CheckSquare, Clock, Columns3, List, ListChecks, MessageSquare, Pencil, Plus, Repeat, Trash2, Upload, X } from 'lucide-react';
 import { api } from '../api';
 import { confirmDialog } from '../confirm';
-import type { Activity, Comment, Submission, Task, TaskStatus } from '../api';
+import type { Activity, Comment, Meeting, Submission, Task, TaskStatus } from '../api';
 import { go, hrefFor, useLoad, useTeam, useTeamEvent } from '../store';
 import { useAttachments } from '../attachments';
 import { ago, dueLabel, isOverdue, STATUS_LABELS } from '../format';
@@ -61,6 +61,8 @@ function TaskList({ params }: { params: Record<string, string> }) {
     from: range?.from.toISOString(), to: range?.to.toISOString(), limit: 100
   });
   useTeamEvent('task.updated', reload, reload);
+  // Scheduled meetings show on the calendar too
+  const meetings = useLoad<{ data: Meeting[] }>(range ? '/meetings' : null, { from: range?.from.toISOString(), to: range?.to.toISOString(), limit: 100 });
   // Remembered in the URL so a refresh or a shared link keeps the layout
   const setLayout = (next: Layout) => {
     setLayoutState(next);
@@ -123,7 +125,11 @@ function TaskList({ params }: { params: Record<string, string> }) {
       {error && <p className="tm-notice red">{error}</p>}
       {loading && !data && <div className="tm-center"><Spinner /></div>}
       {data && layout === 'board' && <TaskBoard tasks={data.data} onChanged={reload} />}
-      {data && layout === 'calendar' && <TaskCalendar tasks={data.data} month={month} onMonth={setMonth} />}
+      {data && layout === 'calendar' && (
+        <TaskCalendar tasks={data.data} month={month} onMonth={setMonth} extra={(day) => (meetings.data?.data || [])
+          .filter((m) => m.scheduledAt && new Date(m.scheduledAt).toDateString() === day.toDateString())
+          .map((m) => <span key={m.id} className="tm-cal-item meeting" title={m.title}>{new Date(m.scheduledAt!).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })} {m.title}</span>)} />
+      )}
       {data && layout === 'list' && (
         <div className="tm-card tm-list">
           {data.data.map((t) => <TaskRow key={t.id} task={t} />)}

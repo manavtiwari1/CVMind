@@ -716,3 +716,166 @@ test('Leo summarises what you can read, drafts tasks for staff, reports for mana
     setLeoModel(null);
   }
 });
+
+// ── Meetings ─────────────────────────────────────────────────────────────────
+const meetSocket = (token) => new Promise((resolve, reject) => {
+  const socket = ioClient(base, { path: '/team-socket', auth: { token }, transports: ['websocket'], reconnection: false, forceNew: true });
+  socket.on('connect', () => resolve(socket));
+  socket.on('connect_error', reject);
+});
+const emitAck = (socket, event, payload) => new Promise((resolve) => socket.emit(event, payload, resolve));
+const nextEvent = (socket, event, ms = 3000) => new Promise((resolve, reject) => {
+  const t = setTimeout(() => reject(new Error(`no ${event}`)), ms);
+  socket.once(event, (p) => { clearTimeout(t); resolve(p); });
+});
+
+test('only managers schedule meetings; invitees and managers can open them', async () => {
+  const at = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  assert.equal((await call('/team/meetings', { method: 'POST', token: priya.token, body: { title: 'Sync', scheduledAt: at, inviteeIds: [kabir.id] } })).status, 403);
+  assert.equal((await call('/team/meetings', { method: 'POST', token: kabir.token, body: { title: 'Sync', scheduledAt: at, inviteeIds: [priya.id] } })).status, 403);
+
+  const made = await call('/team/meetings', { method: 'POST', token: riya.token, body: { title: 'Design review', scheduledAt: at, durationMin: 45, inviteeIds: [kabir.id] } });
+  assert.equal(made.status, 200, JSON.stringify(made.body));
+  const m = made.body.data;
+  assert.equal(m.status, 'scheduled');
+  assert.ok((await call('/team/notifications', { token: kabir.token })).body.data.some((n) => n.type === 'meeting_scheduled' && n.refId === m.id));
+  assert.ok((await call('/team/meetings?scope=upcoming', { token: kabir.token })).body.data.some((x) => x.id === m.id));
+  assert.equal((await call(`/team/meetings/${m.id}`, { token: priya.token })).status, 404, 'not invited, not a manager');
+  assert.equal((await call(`/team/meetings/${m.id}`, { token: owner.token })).status, 200, 'managers can open any meeting');
+  assert.equal((await call(`/team/meetings/${m.id}`, { method: 'PATCH', token: kabir.token, body: { title: 'x' } })).status, 403);
+
+  const moved = await call(`/team/meetings/${m.id}`, { method: 'PATCH', token: owner.token, body: { scheduledAt: new Date(Date.now() + 5 * 60 * 1000).toISOString() } });
+  assert.equal(moved.status, 200);
+  const { sendMeetingReminders } = await import('../../src/admin/team/meetings.js');
+  await sendMeetingReminders();
+  assert.equal((await sendMeetingReminders()).reminded, 0, 'one reminder only');
+  assert.ok((await call('/team/notifications', { token: kabir.token })).body.data.some((n) => n.type === 'meeting_soon'));
+  assert.equal((await call(`/team/meetings/${m.id}/cancel`, { method: 'POST', token: riya.token })).body.data.status, 'cancelled');
+});
+
+test('a live meeting: join, relay setup, reactions, chat, captions, host controls, cap and end', async () => {
+  const { setLeoModel } = await import('../../src/admin/team/routes/leo.js');
+  const { notesSettled } = await import('../../src/admin/team/meetings.js');
+  setLeoModel(async () => ({ summary: 'We agreed to ship Friday.', decisions: ['Ship Friday'], actionItems: [{ text: 'Write release notes', owner: 'priya' }], openQuestions: [] }));
+  const sockets = [];
+  try {
+    const general = (await call('/team/channels', { token: priya.token })).body.data.find((c) => c.kind === 'public');
+    const started = await call('/team/meetings', { method: 'POST', token: priya.token, body: { channelId: general.id } });
+    assert.equal(started.status, 200, JSON.stringify(started.body));
+    const meeting = started.body.data;
+    assert.equal(meeting.status, 'live');
+    assert.equal((await call('/team/meetings', { method: 'POST', token: riya.token, body: { channelId: general.id } })).body.data.id, meeting.id, 'one live meeting per channel');
+
+    const ice = await call(`/team/meetings/${meeting.id}/ice`, { token: priya.token });
+    assert.equal(ice.body.turn, false);
+    assert.ok(ice.body.iceServers[0].urls[0].startsWith('stun:'));
+
+    const p = await meetSocket(priya.token);
+    const r = await meetSocket(riya.token);
+    const k = await meetSocket(kabir.token);
+    sockets.push(p, r, k);
+    const pj = await emitAck(p, 'meet:join', { meetingId: meeting.id });
+    assert.equal(pj.ok, true, JSON.stringify(pj));
+    assert.equal(pj.hostId, priya.id);
+    const joined = nextEvent(p, 'meet:peer-joined');
+    const rj = await emitAck(r, 'meet:join', { meetingId: meeting.id });
+    assert.equal(rj.peers.length, 1);
+    assert.equal((await joined).adminId, riya.id);
+
+    // Offers and answers go to one peer only
+    const signal = nextEvent(p, 'meet:signal');
+    r.emit('meet:signal', { to: pj.selfId, data: { type: 'offer', sdp: 'v=0' } });
+    assert.deepEqual((await signal), { from: rj.selfId, data: { type: 'offer', sdp: 'v=0' } });
+
+    const reaction = nextEvent(r, 'meet:reaction');
+    p.emit('meet:reaction', { emoji: '🎉' });
+    assert.equal((await reaction).emoji, '🎉');
+    assert.equal((await emitAck(r, 'meet:chat', { body: 'Can everyone see my screen?' })).ok, true);
+    p.emit('meet:caption', { text: 'Let us ship on Friday', final: true });
+    await new Promise((res) => setTimeout(res, 150));
+    assert.equal((await call(`/team/meetings/${meeting.id}/chat`, { token: priya.token })).body.data[0].body, 'Can everyone see my screen?');
+
+    // Host controls: not for an intern; the host can remove someone, who then cannot come back
+    const kj = await emitAck(k, 'meet:join', { meetingId: meeting.id });
+    assert.equal(kj.ok, true);
+    assert.equal((await emitAck(k, 'meet:host', { action: 'mute', target: pj.selfId })).ok, false);
+    const removed = nextEvent(k, 'meet:removed');
+    assert.equal((await emitAck(p, 'meet:host', { action: 'remove', target: kj.selfId })).ok, true);
+    await removed;
+    assert.equal((await emitAck(k, 'meet:join', { meetingId: meeting.id })).code, 'REMOVED');
+
+    // Six at most (each browser counts)
+    const extra = [];
+    for (let i = 0; i < 4; i++) {
+      const s = await meetSocket(owner.token);
+      sockets.push(s);
+      extra.push(await emitAck(s, 'meet:join', { meetingId: meeting.id }));
+    }
+    assert.ok(extra.every((x) => x.ok));
+    const seventh = await meetSocket(owner.token);
+    sockets.push(seventh);
+    assert.equal((await emitAck(seventh, 'meet:join', { meetingId: meeting.id })).code, 'FULL');
+
+    // The host leaves: the earliest manager (Riya) takes over
+    const handover = nextEvent(r, 'meet:host');
+    await emitAck(p, 'meet:leave', {});
+    assert.equal((await handover).hostId, riya.id);
+
+    // Riya ends it for everyone; Leo writes notes into the channel thread
+    const ended = nextEvent(r, 'meet:ended');
+    assert.equal((await emitAck(r, 'meet:host', { action: 'end' })).ok, true);
+    await ended;
+    await notesSettled();
+    const after = (await call(`/team/meetings/${meeting.id}`, { token: priya.token })).body.data;
+    assert.equal(after.status, 'ended');
+    assert.equal(after.notes.status, 'ready');
+    assert.deepEqual(after.notes.actionItems, [{ text: 'Write release notes', owner: 'priya' }]);
+    assert.ok(after.participantIds.includes(kabir.id));
+    assert.ok((await call('/team/notifications', { token: priya.token })).body.data.some((n) => n.type === 'meeting_notes'));
+    const { body: channelHistory } = await call(`/team/channels/${general.id}/messages`, { token: priya.token });
+    const parent = channelHistory.data.find((msg) => msg.meetingId === meeting.id);
+    assert.ok(parent && parent.replyCount >= 2, 'ended and notes reply in the meeting thread');
+  } finally {
+    sockets.forEach((s) => s.close());
+    setLeoModel(null);
+  }
+});
+
+test('recordings: the host uploads, people who can open the meeting see it in Media', async () => {
+  const general = (await call('/team/channels', { token: riya.token })).body.data.find((c) => c.kind === 'public');
+  const meeting = (await call('/team/meetings', { method: 'POST', token: riya.token, body: { channelId: general.id } })).body.data;
+  const bad = await upload(riya.token, { name: 'call.pdf', mime: 'application/pdf', scope: 'meeting', scopeId: meeting.id });
+  assert.equal(bad.status, 400, 'only video');
+  assert.equal((await upload(priya.token, { name: 'call.webm', mime: 'video/webm', size: 5_000_000, scope: 'meeting', scopeId: meeting.id })).status, 403, 'not the host');
+  const big = await upload(riya.token, { name: 'call.webm', mime: 'video/webm', size: 2 * 1024 * 1024 * 1024, scope: 'meeting', scopeId: meeting.id });
+  assert.equal(big.status, 400, 'over 1 GB');
+  const file = await upload(riya.token, { name: 'call.webm', mime: 'video/webm', size: 300 * 1024 * 1024, scope: 'meeting', scopeId: meeting.id });
+  assert.equal(file.status, 200, JSON.stringify(file.body));
+  const saved = await call(`/team/meetings/${meeting.id}/recording`, { method: 'POST', token: riya.token, body: { fileId: file.id } });
+  assert.equal(saved.status, 200);
+  assert.deepEqual(saved.body.data.recordingFileIds, [file.id]);
+  const media = await call('/team/media?type=video', { token: priya.token });
+  assert.ok(media.body.data.some((f) => f.id === file.id));
+  assert.equal((await call(`/team/files/${file.id}`, { token: priya.token })).status, 200);
+  await call(`/team/meetings/${meeting.id}/end`, { method: 'POST', token: riya.token });
+});
+
+test('TURN credentials come from Cloudflare when configured', async () => {
+  const { iceServers, setTurnFetch } = await import('../../src/admin/team/routes/meetings.js');
+  process.env.CF_TURN_KEY_ID = 'key';
+  process.env.CF_TURN_API_TOKEN = 'token';
+  let asked = '';
+  setTurnFetch(async (url) => { asked = url; return new Response(JSON.stringify({ iceServers: [{ urls: ['turn:turn.cloudflare.com:3478'], username: 'u', credential: 'c' }] }), { status: 200 }); });
+  try {
+    const out = await iceServers();
+    assert.equal(out.turn, true);
+    assert.match(asked, /turn\/keys\/key\/credentials\/generate-ice-servers/);
+    assert.equal(out.iceServers.at(-1).username, 'u');
+    setTurnFetch(async () => new Response('nope', { status: 500 }));
+    assert.equal((await iceServers()).turn, false, 'falls back to STUN');
+  } finally {
+    delete process.env.CF_TURN_KEY_ID;
+    delete process.env.CF_TURN_API_TOKEN;
+    setTurnFetch(null);
+  }
+});

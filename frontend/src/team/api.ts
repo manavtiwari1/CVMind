@@ -71,6 +71,7 @@ export interface Message {
   reactions: Reaction[];
   files: TeamFile[];
   taskId: string | null;
+  meetingId: string | null;
   pinnedAt: string | null;
   editedAt: string | null;
   deletedAt: string | null;
@@ -169,6 +170,25 @@ export interface Notification {
   taskId: string | null;
   preview: string;
   readAt: string | null;
+  createdAt: string;
+}
+
+export interface Meeting {
+  id: string;
+  title: string;
+  channelId: string | null;
+  createdBy: string;
+  hostId: string;
+  scheduledAt: string | null;
+  durationMin: number;
+  inviteeIds: string[];
+  status: 'scheduled' | 'live' | 'ended' | 'cancelled';
+  startedAt: string | null;
+  endedAt: string | null;
+  participantIds: string[];
+  liveIds: string[];
+  recordingFileIds: string[];
+  notes: { status: 'pending' | 'ready' | 'failed'; summary: string; decisions: string[]; actionItems: Array<{ text: string; owner: string }>; openQuestions: string[]; error: string; at: string | null } | null;
   createdAt: string;
 }
 

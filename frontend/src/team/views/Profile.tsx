@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Bell, BellOff, Camera, Trash2 } from 'lucide-react';
+import { Bell, BellOff, Camera, Shield, Trash2 } from 'lucide-react';
 import { disablePush, enablePush, isInstalled, isIos, pushState } from '../push';
 import { PhotoDialog } from '../../components/ResumePhoto';
 import { api, saveSession, loadSession } from '../api';
@@ -123,8 +123,25 @@ export default function Profile() {
       </form>
       <PushCard onAccount={apply} />
       <PasswordCard />
+      <PrivacyCard />
       {photoDialog && <PhotoDialog currentSrc={photoDialog} onSave={savePhoto} onClose={() => setPhotoDialog(null)} />}
     </div>
+  );
+}
+
+// What CVMind Team keeps and who sees it, in plain words
+function PrivacyCard() {
+  return (
+    <section className="tm-card pad tm-privacy">
+      <h2 className="tm-h2"><Shield size={16} /> Your data on CVMind Team</h2>
+      <ul>
+        <li><strong>Check-ins, leave and attendance</strong> are seen by you and by managers only.</li>
+        <li><strong>Leo</strong> reads only what you can already see. When someone presses Summarise, Draft task or Progress report, that text is sent to DeepSeek, our AI provider, to write the answer.</li>
+        <li><strong>Meetings</strong> go directly between browsers. When live captions are on, your browser turns your speech into text; the text is saved with the meeting and sent to DeepSeek for Leo's notes. You can stop being transcribed from the meeting's ⋮ menu.</li>
+        <li><strong>Recordings</strong> are only made by the host, with a banner for everyone, and are visible to the people who could join the meeting.</li>
+        <li><strong>Browser notifications</strong> go to the devices you turn them on for, and stop when you sign out there.</li>
+      </ul>
+    </section>
   );
 }
 

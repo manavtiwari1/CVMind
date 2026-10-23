@@ -35,11 +35,15 @@ export function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export type UploadScope = { scope: 'channel' | 'task' | 'announcement' | 'avatar'; scopeId?: string | null };
+export type UploadScope = { scope: 'channel' | 'task' | 'announcement' | 'avatar' | 'meeting'; scopeId?: string | null };
+
+// Meeting recordings only (never offered for chat or task attachments)
+const RECORDING_TYPES: Record<string, string> = { webm: 'video/webm', mp4: 'video/mp4' };
+export const MAX_RECORDING_BYTES = 1024 * 1024 * 1024;
 
 // Presign → PUT straight to storage (with progress) → confirm. Abort with the signal to cancel.
 export async function uploadFile(file: File, target: UploadScope, onProgress?: (pct: number) => void, signal?: AbortSignal): Promise<TeamFile> {
-  const mime = mimeFor(file);
+  const mime = target.scope === 'meeting' ? RECORDING_TYPES[file.name.split('.').pop()?.toLowerCase() || ''] || '' : mimeFor(file);
   const { file: record, uploadUrl, headers } = await api<{ file: TeamFile; uploadUrl: string; headers: Record<string, string> }>('/files/upload-url', {
     method: 'POST',
     body: { name: file.name, mime, size: file.size, scope: target.scope, scopeId: target.scopeId || null }

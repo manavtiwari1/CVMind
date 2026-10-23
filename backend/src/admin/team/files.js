@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { httpError, isId } from '../util.js';
-import { canSeeTask, channelFor, isManager, readableChannelIds, sameId, visibleTaskFilter } from './access.js';
-import { TeamFile, TeamTask } from './models.js';
+import { canJoinMeeting, canSeeTask, channelFor, isManager, meetingFor, readableChannelIds, sameId, visibleMeetingFilter, visibleTaskFilter } from './access.js';
+import { TeamFile, TeamMeeting, TeamTask } from './models.js';
 import { removeObject, storageConfigured } from './storage.js';
 
 const PENDING_TTL_MS = 60 * 60 * 1000;
@@ -36,6 +36,10 @@ export async function checkUploadScope(admin, scope, scopeId) {
     if (!task || !canSeeTask(admin, task)) throw httpError(404, 'Task not found.');
   } else if (scope === 'announcement') {
     if (!isManager(admin)) throw httpError(403, 'Only managers can post announcements.');
+  } else if (scope === 'meeting') {
+    // Recordings: the host's browser (or a manager's) uploads them
+    const meeting = await meetingFor(admin, scopeId);
+    if (!sameId(meeting.hostId, admin.id) && !isManager(admin)) throw httpError(403, 'Only the host can save a recording.');
   } else if (scope !== 'avatar') {
     throw httpError(400, 'Pick where the file is going.');
   }
@@ -73,14 +77,16 @@ export async function canOpenFile(admin, file) {
     const task = await TeamTask.findById(file.scopeId).lean();
     return !!task && canSeeTask(admin, task);
   }
+  if (file.scope === 'meeting') return canJoinMeeting(admin, await TeamMeeting.findById(file.scopeId).lean());
   return false;
 }
 
 // Mongo filter for every attached file this person can open (the media library)
 export async function visibleFileFilter(admin) {
-  const [channelIds, tasks] = await Promise.all([
+  const [channelIds, tasks, meetings] = await Promise.all([
     readableChannelIds(admin),
-    TeamTask.find(visibleTaskFilter(admin), { _id: 1 }).lean()
+    TeamTask.find(visibleTaskFilter(admin), { _id: 1 }).lean(),
+    visibleMeetingFilter(admin).then((f) => TeamMeeting.find(f, { _id: 1 }).lean())
   ]);
   return {
     status: 'ready',
@@ -88,7 +94,8 @@ export async function visibleFileFilter(admin) {
     $or: [
       { scope: 'announcement' },
       { scope: 'channel', scopeId: { $in: channelIds } },
-      { scope: 'task', scopeId: { $in: tasks.map((t) => t._id) } }
+      { scope: 'task', scopeId: { $in: tasks.map((t) => t._id) } },
+      { scope: 'meeting', scopeId: { $in: meetings.map((m) => m._id) } }
     ]
   };
 }

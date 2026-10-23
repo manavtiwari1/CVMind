@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
-import { Bell, CheckSquare, ClipboardCheck, FolderOpen, Hash, Home, Lock, LogOut, Megaphone, Menu, MessageSquarePlus, Plus, Search, Settings, Users, WifiOff, X } from 'lucide-react';
+import { Bell, CheckSquare, ClipboardCheck, FolderOpen, Video, Hash, Home, Lock, LogOut, Megaphone, Menu, MessageSquarePlus, Plus, Search, Settings, Users, WifiOff, X } from 'lucide-react';
 import cvmindIcon from '../assets/cvmind_icon.png';
 import { api } from './api';
 import type { Channel } from './api';
@@ -16,6 +16,8 @@ const Chat = lazy(() => import('./views/Chat'));
 const Media = lazy(() => import('./views/Media'));
 const People = lazy(() => import('./views/People'));
 const CheckIn = lazy(() => import('./views/CheckIn'));
+const Meetings = lazy(() => import('./views/Meetings'));
+const Meet = lazy(() => import('./views/Meet'));
 const Profile = lazy(() => import('./views/Profile'));
 
 export default function Shell() {
@@ -56,6 +58,7 @@ export default function Shell() {
     { view: 'announcements', label: 'Announcements', icon: Megaphone },
     { view: 'tasks', label: 'Tasks', icon: CheckSquare },
     { view: 'checkin', label: 'Check-in', icon: ClipboardCheck },
+    { view: 'meetings', label: 'Meetings', icon: Video },
     { view: 'media', label: 'Media', icon: FolderOpen },
     { view: 'people', label: 'People', icon: Users }
   ];
@@ -79,6 +82,8 @@ export default function Shell() {
     case 'media': content = <Media />; break;
     case 'people': content = <People />; break;
     case 'checkin': content = <CheckIn params={route.params} />; break;
+    case 'meetings': content = <Meetings />; break;
+    case 'meet': content = <Meet key={route.id} id={route.id} />; break;
     case 'profile': content = <Profile />; break;
     default: content = <HomeView />;
   }

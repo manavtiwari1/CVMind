@@ -25,7 +25,14 @@ const LABELS: Record<string, string> = {
   standup_blocker: 'reported a blocker',
   leave_requested: 'requested leave',
   leave_approved: 'approved your leave',
-  leave_declined: 'declined your leave'
+  leave_declined: 'declined your leave',
+  meeting_started: 'started a call',
+  meeting_scheduled: 'invited you to a meeting',
+  meeting_moved: 'moved a meeting',
+  meeting_cancelled: 'cancelled a meeting',
+  meeting_soon: 'Meeting starts in 10 minutes',
+  meeting_notes: "Leo's meeting notes are ready",
+  meeting_recording: 'saved a meeting recording'
 };
 
 export default function Notifications({ onClose }: { onClose: () => void }) {

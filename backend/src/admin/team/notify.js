@@ -61,6 +61,7 @@ export const pushSettled = () => lastPush;
 // The app link a notification opens (hash routes, relative to the app)
 export function notificationPath(n) {
   if (n.taskId) return `#/tasks/${n.taskId}`;
+  if (n.refType === 'meeting' && n.refId) return `#/meet/${n.refId}`;
   if (n.type === 'standup_blocker') return '#/checkin?tab=team';
   if (n.refType === 'standup') return '#/checkin';
   if (n.type === 'leave_requested') return '#/checkin?tab=requests';
@@ -109,7 +110,14 @@ const LABELS = {
   standup_blocker: 'reported a blocker in their check-in',
   leave_requested: 'requested leave',
   leave_approved: 'approved your leave',
-  leave_declined: 'declined your leave'
+  leave_declined: 'declined your leave',
+  meeting_started: 'started a call',
+  meeting_scheduled: 'invited you to a meeting',
+  meeting_moved: 'moved a meeting',
+  meeting_cancelled: 'cancelled a meeting',
+  meeting_soon: 'Meeting starts in 10 minutes',
+  meeting_notes: "Leo's meeting notes are ready",
+  meeting_recording: 'saved a meeting recording'
 };
 export const notificationLabel = (type) => LABELS[type] || 'New activity';
 
@@ -300,6 +308,16 @@ export function startTeamJobs() {
   };
   timer = setInterval(tick, WORKER_INTERVAL_MS);
   timer.unref?.();
+  // Meeting reminders go out 10 minutes before, so they're checked every minute
+  const meetings = setInterval(async () => {
+    try {
+      const { sendMeetingReminders } = await import('./meetings.js');
+      await sendMeetingReminders();
+    } catch (err) {
+      console.error('[team] meeting reminders failed:', err.message);
+    }
+  }, 60 * 1000);
+  meetings.unref?.();
   setTimeout(tick, 15 * 1000).unref?.();
 }
 

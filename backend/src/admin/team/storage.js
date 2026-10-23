@@ -6,6 +6,9 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 export const MAX_FILE_BYTES = 20 * 1024 * 1024;
 export const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+// Meeting recordings, made in the host's browser (WebM in Chrome and Edge, MP4 in Safari)
+export const MAX_RECORDING_BYTES = 1024 * 1024 * 1024;
+export const RECORDING_TYPES = { 'video/webm': ['webm'], 'video/mp4': ['mp4'] };
 const URL_TTL_SECONDS = 5 * 60;
 
 // mime → extensions it may have
@@ -19,7 +22,7 @@ export const FILE_TYPES = {
 };
 export const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 // Opened in the browser tab; anything else (docx) downloads
-const INLINE_TYPES = ['application/pdf', 'text/plain', ...IMAGE_TYPES];
+const INLINE_TYPES = ['application/pdf', 'text/plain', ...IMAGE_TYPES, ...Object.keys(RECORDING_TYPES)];
 
 export function fileTypeError(name, mime) {
   const ext = String(name).split('.').pop().toLowerCase();

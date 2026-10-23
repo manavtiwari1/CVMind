@@ -13,7 +13,7 @@ import { pushPublicKey } from '../push.js';
 import { teamPeopleFilter } from '../notify.js';
 import { presenceOf } from '../realtime.js';
 import { filesFor, publicNotification, publicTask } from '../serialize.js';
-import { FILE_TYPES, IMAGE_TYPES, MAX_AVATAR_BYTES, MAX_FILE_BYTES, fileTypeError, headObject, presignDownload, presignUpload, removeObject } from '../storage.js';
+import { FILE_TYPES, IMAGE_TYPES, MAX_AVATAR_BYTES, MAX_FILE_BYTES, MAX_RECORDING_BYTES, RECORDING_TYPES, fileTypeError, headObject, presignDownload, presignUpload, removeObject } from '../storage.js';
 import { ensureGeneral } from './chat.js';
 
 const router = express.Router();
@@ -253,13 +253,17 @@ router.post('/files/upload-url', team, uploadLimiter, handle(async (req, res) =>
   const scope = clean(req.body?.scope, 20);
   const scopeId = req.body?.scopeId && isId(req.body.scopeId) ? req.body.scopeId : null;
   if (!name) throw httpError(400, 'The file needs a name.');
-  const typeError = fileTypeError(name, mime);
+  // Meetings take only recordings; everything else takes the usual documents and images
+  const recording = scope === 'meeting';
+  const typeError = recording
+    ? (RECORDING_TYPES[mime]?.includes(name.split('.').pop().toLowerCase()) ? '' : 'Recordings must be WebM or MP4 video.')
+    : fileTypeError(name, mime);
   if (typeError) throw httpError(400, typeError);
   if (!Number.isFinite(size) || size <= 0) throw httpError(400, 'The file is empty.');
-  const max = scope === 'avatar' ? MAX_AVATAR_BYTES : MAX_FILE_BYTES;
+  const max = scope === 'avatar' ? MAX_AVATAR_BYTES : recording ? MAX_RECORDING_BYTES : MAX_FILE_BYTES;
   if (scope === 'avatar' && !IMAGE_TYPES.includes(mime)) throw httpError(400, 'Profile photos must be PNG or JPG.');
   if (size > max) throw httpError(400, `File is larger than ${Math.round(max / 1024 / 1024)} MB.`);
-  if (scope === 'channel' && !scopeId) throw httpError(400, 'Pick a channel.');
+  if ((scope === 'channel' || scope === 'meeting') && !scopeId) throw httpError(400, scope === 'meeting' ? 'Pick a meeting.' : 'Pick a channel.');
   await checkUploadScope(req.admin, scope, scopeId);
 
   const key = newFileKey(name);
@@ -277,8 +281,9 @@ router.post('/files/:id/complete', team, handle(async (req, res) => {
   if (file.status !== 'pending') throw httpError(400, 'This upload was cancelled.');
   const stored = await headObject(file.key);
   if (!stored) throw httpError(400, 'The upload did not finish. Try again.');
-  const max = file.scope === 'avatar' ? MAX_AVATAR_BYTES : MAX_FILE_BYTES;
-  const typeOk = String(stored.mime || '').split(';')[0].toLowerCase() === file.mime && !!FILE_TYPES[file.mime];
+  const recording = file.scope === 'meeting';
+  const max = file.scope === 'avatar' ? MAX_AVATAR_BYTES : recording ? MAX_RECORDING_BYTES : MAX_FILE_BYTES;
+  const typeOk = String(stored.mime || '').split(';')[0].toLowerCase() === file.mime && !!(recording ? RECORDING_TYPES : FILE_TYPES)[file.mime];
   if (stored.size !== file.size || stored.size > max || !typeOk) {
     await removeObject(file.key).catch(() => {});
     await file.deleteOne();
@@ -302,14 +307,15 @@ const MEDIA_TYPES = {
   image: IMAGE_TYPES,
   pdf: ['application/pdf'],
   doc: ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-  text: ['text/plain']
+  text: ['text/plain'],
+  video: Object.keys(RECORDING_TYPES)
 };
 
 router.get('/media', team, handle(async (req, res) => {
   const { page, limit, skip } = paging(req.query, { defaultLimit: 40, maxLimit: 100 });
   const filter = await visibleFileFilter(req.admin);
   if (MEDIA_TYPES[req.query.type]) filter.mime = { $in: MEDIA_TYPES[req.query.type] };
-  if (['channel', 'task', 'announcement'].includes(req.query.scope)) {
+  if (['channel', 'task', 'announcement', 'meeting'].includes(req.query.scope)) {
     filter.$and = [{ scope: req.query.scope }, ...(isId(req.query.scopeId) ? [{ scopeId: oid(req.query.scopeId) }] : [])];
   }
   if (isId(req.query.uploadedBy)) filter.uploadedBy = oid(req.query.uploadedBy);
