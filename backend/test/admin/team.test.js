@@ -615,3 +615,50 @@ test('the 10:30 reminder skips people who checked in or are on leave; attendance
   assert.equal(grid.body.people.find((p) => p.id === owner.id).cells[col], 'sick');
   assert.equal((await call('/team/attendance', { token: priya.token })).status, 403);
 });
+
+test('browser push: reaches each device, respects the setting, and forgets dead devices', async () => {
+  const { setPushSender } = await import('../../src/admin/team/push.js');
+  const { pushSettled } = await import('../../src/admin/team/notify.js');
+  const sent = [];
+  let fail = null;
+  setPushSender(async (subscription, body) => {
+    if (fail) throw Object.assign(new Error('gone'), { statusCode: fail });
+    sent.push({ endpoint: subscription.endpoint, ...JSON.parse(body) });
+  });
+
+  assert.equal((await call('/team/push/key', { token: priya.token })).body.enabled, false, 'off without VAPID keys');
+  process.env.VAPID_PUBLIC_KEY = 'test-public-key';
+  process.env.VAPID_PRIVATE_KEY = 'test-private-key';
+  try {
+    assert.equal((await call('/team/push/key', { token: priya.token })).body.publicKey, 'test-public-key');
+    assert.equal((await call('/team/push/subscribe', { method: 'POST', token: priya.token, body: { subscription: { endpoint: 'http://insecure' } } })).status, 400);
+    const device = { endpoint: 'https://push.test/priya-phone', keys: { p256dh: 'p', auth: 'a' } };
+    assert.equal((await call('/team/push/subscribe', { method: 'POST', token: priya.token, body: { subscription: device } })).status, 200);
+
+    const task = await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'Push me', assigneeIds: [priya.id] } });
+    await pushSettled();
+    const msg = sent.find((m) => m.endpoint === device.endpoint);
+    assert.ok(msg, 'pushed to the phone');
+    assert.match(msg.title, /assigned you a task/);
+    assert.equal(msg.body, 'Push me');
+    assert.equal(msg.url, `#/tasks/${task.body.data.id}`);
+
+    // Turned off in Profile → nothing is sent
+    await call('/team/me', { method: 'PATCH', token: priya.token, body: { notifyPush: false } });
+    sent.length = 0;
+    await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'Quiet', assigneeIds: [priya.id] } });
+    await pushSettled();
+    assert.equal(sent.length, 0);
+
+    // A device the push service no longer knows is removed
+    await call('/team/me', { method: 'PATCH', token: priya.token, body: { notifyPush: true } });
+    fail = 410;
+    await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'Gone', assigneeIds: [priya.id] } });
+    await pushSettled();
+    const mongooseLib = (await import('mongoose')).default;
+    assert.equal(await mongooseLib.model('TeamPushSubscription').countDocuments({ endpoint: device.endpoint }), 0);
+  } finally {
+    delete process.env.VAPID_PUBLIC_KEY;
+    delete process.env.VAPID_PRIVATE_KEY;
+  }
+});

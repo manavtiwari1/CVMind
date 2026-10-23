@@ -47,6 +47,7 @@ export function toPublicAdmin(admin) {
     chatAccess: admin.chatAccess !== false,
     mustChangePassword: !!admin.mustChangePassword,
     notifyEmail: admin.notifyEmail !== false,
+    notifyPush: admin.notifyPush !== false,
     statusText: admin.statusText || '',
     avatarFileId: admin.avatarFileId ? String(admin.avatarFileId) : null
   };

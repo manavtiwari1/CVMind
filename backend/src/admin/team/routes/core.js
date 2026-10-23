@@ -8,7 +8,8 @@ import { clean, dateRange, escapeRegex, handle, httpError, isEmail, isId, paging
 import { ROLES } from '../../permissions.js';
 import { isManager, MANAGE, oid, readableChannelIds, requireTeam, visibleTaskFilter } from '../access.js';
 import { attachFiles, canOpenFile, checkUploadScope, newFileKey, publicFile, softDeleteFiles, visibleFileFilter } from '../files.js';
-import { TeamAnnouncement, TeamChannel, TeamChannelMember, TeamFile, TeamInvitation, TeamMessage, TeamNotification, TeamSubmission, TeamTask } from '../models.js';
+import { TeamAnnouncement, TeamChannel, TeamChannelMember, TeamFile, TeamInvitation, TeamMessage, TeamNotification, TeamPushSubscription, TeamSubmission, TeamTask } from '../models.js';
+import { pushPublicKey } from '../push.js';
 import { teamPeopleFilter } from '../notify.js';
 import { presenceOf } from '../realtime.js';
 import { filesFor, publicNotification, publicTask } from '../serialize.js';
@@ -84,6 +85,7 @@ router.patch('/me', profile, handle(async (req, res) => {
     update.email = email;
   }
   if (typeof req.body?.notifyEmail === 'boolean') update.notifyEmail = req.body.notifyEmail;
+  if (typeof req.body?.notifyPush === 'boolean') update.notifyPush = req.body.notifyPush;
   if (req.body?.statusText !== undefined) update.statusText = clean(req.body.statusText, 80);
   if (req.body?.avatarFileId !== undefined) {
     if (req.body.avatarFileId === null) {
@@ -113,6 +115,31 @@ router.post('/me/password', profile, handle(async (req, res) => {
   await audit(req, 'admin.password_changed', { targetType: 'admin', targetId: admin._id, targetLabel: admin.username, details: { from: 'team' } });
   await ensureGeneral(String(admin._id));
   res.json({ success: true, admin: toPublicAdmin(admin) });
+}));
+
+// ── Browser push ─────────────────────────────────────────────────────────────
+router.get('/push/key', team, (req, res) => {
+  const publicKey = pushPublicKey();
+  res.json({ success: true, enabled: !!publicKey, publicKey });
+});
+
+// A browser that turned notifications on. The same browser signing in as someone else moves to them.
+router.post('/push/subscribe', team, handle(async (req, res) => {
+  const sub = req.body?.subscription || {};
+  const endpoint = String(sub.endpoint || '');
+  const keys = { p256dh: String(sub.keys?.p256dh || ''), auth: String(sub.keys?.auth || '') };
+  if (!/^https:\/\//.test(endpoint) || endpoint.length > 1000 || !keys.p256dh || !keys.auth) throw httpError(400, 'This browser sent an invalid push subscription.');
+  await TeamPushSubscription.findOneAndUpdate(
+    { endpoint },
+    { $set: { adminId: req.admin.id, keys, userAgent: clean(req.headers['user-agent'], 300) } },
+    { upsert: true, setDefaultsOnInsert: true }
+  );
+  res.json({ success: true });
+}));
+
+router.delete('/push/subscribe', team, handle(async (req, res) => {
+  await TeamPushSubscription.deleteOne({ endpoint: String(req.body?.endpoint || ''), adminId: req.admin.id });
+  res.json({ success: true });
 }));
 
 // ── People ───────────────────────────────────────────────────────────────────

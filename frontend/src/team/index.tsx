@@ -6,6 +6,8 @@ import './team.css';
 import { api, clearSession, loadSession, saveSession, setAuthErrorHandler } from './api';
 import type { Session, TeamAccount } from './api';
 import type { Toast } from './store';
+import { disablePush, registerTeamWorker } from './push';
+import { isSplitHost } from '../lib/hosts';
 import TeamProvider from './TeamProvider';
 import Shell from './Shell';
 import { ConfirmHost, Spinner } from './ui';
@@ -25,6 +27,8 @@ export default function TeamApp() {
   }, []);
 
   const signOut = useCallback((message = '') => {
+    // Stop pushes to this browser while the session can still authorise it
+    disablePush().catch(() => {});
     clearSession();
     setSession(null);
     setNotice(message);
@@ -38,7 +42,16 @@ export default function TeamApp() {
     meta.content = 'noindex, nofollow';
     document.head.appendChild(meta);
     document.title = 'CVMind Team';
-    return () => meta.remove();
+    // Installable as its own app on team.cvmind.in (the manifest's start_url is the site root)
+    const links = isSplitHost()
+      ? [Object.assign(document.createElement('link'), { rel: 'manifest', href: '/team.webmanifest' }), Object.assign(document.createElement('link'), { rel: 'apple-touch-icon', href: '/team-icon-192.png' })]
+      : [];
+    const theme = Object.assign(document.createElement('meta'), { name: 'theme-color', content: '#12172a' });
+    const appTitle = Object.assign(document.createElement('meta'), { name: 'apple-mobile-web-app-title', content: 'CVMind Team' });
+    const capable = Object.assign(document.createElement('meta'), { name: 'apple-mobile-web-app-capable', content: 'yes' });
+    [...links, theme, appTitle, capable].forEach((el) => document.head.appendChild(el));
+    registerTeamWorker();
+    return () => { meta.remove(); [...links, theme, appTitle, capable].forEach((el) => el.remove()); };
   }, []);
 
   useEffect(() => {

@@ -17,6 +17,7 @@ export interface TeamAccount {
   chatAccess: boolean;
   mustChangePassword: boolean;
   notifyEmail: boolean;
+  notifyPush: boolean;
   statusText: string;
   avatarFileId: string | null;
 }

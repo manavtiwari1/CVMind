@@ -20,6 +20,7 @@ const adminUserSchema = new Schema({
   chatAccess: { type: Boolean, default: true },
   mustChangePassword: { type: Boolean, default: false },
   notifyEmail: { type: Boolean, default: true },
+  notifyPush: { type: Boolean, default: true },
   statusText: { type: String, default: '' },
   avatarFileId: { type: Schema.Types.ObjectId, default: null },
   lastSeenAt: { type: Date, default: null }

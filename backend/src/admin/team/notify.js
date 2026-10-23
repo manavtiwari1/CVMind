@@ -2,6 +2,7 @@ import { AdminUser, AppSetting } from '../models.js';
 import { emailConfigured, escapeHtml, renderEmail, sendEmail } from '../mailer.js';
 import { ROLES } from '../permissions.js';
 import { MANAGE, sameId } from './access.js';
+import { pushConfigured, sendPush } from './push.js';
 import { emitToUser } from './realtime.js';
 import { TeamChannel, TeamChannelMember, TeamLeave, TeamNotification, TeamStandup, TeamTask } from './models.js';
 
@@ -49,6 +50,45 @@ export async function notify(recipientIds, { type, actorId = null, refType = '',
   if (!docs.length) return;
   const created = await TeamNotification.insertMany(docs);
   for (const n of created) emitToUser(String(n.adminId), 'notification.new', { id: String(n._id), type: n.type });
+  // Push runs in the background so it never slows down the request that caused it
+  lastPush = pushNotifications(created).catch((err) => console.error('[team] push failed:', err.message));
+}
+
+// The latest background push, so tests can wait for it
+let lastPush = Promise.resolve();
+export const pushSettled = () => lastPush;
+
+// The app link a notification opens (hash routes, relative to the app)
+export function notificationPath(n) {
+  if (n.taskId) return `#/tasks/${n.taskId}`;
+  if (n.type === 'standup_blocker') return '#/checkin?tab=team';
+  if (n.refType === 'standup') return '#/checkin';
+  if (n.type === 'leave_requested') return '#/checkin?tab=requests';
+  if (n.refType === 'leave') return '#/checkin?tab=leave';
+  if (n.refType === 'announcement' && n.refId) return `#/announcements/${n.refId}`;
+  if (n.channelId && n.refType === 'message' && n.refId) return `#/chat/${n.channelId}?m=${n.refId}`;
+  if (n.channelId) return `#/chat/${n.channelId}`;
+  return '#/home';
+}
+
+async function pushNotifications(created) {
+  if (!pushConfigured()) return;
+  const actorIds = [...new Set(created.map((n) => String(n.actorId || '')).filter(Boolean))];
+  const actors = new Map((await AdminUser.find({ _id: { $in: actorIds } }, { name: 1, username: 1 }).lean()).map((a) => [String(a._id), a.name || a.username]));
+  await sendPush(created.map((n) => {
+    const who = n.actorId ? actors.get(String(n.actorId)) : '';
+    return {
+      adminId: n.adminId,
+      payload: {
+        title: who ? `${who} ${notificationLabel(n.type)}` : notificationLabel(n.type),
+        body: n.preview || 'Open CVMind Team to see it.',
+        url: notificationPath(n),
+        // Updates from the same task or chat replace each other instead of piling up
+        tag: n.taskId ? `task-${n.taskId}` : n.channelId ? `chat-${n.channelId}` : `n-${n._id}`,
+        id: String(n._id)
+      }
+    };
+  }));
 }
 
 const LABELS = {

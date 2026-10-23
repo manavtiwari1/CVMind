@@ -238,3 +238,15 @@ const leaveSchema = new Schema({
 leaveSchema.index({ adminId: 1, from: 1 });
 leaveSchema.index({ status: 1, from: 1 });
 export const TeamLeave = mongoose.models.TeamLeave || mongoose.model('TeamLeave', leaveSchema);
+
+// ── Browser push ─────────────────────────────────────────────────────────────
+// One row per browser or phone that turned notifications on
+const pushSubscriptionSchema = new Schema({
+  adminId: { type: Id, required: true },
+  endpoint: { type: String, required: true, unique: true },
+  keys: { p256dh: { type: String, required: true }, auth: { type: String, required: true } },
+  userAgent: { type: String, default: '' },
+  lastUsedAt: { type: Date, default: null }
+}, { timestamps: true });
+pushSubscriptionSchema.index({ adminId: 1 });
+export const TeamPushSubscription = mongoose.models.TeamPushSubscription || mongoose.model('TeamPushSubscription', pushSubscriptionSchema);

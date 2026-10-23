@@ -1,0 +1,16 @@
+{
+  "name": "CVMind Team",
+  "short_name": "CVMind Team",
+  "description": "Chat, tasks, check-ins and meetings for the CVMind team.",
+  "id": "/?app=cvmind-team",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f7f9",
+  "theme_color": "#12172a",
+  "icons": [
+    { "src": "/team-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/team-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/team-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
