@@ -10,6 +10,8 @@ import companyRouter from './routes/company.js';
 import codeRouter from './routes/code.js';
 import learnLeoRouter from './routes/learnLeo.js';
 import growthRouter from './routes/growth.js';
+import collegeRouter from './college/router.js';
+import collegeStudentRouter from './routes/collegeStudent.js';
 import { previousScan, scoreChange } from './growth/scans.js';
 import { startJobAlerts } from './growth/alerts.js';
 import cors from 'cors';
@@ -46,6 +48,7 @@ import { dbReady } from './admin/auth.js';
 import mongoose from 'mongoose';
 import { importUploadedResume, RESUME_MIME_TYPES } from '@cvmind/auto-apply-agent/resume/intake.js';
 import { renderResumePdf } from '@cvmind/auto-apply-agent/resume/pdf.js';
+import { EXPORT_FONTS_HREF } from './services/exportFonts.js';
 import { searchJobs, getJobDetail, warmJobSearch, JOB_SEARCH_COMPANIES } from './services/jobSearch.js';
 
 const app = express();
@@ -1702,7 +1705,6 @@ apiRouter.get('/api/jobs/detail', async (req, res) => {
 });
 
 // ── Resume export: PDF download and "send PDF to my email" ─────────────────────
-const EXPORT_FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Rubik:wght@300;400;500;600;700&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Playfair+Display:wght@400;700&family=Poppins:wght@400;500;600&family=Open+Sans:wght@400;600;700;800&family=Raleway:wght@300;400;600&family=EB+Garamond:wght@400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&family=Great+Vibes&family=Montserrat:wght@400;500;600;700;800&display=swap';
 
 const cleanFileName = (name) => (String(name || '').replace(/[^A-Za-z0-9 _-]/g, '').trim().slice(0, 80) || 'Resume');
 
@@ -2972,6 +2974,10 @@ app.use('/api/auto-apply', autoApplyRouter);
 app.use('/_/backend/api/auto-apply', autoApplyRouter);
 app.use('/api/agent', agentRouter);
 app.use('/_/backend/api/agent', agentRouter);
+app.use('/api/college', collegeRouter);
+app.use('/_/backend/api/college', collegeRouter);
+app.use('/_/backend', collegeStudentRouter);
+app.use('/', collegeStudentRouter);
 app.use('/api/company', companyRouter);
 app.use('/_/backend/api/company', companyRouter);
 app.use('/api/code', codeRouter);

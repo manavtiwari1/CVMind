@@ -19,7 +19,9 @@ export const PERMISSIONS = [
   'audit.view',
   'team.manage',
   // Manage CVMind Team (team.cvmind.in): invitations, channels, announcements, task review
-  'teamchat.manage'
+  'teamchat.manage',
+  // Placements portal (placements.cvmind.in): colleges, their logins and resume formats
+  'colleges.view', 'colleges.manage'
 ];
 
 const ALL = [...PERMISSIONS];
@@ -53,7 +55,7 @@ export const ROLES = {
   viewer: {
     label: 'Viewer',
     description: 'Read-only access to dashboards and lists.',
-    permissions: ['dashboard.view', 'users.view', 'payments.view', 'tickets.view', 'orders.view', 'partners.view', 'settings.view', 'system.view']
+    permissions: ['dashboard.view', 'users.view', 'payments.view', 'tickets.view', 'orders.view', 'partners.view', 'colleges.view', 'settings.view', 'system.view']
   },
   // CVMind Team members: they use team.cvmind.in only and can't sign in to the admin panel
   content_intern: { label: 'Content Writing Intern', description: 'CVMind Team only. No admin panel access.', permissions: [], teamOnly: true },

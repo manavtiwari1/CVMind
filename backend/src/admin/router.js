@@ -16,6 +16,7 @@ import notificationRoutes from './routes/notifications.js';
 import contentRoutes from './routes/content.js';
 import orderRoutes from './routes/orders.js';
 import partnerRoutes from './routes/partners.js';
+import collegeRoutes from './routes/colleges.js';
 import systemRoutes from './routes/system.js';
 import exportRoutes, { REPORT_LIST } from './routes/exports.js';
 import teamWorkspaceRoutes from './team/router.js';
@@ -44,6 +45,7 @@ router.use('/notifications', notificationRoutes);
 router.use('/content', contentRoutes);
 router.use('/orders', orderRoutes);
 router.use('/partners', partnerRoutes);
+router.use('/colleges', collegeRoutes);
 router.use('/system', systemRoutes);
 router.use('/export', exportRoutes);
 

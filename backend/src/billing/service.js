@@ -1,4 +1,5 @@
 import { dbReady } from '../admin/auth.js';
+import { collegeProActive } from '../college/membership.js';
 import { Subscription, AiUsage, FeatureUse, TokenGrant } from './models.js';
 import { PLANS, FREE_WEEKLY, WEEK_MS, TOKEN_LIMITS, TOKEN_WINDOW_MS } from './plans.js';
 
@@ -12,8 +13,9 @@ export async function activeSubscription(email) {
   return Subscription.findOne({ email: clean, status: 'active', expiresAt: { $gt: new Date() } }).sort({ expiresAt: -1 }).lean();
 }
 
+// Pro comes from a subscription, or from being a joined student of a college with a live contract
 export async function isPro(email) {
-  return !!(await activeSubscription(email));
+  return !!(await activeSubscription(email)) || collegeProActive(email);
 }
 
 // Adds a plan to an account. Time stacks on top of an active subscription.
