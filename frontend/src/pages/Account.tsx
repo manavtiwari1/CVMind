@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import {
   ArrowLeft, User, CreditCard, FileText, Crown, Wand2, ListPlus, Files, BadgeCheck,
-  Camera, Loader2, Edit3, Globe, Trash2, AlertCircle, X, MonitorSmartphone,
+  Camera, Loader2, Edit3, Globe, Trash2, AlertCircle, X, MonitorSmartphone, GraduationCap,
 } from 'lucide-react';
+import AccountCollege from '../components/AccountCollege';
+import { fetchMyCollege } from '../lib/myCollege';
+import type { MyCollege } from '../lib/myCollege';
 import AccountSessions from '../components/AccountSessions';
 import { API_BASE } from '../lib/apiBase';
 import { authFetch } from '../lib/authFetch';
@@ -16,7 +19,7 @@ import { PRICING_LOCKED } from '../lib/pricing';
 import PlanUsage from '../components/PlanUsage';
 import CancelSubscription from '../components/CancelSubscription';
 
-type Tab = 'profile' | 'billing' | 'documents' | 'devices';
+type Tab = 'profile' | 'billing' | 'documents' | 'devices' | 'college';
 type ListedWork = SavedWork & { _id: string; createdAt: string };
 
 interface AccountProps {
@@ -37,9 +40,14 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
   // Links can open a tab directly, e.g. /account?tab=billing from the Help Center
   const [tab, setTab] = useState<Tab>(() => {
     const t = new URLSearchParams(window.location.search).get('tab');
-    return t === 'billing' || t === 'devices' ? t : 'profile';
+    return t === 'billing' || t === 'devices' || t === 'college' ? t : 'profile';
   });
   const [user, setUser] = useState<StoredUser | null>(readUser);
+  // Students linked to a college on the placements portal get a My college tab
+  const [myCollege, setMyCollege] = useState<MyCollege | null>(null);
+  useEffect(() => {
+    fetchMyCollege().then(setMyCollege, () => {});
+  }, []);
   const isPro = isProUser(user);
   const userId = user?.id || user?._id;
 
@@ -310,6 +318,11 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
             <button className={`acct-nav-item${tab === 'devices' ? ' active' : ''}`} onClick={() => selectTab('devices')}>
               <MonitorSmartphone size={17} /> Devices
             </button>
+            {(myCollege || tab === 'college') && (
+              <button className={`acct-nav-item${tab === 'college' ? ' active' : ''}`} onClick={() => selectTab('college')}>
+                <GraduationCap size={17} /> My college
+              </button>
+            )}
           </div>
         </nav>
 
@@ -465,6 +478,8 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
           )}
 
           {tab === 'devices' && <AccountSessions />}
+
+          {tab === 'college' && <AccountCollege initial={myCollege} onLeft={() => { setMyCollege(null); setTab('profile'); }} />}
 
           {tab === 'documents' && (
             <>

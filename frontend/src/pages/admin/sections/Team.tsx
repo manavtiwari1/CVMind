@@ -23,7 +23,8 @@ const PERMISSION_LABELS: Record<string, string> = {
   'content.manage': 'Edit site content', 'moderation.manage': 'Moderate content', 'orders.view': 'View applications', 'orders.manage': 'Fix applications and jobs',
   'partners.view': 'View companies', 'partners.manage': 'Verify and suspend companies', 'settings.view': 'View app config', 'settings.manage': 'Change feature switches and versions',
   'system.view': 'View system health', 'audit.view': 'View the audit log', 'team.manage': 'Manage the team and roles',
-  'teamchat.manage': 'Manage CVMind Team (invitations, channels, announcements, task review)'
+  'teamchat.manage': 'Manage CVMind Team (invitations, channels, announcements, task review)',
+  'colleges.view': 'View colleges on the placements portal', 'colleges.manage': 'Add colleges, their logins and resume formats'
 };
 
 type View = 'members' | 'roles' | 'me';

@@ -21,6 +21,8 @@ import { peekPickedTemplate } from './lib/templatePick';
 import { letterDraftHash } from './lib/coverLetter';
 import { takeWorkFromHash } from './lib/workHandoff';
 import { authFetch, AUTH_REQUIRED_EVENT, VERIFY_REQUIRED_EVENT } from './lib/authFetch';
+import { pendingCollegeInvite } from './lib/collegeInvite';
+import { loadCollegeTemplates } from './lib/collegeTemplates';
 import { useProductLock } from './lib/productAccess';
 import ProductLocked from './components/ProductLocked';
 import UpgradeModal from './components/UpgradeModal';
@@ -82,6 +84,7 @@ const InvitePage = lazy(() => import('./pages/growth/InvitePage'));
 const JobFinderLanding = lazy(() => import('./pages/jobFinder/JobFinderLanding'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const CollegeInvite = lazy(() => import('./pages/CollegeInvite'));
 const LeoLessonPage = lazy(() => import('./learnLeo/LeoLessonPage'));
 const LearnWithLeoLanding = lazy(() => import('./pages/LearnWithLeoLanding'));
 
@@ -100,6 +103,7 @@ const UNVERIFIED_OPEN_PAGES = ['account', 'my-documents'];
 // The page an address shows: null for the site root, 'not-found' for anything the app doesn't serve
 function pageFromPath(pathname: string): string | null {
   if (pathname.startsWith('/portfolio/') || pathname.startsWith('/r/')) return 'portfolio';
+  if (pathname === '/college-invite' || pathname.startsWith('/college-invite/')) return 'college-invite';
   if (AUTH_PATHS.includes(pathname)) return 'home';
   const page = pathname.replace(/^\/+|\/+$/g, '');
   if (!page || page === 'index.html') return null;
@@ -293,8 +297,18 @@ export default function App() {
     if (isLoggedIn) claimStoredReferral();
   }, [isLoggedIn]);
 
+  // A student's college resume formats, so saved resumes in them open with the right template
+  useEffect(() => {
+    if (isLoggedIn) loadCollegeTemplates();
+  }, [isLoggedIn]);
+
   // Where a fresh sign-in lands: the home page, or My Documents when signing in on the app host
   const enterAfterSignIn = () => {
+    // A student who signed in from a college invitation goes back to accept it
+    if (pendingCollegeInvite()) {
+      setCurrentPage('college-invite');
+      return;
+    }
     setCurrentPage(isAppHost() ? 'my-documents' : 'home');
   };
 
@@ -681,6 +695,7 @@ export default function App() {
       case 'learn-with-leo':
         return <LeoLessonPage setCurrentPage={setCurrentPage} />;
       case 'verify-email':
+      case 'college-invite':
         // Full-screen like the sign-in overlay, so it renders outside <main> (see below)
         return null;
       default:
@@ -707,7 +722,7 @@ export default function App() {
   const isPortfolioStudio = currentPage === 'portfolio-gen';
   // Job Finder has its own top bar
   const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && currentPage !== 'job-finder' && currentPage !== 'learn-with-leo' && !isFocusFlow && !isPortfolioStudio;
-  const isMinimalPage = currentPage === 'dashboard' || currentPage === 'admin' || currentPage === 'portfolio' || currentPage === 'verify-email' || isCodePage || isFocusFlow || isAppPage || isPortfolioStudio;
+  const isMinimalPage = currentPage === 'dashboard' || currentPage === 'admin' || currentPage === 'portfolio' || currentPage === 'verify-email' || currentPage === 'college-invite' || isCodePage || isFocusFlow || isAppPage || isPortfolioStudio;
   // The resume report has its own top bar instead of the site header and footer
   const isReportPage = currentPage === 'dashboard';
   // The Help Center (and its Contact form) is full-width with its own top bar and footer instead of the site ones
@@ -769,6 +784,7 @@ export default function App() {
       </main>
 
       {currentPage === 'verify-email' && !showAuthModal && <Suspense fallback={null}><VerifyEmail setCurrentPage={setCurrentPage} openSignIn={() => setShowAuthModal(true)} /></Suspense>}
+      {currentPage === 'college-invite' && !showAuthModal && <Suspense fallback={null}><CollegeInvite setCurrentPage={setCurrentPage} openSignIn={() => setShowAuthModal(true)} /></Suspense>}
 
       {routeLoading && <PageLoader />}
 

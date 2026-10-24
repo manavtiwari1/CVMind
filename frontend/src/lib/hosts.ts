@@ -7,7 +7,7 @@
 export const APP_PAGES = ['prep', 'resume-editor', 'cover-letter-start', 'cover-letter-generator', 'cover-letter-editor', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'proofreading', 'tailor', 'voice-prep', 'portfolio-gen', 'job-finder', 'career-courses', 'elevator-pitch', 'career-roadmap', 'auto-apply', 'account', 'my-documents', 'offer-negotiation', 'invite', 'learn-with-leo'];
 
 // App-host pages that signed-out visitors can still use (the email link may open on another device)
-export const PUBLIC_APP_PAGES = ['code-arena', 'cvmind-code-arena', 'verify-email'];
+export const PUBLIC_APP_PAGES = ['code-arena', 'cvmind-code-arena', 'verify-email', 'college-invite'];
 
 // Paths the app host handles itself instead of sending them to www
 const AUTH_PATHS = ['/sign-in', '/sign-up', '/login'];
@@ -29,7 +29,10 @@ export const isAppHost = () => isSplitHost() && hostname().startsWith('app.');
 // it opens at /team.
 export const isTeamHost = () => (isSplitHost() && hostname().startsWith('team.')) || (!isSplitHost() && window.location.pathname.replace(/\/$/, '') === '/team');
 
-const originFor = (sub: 'www' | 'app' | 'team') => {
+// placements.cvmind.in is the college portal. Without the split it opens at /placements.
+export const isPlacementsHost = () => (isSplitHost() && hostname().startsWith('placements.')) || (!isSplitHost() && window.location.pathname.replace(/\/$/, '') === '/placements');
+
+const originFor = (sub: 'www' | 'app' | 'team' | 'placements') => {
   const base = baseDomain();
   if (!base) return window.location.origin;
   const { protocol, port } = window.location;
@@ -40,6 +43,8 @@ export const siteOrigin = () => originFor('www');
 export const appOrigin = () => originFor('app');
 
 // CVMind Team: team.cvmind.in, or /team where there is no host split (localhost, previews)
+// The college placements portal
+export const placementsUrl = () => (isSplitHost() ? `${originFor('placements')}/` : `${window.location.origin}/placements`);
 export const teamUrl = () => (isSplitHost() ? `${originFor('team')}/` : `${window.location.origin}/team`);
 
 export const isAppPage = (page: string) => APP_PAGES.includes(page) || PUBLIC_APP_PAGES.includes(page);
@@ -56,9 +61,10 @@ export const isCrossHost = (page: string) => isSplitHost() && isAppPage(page) !=
 // Where an address typed on this host should really live, or null to stay. Runs before React
 // renders so visitors never see the wrong site flash.
 export function hostRedirectTarget(signedIn: boolean): string | null {
-  if (!isSplitHost() || isTeamHost()) return null;
+  if (!isSplitHost() || isTeamHost() || isPlacementsHost()) return null;
   const { pathname, search, hash } = window.location;
-  const page = pathname.replace(/^\//, '');
+  // /college-invite/<token> is the college invitation page
+  const page = pathname.startsWith('/college-invite/') ? 'college-invite' : pathname.replace(/^\//, '');
 
   if (isAppHost()) {
     // Sign-in screens and OAuth/password-reset returns are handled on the app host

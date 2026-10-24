@@ -26,6 +26,7 @@ import ResumeLinkedInStep from '../components/ResumeLinkedInStep';
 import ResumeTemplatePicker from '../components/ResumeTemplatePicker';
 import ResumeOnboarding, { type OnboardingResult, type ResumeGoal } from '../components/ResumeOnboarding';
 import { RESUME_TEMPLATES, TEMPLATES, type Template } from '../data/resumeTemplates';
+import { isCollegeTemplate, useCollegeTemplates } from '../lib/collegeTemplates';
 import { authFetch } from '../lib/authFetch';
 import { splitFooter, withFooter } from '../lib/resumeFooter';
 import { htmlForPdf } from '../lib/printLayout';
@@ -74,6 +75,8 @@ interface CoverLetterProps {
 }
 
 export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, onFocusChange, onExit }: CoverLetterProps) {
+  // A student's college resume formats join the template lists (and re-render this once loaded)
+  useCollegeTemplates();
   // A template picked on the home page skips Leo and only asks about an existing resume.
   const [pickedTemplate] = useState<Template | null>(() =>
     (window.location.hash === '#cover-letter' || loadedWork ? null : RESUME_TEMPLATES.find(t => t.id === peekPickedTemplate()) ?? null));
@@ -955,7 +958,8 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
     // Float the templates that suit the user's goal (from onboarding) to the top.
     const goalFit = resumeGoal === 'ats' ? /ats|classic|minimal|clean|corporate|traditional/i
       : resumeGoal === 'recruiters' ? /creative|modern|bold|elegant|executive|design/i : null;
-    const fit = (t: Template) => (goalFit && goalFit.test(`${t.id} ${t.name} ${t.tag}`) ? 0 : 1);
+    // The student's college formats always come first
+    const fit = (t: Template) => (isCollegeTemplate(t.id) ? -1 : goalFit && goalFit.test(`${t.id} ${t.name} ${t.tag}`) ? 0 : 1);
     const resumeTemplates = [...RESUME_TEMPLATES].sort((x, y) => fit(x) - fit(y));
     return (
       <ResumeTemplatePicker

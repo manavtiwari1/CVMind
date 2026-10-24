@@ -257,7 +257,7 @@ router.get('/:id/audit', view, handle(async (req, res) => {
     CollegeAuditLog.find({ collegeId: college._id }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
     CollegeAuditLog.countDocuments({ collegeId: college._id })
   ]);
-  res.json({ success: true, total, page, data: rows.map((r) => ({ id: String(r._id), actorName: r.actorName, actorType: r.actorType, action: r.action, targetLabel: r.targetLabel, ip: r.ip, createdAt: r.createdAt })) });
+  res.json({ success: true, total, page, limit, data: rows.map((r) => ({ id: String(r._id), actorName: r.actorName, actorType: r.actorType, action: r.action, targetLabel: r.targetLabel, ip: r.ip, createdAt: r.createdAt })) });
 }));
 
 export default router;

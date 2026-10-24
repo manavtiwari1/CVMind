@@ -4,6 +4,7 @@
   "rewrites": [
     { "source": "/portfolio/:path*", "destination": "/portfolio.html" },
     { "source": "/r/:path*", "destination": "/portfolio.html" },
+    { "source": "/college-invite/:path*", "destination": "/index.html" },
     { "source": "/sign-in", "destination": "/index.html" },
     { "source": "/sign-up", "destination": "/index.html" },
     { "source": "/login", "destination": "/index.html" }

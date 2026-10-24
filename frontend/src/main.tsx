@@ -4,7 +4,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import './index.css'
 import App from './App.tsx'
 import { syncSessionFromCookie } from './lib/session'
-import { hostRedirectTarget, isTeamHost } from './lib/hosts'
+import { hostRedirectTarget, isPlacementsHost, isTeamHost } from './lib/hosts'
 import { pickTemplate } from './lib/templatePick'
 
 // Pick up a sign-in from the other cvmind.in host, then make sure this address is on the right one
@@ -17,6 +17,15 @@ if (isTeamHost()) {
     createRoot(document.getElementById('root')!).render(
       <StrictMode>
         <TeamApp />
+      </StrictMode>,
+    )
+  })
+} else if (isPlacementsHost()) {
+  // CVMind Placements (placements.cvmind.in), the college portal: its own app and sign-in
+  import('./placements').then(({ default: PlacementsApp }) => {
+    createRoot(document.getElementById('root')!).render(
+      <StrictMode>
+        <PlacementsApp />
       </StrictMode>,
     )
   })

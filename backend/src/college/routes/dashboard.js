@@ -115,6 +115,9 @@ const csvCell = (v) => {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
+// Byte-order mark so Excel reads the file as UTF-8
+const BOM = String.fromCharCode(0xfeff);
+
 const REVIEW_LABELS = { approved: 'Approved', changes_requested: 'Needs changes', stale: 'Edited since review', not_reviewed: 'Not reviewed' };
 
 router.get('/students/export.csv', anyone, handle(async (req, res) => {
@@ -124,7 +127,7 @@ router.get('/students/export.csv', anyone, handle(async (req, res) => {
   await collegeAudit(req, 'students.exported', { details: { rows: rows.length } });
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="${req.college.slug}-students.csv"`);
-  res.send(`﻿${[header.join(','), ...lines].join('\r\n')}`);
+  res.send(`${BOM}${[header.join(','), ...lines].join('\r\n')}`);
 }));
 
 const parseJson = (s) => {

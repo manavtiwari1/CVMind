@@ -63,7 +63,7 @@ export function reviewMessage({ student, college, status, comment, title }) {
         : `Your placement team at ${college.name} reviewed your resume "${title}" and asked for changes.`,
       ...(comment ? { note: comment } : {}),
       ctaLabel: 'Open my account',
-      ctaUrl: `${USER_APP_URL}/account`,
+      ctaUrl: `${USER_APP_URL}/account?tab=college`,
       footerReason: `You get this because you are linked to ${college.name} on CVMind.`
     })
   };

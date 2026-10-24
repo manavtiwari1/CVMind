@@ -1,6 +1,6 @@
 import {
   Activity, Bell, Briefcase, Building2, ClipboardList, CreditCard, Crown, FileDown, FileText, KeyRound, LayoutDashboard, LifeBuoy,
-  MessagesSquare, PanelsTopLeft, ReceiptText, ScrollText, ShieldAlert, SlidersHorizontal, Sparkles, TicketPercent, UserCheck, UserCog, Users
+  GraduationCap, MessagesSquare, PanelsTopLeft, ReceiptText, ScrollText, ShieldAlert, SlidersHorizontal, Sparkles, TicketPercent, UserCheck, UserCog, Users
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -43,7 +43,8 @@ export const NAV: NavGroup[] = [
       { id: 'refunds', label: 'Refund requests', icon: ReceiptText, permission: 'payments.view', badge: 'refunds' },
       { id: 'coupons', label: 'Coupons', icon: TicketPercent, permission: 'coupons.manage' },
       { id: 'orders', label: 'Applications', icon: ClipboardList, permission: 'orders.view' },
-      { id: 'partners', label: 'Companies', icon: Building2, permission: 'partners.view' }
+      { id: 'partners', label: 'Companies', icon: Building2, permission: 'partners.view' },
+      { id: 'colleges', label: 'Colleges', icon: GraduationCap, permission: 'colleges.view' }
     ]
   },
   {
