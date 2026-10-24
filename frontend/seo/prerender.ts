@@ -7,6 +7,8 @@ import { seoFor, pageUrl, isIndexable, SITE_URL } from '../src/utils/seo';
 import { BUILDER_COPY, FEATURE_SECTIONS, LEVELS, STAGES } from '../src/data/landings';
 import { RESUME_TEMPLATES } from '../src/data/resumeTemplates';
 import { HOME_HERO, HOME_CHECKER, HOME_FAQS } from '../src/data/homeCopy';
+import { FAQ_GROUPS } from '../src/data/faqs';
+import { BUILDER_FAQS } from '../src/data/coverLetterFaqs';
 
 // Build step: one HTML file per page, so crawlers and link previews (which don't run JavaScript)
 // get each page's own title, description, canonical, robots tag, a heading and a summary. Articles
@@ -99,6 +101,12 @@ function homeContent() {
     + `<section><h2>Frequently Asked Questions</h2>${HOME_FAQS.map((f) => `<h3>${esc(f.q)}</h3><p>${esc(f.a)}</p>`).join('')}</section></main>`;
 }
 
+// Pages whose text is a list of questions: the heading and intro, then every question and answer
+function faqContent(seo: { title: string; description: string }, groups: { title?: string; items: { q: string; a: string }[] }[]) {
+  const body = groups.map((g) => (g.title ? `<h2>${esc(g.title)}</h2>` : '') + g.items.map((i) => `<h3>${esc(i.q)}</h3><p>${esc(i.a)}</p>`).join('')).join('\n');
+  return `<main class="prerender"><h1>${esc(heading(seo.title))}</h1><p>${esc(seo.description)}</p>\n${body}</main>`;
+}
+
 // The main site links on every page, so crawlers that don't run the app can still follow them
 const SITE_LINKS: [string, string][] = [
   ['home', 'ATS Resume Checker'], ['resume-builder', 'Resume Builder & CV Maker'],
@@ -150,6 +158,8 @@ function renderPage(template: string, page: string) {
       : page === 'home' ? homeContent()
       : page === 'resume-builder' ? builderContent()
       : page === 'blog' ? blogContent(seo)
+      : page === 'faq' ? faqContent(seo, FAQ_GROUPS)
+      : page === 'cover-letter-builder' ? faqContent(seo, [{ title: 'Frequently asked questions', items: BUILDER_FAQS }])
       : `<main class="prerender"><h1>${esc(heading(seo.title))}</h1><p>${esc(seo.description)}</p></main>`;
     content = FALLBACK_STYLE + content + siteNav(page);
   }

@@ -13,6 +13,7 @@ import PageLoader from './components/PageLoader';
 import { ARTICLES } from './data/articles';
 import { VALID_PAGES, AUTH_PATHS } from './lib/routes';
 import { applySEO } from './utils/seo';
+import { loadAdsFor } from './lib/ads';
 import { getErrorMessage } from './utils/errors';
 import { APP_PAGES, PUBLIC_APP_PAGES, OAUTH_NONCE_KEY, isAppHost, isCrossHost, isSplitHost, siteOrigin, urlForPage } from './lib/hosts';
 import { clearSession, setSession } from './lib/session';
@@ -170,6 +171,10 @@ export default function App() {
   // false only once the server has said this account's email isn't verified
   const [emailVerified, setEmailVerified] = useState<boolean | undefined>(() => readUser()?.emailVerified);
   const [verifyGateOpen, setVerifyGateOpen] = useState(false);
+
+  useEffect(() => {
+    if (!showAuthModal) loadAdsFor(currentPage);
+  }, [currentPage, showAuthModal]);
 
   // Follow the stored session: sign-in, verification in this or another tab, sign-out
   useEffect(() => {
