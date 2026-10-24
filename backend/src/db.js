@@ -1559,6 +1559,10 @@ export async function deleteAccount(userId) {
     await LoginLog.deleteMany({ $or: [{ userId: cleanId }] });
     const { JobApplyLog } = await import('./jobFinder/models.js');
     await JobApplyLog.deleteMany({ userId: cleanId });
+    // A college on the placements portal stops seeing this student, and their reviews go
+    const { endCollegeLinks } = await import('./college/membership.js');
+    const user = await User.findById(cleanId, { email: 1 }).lean().catch(() => null);
+    await endCollegeLinks({ userId: cleanId, email: user?.email });
     await User.deleteOne({ _id: cleanId });
     return;
   }

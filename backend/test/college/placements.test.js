@@ -446,6 +446,25 @@ test('a student who leaves is gone from the dashboard at once', async () => {
   assert.ok(res.errors.every((e) => e.error !== 'Already linked to another institution.'));
 });
 
+test('deleting a student account ends the college link and its reviews', async () => {
+  await invite(S.xyz.token, [{ email: 'gone@gmail.com', name: 'Gone', rollNo: 'X09' }]);
+  const gone = await makeUser('gone@gmail.com');
+  await join('gone@gmail.com', gone);
+  const row = await models.CollegeStudent.findOne({ email: 'gone@gmail.com', status: 'joined' }).lean();
+  const work = await Work().create({ userId: gone.id, title: 'Gone CV', type: 'resume', templateId: 'x', htmlContent: '<div>Gone resume body text</div>' });
+  await Scan().create({ userId: gone.id, fileName: 'g.pdf', fileType: 'pdf', fileSize: 1, score: 70 });
+  await college(`/students/${row._id}/works/${work._id}/review`, { method: 'POST', token: S.xyz.token, body: { status: 'approved' } });
+
+  const { deleteAccount } = await import('../../src/db.js');
+  await deleteAccount(gone.id);
+
+  assert.equal((await college(`/students/${row._id}`, { token: S.xyz.token })).status, 404);
+  const after = await models.CollegeStudent.findById(row._id).lean();
+  assert.equal(after.status, 'left');
+  assert.equal(after.userId, '');
+  assert.equal(await models.ResumeReview.countDocuments({ studentId: row._id }), 0);
+});
+
 test('removed staff and suspended colleges are signed out at once', async () => {
   const staffEmail = lastEmailTo('faculty@xyz.edu');
   const login = await college('/login', { method: 'POST', body: { email: 'faculty@xyz.edu', password: passwordIn(staffEmail) } });
