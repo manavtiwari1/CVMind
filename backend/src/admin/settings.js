@@ -18,6 +18,7 @@ export const FEATURES = {
   chat: { label: 'AI assistant', description: 'Site chat assistant', paths: ['/api/chat'] },
   code: { label: 'CVMind Code', description: 'Coding practice and judge', paths: ['/api/code'] },
   'learn-leo': { label: 'Learn with Leo', description: 'Visual lessons with voice, board and checkpoints', paths: ['/api/leo'] },
+  'leo-chat': { label: 'Leo AI chat', description: 'The chat home on app.cvmind.in that runs CVMind tools from a prompt', paths: ['/api/leo-chat'] },
   'auto-apply': { label: 'Auto Apply', description: 'Auto Apply agent and extension', paths: ['/api/auto-apply', '/api/agent'] },
   'company-portal': { label: 'Company portal', description: 'Recruiter sign-up and job posting', paths: ['/api/company'] },
   signups: { label: 'New sign-ups', description: 'New accounts by email or social login', paths: ['/api/auth/signup'] }
@@ -43,6 +44,14 @@ export const SECURITY_LIMITS = {
   passwordResetPerIpHour: { label: 'Password reset emails per IP per hour', default: 5 }
 };
 
+// Leo chat: model, reply length and daily message limits (guests are counted per IP)
+export const LEO_LIMITS = {
+  maxTokens: { label: 'Max tokens per reply', default: 1500, min: 50, max: 4000 },
+  guestDailyMessages: { label: 'Messages per day, signed-out visitors', default: 3, min: 0, max: 100 },
+  freeDailyMessages: { label: 'Messages per day, free users', default: 30, min: 1, max: 10000 },
+  proDailyMessages: { label: 'Messages per day, Pro users', default: 200, min: 1, max: 10000 }
+};
+
 const DEFAULTS = {
   features: Object.fromEntries(Object.keys(FEATURES).map((key) => [key, true])),
   security: {
@@ -51,7 +60,15 @@ const DEFAULTS = {
   },
   maintenance: { enabled: false, message: 'CVMind is down for scheduled maintenance. We will be back shortly.' },
   versions: Object.fromEntries(Object.keys(VERSION_CLIENTS).map((key) => [key, { minVersion: '', latestVersion: '', message: '', updateUrl: '' }])),
-  productAccess: { locked: [] }
+  productAccess: { locked: [] },
+  leo: {
+    model: 'deepseek-chat',
+    ...Object.fromEntries(Object.entries(LEO_LIMITS).map(([key, limit]) => [key, limit.default])),
+    // US dollars; 0 turns the spend alert off. Prices are per million tokens, used to estimate cost.
+    dailyBudgetUsd: 0,
+    inputPricePerM: 0.27,
+    outputPricePerM: 1.1
+  }
 };
 
 export const SETTING_KEYS = Object.keys(DEFAULTS);
@@ -120,6 +137,25 @@ export async function saveSettingGroup(key, input, updatedBy) {
       enabled: typeof input?.enabled === 'boolean' ? input.enabled : current.enabled,
       message: input?.message !== undefined ? cleanText(input.message, 300) : current.message
     };
+  } else if (key === 'leo') {
+    value = { ...current };
+    if (input?.model !== undefined) {
+      const model = cleanText(input.model, 100);
+      if (!/^[\w.:/-]+$/.test(model)) throw Object.assign(new Error('The model name can only use letters, numbers and . : / - _'), { status: 400 });
+      value.model = model;
+    }
+    for (const [field, limit] of Object.entries(LEO_LIMITS)) {
+      if (input?.[field] === undefined) continue;
+      const n = Number(input[field]);
+      if (!Number.isInteger(n) || n < limit.min || n > limit.max) throw Object.assign(new Error(`${limit.label} must be a whole number from ${limit.min} to ${limit.max}.`), { status: 400 });
+      value[field] = n;
+    }
+    for (const field of ['dailyBudgetUsd', 'inputPricePerM', 'outputPricePerM']) {
+      if (input?.[field] === undefined) continue;
+      const n = Number(input[field]);
+      if (!Number.isFinite(n) || n < 0 || n > 100000) throw Object.assign(new Error(`${field} must be a number from 0 to 100000.`), { status: 400 });
+      value[field] = n;
+    }
   } else if (key === 'productAccess') {
     const locked = Array.isArray(input?.locked) ? input.locked : current.locked;
     value = { locked: [...new Set(locked.map(String))].filter((p) => PRODUCT_KEYS.includes(p)) };

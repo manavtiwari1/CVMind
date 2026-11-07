@@ -9,6 +9,7 @@ import { startWorkers } from '@cvmind/auto-apply-agent/queue/workers.js';
 import companyRouter from './routes/company.js';
 import codeRouter from './routes/code.js';
 import learnLeoRouter from './routes/learnLeo.js';
+import { createLeoChatRouter } from './routes/leoChat.js';
 import growthRouter from './routes/growth.js';
 import collegeRouter from './college/router.js';
 import collegeStudentRouter from './routes/collegeStudent.js';
@@ -162,6 +163,7 @@ const AI_ROUTE_PATHS = [
   '/api/ai',
   '/api/code/ai',
   '/api/leo',
+  '/api/leo-chat',
 ];
 const aiRateLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -2984,6 +2986,10 @@ app.use('/api/code', codeRouter);
 app.use('/_/backend/api/code', codeRouter);
 app.use('/api/leo', learnLeoRouter);
 app.use('/_/backend/api/leo', learnLeoRouter);
+// Leo chat: the prompt-first home of app.cvmind.in
+const leoChatRouter = createLeoChatRouter({ upload, extractResumeText: (file) => extractResumeText(file, '') });
+app.use('/api/leo-chat', leoChatRouter);
+app.use('/_/backend/api/leo-chat', leoChatRouter);
 app.use('/api/job-finder', jobFinderRouter);
 app.use('/_/backend/api/job-finder', jobFinderRouter);
 
