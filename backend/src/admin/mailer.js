@@ -76,8 +76,10 @@ function buttonHtml(label, url) {
  * @param {string} [o.footerReason] why the reader got this email
  * @param {string} [o.htmlBlock]  ready-made HTML placed after the body (callers escape their own text)
  * @param {string} [o.unsubscribeUrl] adds an "Unsubscribe" link to the footer
+ * @param {string} [o.heroImage] https URL of a banner shown above the card (use a ~1200x600 image; shown 560 wide)
+ * @param {string} [o.heroAlt]   alt text for the banner, shown when images are blocked
  */
-export function renderEmail({ preheader = '', eyebrow = '', title = '', greetingName = '', body = '', bullets = [], ctaLabel = '', ctaUrl = '', note = '', afterword = '', footerReason = '', htmlBlock = '', unsubscribeUrl = '' }) {
+export function renderEmail({ preheader = '', eyebrow = '', title = '', greetingName = '', body = '', bullets = [], ctaLabel = '', ctaUrl = '', note = '', afterword = '', footerReason = '', htmlBlock = '', unsubscribeUrl = '', heroImage = '', heroAlt = '' }) {
   const bulletRows = bullets.length
     ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 18px">${bullets.map((b) => `
 <tr><td valign="top" width="22" style="padding:3px 0 7px;font-size:15px;line-height:1.5;color:${C.brand};font-weight:700">&#10003;</td>
@@ -106,6 +108,7 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;c
 </tr></table></a>
 </td></tr>
 
+${heroImage && /^https:\/\//i.test(heroImage) ? `<tr><td style="padding:0 0 14px"><a href="${SITE_URL}" target="_blank" style="text-decoration:none"><img src="${escapeHtml(heroImage)}" width="560" alt="${escapeHtml(heroAlt)}" style="display:block;width:100%;max-width:560px;height:auto;border:0;border-radius:14px;background:${C.card};font-family:${FONT};font-size:18px;font-weight:700;color:${C.ink}"></a></td></tr>` : ''}
 <tr><td bgcolor="${C.card}" style="background:${C.card};border:1px solid ${C.border};border-radius:14px;padding:32px 30px 26px">
 ${eyebrow ? `<p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${C.brand}">${escapeHtml(eyebrow)}</p>` : ''}
 ${title ? `<h1 style="margin:0 0 18px;font-size:23px;line-height:1.3;font-weight:800;color:${C.ink}">${escapeHtml(title)}</h1>` : ''}

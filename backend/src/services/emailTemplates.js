@@ -81,6 +81,55 @@ export function notificationEmail({ name, title, body, ctaLabel = '', ctaUrl = '
   };
 }
 
+// Diwali 2026: greeting, the Leo chat and the LEODIWALI offer. The banner is a static file served from the
+// site (frontend/public/email/), so it has to be deployed before this email goes out.
+export const DIWALI_EMAIL = {
+  code: 'LEODIWALI',
+  ends: '12 November, 11:59 pm',
+  image: 'https://www.cvmind.in/email/leo-diwali.jpg',
+  chatUrl: 'https://app.cvmind.in/chat',
+  pricingUrl: 'https://www.cvmind.in/pricing'
+};
+
+export function diwaliEmail({ name }) {
+  const { code, ends, image, chatUrl, pricingUrl } = DIWALI_EMAIL;
+  const codeBox = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:6px 0 22px"><tr>
+<td align="center" bgcolor="#fff7e6" style="padding:18px 16px;background:#fff7e6;border:1px dashed #e8590c;border-radius:12px">
+<p style="margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#b45309">Diwali offer: 50% off CVMind Pro</p>
+<p style="margin:0 0 6px;font-family:'Courier New',monospace;font-size:26px;font-weight:800;letter-spacing:0.12em;color:#7c2d12">${code}</p>
+<p style="margin:0 0 10px;font-size:13px;line-height:1.5;color:#7c2d12">Valid on any plan until ${ends}. One use per account.</p>
+<a href="${pricingUrl}" target="_blank" style="font-size:14px;font-weight:700;color:#c2410c;text-decoration:underline">See the Pro plans</a>
+</td></tr></table>`;
+  const leoList = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 18px">${[
+    'Checks your resume and gives an ATS score',
+    'Tailors your resume to a job description',
+    'Writes a cover letter',
+    'Prepares interview questions for your role',
+    'Finds real open jobs'
+  ].map((t) => `<tr><td valign="top" width="22" style="padding:3px 0 7px;font-size:15px;line-height:1.5;color:#1d4ed8;font-weight:700">&#10003;</td><td style="padding:3px 0 7px;font-size:15px;line-height:1.5;color:#334155">${t}</td></tr>`).join('')}</table>`;
+  return {
+    subject: 'Happy Diwali from CVMind: 50% off Pro, and meet Leo',
+    html: renderEmail({
+      preheader: `Use code ${code} for 50% off Pro until 12 November. Plus: ask Leo to check your resume or find jobs.`,
+      heroImage: image,
+      heroAlt: 'Happy Diwali from Leo and the CVMind team',
+      title: 'Happy Diwali!',
+      greetingName: name,
+      body: [
+        'Wishing you and your family a bright and happy Diwali from all of us at CVMind. May the new year bring you the interviews and the offer you have been working towards.',
+        'Two things for the festival:',
+        '1. Meet Leo. Our new AI chat does the work for you: type what you need and Leo does it. It is free to use, with 30 messages a day on a free account.'
+      ].join('\n\n'),
+      // The list belongs to point 1, so it goes in the HTML block ahead of point 2 (renderEmail puts bullets after it)
+      htmlBlock: `${leoList}<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#334155">2. Save on Pro. Use this code at checkout:</p>${codeBox}`,
+      ctaLabel: 'Chat with Leo',
+      ctaUrl: chatUrl,
+      afterword: 'Have a safe and happy Diwali. If you have any question, just reply to this email.',
+      footerReason: 'You received this email because you have a CVMind account.'
+    })
+  };
+}
+
 export function supportReplyEmail({ name, subject, number, body }) {
   return {
     subject: `Re: ${subject} [#${number}]`,
