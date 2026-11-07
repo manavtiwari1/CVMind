@@ -9,7 +9,7 @@ import { pickTemplate } from './lib/templatePick'
 
 // Pick up a sign-in from the other cvmind.in host, then make sure this address is on the right one
 syncSessionFromCookie()
-const redirectTo = hostRedirectTarget(localStorage.getItem('cvmind_logged_in') === 'true')
+const redirectTo = hostRedirectTarget()
 
 if (isTeamHost()) {
   // CVMind Team (team.cvmind.in) is its own app with its own sign-in, loaded on demand

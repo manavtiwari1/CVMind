@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowRight, Building2, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock, CreditCard, Crown, Download, Landmark, LayoutTemplate, Loader2, Lock, Minus, Palette, ShieldCheck, Smartphone, Sparkles, SpellCheck, Target, X } from 'lucide-react';
+import { ArrowRight, Building2, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock, Copy, CreditCard, Crown, Download, Landmark, LayoutTemplate, Loader2, Lock, Minus, Palette, ShieldCheck, Smartphone, Sparkles, SpellCheck, Target, X } from 'lucide-react';
 import TemplatePreview from '../components/TemplatePreview';
 import { SlotBanner } from '../components/SiteBanner';
 import { CV_TEMPLATES } from '../data/cvTemplates';
@@ -9,6 +9,8 @@ import { withSampleData } from '../data/samplePreview';
 import { LETTER_DESIGNS } from '../lib/coverLetter';
 import { FALLBACK_LAUNCH, PRO_LETTER_IDS, PRO_TEMPLATE_IDS, formatInr, launchTimeText, launchTimes, loadPlans, startCheckout, userIsPro, verifyOrder, type LaunchTimes, type Plan } from '../lib/billing';
 import { readUser, USER_CHANGE_EVENT } from '../lib/currentUser';
+import { DIWALI_OFFER, diwaliPrice, isDiwaliSeason } from '../lib/festive';
+import { Diya, Toran, Twinkles } from '../components/home/Diwali';
 import { setContactSubject } from '../data/support';
 import './Pricing.css';
 
@@ -126,6 +128,35 @@ const savingFor = (p: Plan, monthly?: Plan) => (monthly && p.days > monthly.days
 
 type ReturnState = { status: 'checking' | 'paid' | 'pending' | 'failed' | 'error'; message?: string; expiresAt?: string | null } | null;
 
+// Diwali dressing and the LEODIWALI offer, only during the festival (lib/festive.ts)
+const FESTIVE = isDiwaliSeason();
+
+function DiwaliBanner() {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard?.writeText(DIWALI_OFFER.code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600); }).catch(() => {});
+  };
+  return (
+    <section className="pr-dw" aria-label="Diwali offer">
+      <Toran />
+      <Twinkles />
+      <Diya className="pr-dw-b-diya pr-dw-b-diya--l" />
+      <Diya className="pr-dw-b-diya pr-dw-b-diya--r" />
+      <div className="pr-dw-inner">
+        <span className="pr-dw-kicker">Happy Diwali from CVMind</span>
+        <p className="pr-dw-title"><b>{DIWALI_OFFER.percent}% off</b> every Pro plan</p>
+        <div className="pr-dw-code">
+          <span>Use code</span>
+          <button type="button" onClick={copy} aria-label={`Copy coupon code ${DIWALI_OFFER.code}`}>
+            {DIWALI_OFFER.code} {copied ? <Check size={15} /> : <Copy size={15} />}
+          </button>
+        </div>
+        <p className="pr-dw-fine">Ends {DIWALI_OFFER.ends} · one use per account</p>
+      </div>
+    </section>
+  );
+}
+
 export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }: PricingProps) {
   const [plans, setPlans] = useState<Plan[]>(FALLBACK_PLANS);
   const [paymentsOn, setPaymentsOn] = useState(true);
@@ -204,8 +235,9 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
   const opensText = `Payments open ${launchTimeText(launch.paymentsOpenAt)}`;
 
   return (
-    <div className="pr">
+    <div className={`pr${FESTIVE ? ' pr--diwali' : ''}`}>
       <SlotBanner slot="promo" setCurrentPage={setCurrentPage} />
+      {FESTIVE && <DiwaliBanner />}
 
       {returned && <ReturnBanner state={returned} onClose={() => setReturned(null)} onRetry={() => { setReturned(null); setCheckoutOpen(true); }} />}
 
@@ -214,7 +246,7 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
         <Waves />
 
         <header className="pr-hero">
-          <span className="pr-eyebrow"><Crown size={14} /> CVMind Pro</span>
+          <span className="pr-eyebrow"><Crown size={14} /> {FESTIVE ? `CVMind Pro · Diwali offer, ${DIWALI_OFFER.percent}% off` : 'CVMind Pro'}</span>
           <h1 className="pr-title">Pay for the weeks you're job hunting. <em>Not a month more.</em></h1>
           <p className="pr-lede">Pick a pass for a sprint or a plan for the long run. Every plan is a one-time payment and ends on its own; nothing renews behind your back.</p>
         </header>
@@ -237,6 +269,7 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
           </article>
 
           <article className="pr-pass pr-pass--pro" aria-labelledby="pr-pro-name">
+            {FESTIVE && <><Diya className="pr-dw-diya pr-dw-diya--l" /><Diya className="pr-dw-diya pr-dw-diya--r" /></>}
             <div className="pr-pass-top">
               <span className="pr-spark pr-spark--a" aria-hidden="true"><Sparkles size={16} /></span>
               <span className="pr-spark pr-spark--b" aria-hidden="true"><Sparkles size={12} /></span>
@@ -248,9 +281,11 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
                 )}
               </div>
               <p className="pr-amount" aria-live="polite">
-                <span className="pr-amount-num">{formatInr(plan.price)}</span>
+                {FESTIVE && <s className="pr-dw-was">{formatInr(plan.price)}</s>}
+                <span className="pr-amount-num">{formatInr(FESTIVE ? diwaliPrice(plan.price) : plan.price)}</span>
                 <span className="pr-amount-sup">/{plan.days} days</span>
               </p>
+              {FESTIVE && <p className="pr-dw-with">with code <b>{DIWALI_OFFER.code}</b> at checkout</p>}
               <p className="pr-amount-sub">{perDayText(plan)} · {PLAN_NOTES[plan.key] || `${plan.days} days of Pro`} · no auto-renew</p>
               <div className="pr-tabs" role="group" aria-label="How long you need Pro">
                 {plans.map((p) => {
@@ -277,7 +312,7 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
                 </button>
               ) : (
                 <button type="button" className="pr-btn pr-btn--green" onClick={getPro}>
-                  Get Pro for {formatInr(plan.price)} <ArrowRight size={17} />
+                  Get Pro for {formatInr(FESTIVE ? diwaliPrice(plan.price) : plan.price)} <ArrowRight size={17} />
                 </button>
               )}
               <p className="pr-pass-fine"><ShieldCheck size={13} /> Secure payment by Cashfree</p>
@@ -458,8 +493,9 @@ function Checkout({ plans, selected, onSelect, paymentsOn, onClose, onPaid, setC
   setCurrentPage: (page: string) => void;
 }) {
   const [phone, setPhone] = useState('');
-  const [coupon, setCoupon] = useState('');
-  const [showCoupon, setShowCoupon] = useState(false);
+  // During Diwali the offer code is filled in for the buyer
+  const [coupon, setCoupon] = useState(FESTIVE ? DIWALI_OFFER.code : '');
+  const [showCoupon, setShowCoupon] = useState(FESTIVE);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const plan = plans.find((p) => p.key === selected) || plans[0];
@@ -555,7 +591,9 @@ function Checkout({ plans, selected, onSelect, paymentsOn, onClose, onPaid, setC
               {error && <p className="pr-co-error" role="alert">{error}</p>}
 
               <button type="submit" className="pr-btn pr-btn--dark" disabled={!phoneOk || busy}>
-                {busy ? <Loader2 size={17} className="pr-spin" /> : <Lock size={15} />} Pay {formatInr(plan.price)}{coupon.trim() ? ' (before coupon)' : ''}
+                {busy ? <Loader2 size={17} className="pr-spin" /> : <Lock size={15} />} {coupon.trim().toUpperCase() === DIWALI_OFFER.code
+                  ? <>Pay {formatInr(diwaliPrice(plan.price))} <s className="pr-dw-pay-was">{formatInr(plan.price)}</s></>
+                  : <>Pay {formatInr(plan.price)}{coupon.trim() ? ' (before coupon)' : ''}</>}
               </button>
               <p className="pr-co-fine">You'll finish on Cashfree's secure page (UPI, cards, netbanking) and come back here. Pro starts as soon as the payment is confirmed.</p>
             </>

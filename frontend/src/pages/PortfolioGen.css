@@ -21,7 +21,7 @@
   flex-direction: column;
   height: 100dvh;
   overflow: hidden;
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--font-ui);
   color: var(--pgx-text);
   text-align: left;
   background: var(--pgx-bg);

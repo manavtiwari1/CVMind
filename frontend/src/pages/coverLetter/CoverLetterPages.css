@@ -9,7 +9,7 @@
   --clx-soft: #f4f6f9;
   --clx-purple: #5b45c9;
   color: var(--clx-ink);
-  font-family: 'Rubik', 'Inter', system-ui, sans-serif;
+  font-family: var(--font-ui);
 }
 .clx h1, .clx h2, .clx h3 { color: var(--clx-ink); margin: 0; font-weight: 500; letter-spacing: -0.01em; }
 .clx p { margin: 0; }

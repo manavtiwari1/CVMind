@@ -25,6 +25,7 @@
     "docx": "^9.7.0",
     "file-saver": "^2.0.5",
     "framer-motion": "^12.40.0",
+    "gsap": "^3.12.5",
     "katex": "^0.18.10",
     "lucide-react": "^0.468.0",
     "mermaid": "^12.2.0",

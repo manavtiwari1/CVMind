@@ -7,7 +7,8 @@
 export const APP_PAGES = ['prep', 'resume-editor', 'cover-letter-start', 'cover-letter-generator', 'cover-letter-editor', 'linkedin', 'linkedin-bio', 'linkedin-outreach', 'linkedin-post', 'proofreading', 'tailor', 'voice-prep', 'portfolio-gen', 'job-finder', 'career-courses', 'elevator-pitch', 'career-roadmap', 'auto-apply', 'account', 'my-documents', 'offer-negotiation', 'invite', 'learn-with-leo'];
 
 // App-host pages that signed-out visitors can still use (the email link may open on another device)
-export const PUBLIC_APP_PAGES = ['code-arena', 'cvmind-code-arena', 'verify-email', 'college-invite'];
+// The Leo chat lets signed-out visitors send a few messages before signing in
+export const PUBLIC_APP_PAGES = ['chat', 'code-arena', 'cvmind-code-arena', 'verify-email', 'college-invite'];
 
 // Paths the app host handles itself instead of sending them to www
 const AUTH_PATHS = ['/sign-in', '/sign-up', '/login'];
@@ -60,7 +61,7 @@ export const isCrossHost = (page: string) => isSplitHost() && isAppPage(page) !=
 
 // Where an address typed on this host should really live, or null to stay. Runs before React
 // renders so visitors never see the wrong site flash.
-export function hostRedirectTarget(signedIn: boolean): string | null {
+export function hostRedirectTarget(): string | null {
   if (!isSplitHost() || isTeamHost() || isPlacementsHost()) return null;
   const { pathname, search, hash } = window.location;
   // /college-invite/<token> is the college invitation page
@@ -70,7 +71,8 @@ export function hostRedirectTarget(signedIn: boolean): string | null {
     // Sign-in screens and OAuth/password-reset returns are handled on the app host
     const params = new URLSearchParams(search);
     if (AUTH_PATHS.includes(pathname) || params.has('oauthCode') || params.has('authError') || params.has('resetToken') || hash.includes('id_token')) return null;
-    if (pathname === '/') return signedIn ? `${appOrigin()}/my-documents` : `${appOrigin()}/sign-in`;
+    // The app's home is the Leo chat, for signed-in and signed-out visitors alike
+    if (pathname === '/') return `${appOrigin()}/chat${search}`;
     if (isAppPage(page)) return null;
     return `${siteOrigin()}${pathname}${search}${hash}`;
   }

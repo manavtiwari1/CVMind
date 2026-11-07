@@ -124,7 +124,6 @@ export default function AiAssistant({ onCheck }: AiAssistantProps) {
 
   return (
     <section className="hp-ai">
-      <div className="hp-ai-bg" aria-hidden="true" />
       <div className="hp-ai-inner">
         <h2 className="hp-h2 hp-h2--light hp-center">Write a stronger resume with the AI assistant</h2>
         <p className="hp-body hp-body--light hp-center hp-ai-sub">

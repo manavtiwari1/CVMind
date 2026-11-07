@@ -157,7 +157,8 @@ export async function verifyOrder(orderId: string): Promise<{ status: string; ex
   return data;
 }
 
-export const formatInr = (n: number) => `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+// Whole rupees stay whole (₹189); anything with paise shows both digits (₹94.50)
+export const formatInr = (n: number) => `₹${n.toLocaleString('en-IN', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })}`;
 
 // ── Refund requests ──────────────────────────────────────────────────────────
 // Payments are non-refundable. A running Monthly plan can be cancelled with a refund request for a

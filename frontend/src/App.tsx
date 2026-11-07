@@ -87,6 +87,7 @@ const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const CollegeInvite = lazy(() => import('./pages/CollegeInvite'));
 const LeoLessonPage = lazy(() => import('./learnLeo/LeoLessonPage'));
 const LearnWithLeoLanding = lazy(() => import('./pages/LearnWithLeoLanding'));
+const ChatApp = lazy(() => import('./chat/ChatApp'));
 
 // VALID_PAGES and AUTH_PATHS live in lib/routes.ts, which the build also reads
 
@@ -116,7 +117,8 @@ export default function App() {
     if (urlPage) return urlPage;
     // On cvmind.in the address always decides the page, so a remembered app page can't open on www
     const savedPage = isSplitHost() ? null : localStorage.getItem('cvmind_current_page');
-    if (savedPage && VALID_PAGES.includes(savedPage)) {
+    // The full-screen Leo chat opens only from its own address (/chat), never in place of the home page
+    if (savedPage && savedPage !== 'chat' && VALID_PAGES.includes(savedPage)) {
       return savedPage;
     }
     return 'home';
@@ -302,14 +304,16 @@ export default function App() {
     if (isLoggedIn) loadCollegeTemplates();
   }, [isLoggedIn]);
 
-  // Where a fresh sign-in lands: the home page, or My Documents when signing in on the app host
+  // Where a fresh sign-in lands: the home page, or the Leo chat when signing in on the app host.
+  // Signing in from the chat keeps the user in the chat.
   const enterAfterSignIn = () => {
     // A student who signed in from a college invitation goes back to accept it
     if (pendingCollegeInvite()) {
       setCurrentPage('college-invite');
       return;
     }
-    setCurrentPage(isAppHost() ? 'my-documents' : 'home');
+    if (currentPage === 'chat') return;
+    setCurrentPage(isAppHost() ? 'chat' : 'home');
   };
 
   useEffect(() => {
@@ -694,6 +698,8 @@ export default function App() {
         return <LearnWithLeoLanding />;
       case 'learn-with-leo':
         return <LeoLessonPage setCurrentPage={setCurrentPage} />;
+      case 'chat':
+        return <ChatApp setCurrentPage={setCurrentPage} isLoggedIn={isLoggedIn} onSignIn={() => setShowAuthModal(true)} />;
       case 'verify-email':
       case 'college-invite':
         // Full-screen like the sign-in overlay, so it renders outside <main> (see below)
@@ -722,7 +728,9 @@ export default function App() {
   const isPortfolioStudio = currentPage === 'portfolio-gen';
   // Job Finder has its own top bar
   const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && currentPage !== 'job-finder' && currentPage !== 'learn-with-leo' && !isFocusFlow && !isPortfolioStudio;
-  const isMinimalPage = currentPage === 'dashboard' || currentPage === 'admin' || currentPage === 'portfolio' || currentPage === 'verify-email' || currentPage === 'college-invite' || isCodePage || isFocusFlow || isAppPage || isPortfolioStudio;
+  // The Leo chat is a full-screen app with its own sidebar and top bar
+  const isChatPage = currentPage === 'chat';
+  const isMinimalPage = currentPage === 'dashboard' || currentPage === 'admin' || currentPage === 'portfolio' || currentPage === 'verify-email' || currentPage === 'college-invite' || isCodePage || isFocusFlow || isAppPage || isPortfolioStudio || isChatPage;
   // The resume report has its own top bar instead of the site header and footer
   const isReportPage = currentPage === 'dashboard';
   // The Help Center (and its Contact form) is full-width with its own top bar and footer instead of the site ones
@@ -812,9 +820,9 @@ export default function App() {
         isOpen={showAuthModal}
         onClose={() => {
           setShowAuthModal(false);
-          // Apart from Code Arena the app host has nothing for signed-out visitors, so closing sign-in returns to www
+          // Signed-out visitors on the app host can still use the Leo chat, so closing sign-in lands there
           if (isAppHost() && localStorage.getItem('cvmind_logged_in') !== 'true' && !PUBLIC_APP_PAGES.includes(currentPage)) {
-            window.location.assign(`${siteOrigin()}/`);
+            setCurrentPage('chat');
           }
         }}
         onSuccess={() => {

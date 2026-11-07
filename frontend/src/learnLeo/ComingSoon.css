@@ -1,6 +1,6 @@
 /* "Learn with Leo is coming soon": dialog and full-page screen. Above the navbar (z-index 1000). */
 .lcs-backdrop { position: fixed; inset: 0; z-index: 1200; background: rgba(15, 23, 42, .5); display: grid; place-items: center; padding: 16px; }
-.lcs-card { position: relative; width: min(420px, 100%); background: #fff; border-radius: 20px; padding: 32px 26px 24px; text-align: center; display: grid; justify-items: center; gap: 12px; box-shadow: 0 24px 60px rgba(15, 23, 42, .25); font-family: Inter, system-ui, sans-serif; color: #0f172a; }
+.lcs-card { position: relative; width: min(420px, 100%); background: #fff; border-radius: 20px; padding: 32px 26px 24px; text-align: center; display: grid; justify-items: center; gap: 12px; box-shadow: 0 24px 60px rgba(15, 23, 42, .25); font-family: var(--font-ui); color: #0f172a; }
 .lcs-close { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; border: 0; background: #f1f5f9; color: #334155; cursor: pointer; }
 .lcs-card h2, .lcs-screen h1 { font-family: 'Kalam', 'Segoe Print', cursive; font-weight: 700; font-size: 1.6rem; line-height: 1.2; color: #0f172a; }
 .lcs-card p, .lcs-screen p { color: #556070; line-height: 1.6; max-width: 360px; }

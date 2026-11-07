@@ -12,7 +12,7 @@
   --llm-rule: #e5e9ee;
   background: #fff;
   color: var(--llm-ink);
-  font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--font-ui);
 }
 .llm-wrap { max-width: 1680px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 96px); }
 .llm h2 { color: var(--llm-ink); }

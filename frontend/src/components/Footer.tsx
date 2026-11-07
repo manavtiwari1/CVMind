@@ -123,6 +123,30 @@ export default function Footer({ setCurrentPage }: FooterProps) {
           </div>
         </div>
 
+        {/* Mobile apps: not in the stores yet, so the badges are labels, not links */}
+        <div className="ft-apps">
+          <div className="ft-apps-head">
+            <span className="ft-apps-label">Apps</span>
+            <span className="ft-apps-soon">Coming soon</span>
+          </div>
+          <div className="ft-apps-badges">
+            <span className="ft-store" aria-label="App Store, coming soon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.9-.9-3.1-.8-1.6 0-3.1.9-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.6.8 1.2 1.7 2.5 3 2.4 1.2 0 1.6-.8 3.1-.8 1.4 0 1.8.8 3.1.8 1.3 0 2.1-1.2 2.9-2.4.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.6-1-2.7-4.1zM14.1 5.6c.6-.8 1.1-1.9 1-3-.9 0-2.1.6-2.8 1.4-.6.7-1.1 1.8-1 2.9 1.1.1 2.1-.5 2.8-1.3z" /></svg>
+              <span><small>Download on the</small>App Store</span>
+            </span>
+            <span className="ft-store" aria-label="Google Play, coming soon">
+              <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 2.6 13.6 12 4 21.4c-.4-.2-.6-.6-.6-1.1V3.7c0-.5.2-.9.6-1.1z" fill="#2dc08d" />
+                <path d="m16.7 8.9-3.1 3.1L4 2.6l.3-.1c.4-.1.8 0 1.1.2l11.3 6.2z" fill="#5b8def" />
+                <path d="m16.7 15.1-11.3 6.2c-.3.2-.7.3-1.1.2L4 21.4l9.6-9.4 3.1 3.1z" fill="#ef5b5b" />
+                <path d="m20.3 10.9-3.6-2-3.1 3.1 3.1 3.1 3.6-2c.8-.5.8-1.7 0-2.2z" fill="#f5b83d" />
+              </svg>
+              <span><small>Get it on</small>Google Play</span>
+            </span>
+          </div>
+          <p className="ft-apps-note">Desktop, phone and tablet: the website works on all of them today.</p>
+        </div>
+
         <div className="ft-rule" />
 
         <div className="ft-bar">

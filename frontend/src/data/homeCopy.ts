@@ -2,8 +2,8 @@
 // don't run the app see the same heading, intro and FAQs as visitors.
 
 export const HOME_HERO = {
-  h1: { lead: 'Land more interviews with CVMind\u2019s', em: 'Resume Builder' },
-  lead: 'Build an ATS-friendly resume from a template, let the AI rewrite the weak lines, and tailor it to a job post in one click. Or upload the resume you already have and get a free score first.',
+  h1: { lead: 'Tell us the job you want.', em: 'CVMind builds the resume.' },
+  lead: 'Ask Leo in plain words. It checks your resume\u2019s ATS score, tailors it to a job post, writes the cover letter and finds real openings. Or start from a template in the free resume builder.',
 };
 
 export const HOME_CHECKER = {

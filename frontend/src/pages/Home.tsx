@@ -11,6 +11,8 @@ import FieldTemplates from '../components/home/FieldTemplates';
 import JobSearchTabs from '../components/home/JobSearchTabs';
 import GuidesSection from '../components/home/GuidesSection';
 import TemplateMarquee from '../components/home/TemplateMarquee';
+import { AskLeoDemo } from '../components/home/motion/HomeMotion';
+import AskLeoCta from '../components/home/AskLeoCta';
 import '../components/home/home-v2.css';
 import { getErrorMessage } from '../utils/errors';
 import { HOME_CHECKER, HOME_FAQS } from '../data/homeCopy';
@@ -183,6 +185,9 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
       {/* ── 1. HERO ──────────────────────────────────────────── */}
       <HomeHero setCurrentPage={setCurrentPage} onAnalyzeClick={scrollToScore} />
       <SlotBanner slot="home-banner" setCurrentPage={setCurrentPage} />
+
+      {/* ── 1b. ASK LEO DEMO (steps change as you scroll) ─────── */}
+      <AskLeoDemo />
 
       {/* ── 2. TEMPLATE MARQUEE ──────────────────────────────── */}
       <TemplateMarquee onUse={openTemplate} />
@@ -375,14 +380,6 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
       <GuidesSection setCurrentPage={setCurrentPage} />
 
       {/* ── 11. FINAL CTA ────────────────────────────────────── */}
-      <section className="hp-cta">
-        <h2 className="hp-h2 hp-h2--light">Ready to send a better resume?</h2>
-        <p className="hp-body hp-body--light">Start from a template, or upload the resume you already have for a free ATS check.</p>
-        <div className="hp-actions">
-          <button className="hp-btn hp-btn--primary" onClick={() => setCurrentPage('resume-editor')}>Build your resume</button>
-          <button className="hp-btn hp-btn--outline" onClick={scrollToScore}>Get your resume score</button>
-        </div>
-      </section>
 
       {/* ── 12. FAQ ──────────────────────────────────────────── */}
       <section className="home-faq-section">
@@ -404,7 +401,8 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
         </div>
       </section>
 
-
+      {/* ── 13. ASK LEO: closing call to action ─────────────── */}
+      <AskLeoCta />
     </div>
   );
 }

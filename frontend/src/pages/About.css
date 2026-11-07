@@ -12,7 +12,7 @@
   /* Full-bleed: break out of the page's centred content column */
   width: 100vw;
   margin-left: calc(50% - 50vw);
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--font-ui);
   color: var(--rsc-ink);
   text-align: left;
 }

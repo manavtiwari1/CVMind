@@ -41,7 +41,6 @@ export default function GuidesSection({ setCurrentPage }: GuidesSectionProps) {
 
   return (
     <section className="hp-guides">
-      <div className="hp-guides-glow" aria-hidden="true" />
       <div className="hp-guides-inner">
         <div className="hp-guides-hero">
           <div>

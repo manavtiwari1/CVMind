@@ -8,7 +8,6 @@ import {
 import NotificationBell from './NotificationBell';
 import NavMegaMenu from './NavMegaMenu';
 import { NAV_MENUS } from './navMenus';
-import cvmindIcon from '../assets/cvmind_icon.png';
 import type { LoadedWork } from '../types/api';
 import './Navbar.css';
 import { PRICING_LOCKED } from '../lib/pricing';
@@ -38,10 +37,18 @@ export default function Navbar({
   const [mobileCareerAiOpen, setMobileCareerAiOpen] = useState(false);
 
   const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
 
-  // Scroll shadow effect
+  // Shadow once the page moves; the bar slides away while scrolling down and returns on any scroll up
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 8);
+      if (Math.abs(y - lastY) < 6) return;
+      setHidden(y > lastY && y > 140);
+      lastY = y;
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -77,13 +84,16 @@ export default function Navbar({
 
   return (
     <>
-      <header className={`navbar-header${scrolled ? ' scrolled' : ''}`}>
+      <header className={`navbar-header${scrolled ? ' scrolled' : ''}${hidden && !mobileOpen ? ' nav-hidden' : ''}`}>
       <div className="navbar-container">
 
-        {/* Brand / Logo */}
+        {/* Brand / wordmark: handwritten "CV", bold "Mind", green dot */}
         <button type="button" className="navbar-brand" onClick={() => go('home')} aria-label="CVMind home">
-          <img src={cvmindIcon} alt="" className="navbar-logo-img" />
-          <span className="navbar-brand-name">CVMind</span>
+          <span className="cv-wordmark" aria-hidden="true">
+            <span className="cv-wordmark-cv">CV</span>
+            <span className="cv-wordmark-mind">Mind</span>
+            <i className="cv-wordmark-dot" />
+          </span>
         </button>
 
         {/* Center Navigation: 4 clean items */}

@@ -11,7 +11,7 @@ export const SITE_URL = 'https://www.cvmind.in';
 
 // Account-only and error pages stay out of search results
 // Shared resumes (portfolio) hold people's contact details, so they stay out too; cvmind-code is an alias of /code
-export const NO_INDEX_PAGES = ['account', 'my-documents', 'admin', 'dashboard', 'resume-editor', 'cover-letter-start', 'cover-letter-editor', 'not-found', 'portfolio', 'cvmind-code'];
+export const NO_INDEX_PAGES = ['account', 'my-documents', 'chat', 'admin', 'dashboard', 'resume-editor', 'cover-letter-start', 'cover-letter-editor', 'not-found', 'portfolio', 'cvmind-code'];
 
 const PAGE_SEO: Record<string, PageSEO> = {
   // Keyword map: home = brand + ATS resume checker; /resume-builder = "resume builder" and "CV maker"
@@ -208,6 +208,11 @@ const PAGE_SEO: Record<string, PageSEO> = {
     title: 'Resume Editor - Edit Your CV with AI | CV Mind',
     description: 'Edit your resume or cover letter in a live editor: pick an ATS-friendly template, rewrite bullets with AI, and download as PDF or DOCX.',
     keywords: 'Resume Editor, CV Editor, Online Resume Editor, AI Resume Writer, Cover Letter Editor',
+  },
+  chat: {
+    title: 'Leo AI | CV Mind',
+    description: 'Tell Leo what you need: check your resume, tailor it to a job, write a cover letter, prepare for interviews or find jobs.',
+    keywords: 'CV Mind Leo, AI career assistant, AI resume chat',
   },
   'my-documents': {
     title: 'My Documents | CV Mind',

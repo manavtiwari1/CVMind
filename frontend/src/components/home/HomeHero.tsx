@@ -1,17 +1,71 @@
-import { useEffect } from 'react';
-import { ArrowRight, ShieldCheck, Sparkles, Target, Wand2 } from 'lucide-react';
-import { formatStat, useLiveStats } from '../../utils/stats';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowRight, Check, FileSearch, Sparkles, Target, Upload } from 'lucide-react';
 import { HOME_HERO } from '../../data/homeCopy';
-import ScaleToFit from './ScaleToFit';
-import SampleResume, { SAMPLE_RESUME_WIDTH } from './SampleResume';
+import { urlForPage } from '../../lib/hosts';
+import { Diya, Rangoli, Toran, Twinkles } from './Diwali';
+import { isDiwaliSeason } from '../../lib/festive';
 
 interface HomeHeroProps {
   setCurrentPage: (page: string) => void;
   onAnalyzeClick: () => void;
 }
 
+// The hero is one prompt box with three modes. Ask and Tailor open the Leo chat on app.cvmind.in
+// with the prompt already sent; Check scrolls to the free ATS checker further down this page.
+type Mode = 'ask' | 'tailor' | 'check';
+
+// `short` is the label on phones, where all three tabs share one row
+const MODES: { id: Mode; label: string; short: string; icon: typeof Sparkles }[] = [
+  { id: 'ask', label: 'Ask Leo', short: 'Ask Leo', icon: Sparkles },
+  { id: 'tailor', label: 'Tailor to a job', short: 'Tailor', icon: Target },
+  { id: 'check', label: 'Check my resume', short: 'Check resume', icon: FileSearch },
+];
+
+// Typed one after another in the empty Ask box
+// During Diwali the festive example comes first
+const FESTIVE = isDiwaliSeason();
+const EXAMPLES = [
+  ...(FESTIVE ? ['Plan my Diwali break: 2 weeks to get placement-ready'] : []),
+  'Interview questions for a data analyst fresher role',
+  'Write a cover letter for a frontend internship at Zomato',
+  'Find React developer jobs in Bangalore',
+  'Make me a 1-year roadmap to become a product manager',
+];
+
+const openLeo = (prompt: string) => {
+  const q = prompt.trim();
+  if (q) window.location.assign(urlForPage('chat', `?q=${encodeURIComponent(q.slice(0, 4000))}`));
+};
+
+// Types the example prompts into the placeholder. Static text when the user prefers less motion.
+function useTypedPlaceholder(active: boolean) {
+  const [text, setText] = useState(EXAMPLES[0]);
+  useEffect(() => {
+    if (!active || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let example = 0;
+    let chars = 0;
+    let deleting = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const step = () => {
+      const full = EXAMPLES[example];
+      if (!deleting && chars < full.length) chars += 1;
+      else if (!deleting) { deleting = true; timer = setTimeout(step, 1800); return; }
+      else if (chars > 0) chars -= 2;
+      else { deleting = false; example = (example + 1) % EXAMPLES.length; }
+      setText(full.slice(0, Math.max(0, chars)));
+      timer = setTimeout(step, deleting ? 18 : 42);
+    };
+    timer = setTimeout(step, 600);
+    return () => clearTimeout(timer);
+  }, [active]);
+  return text;
+}
+
 export default function HomeHero({ setCurrentPage, onAnalyzeClick }: HomeHeroProps) {
-  const stats = useLiveStats();
+  const [mode, setMode] = useState<Mode>('ask');
+  const [ask, setAsk] = useState('');
+  const boxRef = useRef<HTMLTextAreaElement>(null);
+  const typed = useTypedPlaceholder(mode === 'ask' && !ask);
 
   // The page is full-bleed: lift the default content width cap while the home page is mounted.
   useEffect(() => {
@@ -27,54 +81,111 @@ export default function HomeHero({ setCurrentPage, onAnalyzeClick }: HomeHeroPro
     };
   }, []);
 
+  // Grow the box with what's typed or pasted (job descriptions are long)
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    box.style.height = 'auto';
+    box.style.height = `${Math.min(box.scrollHeight, 220)}px`;
+  }, [ask, mode]);
+
+  const submit = () => {
+    if (mode === 'check') { onAnalyzeClick(); return; }
+    const text = ask.trim();
+    if (!text) { boxRef.current?.focus(); return; }
+    openLeo(mode === 'tailor' ? `Tailor my resume for this job:\n${text}` : text);
+  };
+
+  const pickMode = (next: Mode) => {
+    setMode(next);
+    if (next !== 'check') requestAnimationFrame(() => boxRef.current?.focus());
+  };
+
   return (
-    <section className="hp-hero">
-      <div className="hp-hero-glow" aria-hidden="true" />
-      <div className="hp-hero-inner">
-        <div className="hp-hero-copy">
-          <h1 className="hp-h1">
-            {HOME_HERO.h1.lead} <span className="hp-grad">{HOME_HERO.h1.em}</span>
-          </h1>
-          <p className="hp-lead">{HOME_HERO.lead}</p>
-          <div className="hp-actions">
-            <button className="hp-btn hp-btn--primary" onClick={() => setCurrentPage('resume-editor')}>
-              Build your resume
-            </button>
-            <button className="hp-btn hp-btn--outline" onClick={onAnalyzeClick}>
-              Get your resume score
-            </button>
+    <section className={`hp-hero hx-hero ${FESTIVE ? 'is-diwali-hero' : ''}`}>
+      <div className="hx-glow" aria-hidden="true" />
+      <div className="hx-dots dot-grid" aria-hidden="true" />
+      <div className="hx-inner">
+        <h1 className="hx-h1">
+          <span className="hx-line hx-rise">{HOME_HERO.h1.lead}</span>
+          {/* "CVMind" in grey, the rest under the highlighter mark */}
+          <span className="hx-line hx-em hx-rise">
+            {HOME_HERO.h1.em.split(' ')[0]}{' '}
+            <span className="cv-hl hx-hl">{HOME_HERO.h1.em.split(' ').slice(1).join(' ')}</span>
+          </span>
+        </h1>
+        <p className="hx-lead hx-rise">{HOME_HERO.lead}</p>
+
+        <div className={`hx-box-wrap hx-rise ${FESTIVE ? 'is-diwali' : ''}`}>
+        {FESTIVE && <><Toran /><Rangoli /><Rangoli className="dw-rangoli--l" /><Diya className="dw-diya--l" /><Diya className="dw-diya--r" /><Twinkles /></>}
+        <form className="hx-box" onSubmit={(e) => { e.preventDefault(); submit(); }}>
+          <div className="hx-modes" role="tablist" aria-label="What do you want to do?">
+            {MODES.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                role="tab"
+                aria-selected={mode === m.id}
+                className={`hx-mode ${mode === m.id ? 'is-on' : ''}`}
+                onClick={() => pickMode(m.id)}
+              >
+                <span className="hx-mode-ico"><m.icon size={15} /></span>
+                <span className="hx-mode-long">{m.label}</span>
+                <span className="hx-mode-short">{m.short}</span>
+              </button>
+            ))}
+            {FESTIVE && <span className="dw-tag"><i aria-hidden="true" /> Happy Diwali</span>}
           </div>
-          <ul className="hp-proof">
-            <li><ShieldCheck size={16} /> ATS check needs no account</li>
-            {stats.resumesAnalyzed != null && stats.resumesAnalyzed > 0 && (
-              <li><Sparkles size={16} /> <b>{formatStat(stats.resumesAnalyzed)}</b> resumes analyzed so far</li>
-            )}
-          </ul>
+
+          {mode === 'check' ? (
+            <div className="hx-check">
+              <p>Upload your resume and get your ATS score, keyword gaps and fixes. No account needed.</p>
+              <button type="submit" className="hx-go"><Upload size={17} /> Upload resume</button>
+            </div>
+          ) : (
+            <div className="hx-row">
+              <textarea
+                ref={boxRef}
+                value={ask}
+                onChange={(e) => setAsk(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && mode === 'ask' && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    submit();
+                  }
+                }}
+                rows={mode === 'tailor' ? 3 : 1}
+                maxLength={4000}
+                placeholder={mode === 'ask' ? typed : 'Paste the job description here…'}
+                aria-label={mode === 'ask' ? 'Ask Leo, CVMind’s AI career assistant' : 'Job description to tailor your resume to'}
+              />
+              <button type="submit" className="hx-go" disabled={!ask.trim()}>
+                <Sparkles size={16} /> {mode === 'ask' ? 'Ask Leo' : 'Tailor it'}
+              </button>
+            </div>
+          )}
+
+          <div className="hx-foot">
+            <span>
+              {mode === 'ask' && 'Answers in seconds, in English or Hinglish'}
+              {mode === 'tailor' && 'Attach your resume in the chat; Leo rewrites it for this job'}
+              {mode === 'check' && 'PDF, DOCX or TXT'}
+            </span>
+            <span>{mode === 'tailor' ? 'Free account · no card' : mode === 'ask' ? '3 free messages · no sign-up' : 'Free · no sign-up'}</span>
+          </div>
+        </form>
         </div>
 
-        <div className="hp-hero-visual" aria-hidden="true">
-          <div className="hp-hero-paper">
-            <ScaleToFit width={SAMPLE_RESUME_WIDTH} cropHeight={800}>
-              <SampleResume highlight="bullet" />
-            </ScaleToFit>
-          </div>
-          <div className="hp-float hp-hero-assistant">
-            <div className="hp-float-eyebrow"><i className="hp-dot hp-dot--purple" /> AI assistant</div>
-            <div className="hp-assist-item"><Wand2 size={15} /> Rewrite this bullet with metrics</div>
-            <div className="hp-assist-item"><Target size={15} /> Add keywords from a job post</div>
-            <div className="hp-assist-or">or</div>
-            <div className="hp-assist-input">Enter a custom request</div>
-          </div>
-          <div className="hp-float hp-hero-toolbar">
-            <span className="hp-tool hp-tool--green">+ New entry</span>
-            <span className="hp-tool hp-tool--purple">New group</span>
-            <span className="hp-tool-ico">T</span>
-          </div>
-        </div>
+        <ul className="hx-proof hx-rise">
+          <li><Check size={15} /> Free ATS check without an account</li>
+          <li><Check size={15} /> Works on phone and laptop</li>
+          <li><Check size={15} /> Free resume templates</li>
+        </ul>
+
+        <button type="button" className="hx-alt" onClick={() => setCurrentPage('resume-editor')}>
+          Or build your resume from a template <ArrowRight size={15} />
+        </button>
       </div>
-      <button className="hp-scroll-hint" onClick={() => document.getElementById('hp-templates')?.scrollIntoView({ behavior: 'smooth' })}>
-        Browse templates <ArrowRight size={14} />
-      </button>
     </section>
   );
 }

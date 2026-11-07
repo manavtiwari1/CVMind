@@ -13,7 +13,6 @@ const CARDS = [
 export default function AtsBand({ onBuild }: AtsBandProps) {
   return (
     <section className="hp-ats">
-      <div className="hp-ats-lines" aria-hidden="true" />
       <div className="hp-ats-inner">
         <div className="hp-ats-copy">
           <h2 className="hp-h2 hp-h2--light">Resumes built to get through ATS screening</h2>

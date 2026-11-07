@@ -1,0 +1,108 @@
+/* Diwali dressing for the hero prompt box (prefix dw-). Only rendered in the festival window. */
+
+.hx-box-wrap { position: relative; width: 100%; max-width: 920px; margin-top: 2.4rem; }
+.hx-box-wrap .hx-box { margin-top: 0; }
+.hx-box-wrap.is-diwali { margin-top: 3.6rem; }
+
+/* Warm golden frame and glow on the box itself */
+.is-diwali .hx-box {
+  position: relative; z-index: 2;
+  border: 2px solid transparent;
+  background:
+    linear-gradient(#fffdf8, #fffdf8) padding-box,
+    linear-gradient(120deg, #ffb703, #ff6d00 35%, #ec4899 65%, #ffb703) border-box;
+  box-shadow: 0 24px 70px rgba(255, 138, 0, 0.18), 0 2px 8px rgba(120, 53, 15, 0.08);
+}
+.is-diwali .hx-box:focus-within { box-shadow: 0 24px 70px rgba(255, 138, 0, 0.26), 0 0 0 5px rgba(255, 183, 3, 0.18); }
+.is-diwali .hx-mode.is-on { border-color: #b45309; color: #7c2d12; background: #fff7e6; }
+.is-diwali .hx-mode.is-on .hx-mode-ico { background: linear-gradient(135deg, #ff8a00, #ec4899); }
+.is-diwali .hx-mode { background: #fff3df; }
+.is-diwali .hx-mode:hover { background: #ffe9c7; }
+
+/* Ask button: saffron with a shimmer sweeping across */
+.is-diwali .hx-go { position: relative; overflow: hidden; background: linear-gradient(120deg, #ff6d00, #ff8a00 50%, #ec4899); color: #fff; }
+.is-diwali .hx-go:hover:not(:disabled) { background: linear-gradient(120deg, #f25c00, #ff7a00 50%, #db2777); }
+.is-diwali .hx-go::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .55), transparent);
+  transform: skewX(-20deg); animation: dw-shimmer 3.2s ease-in-out infinite;
+}
+.is-diwali .hx-go:disabled { opacity: .5; }
+@keyframes dw-shimmer { 0%, 55% { left: -60%; } 100% { left: 130%; } }
+
+/* Festive tag at the end of the tab row */
+.dw-tag {
+  margin-left: auto; flex-shrink: 0; align-self: center;
+  display: inline-flex; align-items: center; gap: .35rem;
+  padding: .3rem .75rem; border-radius: 999px;
+  background: linear-gradient(90deg, #fff1d6, #ffe4ef); color: #9a3412;
+  font: 700 .78rem var(--font-ui); white-space: nowrap;
+}
+.dw-tag i { width: 7px; height: 7px; border-radius: 50%; background: #ff8a00; box-shadow: 0 0 8px 2px rgba(255, 138, 0, .7); animation: dw-blink 1.6s ease-in-out infinite; }
+@keyframes dw-blink { 50% { opacity: .35; box-shadow: 0 0 2px 0 rgba(255, 138, 0, .4); } }
+
+/* Toran across the top edge, swaying gently */
+.dw-toran {
+  position: absolute; z-index: 3; left: -2%; width: 104%; top: -34px; height: auto; pointer-events: none;
+  transform-origin: 50% 0; animation: dw-sway 6s ease-in-out infinite;
+}
+.dw-drop { transform-box: fill-box; transform-origin: 50% 0; animation: dw-swing 3s ease-in-out infinite; animation-delay: calc(var(--i) * -.7s); }
+@keyframes dw-sway { 0%, 100% { transform: rotate(-.35deg); } 50% { transform: rotate(.35deg); } }
+@keyframes dw-swing { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+
+/* Diyas sit on the bottom corners */
+.dw-diya { position: absolute; z-index: 4; width: 84px; height: auto; bottom: -38px; pointer-events: none; filter: drop-shadow(0 8px 12px rgba(138, 52, 18, .25)); }
+.dw-diya--l { left: -46px; }
+.dw-diya--r { right: -46px; }
+.dw-flame { transform-box: fill-box; transform-origin: 50% 100%; animation: dw-flicker 1.4s ease-in-out infinite; }
+.dw-diya--r .dw-flame { animation-duration: 1.7s; animation-delay: -.5s; }
+.dw-glow { transform-box: fill-box; transform-origin: 50% 50%; animation: dw-pulse 2.2s ease-in-out infinite; }
+@keyframes dw-flicker {
+  0%, 100% { transform: scale(1, 1) rotate(0deg); }
+  25% { transform: scale(.94, 1.08) rotate(-3deg); }
+  50% { transform: scale(1.04, .94) rotate(2deg); }
+  75% { transform: scale(.97, 1.05) rotate(-1deg); }
+}
+@keyframes dw-pulse { 0%, 100% { opacity: .85; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
+
+/* Rangoli peeking out from behind the top-right corner */
+.dw-rangoli { position: absolute; z-index: 1; width: 170px; height: 170px; right: -70px; top: -60px; opacity: .9; pointer-events: none; }
+.dw-rangoli--l { right: auto; left: -80px; top: auto; bottom: -70px; width: 140px; height: 140px; opacity: .55; }
+.dw-rangoli-spin { animation: dw-spin 60s linear infinite; }
+.dw-rangoli--l .dw-rangoli-spin { animation-direction: reverse; }
+@keyframes dw-spin { to { transform: rotate(360deg); } }
+
+.dw-spark { position: absolute; z-index: 4; pointer-events: none; animation: dw-twinkle 2.6s ease-in-out infinite; }
+@keyframes dw-twinkle { 0%, 100% { opacity: 0; transform: scale(.4) rotate(0deg); } 40%, 60% { opacity: 1; transform: scale(1) rotate(45deg); } }
+
+/* Warm the hero background a little during the festival */
+.hx-hero.is-diwali-hero .hx-glow {
+  background:
+    radial-gradient(40% 50% at 28% 30%, rgba(255, 138, 0, 0.12), transparent 70%),
+    radial-gradient(35% 45% at 74% 40%, rgba(236, 72, 153, 0.09), transparent 70%);
+}
+
+/* Tablets: rangoli smaller, diyas tucked in */
+@media (max-width: 1000px) {
+  .dw-rangoli { width: 120px; height: 120px; right: -30px; top: -50px; }
+  .dw-rangoli--l { display: none; }
+  .dw-diya { width: 66px; bottom: -30px; }
+  .dw-diya--l { left: -18px; }
+  .dw-diya--r { right: -18px; }
+}
+/* Phones: their own layout — smaller toran and diyas, no rangoli, tag on its own line */
+@media (max-width: 640px) {
+  .hx-box-wrap.is-diwali { margin-top: 2.8rem; }
+  .dw-toran { top: -22px; }
+  .dw-rangoli { display: none; }
+  .dw-diya { width: 52px; bottom: -26px; }
+  .dw-diya--l { left: -8px; }
+  .dw-diya--r { right: -8px; }
+  .is-diwali .hx-modes { flex-wrap: wrap; }
+  .dw-tag { order: -1; margin: 0 0 .25rem; flex-basis: 100%; justify-content: center; }
+  .dw-spark:nth-of-type(n+4) { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dw-toran, .dw-drop, .dw-flame, .dw-glow, .dw-rangoli-spin, .dw-tag i, .is-diwali .hx-go::after { animation: none; }
+  .dw-spark { animation: none; opacity: .8; }
+}

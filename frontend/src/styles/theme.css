@@ -2,10 +2,17 @@
    CV Mind — Design System (Light-first)
    ════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+/* UI fonts (Instrument Sans, Space Grotesk, Space Mono, Caveat) load from index.html.
+   Inter stays loaded there for the resume templates only. */
 
 /* ── Default: Light Theme ─────────────────────────────────────── */
 :root {
+  /* Type — headings, interface text, labels/data, the script half of the wordmark */
+  --font-head:   'Instrument Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-ui:     'Space Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:   'Space Mono', ui-monospace, Menlo, Consolas, monospace;
+  --font-script: 'Caveat', 'Segoe Script', cursive;
+
   /* Backgrounds */
   --bg-primary:    #ffffff;
   --bg-secondary:  #f9fafb;
@@ -58,7 +65,7 @@
   --max-width:    1560px;
   --radius-sm:    8px;
   --radius-md:    14px;
-  --radius-lg:    22px;
+  --radius-lg:    28px;
   --radius-xl:    32px;
 
   /* Motion */
@@ -143,7 +150,7 @@ html {
 html, body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  font-family: var(--font-ui);
   font-size: 16px;
   line-height: 1.6;
   min-height: 100vh;
@@ -152,16 +159,60 @@ html, body {
 
 /* ════ Typography ══════════════════════════════════════════════ */
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  font-family: var(--font-head);
   color: var(--text-primary);
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  text-wrap: balance;
 }
 
-h1 { font-size: clamp(2.5rem, 6vw, 5rem); font-weight: 900; letter-spacing: -0.04em; }
-h2 { font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 800; }
-h3 { font-size: clamp(1.2rem, 2.5vw, 1.6rem); font-weight: 700; }
-h4 { font-size: 1.1rem; font-weight: 700; }
+h1 { font-size: clamp(2.6rem, 6vw, 5.5rem); font-weight: 560; letter-spacing: -0.055em; line-height: .98; }
+h2 { font-size: clamp(1.9rem, 4vw, 3.4rem); font-weight: 560; }
+h3 { font-size: clamp(1.2rem, 2.5vw, 1.6rem); font-weight: 600; letter-spacing: -0.035em; }
+h4 { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.025em; }
+
+/* CVMind wordmark: handwritten "CV" + bold "Mind" + green dot */
+.cv-wordmark { display: inline-flex; align-items: baseline; color: #0d0d0d; line-height: 1; white-space: nowrap; }
+.cv-wordmark-cv { font-family: var(--font-script); font-size: 1.85rem; font-weight: 500; letter-spacing: -.01em; margin-right: 2px; }
+.cv-wordmark-mind { font-family: var(--font-head); font-size: 1.6rem; font-weight: 700; letter-spacing: -.045em; }
+.cv-wordmark-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #2dc08d; margin-left: 2px; }
+:root[data-theme='dark'] .cv-wordmark { color: #f5f5f7; }
+
+/* Mono section label with a small square marker, used above headings */
+.cv-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #1b7a5a;
+}
+.cv-label::before { content: ''; width: 6px; height: 6px; border-radius: 2px; background: currentColor; }
+:root[data-theme='dark'] .cv-label { color: var(--green); }
+
+/* Highlighter mark under one word of a headline */
+.cv-hl {
+  background: linear-gradient(transparent 60%, rgba(45,192,141,.28) 60% 92%, transparent 92%);
+  padding: 0 .04em;
+}
+
+/* 22px dot grid behind product previews. The dots sit at z-index -1 inside an isolated
+   stacking context, so children keep their own positioning (absolute floats included). */
+.dot-grid { position: relative; isolation: isolate; }
+.dot-grid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image: radial-gradient(rgba(13,13,13,.10) 1.1px, transparent 1.2px);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+:root[data-theme='dark'] .dot-grid::before { background-image: radial-gradient(rgba(255,255,255,.09) 1.1px, transparent 1.2px); }
 
 p {
   color: var(--text-secondary);
@@ -212,12 +263,10 @@ a:hover { opacity: 0.75; }
 
 /* ════ Glass Card ══════════════════════════════════════════════ */
 .glass-card {
-  background: var(--glass-bg);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  background: var(--bg-elevated);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
   padding: 2rem;
   position: relative;
   overflow: hidden;
@@ -226,178 +275,123 @@ a:hover { opacity: 0.75; }
 
 .glass-card:hover {
   border-color: var(--border-strong);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
-}
-
-:root[data-theme='dark'] .glass-card {
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
 }
 
 :root[data-theme='dark'] .glass-card:hover {
   border-color: rgba(255,255,255,0.18);
 }
 
-/* ════ Buttons — Glass pill style ═══════════════════════════════ */
-
-/* ── Shared glass base ───────────────────────────────────────── */
+/* ════ Buttons — flat pills with a circle fill on hover ═════════
+   --fill is the colour that grows from the centre on hover, --fill-ink the text on it. */
 .btn-primary,
 .btn-secondary,
 .btn-gradient {
+  --fill: #0d0d0d;
+  --fill-ink: #ffffff;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  font-family: inherit;
-  font-size: 0.92rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-family: var(--font-ui);
+  font-size: 0.94rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.2;
   cursor: pointer;
+  border: 0;
   border-radius: 9999px;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
   white-space: nowrap;
   position: relative;
+  overflow: hidden;
   isolation: isolate;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   user-select: none;
+  transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s cubic-bezier(.22,1,.36,1), color .3s ease, background .2s ease;
 }
 
-/* ── Primary — green glass ───────────────────────────────────── */
-.btn-primary {
-  padding: 0.72rem 1.75rem;
-  background: linear-gradient(160deg, rgba(52,211,153,0.92) 0%, rgba(45,192,141,0.88) 100%);
-  color: #ffffff;
-  border: 1px solid rgba(255,255,255,0.35);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.4) inset,
-    0 6px 20px rgba(45,192,141,0.38),
-    0 2px 6px rgba(0,0,0,0.08);
-}
-
-.btn-primary::before {
+.btn-primary::after,
+.btn-secondary::after,
+.btn-gradient::after {
   content: '';
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 55%);
+  left: 50%;
+  top: 50%;
+  width: 150%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--fill);
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform .7s cubic-bezier(.4,0,0,1);
+  z-index: -1;
   pointer-events: none;
 }
 
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.45) inset,
-    0 10px 28px rgba(45,192,141,0.52),
-    0 3px 8px rgba(0,0,0,0.1);
-  background: linear-gradient(160deg, rgba(56,220,160,0.95) 0%, rgba(34,165,119,0.92) 100%);
-}
+.btn-primary:hover:not(:disabled)::after,
+.btn-secondary:hover:not(:disabled)::after,
+.btn-gradient:hover:not(:disabled)::after,
+.btn-primary:focus-visible::after,
+.btn-secondary:focus-visible::after,
+.btn-gradient:focus-visible::after { transform: translate(-50%, -50%) scale(1); }
 
-.btn-primary:active  { transform: scale(0.97) translateY(0); }
-.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+.btn-primary:hover:not(:disabled),
+.btn-secondary:hover:not(:disabled),
+.btn-gradient:hover:not(:disabled),
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-gradient:focus-visible { color: var(--fill-ink); transform: translateY(-1px); }
+
+.btn-primary:active,
+.btn-secondary:active,
+.btn-gradient:active { transform: scale(0.98); }
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-gradient:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+/* ── Primary — brand green; fills ink with green text ─────────── */
+.btn-primary {
+  --fill-ink: #2dc08d;
+  padding: 0.8rem 1.6rem;
+  background: var(--green);
+  color: #ffffff;
+}
+.btn-primary:hover:not(:disabled) { box-shadow: 0 10px 28px -10px rgba(45,192,141,.9); }
 
 :root[data-theme='dark'] .btn-primary {
-  background: linear-gradient(160deg, rgba(41,151,255,0.88) 0%, rgba(26,115,232,0.85) 100%);
-  border-color: rgba(255,255,255,0.25);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.3) inset,
-    0 6px 20px rgba(41,151,255,0.4),
-    0 2px 6px rgba(0,0,0,0.2);
+  --fill: #f5f5f7;
+  --fill-ink: #0f172a;
+  background: var(--blue);
 }
+:root[data-theme='dark'] .btn-primary:hover:not(:disabled) { box-shadow: 0 10px 28px -10px rgba(41,151,255,.9); }
 
-:root[data-theme='dark'] .btn-primary:hover {
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.35) inset,
-    0 10px 28px rgba(41,151,255,0.55),
-    0 3px 8px rgba(0,0,0,0.25);
-}
-
-/* ── Secondary — frosted glass ───────────────────────────────── */
+/* ── Secondary — white with a hairline; fills ink ──────────────── */
 .btn-secondary {
-  padding: 0.68rem 1.65rem;
-  background: rgba(255,255,255,0.72);
-  color: #1f2937;
-  border: 1px solid rgba(209,213,219,0.8);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.9) inset,
-    0 4px 14px rgba(0,0,0,0.07),
-    0 1px 3px rgba(0,0,0,0.05);
+  padding: 0.8rem 1.6rem;
+  background: #ffffff;
+  color: #0d0d0d;
+  box-shadow: inset 0 0 0 1px var(--border-strong);
 }
-
-.btn-secondary::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, transparent 55%);
-  pointer-events: none;
-}
-
-.btn-secondary:hover {
-  transform: translateY(-1px);
-  background: rgba(255,255,255,0.88);
-  border-color: rgba(156,163,175,0.9);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.95) inset,
-    0 6px 18px rgba(0,0,0,0.1),
-    0 2px 4px rgba(0,0,0,0.06);
-}
-
-.btn-secondary:active  { transform: scale(0.97) translateY(0); }
-.btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
 :root[data-theme='dark'] .btn-secondary {
-  background: rgba(255,255,255,0.08);
+  --fill: #f5f5f7;
+  --fill-ink: #0f172a;
+  background: rgba(255,255,255,0.06);
   color: var(--text-primary);
-  border: 1px solid rgba(255,255,255,0.14);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.12) inset,
-    0 4px 14px rgba(0,0,0,0.2);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
 }
 
-:root[data-theme='dark'] .btn-secondary:hover {
-  background: rgba(255,255,255,0.14);
-  border-color: rgba(255,255,255,0.22);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.16) inset,
-    0 6px 18px rgba(0,0,0,0.3);
-}
-
-/* ── Gradient CTA — vivid glass ──────────────────────────────── */
+/* ── Gradient CTA — brand gradient, flat; fills ink ────────────── */
 .btn-gradient {
-  padding: 0.78rem 2rem;
+  padding: 0.85rem 1.9rem;
   background: linear-gradient(135deg, #2dc08d 0%, #6366f1 100%);
   color: #ffffff;
-  border: 1px solid rgba(255,255,255,0.3);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.3) inset,
-    0 6px 22px rgba(45,192,141,0.32),
-    0 2px 6px rgba(0,0,0,0.1);
 }
-
-.btn-gradient::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%);
-  pointer-events: none;
-}
-
-.btn-gradient:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 1px 0 rgba(255,255,255,0.35) inset,
-    0 10px 30px rgba(45,192,141,0.45),
-    0 3px 8px rgba(0,0,0,0.12);
-}
-
-.btn-gradient:active { transform: scale(0.97) translateY(0); }
 
 /* ── Small modifier ──────────────────────────────────────────── */
 .btn-sm {
-  padding: 0.45rem 1rem !important;
-  font-size: 0.8rem !important;
+  padding: 0.5rem 1.05rem !important;
+  font-size: 0.82rem !important;
   font-weight: 600 !important;
 }
 
@@ -405,12 +399,13 @@ a:hover { opacity: 0.75; }
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.3rem 0.85rem;
-  border-radius: 980px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  gap: 0.4rem;
+  padding: 0.32rem 0.75rem;
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
@@ -441,7 +436,7 @@ a:hover { opacity: 0.75; }
   width: 100%;
   background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   padding: 0.8rem 1rem;
   color: var(--text-primary);
   font-family: inherit;
@@ -572,7 +567,10 @@ textarea.form-input {
    the admin sidebar from sticking while the window scrolls. clip hides overflow the same way
    without that side effect. */
 html:has(.admin-shell),
-html:has(.admin-shell) body {
+html:has(.admin-shell) body,
+/* The home page's Ask Leo demo sticks to the screen while you scroll through its steps */
+html:has(.home-container),
+html:has(.home-container) body {
   overflow-x: clip;
 }
 

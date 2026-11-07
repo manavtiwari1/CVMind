@@ -131,7 +131,8 @@
   align-items: center;
   position: relative;
   isolation: isolate;
-  overflow-x: hidden;
+  /* clip, not hidden: hidden makes this a scroll box and stops position: sticky inside it */
+  overflow-x: clip;
 }
 
 /* ── Ambient background glow ─────────────────────────────── */

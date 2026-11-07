@@ -22,7 +22,7 @@
   padding: 0.6rem 1.1rem;
   font-size: 0.83rem;
   font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-ui);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
