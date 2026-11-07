@@ -55,14 +55,6 @@ export default function ResumeBuilderLanding({ setCurrentPage }: ResumeBuilderLa
     };
   }, []);
 
-  // Links inside the guide HTML (<a href="/page">) navigate inside the app
-  const keepInApp = (e: React.MouseEvent) => {
-    const href = (e.target as HTMLElement).closest('a')?.getAttribute('href') || '';
-    if (!href.startsWith('/') || e.ctrlKey || e.metaKey || e.shiftKey) return;
-    e.preventDefault();
-    setCurrentPage(href === '/' ? 'home' : href.slice(1));
-  };
-
   const scrollRail = (dir: 1 | -1) => {
     const rail = railRef.current;
     if (rail) rail.scrollBy({ left: dir * rail.clientWidth * 0.8, behavior: 'smooth' });
@@ -156,18 +148,6 @@ export default function ResumeBuilderLanding({ setCurrentPage }: ResumeBuilderLa
               <span className="rbl-privacy"><Lock size={12} /> We never share your data with 3rd parties or use it for AI model training.</span>
             </button>
           </div>
-        </div>
-      </section>
-
-      {/* ── GUIDE: what it is, how to use it, format (also in the static HTML) ── */}
-      <section className="rbl-light rbl-guide-sec">
-        <div className="rbl-wrap rbl-guide" onClick={keepInApp}>
-          {copy.guide.map(g => (
-            <section key={g.id} id={g.id}>
-              <h2>{g.heading}</h2>
-              <div dangerouslySetInnerHTML={{ __html: g.html }} />
-            </section>
-          ))}
         </div>
       </section>
 

@@ -7,10 +7,12 @@
   --line: #e3e8f0;
   --bg: #f5f7fb;
   color: var(--ink);
-  font-family: inherit;
+  /* This page keeps its original Inter look (the site-wide fonts changed in the redesign) */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
   overflow-x: clip;
 }
-.rbl h1, .rbl h2, .rbl h3 { margin: 0; letter-spacing: -0.02em; }
+.rbl h1, .rbl h2, .rbl h3, .rbl h4, .rbl button, .rbl input { font-family: inherit; }
+.rbl h1, .rbl h2, .rbl h3 { margin: 0; letter-spacing: -0.02em; text-wrap: initial; }
 .rbl p { margin: 0; }
 .rbl-wrap { width: min(1640px, 100%); margin: 0 auto; padding: 0 5vw; box-sizing: border-box; }
 .rbl-center { text-align: center; }
@@ -186,8 +188,19 @@
 
 /* ── Guide sections (what it is, how to, format) ── */
 .rbl-guide-sec { padding-top: 24px; }
-.rbl-guide { max-width: 860px; display: grid; gap: 48px; }
-.rbl-guide h2 { margin-bottom: 16px; }
+.rbl-guide { display: grid; gap: 0; }
+/* Each section: heading on the left (sticky), content filling the rest of the width */
+.rbl-guide > section { display: grid; grid-template-columns: minmax(240px, 5fr) 11fr; gap: 24px 5vw; padding: 56px 0; border-top: 1px solid var(--line); }
+.rbl-guide > section:first-child { border-top: 0; padding-top: 24px; }
+.rbl-guide > section > h2 { align-self: start; position: sticky; top: 96px; margin: 0; }
+.rbl-guide > section > div { min-width: 0; font-size: 1.05rem; }
+.rbl-guide ol, .rbl-guide ul { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 72px; }
+.rbl-guide ol li, .rbl-guide ul li { break-inside: avoid; }
+@media (max-width: 900px) {
+  .rbl-guide > section { grid-template-columns: 1fr; padding: 36px 0; }
+  .rbl-guide > section > h2 { position: static; }
+  .rbl-guide ol, .rbl-guide ul { grid-template-columns: 1fr; }
+}
 .rbl-guide p, .rbl-guide li { color: var(--muted); line-height: 1.75; }
 .rbl-guide p + p, .rbl-guide p + ol, .rbl-guide p + ul, .rbl-guide ol + p, .rbl-guide ul + p, .rbl-guide .rbl-table + p { margin-top: 14px; }
 .rbl-guide strong { color: var(--ink); }

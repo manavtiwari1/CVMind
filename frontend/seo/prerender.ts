@@ -79,7 +79,6 @@ function breadcrumbJsonLd(trail: { name: string; page: string }[]) {
 function builderContent() {
   const copy = BUILDER_COPY;
   const list = (items: string[]) => `<ul>${items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`;
-  const guide = copy.guide.map((g) => `<section><h2 id="${esc(g.id)}">${esc(g.heading)}</h2>\n${g.html}</section>`).join('\n');
   const features = FEATURE_SECTIONS.map((f) => `<section><h2>${esc(f.title)}</h2><p>${esc(f.body)}</p>`
     + `<ul>${f.points.map((pt) => `<li><strong>${esc(pt.title)}:</strong> ${esc(pt.text)}</li>`).join('')}</ul>`
     + `<p><a href="${f.page === 'home' ? '/' : `/${f.page}`}">${esc(f.cta)}</a></p></section>`).join('\n');
@@ -87,7 +86,7 @@ function builderContent() {
   const stages = `<section><h2>AI tools at every stage of your job search</h2>${STAGES.map((st) => `<h3>${esc(st.title)}</h3><p>${esc(st.text)}</p>`).join('')}</section>`;
   const templates = `<section><h2>Pick from ${RESUME_TEMPLATES.length} resume templates</h2>${list(RESUME_TEMPLATES.map((t) => t.name))}</section>`;
   const faqs = `<section><h2>Frequently asked questions</h2>${copy.faqs.map((f) => `<h3>${esc(f.q)}</h3><p>${esc(f.a)}</p>`).join('')}</section>`;
-  return `<main class="prerender"><h1>${esc(`${copy.h1.lead} ${copy.h1.em}`)}</h1>${list(copy.checks)}\n${guide}\n${features}\n${levels}\n${stages}\n${templates}\n${faqs}`
+  return `<main class="prerender"><h1>${esc(`${copy.h1.lead} ${copy.h1.em}`)}</h1>${list(copy.checks)}\n${features}\n${levels}\n${stages}\n${templates}\n${faqs}`
     + `<section><h2>${esc(copy.final.heading)}</h2><p>${esc(copy.final.text)}</p></section></main>`;
 }
 
