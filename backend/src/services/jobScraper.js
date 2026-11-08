@@ -3,7 +3,7 @@
  * Extracts structured job schema from job URLs or raw HTML.
  */
 
-import { generateJson } from '@cvmind/auto-apply-agent/ai/geminiClient.js';
+import { callClaude } from './gemini.js';
 
 // Basic HTML stripping / cleaning helper
 function cleanText(htmlOrText) {
@@ -71,9 +71,7 @@ export async function scrapeJobFromUrl(url, customApiKey) {
  * Parse job content into structured schema
  */
 export async function parseJobContent(rawText, sourceUrl = '', customApiKey = null) {
-  const key = customApiKey || process.env.GEMINI_API_KEY;
-
-  if (key) {
+  if (process.env.ANTHROPIC_API_KEY) {
     try {
       const prompt = `You are a career intelligence parser. Extract structured job details from the following web page content and return ONLY valid JSON matching this schema.
 
@@ -95,7 +93,7 @@ Schema:
 Page Content:
 ${rawText.substring(0, 4500)}`;
 
-      const parsed = await generateJson({ prompt, temperature: 0.2, apiKey: customApiKey });
+      const parsed = await callClaude({ prompt, jsonMode: true, plainStyle: false });
       return {
         ...parsed,
         source: 'ai_scraper',

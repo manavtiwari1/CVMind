@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { callDeepSeek } from '../services/gemini.js';
+import { callClaude } from '../services/gemini.js';
 import { aiContext } from '../billing/aiContext.js';
 import { runJudgeSubmission, judgeMeta } from '../services/codeJudge.js';
 import { CURATED_PROBLEMS } from '../data/curatedProblems.js';
@@ -21,7 +21,7 @@ export class LeoError extends Error {
 
 // model({ system, prompt, maxTokens, temperature }) → parsed JSON object
 const deepSeekModel = ({ system, prompt, maxTokens = 1400, temperature = 0.4 }) =>
-  callDeepSeek({ systemInstruction: system, prompt, jsonMode: true, plainStyle: false, maxTokens, temperature });
+  callClaude({ systemInstruction: system, prompt, jsonMode: true, plainStyle: false, maxTokens, temperature });
 
 let model = deepSeekModel;
 export function setLessonModel(fn) {

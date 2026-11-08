@@ -19,6 +19,8 @@ export const FEATURES = {
   code: { label: 'CVMind Code', description: 'Coding practice and judge', paths: ['/api/code'] },
   'learn-leo': { label: 'Learn with Leo', description: 'Visual lessons with voice, board and checkpoints', paths: ['/api/leo'] },
   'leo-chat': { label: 'Leo AI chat', description: 'The chat home on app.cvmind.in that runs CVMind tools from a prompt', paths: ['/api/leo-chat'] },
+  // Off: Leo goes back to linking to the product pages (the chat itself stays on)
+  'leo-flows': { label: 'Leo guided flows', description: 'Leo builds a resume step by step inside the chat', paths: ['/api/leo-chat/action'] },
   'auto-apply': { label: 'Auto Apply', description: 'Auto Apply agent and extension', paths: ['/api/auto-apply', '/api/agent'] },
   'company-portal': { label: 'Company portal', description: 'Recruiter sign-up and job posting', paths: ['/api/company'] },
   signups: { label: 'New sign-ups', description: 'New accounts by email or social login', paths: ['/api/auth/signup'] }
@@ -26,7 +28,7 @@ export const FEATURES = {
 
 // Products a user can be given manual access to from the admin panel. When an admin locks one,
 // only accounts with an active grant can use it; unlocked products stay open to everyone.
-export const PRODUCT_KEYS = Object.keys(FEATURES).filter((key) => !['signups', 'company-portal', 'auto-apply'].includes(key));
+export const PRODUCT_KEYS = Object.keys(FEATURES).filter((key) => !['signups', 'company-portal', 'auto-apply', 'leo-flows'].includes(key));
 
 export const VERSION_CLIENTS = {
   android: { label: 'Android app' },
@@ -62,12 +64,12 @@ const DEFAULTS = {
   versions: Object.fromEntries(Object.keys(VERSION_CLIENTS).map((key) => [key, { minVersion: '', latestVersion: '', message: '', updateUrl: '' }])),
   productAccess: { locked: [] },
   leo: {
-    model: 'deepseek-chat',
+    model: 'claude-opus-5-5',
     ...Object.fromEntries(Object.entries(LEO_LIMITS).map(([key, limit]) => [key, limit.default])),
     // US dollars; 0 turns the spend alert off. Prices are per million tokens, used to estimate cost.
     dailyBudgetUsd: 0,
-    inputPricePerM: 0.27,
-    outputPricePerM: 1.1
+    inputPricePerM: 4,
+    outputPricePerM: 20
   }
 };
 

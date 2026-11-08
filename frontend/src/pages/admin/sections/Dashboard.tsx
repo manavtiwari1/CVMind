@@ -6,6 +6,9 @@ import { useAdmin, useApi } from '../hooks';
 import { ago, change, count, date, money, providerLabel } from '../format';
 import { Badge, BarList, Card, Empty, ErrorState, PageHeader, Person, Segment, StatCard, StatusBadge } from '../ui';
 
+type AiProvider = 'claude' | 'deepseek';
+interface ProviderUsage { requests: number; tokensIn: number; tokensOut: number; costUsd: number }
+
 interface Overview {
   range: number;
   generatedAt: string;
@@ -21,6 +24,7 @@ interface Overview {
   userStatus: Record<string, number>;
   series: Array<{ date: string; signups: number; logins: number; revenue: number; aiRequests: number }>;
   featureUsage: Array<{ key: string; label: string; count: number; total: number }>;
+  aiProviders: { today: Record<AiProvider, ProviderUsage>; range: Record<AiProvider, ProviderUsage> };
   scores: { average: number; count: number; high: number; medium: number; low: number };
   keywordTrends: Array<{ keyword: string; count: number }>;
   providers: Array<{ provider: string; count: number }>;
@@ -141,6 +145,11 @@ export default function Dashboard() {
       </div>
 
       <div className="ad-grid cols-2">
+        <ProviderColumn title="Claude API" description="Resume, Portfolio, Career, Interview, CVMind Code, Leo and the other AI tools" provider="claude" overview={o} rangeLabel={rangeLabel} />
+        <ProviderColumn title="DeepSeek API" description="Proofreading, Offer Negotiation, Profile PDF Audit, Bio & Banner, Outreach & DM" provider="deepseek" overview={o} rangeLabel={rangeLabel} />
+      </div>
+
+      <div className="ad-grid cols-2">
         <Card title="Feature usage" description={`AI requests per tool, ${rangeLabel}`} actions={<button type="button" className="ad-link ad-small" onClick={() => go('ai-activity')}>Details</button>}>
           {o && o.featureUsage.some((f) => f.count) ? (
             <BarList items={o.featureUsage.filter((f) => f.count).slice(0, 8).map((f) => ({ label: f.label, value: f.count }))} />
@@ -226,6 +235,26 @@ export default function Dashboard() {
         </Card>
       </div>
     </>
+  );
+}
+
+const usd = (v: number) => `$${v.toFixed(2)}`;
+
+function ProviderColumn({ title, description, provider, overview, rangeLabel }: { title: string; description: string; provider: AiProvider; overview?: Overview; rangeLabel: string }) {
+  const range = overview?.aiProviders.range[provider];
+  const today = overview?.aiProviders.today[provider];
+  const row = (label: string, value: (u: ProviderUsage) => string) => (
+    <TodayRow label={label} value={range ? value(range) : '…'} sub={today ? `${value(today)} today` : ''} />
+  );
+  return (
+    <Card title={title} description={`${description} · ${rangeLabel}`} bodyClass={false}>
+      <ul className="ad-feed">
+        {row('Requests', (u) => count(u.requests))}
+        {row('Input tokens', (u) => count(u.tokensIn))}
+        {row('Output tokens', (u) => count(u.tokensOut))}
+        {row('Estimated cost', (u) => usd(u.costUsd))}
+      </ul>
+    </Card>
   );
 }
 

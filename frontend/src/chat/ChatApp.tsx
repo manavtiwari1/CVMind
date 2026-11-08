@@ -8,9 +8,10 @@ import LeoReply from './LeoReply';
 import LeoAvatar from './LeoAvatar';
 import ResultCard, { type CardActions } from './cards';
 import {
-  attachResume, ChatError, deleteChat, getChat, listChats, sendFeedback, streamChat,
-  type ChatMessage, type ChatSummary, type Resume
+  attachResume, ChatError, deleteChat, getChat, listChats, saveBuilt, sendFeedback, streamAction, streamChat,
+  type ActionRequest, type ChatMessage, type ChatSummary, type DocumentCard, type LeoFlow, type Resume, type StreamHandlers
 } from './chatApi';
+import type { SavedWork } from '../types/api';
 import { readUser } from '../lib/currentUser';
 import { siteOrigin } from '../lib/hosts';
 import { Diya, Rangoli, Toran, Twinkles } from '../components/home/Diwali';
@@ -27,6 +28,8 @@ interface Props {
   setCurrentPage: (page: string) => void;
   isLoggedIn: boolean;
   onSignIn: () => void;
+  // Opens a finished document in the resume editor
+  openWork: (work: SavedWork) => void;
 }
 
 // A suggestion either sends right away or, ending in ': ', fills the box for the user to finish
@@ -46,17 +49,20 @@ const MAX_FILE_BYTES = 5 * 1024 * 1024;
 let idSeq = 0;
 const newId = () => `m${Date.now().toString(36)}${(idSeq++).toString(36)}`;
 
-function readGuest(): { messages: ChatMessage[]; resume: Resume | null } {
+function readGuest(): { messages: ChatMessage[]; resume: Resume | null; flow: LeoFlow | null } {
   try {
     const saved = JSON.parse(sessionStorage.getItem(GUEST_KEY) || 'null');
-    if (saved && Array.isArray(saved.messages)) return { messages: saved.messages.map((m: ChatMessage) => ({ ...m, streaming: false })), resume: saved.resume || null };
+    if (saved && Array.isArray(saved.messages)) return { messages: saved.messages.map((m: ChatMessage) => ({ ...m, streaming: false, fresh: false })), resume: saved.resume || null, flow: saved.flow || null };
   } catch { /* storage blocked or bad JSON */ }
-  return { messages: [], resume: null };
+  return { messages: [], resume: null, flow: null };
 }
 
-function writeGuest(messages: ChatMessage[], resume: Resume | null) {
-  try { sessionStorage.setItem(GUEST_KEY, JSON.stringify({ messages: messages.slice(-30), resume })); } catch { /* storage full or blocked */ }
+// A guest's chat, resume and flow draft live in this tab only, never on the server
+function writeGuest(messages: ChatMessage[], resume: Resume | null, flow: LeoFlow | null) {
+  try { sessionStorage.setItem(GUEST_KEY, JSON.stringify({ messages: messages.slice(-30), resume, flow })); } catch { /* storage full or blocked */ }
 }
+
+const FLOW_NAMES: Record<string, string> = { resume: 'resume' };
 
 // Copies a reply's text; shows a tick for a moment
 function CopyReply({ text }: { text: string }) {
@@ -79,7 +85,7 @@ function greeting() {
   return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
 }
 
-export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn }: Props) {
+export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork }: Props) {
   const user = isLoggedIn ? readUser() : null;
   const firstName = (user?.name || '').trim().split(/\s+/)[0];
 
@@ -96,6 +102,12 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn }: Props)
   const [notice, setNotice] = useState('');
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [drawer, setDrawer] = useState(false);
+  // The guided flow open in this chat (e.g. a resume being built step by step)
+  const [flow, setFlow] = useState<LeoFlow | null>(() => (isLoggedIn ? null : readGuest().flow));
+  // A guest's draft goes with the first message after signing in, so it isn't lost
+  const carryFlow = useRef(false);
+  // A reopened chat with an unfinished flow offers to continue it
+  const [resumeOffer, setResumeOffer] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -124,12 +136,17 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn }: Props)
     if (isLoggedIn) {
       try { sessionStorage.removeItem(GUEST_KEY); } catch { /* blocked */ }
       resumeDirty.current = !!resume?.text;
+      // The guest's unfinished draft carries over (offered as "Continue your resume")
+      carryFlow.current = !!flow;
+    } else {
+      setFlow(null);
+      carryFlow.current = false;
     }
-  }, [isLoggedIn, resume]);
+  }, [isLoggedIn, resume, flow]);
 
   useEffect(() => {
-    if (!isLoggedIn) writeGuest(messages.filter((m) => !m.streaming), resume);
-  }, [isLoggedIn, messages, resume]);
+    if (!isLoggedIn) writeGuest(messages.filter((m) => !m.streaming), resume, flow);
+  }, [isLoggedIn, messages, resume, flow]);
 
   // Keep the newest message in view while Leo writes, unless the user scrolled up to read
   useEffect(() => {
@@ -149,40 +166,42 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn }: Props)
   const patch = (id: string, fn: (m: ChatMessage) => ChatMessage) =>
     setMessages((list) => list.map((m) => (m.id === id ? fn(m) : m)));
 
-  const send = useCallback(async (raw: string, withResume?: Resume | null) => {
-    const text = raw.trim();
+  // Sends a message, or a card tap (action), and streams Leo's reply into the thread. A tap shows
+  // its label as the user's message.
+  const run = useCallback(async (text: string, opts: { withResume?: Resume | null; action?: ActionRequest['action']; value?: Record<string, string> } = {}) => {
     if (!text || sending) return;
-    const current = withResume === undefined ? resume : withResume;
+    const current = opts.withResume === undefined ? resume : opts.withResume;
     setInput('');
     setNotice('');
     setSending(true);
+    setResumeOffer(false);
 
-    const userMsg: ChatMessage = { id: newId(), role: 'user', text, cards: [], tools: [], attachment: current?.name || undefined };
-    const leoMsg: ChatMessage = { id: newId(), role: 'leo', text: '', cards: [], tools: [], streaming: true };
+    const userMsg: ChatMessage = { id: newId(), role: 'user', text, cards: [], tools: [], attachment: opts.action ? undefined : current?.name || undefined };
+    const leoMsg: ChatMessage = { id: newId(), role: 'leo', text: '', cards: [], tools: [], streaming: true, fresh: true };
     const prior = messages;
     setMessages((list) => [...list, userMsg, leoMsg]);
     requestAnimationFrame(() => { if (threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight; });
 
-    const body = isLoggedIn
+    const base = isLoggedIn
       ? {
-          message: text,
           conversationId,
           ...(resumeDirty.current ? { resume: current?.text ? current : null } : {}),
+          ...(carryFlow.current && flow ? { flow } : {}),
         }
       : {
-          message: text,
           history: prior.filter((m) => !m.error && (m.text || m.lead || m.role === 'user')).slice(-16).map((m) => ({
             role: m.role === 'user' ? 'user' as const : 'assistant' as const,
             content: [m.lead, m.text].filter(Boolean).join('\n\n'),
           })),
           ...(current?.text ? { resume: current } : {}),
+          ...(flow ? { flow } : {}),
         };
 
     const controller = new AbortController();
     abortRef.current = controller;
     let newConversation = false;
     try {
-      await streamChat(body, {
+      const handlers: StreamHandlers = {
         onMeta: (meta) => {
           if (meta.conversationId && meta.conversationId !== conversationId) {
             newConversation = !conversationId;
@@ -202,8 +221,14 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn }: Props)
           tools: m.tools.map((t) => (t.id === id ? { ...t, done: true } : t)),
           cards: [...m.cards, card],
         })),
+        onFlow: (next) => {
+          setFlow(next);
+          carryFlow.current = false;
+        },
         onDone: (done) => patch(leoMsg.id, (m) => ({ ...m, turnId: done.turnId, streaming: false, tools: m.tools.map((t) => ({ ...t, done: true })) })),
-      }, controller.signal);
+      };
+      if (opts.action) await streamAction({ ...base, action: opts.action, value: opts.value }, handlers, controller.signal);
+      else await streamChat({ ...base, message: text }, handlers, controller.signal);
       resumeDirty.current = false;
       if (newConversation) refreshChats();
     } catch (err) {
@@ -222,7 +247,9 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn }: Props)
       abortRef.current = null;
       setSending(false);
     }
-  }, [sending, resume, messages, isLoggedIn, conversationId, refreshChats]);
+  }, [sending, resume, messages, isLoggedIn, conversationId, refreshChats, flow]);
+
+  const send = useCallback((raw: string, withResume?: Resume | null) => run(raw.trim(), { withResume }), [run]);
 
   // A prompt handed over from the www home page (?q=...) is sent once on arrival
   useEffect(() => {
@@ -274,6 +301,9 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn }: Props)
     setMessages([]);
     setConversationId(null);
     setNotice('');
+    setFlow(null);
+    carryFlow.current = false;
+    setResumeOffer(false);
     // A resume saved only on the old chat can't come along; one read in this session can
     if (resume && !resume.text) setResume(null);
     resumeDirty.current = isLoggedIn && !!resume?.text;
@@ -290,6 +320,9 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn }: Props)
       setConversationId(chat.id);
       setResume(chat.resumeName ? { name: chat.resumeName, text: '' } : null);
       resumeDirty.current = false;
+      setFlow(chat.flow);
+      carryFlow.current = false;
+      setResumeOffer(!!chat.flow && chat.flow.step !== 'built');
       setMessages(chat.turns.flatMap((t) => [
         { id: `${t.id}u`, role: 'user' as const, text: t.prompt, cards: [], tools: [] },
         { id: t.id, role: 'leo' as const, text: t.reply, cards: t.cards, tools: [], turnId: t.id, feedback: t.feedback },
@@ -344,7 +377,34 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn }: Props)
     signIn: onSignIn,
     attach: () => { retryRef.current = lastUserText(); pickFile(); },
     followUp: (prompt) => void send(prompt),
+    isLoggedIn,
+    tap: (action, value, label) => void run(label, { action, value }),
+    compose: (text) => {
+      setInput(text);
+      requestAnimationFrame(() => {
+        const box = boxRef.current;
+        if (box) { box.focus(); box.setSelectionRange(text.length, text.length); }
+      });
+    },
+    // "I have an old resume": once attached, Leo fills the draft from it
+    attachForFlow: () => { retryRef.current = 'Here is my old resume. Use it to fill my resume.'; pickFile(); },
+    openWork,
+    built: (card: DocumentCard, html, workId) => {
+      setMessages((list) => list.map((m) => (m.cards.some((c) => c.type === 'document' && c.id === card.id)
+        ? { ...m, cards: m.cards.map((c) => (c.type === 'document' && c.id === card.id ? { ...c, html, workId } : c)) }
+        : m)));
+      if (conversationId) saveBuilt(conversationId, card.id, html, workId).catch(() => {});
+    },
   };
+
+  const openFlow = flow && flow.step !== 'built' ? flow : null;
+  const showContinue = !!openFlow && !sending && (messages.length === 0 || resumeOffer);
+  const continueChip = showContinue && openFlow && (
+    <button type="button" className="lx-continue" onClick={() => void send(`Continue my ${FLOW_NAMES[openFlow.product] || 'draft'}`)}>
+      <FileText size={15} />
+      <span>Continue your {FLOW_NAMES[openFlow.product] || 'draft'}{openFlow.missing.length ? ` · ${openFlow.missing.length} detail${openFlow.missing.length === 1 ? '' : 's'} left` : ''}</span>
+    </button>
+  );
 
   const lastLeoId = [...messages].reverse().find((m) => m.role === 'leo')?.id;
   const empty = messages.length === 0;
@@ -352,7 +412,8 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn }: Props)
 
   const composer = (
     <div className="lx-composer-wrap">
-      {notice && <div className="lx-notice" role="alert">{notice}<button type="button" onClick={() => setNotice('')} aria-label="Dismiss"><X size={14} /></button></div>}
+      {continueChip}
+      {notice &&<div className="lx-notice" role="alert">{notice}<button type="button" onClick={() => setNotice('')} aria-label="Dismiss"><X size={14} /></button></div>}
       <form
         className={`lx-composer ${outOfFree ? 'is-disabled' : ''}`}
         onSubmit={(e) => { e.preventDefault(); void send(input); }}
@@ -507,7 +568,9 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn }: Props)
                           {t.done ? <Check size={14} /> : <Loader2 size={14} className="lx-spin" />} {t.label}{t.done ? '' : '…'}
                         </div>
                       ))}
-                      {m.cards.map((card, i) => <ResultCard key={i} card={card} actions={actions} />)}
+                      {m.cards.map((card, i) => (
+                        <ResultCard key={i} card={card} actions={actions} live={m.id === lastLeoId} fresh={!!m.fresh} busy={sending || outOfFree} />
+                      ))}
                       {m.text && <div className="lx-reply"><LeoReply text={m.text} /></div>}
                       {m.streaming && !m.text && !m.tools.some((t) => !t.done) && <div className="lx-typing" aria-label="Leo is thinking"><span /><span /><span /></div>}
                       {m.error && <div className="lx-error">{m.error}</div>}

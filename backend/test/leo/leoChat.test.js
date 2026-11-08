@@ -37,7 +37,7 @@ before(async () => {
   while (mongoose.connection.readyState !== 1) await new Promise((r) => setTimeout(r, 50));
 
   setLeoStream(async function* ({ messages, tools }) {
-    seen.push({ messages: structuredClone(messages), tools: !!tools });
+    seen.push({ messages: structuredClone(messages), tools: !!tools, toolNames: (tools || []).map((t) => t.function.name) });
     const next = script.shift();
     if (next?.tools) {
       yield { type: 'done', model: 'fake-model', finishReason: 'tool_calls', usage: { tokensIn: 100, tokensOut: 10 }, toolCalls: next.tools.map((t, i) => ({ id: `c${i}`, name: t.name, arguments: JSON.stringify(t.arguments || {}) })) };
@@ -140,7 +140,7 @@ test('signed-in chats are saved and continue in the same conversation', async ()
   assert.ok(conversationId);
   const turn = await LeoTurn.findById(first.at(-1).data.turnId).lean();
   assert.equal(turn.reply, 'You said: Hi Leo');
-  assert.ok(Math.abs(turn.costUsd - (1000 * 0.27 + 500 * 1.1) / 1e6) < 1e-12);
+  assert.ok(Math.abs(turn.costUsd - (1000 * 4 + 500 * 20) / 1e6) < 1e-12);
 
   const next = events((await chat({ message: 'Again', conversationId }, { token: user.token })).text);
   assert.equal(next[0].data.conversationId, conversationId);
@@ -226,6 +226,202 @@ test('deleting a chat hides it and wipes its text', async () => {
   assert.equal((await call(`/api/leo-chat/conversations/${id}`, { token: user.token })).status, 404);
   const turns = await LeoTurn.find({ conversationId: id }).lean();
   assert.ok(turns.every((t) => t.prompt === '' && t.reply === ''));
+});
+
+// ── Guided flows: Resume Builder in chat ────────────────────────────────────
+
+const action = (body, opts = {}) => call('/api/leo-chat/action', { method: 'POST', body, ...opts });
+const cardsOf = (list) => list.filter((e) => e.event === 'card').map((e) => e.data.card);
+const flowOf = (list) => list.filter((e) => e.event === 'flow').at(-1)?.data.flow;
+
+const ANSWERS = {
+  level: 'fresher',
+  fullName: 'Priya Sharma',
+  email: 'priya@example.com',
+  phone: '+91 98765 43210',
+  targetRole: 'Frontend Developer intern',
+  education: [{ degree: 'B.Tech CSE', university: 'VIT Pune', gradYear: '2026', cgpa: '8.4' }],
+  projects: [{ name: 'Campus Dashboard', tech: 'React, Node.js', description: 'Used by 300 students' }],
+  skills: ['React', 'JavaScript', 'SQL']
+};
+
+// Runs a signed-in chat up to the summary card; returns the conversation id
+async function fillDraft(user) {
+  script = [{ tools: [{ name: 'start_flow', arguments: { product: 'resume' } }] }, { text: 'Fresher or experienced?' }];
+  const started = events((await chat({ message: 'resume banana hai' }, { token: user.token })).text);
+  const conversationId = started[0].data.conversationId;
+  assert.equal(flowOf(started).product, 'resume');
+  assert.equal(flowOf(started).step, 'collect');
+
+  // Everything required in one go: the extras (achievements, LinkedIn, city) are asked next
+  script = [{ tools: [{ name: 'update_draft', arguments: { fields: ANSWERS } }] }, { text: 'Any achievements, LinkedIn or city? Or say skip.' }];
+  const answered = events((await chat({ message: 'all my details', conversationId }, { token: user.token })).text);
+  assert.equal(flowOf(answered).step, 'collect');
+  assert.deepEqual(flowOf(answered).missing, []);
+  assert.ok(!cardsOf(answered).some((c) => c.type === 'summary_confirm'));
+
+  // The model forgets to call update_draft after "skip": the server still shows the summary
+  script = [{ text: 'Okay!' }];
+  const skipped = events((await chat({ message: 'skip', conversationId }, { token: user.token })).text);
+  const summary = cardsOf(skipped).find((c) => c.type === 'summary_confirm');
+  assert.ok(summary, 'summary card shown');
+  assert.equal(flowOf(skipped).step, 'confirm');
+  assert.ok(summary.sections.some((s) => s.title === 'Projects' && s.lines[0].includes('Campus Dashboard')));
+  return conversationId;
+}
+
+test('guided flow: the flow tools are offered and the draft state goes into the prompt', async () => {
+  const user = await newUser();
+  script = [{ tools: [{ name: 'start_flow', arguments: { product: 'resume' } }] }, { text: 'Are you a fresher?' }];
+  const list = events((await chat({ message: 'I want to make a resume' }, { token: user.token })).text);
+  assert.ok(seen[0].toolNames.includes('start_flow'));
+  assert.ok(seen[0].toolNames.includes('update_draft'));
+  // The tool result tells the model what to ask next
+  assert.match(seen[1].messages.at(-1).content, /Next: acknowledge in a few words, then ask if they are a fresher or experienced/);
+
+  await chat({ message: 'Fresher', conversationId: list[0].data.conversationId }, { token: user.token });
+  assert.match(seen[2].messages[0].content, /Resume Builder flow is open \(step: collect\)/);
+});
+
+test('guided flow: answers are saved, a summary is confirmed, a template is picked and the resume is built', async () => {
+  const user = await newUser();
+  const conversationId = await fillDraft(user);
+
+  script = [{ text: 'Pick a template.' }];
+  const confirmed = events((await action({ conversationId, action: 'confirm' }, { token: user.token })).text);
+  assert.deepEqual(confirmed.slice(0, 3).map((e) => e.event), ['meta', 'tool', 'card']);
+  assert.equal(cardsOf(confirmed)[0].type, 'template_picker');
+  assert.equal(flowOf(confirmed).step, 'template');
+
+  script = [{ text: 'Here it is! Want me to check its ATS score?' }];
+  const built = events((await action({ conversationId, action: 'template', value: { templateId: 'cv-ivy-league', name: 'Ivy League' } }, { token: user.token })).text);
+  const doc = cardsOf(built).find((c) => c.type === 'document');
+  assert.ok(doc, 'document card');
+  assert.equal(doc.templateId, 'cv-ivy-league');
+  assert.equal(doc.data.personalInfo.fullName, 'Priya Sharma');
+  assert.equal(doc.data.personalInfo.jobTitle, 'Frontend Developer intern');
+  assert.equal(doc.data.workExperiences[0].jobTitle, 'Campus Dashboard');
+  assert.equal(doc.keepFacts, false);
+  assert.equal(flowOf(built).step, 'built');
+
+  // The browser fills the template and hands the HTML back for reloads
+  const saved = await action({ conversationId, action: 'built', value: { cardId: doc.id, html: '<div>Priya</div>', workId: 'w1' } }, { token: user.token });
+  assert.equal(saved.status, 200);
+  const chatNow = await call(`/api/leo-chat/conversations/${conversationId}`, { token: user.token });
+  const savedDoc = chatNow.body.data.turns.flatMap((t) => t.cards).find((c) => c.type === 'document');
+  assert.equal(savedDoc.html, '<div>Priya</div>');
+  assert.equal(savedDoc.workId, 'w1');
+  assert.equal(chatNow.body.data.flow.step, 'built');
+  // The tap shows up as the user's message
+  assert.equal(chatNow.body.data.turns.at(-1).prompt, 'Use the Ivy League template');
+
+  const { LeoFlowEvent } = await import('../../src/leo/models.js');
+  const kinds = (await LeoFlowEvent.find({ conversationId }).lean()).map((e) => e.event);
+  for (const kind of ['flow_started', 'field_filled', 'choice_made', 'build_done']) assert.ok(kinds.includes(kind), kind);
+});
+
+test('guided flow: a free account picking a Pro template gets the upgrade card, not a resume', async () => {
+  const user = await newUser();
+  const conversationId = await fillDraft(user);
+  await action({ conversationId, action: 'confirm' }, { token: user.token });
+  const list = events((await action({ conversationId, action: 'template', value: { templateId: 'cv-stylish' } }, { token: user.token })).text);
+  const cards = cardsOf(list);
+  assert.equal(cards[0].type, 'locked');
+  assert.equal(cards[0].action, 'upgrade');
+  assert.ok(!cards.some((c) => c.type === 'document'));
+});
+
+test('guided flow: a guest keeps the draft in the browser and is asked to sign in to build', async () => {
+  script = [{ tools: [{ name: 'start_flow', arguments: { product: 'resume' } }, { name: 'update_draft', arguments: { fields: ANSWERS, skip: ['achievements', 'linkedin', 'location'] } }] }, { text: 'Check these.' }];
+  const first = events((await chat({ message: 'make my CV' })).text);
+  const flow = flowOf(first);
+  assert.equal(flow.step, 'confirm');
+  assert.equal(flow.data.fullName, 'Priya Sharma');
+
+  // The browser sends the draft back with the tap; building needs an account
+  const list = events((await action({ action: 'template', value: { templateId: 'cv-ivy-league' }, flow })).text);
+  const card = cardsOf(list)[0];
+  assert.equal(card.type, 'locked');
+  assert.equal(card.action, 'signin');
+
+  // Nothing the guest typed is stored server-side
+  const { LeoConversation } = await import('../../src/leo/models.js');
+  assert.equal(await LeoConversation.countDocuments({ 'flow.data.email': 'priya@example.com', userId: 'guest' }), 0);
+});
+
+test('guided flow: the template picker waits until the user has checked the summary', async () => {
+  script = [{ tools: [{ name: 'start_flow', arguments: { product: 'resume' } }, { name: 'update_draft', arguments: { fields: ANSWERS, skip: ['achievements', 'linkedin', 'location'] } }] }, { tools: [{ name: 'show_template_picker' }] }, { text: 'Check the card.' }];
+  const first = events((await chat({ message: 'make my resume' })).text);
+  assert.deepEqual(cardsOf(first).map((c) => c.type), ['summary_confirm']);
+  assert.equal(flowOf(first).step, 'confirm');
+
+  // Next message: "looks good" with a no-op update_draft still reaches the picker
+  script = [{ tools: [{ name: 'update_draft', arguments: { fields: {} } }, { name: 'show_template_picker' }] }, { text: 'Pick one.' }];
+  const next = events((await chat({ message: 'looks good', flow: flowOf(first) })).text);
+  assert.deepEqual(cardsOf(next).map((c) => c.type), ['template_picker']);
+});
+
+test('guided flow: an empty follow-up after a tool gets one nudge to ask the next question', async () => {
+  script = [{ tools: [{ name: 'start_flow', arguments: { product: 'resume' } }] }, { text: '' }, { text: 'Fresher or experienced?' }];
+  const list = events((await chat({ message: 'make my resume' })).text);
+  assert.equal(seen.length, 3);
+  assert.equal(seen[2].messages.at(-1).role, 'system');
+  assert.match(list.filter((e) => e.event === 'delta').map((e) => e.data.text).join(''), /Fresher or experienced\?/);
+});
+
+test('guided flow: tapping "Fresher" saves the answer even when the model changes nothing', async () => {
+  const user = await newUser();
+  script = [{ tools: [{ name: 'start_flow', arguments: { product: 'resume' } }, { name: 'show_choices', arguments: { question: 'Fresher or experienced?', options: ['Fresher', 'Experienced'], field: 'level' } }] }, { text: 'Pick one.' }];
+  const conversationId = events((await chat({ message: 'make my resume' }, { token: user.token })).text)[0].data.conversationId;
+
+  // The model repeats the answer in update_draft: no change on top of the tap, still saved
+  script = [{ tools: [{ name: 'update_draft', arguments: { fields: { level: 'fresher' } } }] }, { text: 'Your name, email and phone?' }];
+  const tapped = events((await action({ conversationId, action: 'choose', value: { field: 'level', label: 'Fresher' } }, { token: user.token })).text);
+  assert.equal(flowOf(tapped).data.level, 'fresher');
+  const saved = await call(`/api/leo-chat/conversations/${conversationId}`, { token: user.token });
+  assert.equal(saved.body.data.flow.data.level, 'fresher');
+  assert.ok(!saved.body.data.flow.missing.includes('level'));
+});
+
+test('guided flow: flow tool notes are not replayed to the model as history', async () => {
+  const user = await newUser();
+  script = [{ tools: [{ name: 'start_flow', arguments: { product: 'resume' } }] }, { text: 'Fresher or experienced?' }];
+  const conversationId = events((await chat({ message: 'make my resume' }, { token: user.token })).text)[0].data.conversationId;
+  await chat({ message: 'Fresher', conversationId }, { token: user.token });
+  const history = seen.at(-1).messages.slice(1, -1).map((m) => m.content).join('\n');
+  assert.match(history, /Fresher or experienced\?/);
+  assert.doesNotMatch(history, /Tool results shown to the user/);
+});
+
+test('guided flow: a bad tap is rejected before anything streams', async () => {
+  const res = await action({ action: 'template', value: { templateId: '../../etc' }, flow: { product: 'resume', step: 'template', data: ANSWERS } });
+  assert.equal(res.status, 400);
+  assert.equal((await action({ action: 'launch-missiles' })).status, 400);
+});
+
+test('guided flow: deleting the chat wipes the draft', async () => {
+  const user = await newUser();
+  const conversationId = await fillDraft(user);
+  await call(`/api/leo-chat/conversations/${conversationId}`, { method: 'DELETE', token: user.token });
+  const { LeoConversation } = await import('../../src/leo/models.js');
+  const row = await LeoConversation.findById(conversationId).lean();
+  assert.equal(row.flow, null);
+});
+
+test('the leo-flows switch removes the flow tools and closes card taps', async () => {
+  const settings = await import('../../src/admin/settings.js');
+  const { features } = await settings.getSettings();
+  await saveSettingGroup('features', { ...features, 'leo-flows': false }, 'test');
+  try {
+    await chat({ message: 'make a resume' });
+    assert.ok(!seen[0].toolNames.includes('start_flow'));
+    assert.doesNotMatch(seen[0].messages[0].content, /Guided flows/);
+    const tap = await action({ action: 'confirm' });
+    assert.equal(tap.status, 503);
+    assert.equal(tap.body.code, 'FEATURE_DISABLED');
+  } finally {
+    await saveSettingGroup('features', { ...features, 'leo-flows': true }, 'test');
+  }
 });
 
 test('the leo-chat switch turns the chat off', async () => {

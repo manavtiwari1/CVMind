@@ -1,5 +1,6 @@
 import { API_BASE } from '../lib/apiBase';
 import { authFetch } from '../lib/authFetch';
+import type { ExtractedResume } from '../types/api';
 
 // Client for /api/leo-chat (backend/src/routes/leoChat.js)
 
@@ -59,7 +60,36 @@ export interface LinkCard { type: 'link'; page: string; label: string; reason: s
 export interface LockedCard { type: 'locked'; action: 'attach' | 'signin' | 'upgrade' | 'info'; message: string }
 export interface ErrorCard { type: 'error'; message: string }
 
-export type Card = AtsCard | TailorCard | CoverLetterCard | InterviewCard | RoadmapCard | JobsCard | LinkCard | LockedCard | ErrorCard;
+// Guided flows (backend/src/leo/flows): cards the user taps instead of typing
+export interface ChoicesCard { type: 'choices'; id: string; question: string; field: string; options: string[] }
+export interface SummaryCard { type: 'summary_confirm'; product: string; title: string; sections: { title: string; lines: string[] }[] }
+export interface TemplatePickerCard { type: 'template_picker'; product: string; selected: string }
+export interface DocumentCard {
+  type: 'document';
+  id: string;
+  product: string;
+  title: string;
+  templateId: string;
+  data: ExtractedResume;
+  // Fill the template with the content as given (an attached resume) instead of polishing it
+  keepFacts: boolean;
+  // Set once the browser filled the template (kept with the card so a reopened chat shows it)
+  html?: string;
+  workId?: string;
+}
+
+export type Card = AtsCard | TailorCard | CoverLetterCard | InterviewCard | RoadmapCard | JobsCard | LinkCard | LockedCard | ErrorCard
+  | ChoicesCard | SummaryCard | TemplatePickerCard | DocumentCard;
+
+// The guided flow open in a chat. Guests keep it in the browser and send it back with each message.
+export interface LeoFlow {
+  product: string;
+  step: 'collect' | 'confirm' | 'template' | 'built';
+  data: Record<string, unknown>;
+  missing: string[];
+  templateId: string;
+  [key: string]: unknown;
+}
 
 export interface ToolRun { id: string; label: string; done: boolean }
 
@@ -76,6 +106,8 @@ export interface ChatMessage {
   feedback?: 'up' | 'down' | null;
   error?: string;
   streaming?: boolean;
+  // Arrived during this visit (not loaded from a saved chat): a new resume card builds itself
+  fresh?: boolean;
 }
 
 export interface Resume { name: string; text: string }
@@ -98,6 +130,7 @@ export interface StreamHandlers {
   onDelta: (text: string) => void;
   onTool: (tool: { id: string; name: string; label: string }) => void;
   onCard: (result: { id: string; card: Card }) => void;
+  onFlow: (flow: LeoFlow | null) => void;
   onDone: (done: { turnId: string | null; stopReason: string }) => void;
 }
 
@@ -108,11 +141,24 @@ export interface ChatRequest {
   history?: { role: 'user' | 'assistant'; content: string }[];
   // A newly attached resume, or null when the user removed it; left out to keep the saved one
   resume?: Resume | null;
+  // Guests: their flow draft. Signed in: a guest draft carried over after signing in.
+  flow?: LeoFlow | null;
+}
+
+// A tap on a guided-flow card; streamed like a message
+export interface ActionRequest extends Omit<ChatRequest, 'message'> {
+  action: 'choose' | 'confirm' | 'template';
+  value?: Record<string, string>;
 }
 
 // Sends one message and streams Leo's reply. Rejects with a ChatError (LEO_SIGNIN, LEO_LIMIT, TOKEN_LIMIT, ...).
-export async function streamChat(body: ChatRequest, handlers: StreamHandlers, signal?: AbortSignal) {
-  const res = await authFetch(`${API_BASE}/api/leo-chat/chat`, {
+export const streamChat = (body: ChatRequest, handlers: StreamHandlers, signal?: AbortSignal) => streamFrom('/chat', body, handlers, signal);
+
+// Sends a card tap and streams Leo's reply
+export const streamAction = (body: ActionRequest, handlers: StreamHandlers, signal?: AbortSignal) => streamFrom('/action', body, handlers, signal);
+
+async function streamFrom(path: string, body: ChatRequest | ActionRequest, handlers: StreamHandlers, signal?: AbortSignal) {
+  const res = await authFetch(`${API_BASE}/api/leo-chat${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -143,6 +189,7 @@ export async function streamChat(body: ChatRequest, handlers: StreamHandlers, si
       else if (event === 'delta') handlers.onDelta(payload.text);
       else if (event === 'tool') handlers.onTool(payload);
       else if (event === 'card') handlers.onCard(payload);
+      else if (event === 'flow') handlers.onFlow(payload.flow);
       else if (event === 'done') handlers.onDone(payload);
       else if (event === 'error') throw new ChatError(payload.error, payload.code);
     }
@@ -173,8 +220,17 @@ export interface SavedChat {
   id: string;
   title: string;
   resumeName: string;
+  flow: LeoFlow | null;
   turns: { id: string; prompt: string; reply: string; cards: Card[]; feedback: 'up' | 'down' | null }[];
 }
+
+// The browser filled a document card's template: keep the result with the card
+export const saveBuilt = (conversationId: string, cardId: string, html: string, workId: string) =>
+  call('/action', { method: 'POST', body: JSON.stringify({ conversationId, action: 'built', value: { cardId, html, workId } }) });
+
+// What the user did with a result, for the flow funnel
+export const trackResult = (product: string, action: 'edit' | 'pdf' | 'word') =>
+  call('/action', { method: 'POST', body: JSON.stringify({ action: 'track', value: { product, action } }) }).catch(() => {});
 
 export const listChats = () => call<{ data: ChatSummary[] }>('/conversations').then((r) => r.data);
 export const getChat = (id: string) => call<{ data: SavedChat }>(`/conversations/${id}`).then((r) => r.data);

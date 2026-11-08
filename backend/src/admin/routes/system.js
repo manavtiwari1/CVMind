@@ -67,6 +67,7 @@ router.get('/health', requireAdmin('system.view'), handle(async (req, res) => {
         { key: 'MONGODB_URI', label: 'MongoDB', configured: !!process.env.MONGODB_URI },
         { key: 'AUTH_SECRET', label: 'Session signing secret', configured: !!process.env.AUTH_SECRET },
         { key: 'GEMINI_API_KEY', label: 'Google Gemini', configured: !!process.env.GEMINI_API_KEY },
+        { key: 'ANTHROPIC_API_KEY', label: 'Claude', configured: !!process.env.ANTHROPIC_API_KEY },
         { key: 'DEEPSEEK_API_KEY', label: 'DeepSeek', configured: !!process.env.DEEPSEEK_API_KEY },
         { key: 'RESEND_API_KEY', label: 'Resend email', configured: emailConfigured() },
         { key: 'GOOGLE_CLIENT_ID', label: 'Google sign-in', configured: !!process.env.GOOGLE_CLIENT_ID },

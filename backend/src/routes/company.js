@@ -8,14 +8,13 @@ import {
   updateApplicationStatus 
 } from '../db.js';
 import { requireCompany } from '../services/authToken.js';
-import { generateJson } from '@cvmind/auto-apply-agent/ai/geminiClient.js';
+import { callClaude } from '../services/gemini.js';
 
 const router = express.Router();
 
-// Helper to call Gemini for AI Job Parsing
-async function callGeminiForJobParser(jobDescription, apiKey) {
-  const key = apiKey || process.env.GEMINI_API_KEY;
-  if (!key) {
+// AI Job Parsing
+async function parseJobWithAi(jobDescription) {
+  if (!process.env.ANTHROPIC_API_KEY) {
     // Fallback parser if API key is missing
     const words = jobDescription.split(/\s+/);
     const skills = Array.from(new Set(
@@ -49,7 +48,7 @@ ${jobDescription.substring(0, 3000)}
 """`;
 
   try {
-    return await generateJson({ prompt, temperature: 0.2, apiKey });
+    return await callClaude({ prompt, jsonMode: true, plainStyle: false });
   } catch (err) {
     console.error('[AI JOB PARSER] Error:', err.message);
     return {
@@ -115,7 +114,7 @@ router.post('/parse-job', requireCompany, async (req, res) => {
       return res.status(400).json({ error: 'Job description text is required for parsing.' });
     }
 
-    const parsed = await callGeminiForJobParser(jobDescription, apiKey);
+    const parsed = await parseJobWithAi(jobDescription);
     return res.json({ success: true, parsed });
   } catch (err) {
     console.error('[AI JOB PARSER] Failed:', err);

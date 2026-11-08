@@ -13,6 +13,9 @@ const conversationSchema = new Schema({
   // The resume attached to this chat, read to text, so a reopened chat still has it
   resumeName: { type: String, default: '' },
   resumeText: { type: String, default: '' },
+  // The guided flow open in this chat (leo/flows): { product, step, data, skipped, templateId, ... }.
+  // Holds personal details, so it is wiped when the chat is deleted.
+  flow: { type: Schema.Types.Mixed, default: null },
   // Copied from the user when the chat starts; deleted or opted-out chats never enter training
   trainingOptOut: { type: Boolean, default: false },
   deletedAt: { type: Date, default: null },
@@ -47,7 +50,29 @@ const turnSchema = new Schema({
 turnSchema.index({ conversationId: 1, createdAt: 1 });
 turnSchema.index({ createdAt: 1 }, { expireAfterSeconds: RETENTION_SECONDS });
 
+// One step of a guided flow, for the per-product funnel (PRD: Leo Guided Flows, Analytics).
+// Field names and template ids only, never what the user typed.
+const flowEventSchema = new Schema({
+  userId: { type: String, required: true },
+  conversationId: { type: String, default: 'guest' },
+  signedIn: { type: Boolean, default: false },
+  // flow_started, field_filled, choice_made, build_done, result_action, limit_hit
+  event: { type: String, required: true },
+  product: { type: String, default: '' },
+  // flow_started: typed, button or attached
+  source: { type: String, default: '' },
+  field: { type: String, default: '' },
+  // choice_made: the option or template id; result_action: edit, pdf or word; limit_hit: what was locked
+  value: { type: String, default: '' },
+  viaButton: { type: Boolean, default: false },
+  ok: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now }
+});
+flowEventSchema.index({ event: 1, product: 1, createdAt: -1 });
+flowEventSchema.index({ createdAt: 1 }, { expireAfterSeconds: RETENTION_SECONDS });
+
 export const LeoConversation = mongoose.models.LeoConversation || mongoose.model('LeoConversation', conversationSchema);
 export const LeoTurn = mongoose.models.LeoTurn || mongoose.model('LeoTurn', turnSchema);
+export const LeoFlowEvent = mongoose.models.LeoFlowEvent || mongoose.model('LeoFlowEvent', flowEventSchema);
 
-export const LEO_MODELS = [LeoConversation, LeoTurn];
+export const LEO_MODELS = [LeoConversation, LeoTurn, LeoFlowEvent];

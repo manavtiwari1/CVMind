@@ -20,7 +20,7 @@ import multer from 'multer';
 import bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
 import { parsePdf, parseDocx, parseTxt, fetchResumeFromUrl } from './services/parser.js';
-import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, generateCoverLetterWithAI, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek, generateInterviewPlan, evaluateInterviewAnswer, generateInterviewReport } from './services/gemini.js';
+import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, generateCoverLetterWithAI, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek, callClaude, generatePortfolioSiteWithClaude, generateInterviewPlan, evaluateInterviewAnswer, generateInterviewReport } from './services/gemini.js';
 import { getPublicStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, updateUserFields, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, savePortfolioGenLog, saveLinkedinPostLog, getWorkById, saveProofreadLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, hasAutoApplyAccess } from './db.js';
 import adminRouter from './admin/router.js';
 import adminPublicRoutes from './admin/publicRoutes.js';
@@ -2131,14 +2131,10 @@ apiRouter.post('/api/linkedin/post', optionalUser, async (req, res) => {
     const { topic, jobTitle, tone, resumeText } = req.body || {};
     // Save to My Works only for the signed-in user (never a userId from the request body)
     const userId = req.auth?.sub;
-    const customApiKey = req.headers['x-gemini-key'] || null;
 
     if (!topic || !jobTitle) {
       return res.status(400).json({ error: 'Topic and Job Title are required.' });
     }
-
-    const apiKey = customApiKey || process.env.DEEPSEEK_API_KEY;
-    if (!apiKey) throw new Error('DeepSeek API key is not configured.');
 
     const prompt = `You are a LinkedIn content strategist. Generate 3 high-engagement LinkedIn posts for a ${jobTitle} professional.
 
@@ -2174,17 +2170,7 @@ Generate exactly 3 LinkedIn posts in this JSON format:
 
 Return ONLY valid JSON.`;
 
-    const dsRes = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: prompt }], response_format: { type: 'json_object' }, temperature: 0.5, max_tokens: 2000 })
-    });
-    if (!dsRes.ok) throw new Error(`DeepSeek error: ${dsRes.status}`);
-    const dsJson = await dsRes.json();
-    chargeAiUsage(dsJson.usage);
-    let text = dsJson.choices[0].message.content.trim();
-    if (text.startsWith('```')) text = text.replace(/```json\n?|```\n?/g, '').trim();
-    const data = JSON.parse(text);
+    const data = await callClaude({ prompt, jsonMode: true, plainStyle: false });
 
     let savedWork = null;
     if (userId) {
@@ -2371,12 +2357,8 @@ apiRouter.post('/api/interview/report', optionalUser, async (req, res) => {
 apiRouter.post('/api/voice-prep/question', async (req, res) => {
   try {
     const { jobTitle, level, category, resumeText } = req.body || {};
-    const customApiKey = req.headers['x-gemini-key'] || null;
 
     if (!jobTitle) return res.status(400).json({ error: 'Job Title is required.' });
-
-    const apiKey = customApiKey || process.env.DEEPSEEK_API_KEY;
-    if (!apiKey) throw new Error('DeepSeek API key is not configured.');
 
     const prompt = `Generate ONE realistic interview question for a ${level || 'Mid-level'} ${jobTitle} role.
 Category: ${category || 'Behavioral'}
@@ -2390,17 +2372,7 @@ Return ONLY this JSON:
   "what_interviewer_wants": "2 sentence explanation of what a good answer should cover"
 }`;
 
-    const dsRes = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: prompt }], response_format: { type: 'json_object' }, temperature: 0.4, max_tokens: 400 })
-    });
-    if (!dsRes.ok) throw new Error(`DeepSeek error: ${dsRes.status}`);
-    const dsJson = await dsRes.json();
-    chargeAiUsage(dsJson.usage);
-    let text = dsJson.choices[0].message.content.trim();
-    if (text.startsWith('```')) text = text.replace(/```json\n?|```\n?/g, '').trim();
-    const data = JSON.parse(text);
+    const data = await callClaude({ prompt, jsonMode: true, plainStyle: false });
     return res.json({ success: true, data });
   } catch (error) {
     console.error('Voice Prep Question API Error:', error);
@@ -2414,12 +2386,8 @@ apiRouter.post('/api/voice-prep/analyze', optionalUser, async (req, res) => {
     const { question, transcript, jobTitle } = req.body || {};
     // Save to My Works only for the signed-in user (never a userId from the request body)
     const userId = req.auth?.sub;
-    const customApiKey = req.headers['x-gemini-key'] || null;
 
     if (!question || !transcript) return res.status(400).json({ error: 'Question and transcript are required.' });
-
-    const apiKey = customApiKey || process.env.DEEPSEEK_API_KEY;
-    if (!apiKey) throw new Error('DeepSeek API key is not configured.');
 
     const prompt = `You are a senior interviewer. Analyze this interview answer:
 
@@ -2450,17 +2418,7 @@ Return ONLY this JSON:
   "verdict": "Good"
 }`;
 
-    const dsRes = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: prompt }], response_format: { type: 'json_object' }, temperature: 0.3, max_tokens: 1000 })
-    });
-    if (!dsRes.ok) throw new Error(`DeepSeek error: ${dsRes.status}`);
-    const dsJson = await dsRes.json();
-    chargeAiUsage(dsJson.usage);
-    let text = dsJson.choices[0].message.content.trim();
-    if (text.startsWith('```')) text = text.replace(/```json\n?|```\n?/g, '').trim();
-    const data = JSON.parse(text);
+    const data = await callClaude({ prompt, jsonMode: true, plainStyle: false });
 
     let savedWork = null;
     if (userId) {
@@ -2490,14 +2448,10 @@ apiRouter.post('/api/portfolio/generate-site', optionalUser, requireFreeUse('por
     const { resumeText, colorTheme, style } = req.body || {};
     // Save to My Works only for the signed-in user (never a userId from the request body)
     const userId = req.auth?.sub;
-    const customApiKey = req.headers['x-gemini-key'] || null;
 
     if (!resumeText || resumeText.trim().length < 50) {
       return res.status(400).json({ error: 'Resume text is required (minimum 50 characters).' });
     }
-
-    const apiKey = customApiKey || process.env.DEEPSEEK_API_KEY;
-    if (!apiKey) throw new Error('DeepSeek API key is not configured.');
 
     const themeColors = {
       'dark-pro': { bg: '#0a0a0f', card: '#12121a', accent: '#6366f1', text: '#e2e8f0', secondary: '#94a3b8' },
@@ -2511,7 +2465,7 @@ apiRouter.post('/api/portfolio/generate-site', optionalUser, requireFreeUse('por
     const prompt = `Extract structured data from this resume and return ONLY JSON:
 
 Resume:
-${resumeText.substring(0, 2000)}
+${resumeText.substring(0, 15000)}
 
 Return this exact JSON structure:
 {
@@ -2548,20 +2502,16 @@ Return this exact JSON structure:
   ]
 }`;
 
-    const dsRes = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: prompt }], response_format: { type: 'json_object' }, temperature: 0.2, max_tokens: 2000 })
-    });
-    if (!dsRes.ok) throw new Error(`DeepSeek error: ${dsRes.status}`);
-    const dsJson = await dsRes.json();
-    chargeAiUsage(dsJson.usage);
-    let text = dsJson.choices[0].message.content.trim();
-    if (text.startsWith('```')) text = text.replace(/```json\n?|```\n?/g, '').trim();
-    const portfolioData = JSON.parse(text);
+    const portfolioData = await callClaude({ prompt, jsonMode: true, plainStyle: false });
 
-    // Generate the actual HTML portfolio
-    const portfolioHTML = generatePortfolioHTML(portfolioData, colors, style || 'dark-pro');
+    // Claude designs the site; the fixed template is only the backup if that fails
+    let portfolioHTML;
+    try {
+      portfolioHTML = await generatePortfolioSiteWithClaude({ data: portfolioData, colors, style: colorTheme });
+    } catch (designError) {
+      console.error('Portfolio design failed, using the template:', designError.message);
+      portfolioHTML = generatePortfolioHTML(portfolioData, colors, style || 'dark-pro');
+    }
 
     let savedWork = null;
     if (userId) {

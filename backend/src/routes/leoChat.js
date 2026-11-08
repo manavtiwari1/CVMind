@@ -8,6 +8,7 @@ import { hitLimit, clientIp, DAY_MS } from '../services/limiter.js';
 import { findUserById, isUserPaid } from '../db.js';
 import { LeoConversation, LeoTurn } from '../leo/models.js';
 import { openConversation, runTurn, MAX_MESSAGE_CHARS, MAX_RESUME_CHARS } from '../leo/service.js';
+import { applyAction, logFlowEvent, normalizeFlow, publicFlow } from '../leo/flows/index.js';
 
 // Leo chat, the ChatGPT-style home of app.cvmind.in. Mounted at /api/leo-chat; the 'leo-chat'
 // feature switch turns it off (admin/settings.js). Signed-out visitors get a few messages a day
@@ -39,11 +40,55 @@ export function createLeoChatRouter({ upload, extractResumeText }) {
     res.json({ success: true, name: clip(req.file.originalname, 120), text });
   }));
 
-  // One chat turn, streamed as server-sent events: meta, then delta / tool / card..., then done or error
+  // One chat turn, streamed as server-sent events: meta, then delta / tool / card / flow..., then done or error
   router.post('/chat', handle(async (req, res) => {
     const message = clip(req.body?.message, MAX_MESSAGE_CHARS);
     if (!message) throw httpError(400, 'Type a message for Leo.');
-    const { leo } = await getSettings();
+    await streamTurn(req, res, async () => ({ message, preCalls: [] }));
+  }));
+
+  // A tap on a guided-flow card (PRD: Leo Guided Flows). The tap changes the draft directly, then the
+  // turn continues like a message, so it never depends on the model reading the tap right.
+  //   choose { field, label } · confirm · template { templateId, name } — streamed like /chat
+  //   built { cardId, html, workId } — the browser filled the template; kept with the card for reloads
+  //   track { product, action }       — what the user did with a result (edit, pdf, word)
+  router.post('/action', handle(async (req, res) => {
+    const action = clip(req.body?.action, 20);
+    const value = req.body?.value && typeof req.body.value === 'object' ? req.body.value : {};
+
+    if (action === 'track') {
+      const kind = ['edit', 'pdf', 'word'].includes(value.action) ? value.action : null;
+      if (!kind) throw httpError(400, 'Unknown result action.');
+      logFlowEvent({ userId: req.auth?.sub, email: req.auth?.email }, 'result_action', { product: clip(value.product, 30), value: kind });
+      return res.json({ success: true });
+    }
+
+    if (action === 'built') {
+      if (!req.auth) throw httpError(401, 'Please sign in again.');
+      if (!(await dbReady(2000))) throw httpError(503, 'Leo is not available right now.');
+      const html = String(value.html ?? '');
+      if (!html || html.length > 300000) throw httpError(400, 'The resume is missing or too large.');
+      const cardId = clip(value.cardId, 20);
+      const conversationId = clip(req.body?.conversationId, 40);
+      const update = { 'toolCalls.$.card.html': html, 'toolCalls.$.card.workId': clip(value.workId, 40) };
+      // The turn is saved when the reply ends, which can be a moment after the card arrived
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const result = await LeoTurn.updateOne({ conversationId, userId: req.auth.sub, deletedAt: null, 'toolCalls.card.id': cardId }, { $set: update });
+        if (result.matchedCount) return res.json({ success: true });
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+      throw httpError(404, 'Reply not found.');
+    }
+
+    if (!['choose', 'confirm', 'template'].includes(action)) throw httpError(400, 'Unknown action.');
+    await streamTurn(req, res, (flow, ctx) => applyAction(flow, { action, value }, ctx), { viaButton: true });
+  }));
+
+  // Shared by /chat and card taps: limits, conversation, resume and flow, then the streamed turn.
+  // prepare(flow, ctx) returns { message, preCalls } and may change the flow.
+  async function streamTurn(req, res, prepare, { viaButton = false } = {}) {
+    const { leo, features } = await getSettings();
+    const flows = features['leo-flows'] !== false;
     const signedIn = !!req.auth;
     if (signedIn && !(await dbReady(2000))) throw httpError(503, 'Leo is not available right now.');
 
@@ -80,6 +125,17 @@ export function createLeoChatRouter({ upload, extractResumeText }) {
       }
     }
 
+    // The open flow: saved with a signed-in chat, kept in the browser by guests. A guest's draft
+    // carries over into the first signed-in chat after they sign in.
+    let flow = null;
+    if (flows) {
+      flow = normalizeFlow(conversation?.flow) || normalizeFlow(req.body?.flow);
+    }
+    // Card taps are applied before anything streams, so a bad tap is a plain 400
+    const ctx = { userId: conversation?.userId || 'guest', conversationId: conversation ? String(conversation._id) : 'guest', email: signedIn ? req.auth.email : null };
+    const flowBefore = JSON.stringify(flow);
+    const { message, preCalls } = await prepare(flow, ctx);
+
     res.status(200).set({
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-cache, no-transform',
@@ -112,13 +168,18 @@ export function createLeoChatRouter({ upload, extractResumeText }) {
         resume,
         settings: leo,
         signal: abort.signal,
-        send
+        send,
+        flows,
+        flow,
+        flowBefore,
+        preCalls,
+        viaButton
       });
     } finally {
       clearInterval(heartbeat);
       res.end();
     }
-  }));
+  }
 
   // Everything below is the signed-in sidebar: saved chats, feedback and deleting
   router.use(requireUser);
@@ -150,6 +211,8 @@ export function createLeoChatRouter({ upload, extractResumeText }) {
         id: String(conversation._id),
         title: conversation.title,
         resumeName: conversation.resumeName || '',
+        // An unfinished guided flow, so the chat can offer to continue it
+        flow: publicFlow(normalizeFlow(conversation.flow)),
         turns: turns.map((t) => ({
           id: String(t._id),
           prompt: t.prompt,
@@ -166,7 +229,7 @@ export function createLeoChatRouter({ upload, extractResumeText }) {
     await ownConversation(req);
     const now = new Date();
     await Promise.all([
-      LeoConversation.updateOne({ _id: req.params.id }, { $set: { deletedAt: now, resumeText: '', resumeName: '' } }),
+      LeoConversation.updateOne({ _id: req.params.id }, { $set: { deletedAt: now, resumeText: '', resumeName: '', flow: null } }),
       LeoTurn.updateMany({ conversationId: req.params.id, deletedAt: null }, { $set: { deletedAt: now, prompt: '', reply: '', toolCalls: [] } })
     ]);
     res.json({ success: true });
@@ -186,7 +249,7 @@ export function createLeoChatRouter({ upload, extractResumeText }) {
   router.delete('/history', handle(async (req, res) => {
     const now = new Date();
     const [conversations] = await Promise.all([
-      LeoConversation.updateMany({ userId: req.auth.sub, deletedAt: null }, { $set: { deletedAt: now, resumeText: '', resumeName: '' } }),
+      LeoConversation.updateMany({ userId: req.auth.sub, deletedAt: null }, { $set: { deletedAt: now, resumeText: '', resumeName: '', flow: null } }),
       LeoTurn.updateMany({ userId: req.auth.sub, deletedAt: null }, { $set: { deletedAt: now, prompt: '', reply: '', toolCalls: [] } })
     ]);
     res.json({ success: true, deleted: conversations.modifiedCount });

@@ -1,11 +1,49 @@
-// Streaming chat client for Leo. Every provider here speaks the OpenAI chat completions format:
+// Streaming chat client for Leo: Claude when ANTHROPIC_API_KEY is set. The other providers speak the OpenAI chat completions format:
 // DeepSeek (the default, same key as the other AI features), Gemini through its OpenAI-compatible
 // endpoint, or any endpoint set in LEO_LLM_BASE_URL (e.g. a fine-tuned Leo model later).
 
 import { chargeAiUsage } from '../billing/aiContext.js';
+import { logAiCall } from '../billing/aiCalls.js';
+import { claudeConfigured, claudeModel, claudeTokens, openClaudeStream, toClaudeRequest, toClaudeTools } from '../services/claude.js';
 
 const DEEPSEEK_URL = 'https://api.deepseek.com/v1/chat/completions';
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+
+// Leo runs on Claude unless a custom endpoint or a Gemini model is set. A stored 'deepseek-chat' setting counts as Claude.
+const usesClaude = (model) => claudeConfigured()
+  && !(process.env.LEO_LLM_BASE_URL && process.env.LEO_LLM_API_KEY)
+  && !/^gemini/i.test(model);
+
+// Same events as streamChat. The done event also carries claudeContent, the blocks to send back in the next round.
+async function* streamClaude({ model, messages, maxTokens, tools, pastTools, signal }) {
+  const stream = openClaudeStream({
+    model: /^claude/i.test(model) ? model : claudeModel(),
+    ...toClaudeRequest(messages),
+    // Past tool calls need their tools listed even on the final round, which may not call any
+    tools: toClaudeTools(tools?.length ? tools : pastTools),
+    toolChoice: !tools?.length && pastTools?.length ? { type: 'none' } : undefined,
+    effort: 'low',
+    // Reasoning counts against this limit too
+    maxTokens: Math.max(maxTokens, 16000),
+    signal
+  });
+  for await (const event of stream) {
+    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') yield { type: 'text', delta: event.delta.text };
+  }
+  const message = await stream.finalMessage();
+  const spent = claudeTokens(message.usage);
+  chargeAiUsage(spent);
+  logAiCall({ provider: 'claude', model: message.model, ...spent });
+  if (message.stop_reason === 'refusal') throw new Error('Claude declined this request.');
+  yield {
+    type: 'done',
+    model: message.model,
+    finishReason: message.stop_reason === 'max_tokens' ? 'length' : message.stop_reason,
+    usage: spent,
+    toolCalls: message.content.filter((b) => b.type === 'tool_use').map((b) => ({ id: b.id, name: b.name, arguments: JSON.stringify(b.input || {}) })),
+    claudeContent: message.content
+  };
+}
 
 // Which endpoint and key serve this model. Throws when no key is configured.
 export function resolveProvider(model) {
@@ -26,7 +64,12 @@ export const estimateTokens = (text) => Math.ceil(String(text || '').length / 4)
 // Yields { type: 'text', delta } as the reply streams, then { type: 'done', usage, finishReason, model, toolCalls }.
 // With `tools` (OpenAI function format) the model may ask for tool calls instead of, or after, text;
 // they arrive in pieces and are returned whole in toolCalls: [{ id, name, arguments }].
-export async function* streamChat({ model, messages, maxTokens = 600, temperature = 0.5, tools, signal }) {
+// pastTools: the tool list when this round may not call tools but earlier rounds did.
+export async function* streamChat({ model, messages, maxTokens = 600, temperature = 0.5, tools, pastTools, signal }) {
+  if (usesClaude(model)) {
+    yield* streamClaude({ model, messages, maxTokens, tools, pastTools, signal });
+    return;
+  }
   const provider = resolveProvider(model);
   const response = await fetch(provider.url, {
     method: 'POST',

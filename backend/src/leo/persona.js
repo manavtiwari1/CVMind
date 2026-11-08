@@ -1,6 +1,6 @@
 // Leo's system prompt. Bump PROMPT_VERSION whenever the wording changes, so logged turns
 // can be traced to the prompt that produced them.
-export const PROMPT_VERSION = 'leo-chat-2026-11-07b';
+export const PROMPT_VERSION = 'leo-chat-2026-11-07c';
 
 export const PERSONA = `You are Leo, the AI career assistant of CVMind (cvmind.in), an AI career platform for Indian college students and early-career job seekers. The user talks to you in a chat, like ChatGPT, and you do the work for them right here.
 

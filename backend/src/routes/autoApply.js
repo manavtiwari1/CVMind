@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { getCentralJobs, saveCentralApplication, getCandidateApplications, updateCandidateApplication } from '../db.js';
 import { requireUser, requireSelf } from '../services/authToken.js';
 import { requireAgentAccess } from '../middleware/agentAuth.js';
-import { generateJson } from '@cvmind/auto-apply-agent/ai/geminiClient.js';
+import { callClaude } from '../services/gemini.js';
 import { scrapeJobFromUrl, parseJobContent } from '../services/jobScraper.js';
 import { fetchLiveAtsJobs } from '../services/atsCrawler.js';
 
@@ -86,16 +86,11 @@ function computeMatchScore(jobSkills, candidateSkills) {
   return Math.max(20, Math.min(99, base + variance));
 }
 
-async function callGemini(prompt, apiKey) {
-  if (!apiKey && !process.env.GEMINI_API_KEY) throw new Error('Gemini API key not configured.');
+async function callAi(prompt) {
   try {
-    return await generateJson({ prompt, temperature: 0.4, apiKey });
+    return await callClaude({ prompt, jsonMode: true, plainStyle: false });
   } catch (err) {
-    // The raw Gemini error is a JSON blob; log it and give the UI a readable message
-    console.error('[auto-apply] Gemini error:', err.message);
-    // Google answers a bad key with 400 "API key not valid", but 400 also covers other bad requests
-    const keyRejected = /^HTTP_40[13]$/.test(err.code || '') || (err.code === 'HTTP_400' && /api[ _-]?key/i.test(err.message || ''));
-    if (apiKey && keyRejected) throw new Error('Your Gemini API key was rejected. Check it in settings.');
+    console.error('[auto-apply] AI error:', err.message);
     throw new Error('The AI service could not process this request. Please try again.');
   }
 }
@@ -136,7 +131,7 @@ JSON schema (return exactly this shape, use null for missing fields):
 Resume text:
 ${resumeText.substring(0, 4000)}`;
 
-    const profile = await callGemini(prompt, apiKey);
+    const profile = await callAi(prompt);
     return res.json({ success: true, data: profile });
   } catch (err) {
     console.error('Auto-apply profile error:', err);
@@ -284,7 +279,7 @@ Return ONLY valid JSON:
   "matchScore": 91
 }`;
 
-    const result = await callGemini(prompt, apiKey);
+    const result = await callAi(prompt);
     return res.json({ success: true, data: result });
   } catch (err) {
     console.error('Tailor-for-job error:', err);
@@ -319,7 +314,7 @@ Return ONLY valid JSON:
   "tone": "Professional"
 }`;
 
-    const result = await callGemini(prompt, apiKey);
+    const result = await callAi(prompt);
     return res.json({ success: true, data: result });
   } catch (err) {
     console.error('Cover letter error:', err);
@@ -348,7 +343,7 @@ Return ONLY valid JSON:
   "tone": "Professional"
 }`;
 
-    const result = await callGemini(prompt, apiKey);
+    const result = await callAi(prompt);
     return res.json({ success: true, data: result });
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Failed to generate answer.' });
@@ -718,7 +713,7 @@ Return ONLY valid JSON:
 {
   "answer": "Compelling concise answer"
 }`;
-          const aiRes = await callGemini(prompt, apiKey);
+          const aiRes = await callAi(prompt);
           const fIndex = mappedFields.findIndex(f => (f.id || f.name) === q.fieldId);
           if (fIndex !== -1 && aiRes?.answer) {
             mappedFields[fIndex].value = aiRes.answer;

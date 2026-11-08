@@ -3,6 +3,7 @@ import { requireAdmin, requireDb } from '../auth.js';
 import { Ticket, UserSession } from '../models.js';
 import { model, handle, paging, clean, escapeRegex } from '../util.js';
 import { AiUsage } from '../../billing/models.js';
+import { AiCall } from '../../billing/aiCalls.js';
 // Registers JobApplyLog, which FEATURE_LOGS reads by name
 import '../../jobFinder/models.js';
 // Registers NegotiationLog and ReferralAsk
@@ -64,6 +65,19 @@ async function tokenSum(match) {
   return { total: row?.total || 0, accounts: row?.emails.length || 0 };
 }
 
+// Requests, tokens and estimated cost for each AI provider
+async function providerUsage(match) {
+  const rows = await AiCall.aggregate([
+    { $match: match },
+    { $group: { _id: '$provider', requests: { $sum: 1 }, tokensIn: { $sum: '$tokensIn' }, tokensOut: { $sum: '$tokensOut' }, costUsd: { $sum: '$costUsd' } } }
+  ]);
+  const usage = (provider) => {
+    const { requests = 0, tokensIn = 0, tokensOut = 0, costUsd = 0 } = rows.find((r) => r._id === provider) || {};
+    return { requests, tokensIn, tokensOut, costUsd };
+  };
+  return { claude: usage('claude'), deepseek: usage('deepseek') };
+}
+
 async function dailySeries(Model, from, { match = {}, sumField = null, field = 'createdAt' } = {}) {
   const rows = await Model.aggregate([
     { $match: { [field]: { $gte: from }, ...match } },
@@ -122,6 +136,11 @@ router.get('/overview', requireAdmin('dashboard.view'), requireDb, handle(async 
     tokenSum({ createdAt: between(today, tomorrow) }),
     tokenSum({ createdAt: between(rangeFrom, tomorrow) }),
     tokenSum({ createdAt: between(prevFrom, rangeFrom) })
+  ]);
+
+  const [providersToday, providersRange] = await Promise.all([
+    providerUsage({ createdAt: between(today, tomorrow) }),
+    providerUsage({ createdAt: between(rangeFrom, tomorrow) })
   ]);
 
   // Day-by-day series for the chart
@@ -200,6 +219,7 @@ router.get('/overview', requireAdmin('dashboard.view'), requireDb, handle(async 
       userStatus: Object.fromEntries(statusCounts.map((s) => [s._id || 'active', s.count])),
       series,
       featureUsage,
+      aiProviders: { today: providersToday, range: providersRange },
       scores: scoreStats
         ? { average: Number(scoreStats.avg.toFixed(1)), count: scoreStats.count, high: scoreStats.high, medium: scoreStats.medium, low: scoreStats.low }
         : { average: 0, count: 0, high: 0, medium: 0, low: 0 },

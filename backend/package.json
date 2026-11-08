@@ -11,6 +11,7 @@
     "migrate:email-verified": "node scripts/migrate-email-verified.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
     "@aws-sdk/client-s3": "^3.1153.0",
     "@aws-sdk/s3-request-presigner": "^3.1153.0",
     "@cvmind/auto-apply-agent": "file:../auto-apply-agent",

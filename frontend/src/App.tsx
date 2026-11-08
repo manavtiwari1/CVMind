@@ -19,7 +19,7 @@ import { APP_PAGES, PUBLIC_APP_PAGES, OAUTH_NONCE_KEY, isAppHost, isCrossHost, i
 import { clearSession, setSession } from './lib/session';
 import { peekPickedTemplate } from './lib/templatePick';
 import { letterDraftHash } from './lib/coverLetter';
-import { takeWorkFromHash } from './lib/workHandoff';
+import { takeWorkFromHash, workHash } from './lib/workHandoff';
 import { authFetch, AUTH_REQUIRED_EVENT, VERIFY_REQUIRED_EVENT } from './lib/authFetch';
 import { pendingCollegeInvite } from './lib/collegeInvite';
 import { loadCollegeTemplates } from './lib/collegeTemplates';
@@ -699,7 +699,22 @@ export default function App() {
       case 'learn-with-leo':
         return <LeoLessonPage setCurrentPage={setCurrentPage} />;
       case 'chat':
-        return <ChatApp setCurrentPage={setCurrentPage} isLoggedIn={isLoggedIn} onSignIn={() => setShowAuthModal(true)} />;
+        return (
+          <ChatApp
+            setCurrentPage={setCurrentPage}
+            isLoggedIn={isLoggedIn}
+            onSignIn={() => setShowAuthModal(true)}
+            openWork={(work) => {
+              // Same tab when the editor is on this host; across hosts the work travels in the URL hash
+              if (isCrossHost('resume-editor')) {
+                window.location.assign(urlForPage('resume-editor') + workHash(work));
+                return;
+              }
+              setLoadedWork(work);
+              setCurrentPage('resume-editor');
+            }}
+          />
+        );
       case 'verify-email':
       case 'college-invite':
         // Full-screen like the sign-in overlay, so it renders outside <main> (see below)

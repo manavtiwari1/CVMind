@@ -1,7 +1,7 @@
 import express from 'express';
 import { AdminUser } from '../../models.js';
 import { handle, httpError, isId } from '../../util.js';
-import { callDeepSeek } from '../../../services/gemini.js';
+import { callClaude } from '../../../services/gemini.js';
 import { channelFor, isManager, oid, requireTeam } from '../access.js';
 import { TASK_PRIORITIES, TeamAiUsage, TeamLeave, TeamMessage, TeamStandup, TeamSubmission, TeamTask } from '../models.js';
 import { istDay, isWorkingDay, teamPeopleFilter } from '../notify.js';
@@ -17,8 +17,8 @@ const MAX_MESSAGES = 200;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Tests swap in a fake model
-let model = callDeepSeek;
-export const setLeoModel = (fn) => { model = fn || callDeepSeek; };
+let model = callClaude;
+export const setLeoModel = (fn) => { model = fn || callClaude; };
 
 // Counts one Leo call against today's limit, or refuses once it is used up
 export async function useLeo(adminId) {

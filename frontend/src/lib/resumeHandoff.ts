@@ -46,13 +46,16 @@ export function htmlToText(html: string): string {
   return text.replace(/\n{3,}/g, '\n\n').trim();
 }
 
-/** Puts structured resume data into a template. Keeps the facts as they are. */
-export async function fillTemplate(data: ExtractedResume, templateId: string, headers: Record<string, string> = {}): Promise<string> {
+/**
+ * Puts structured resume data into a template. Keeps the facts as they are; keepFacts false lets the
+ * AI polish typed answers the way the Resume Builder does (Leo chat builds).
+ */
+export async function fillTemplate(data: ExtractedResume, templateId: string, headers: Record<string, string> = {}, keepFacts = true): Promise<string> {
   const template = templateFor(templateId);
   const res = await authFetch(`${API_BASE}/api/resume/generate`, {
     method: 'POST',
     headers: { ...headers, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ templateHtml: splitFooter(template.html).body, formData: toFormData(data), keepFacts: true }),
+    body: JSON.stringify({ templateHtml: splitFooter(template.html).body, formData: toFormData(data), keepFacts }),
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok || !body.data?.generatedHtml) throw new Error(body.error || 'Could not fill the template.');
