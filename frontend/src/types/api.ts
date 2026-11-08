@@ -61,7 +61,26 @@ export interface ResumeAnalysis {
   strengths: string[];
   weaknesses: string[];
   recommendations: string[];
+  targetRole?: string;
+  scoreDetails?: ScoreDetails; // reports saved before the points breakdown don't have it
   fileName?: string; // added by the client for display
+}
+
+export interface ScoreCriterion {
+  id: string;
+  label: string;
+  points: number;
+  max: number;
+  source: 'counted' | 'ai';
+  reason: string;
+  fix: string;
+  evidence: string[];
+  evidenceLabel: string;
+}
+
+export interface ScoreDetails {
+  groups: { id: string; label: string; points: number; max: number; criteria: ScoreCriterion[] }[];
+  gains: { id: string; label: string; gain: number; fix: string }[];
 }
 
 // POST /api/auto-apply/jobs — a job scored against the candidate

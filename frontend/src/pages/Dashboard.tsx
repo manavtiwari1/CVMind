@@ -14,7 +14,7 @@ import { USER_CHANGE_EVENT, readUser } from '../lib/currentUser';
 import { isCrossHost, urlForPage } from '../lib/hosts';
 import { downloadWord, fillTemplate, parseResumeText, templateFor, workForEditor } from '../lib/resumeHandoff';
 import { workHash } from '../lib/workHandoff';
-import type { ExtractedResume, LoadedWork } from '../types/api';
+import type { ExtractedResume, LoadedWork, ScoreDetails } from '../types/api';
 import { downloadResumeAsDocx, downloadResumeAsPdf, downloadResumeAsTxt } from '../utils/generateResumeDocx';
 import { getErrorMessage } from '../utils/errors';
 import { exportHtml } from '../lib/branding';
@@ -48,6 +48,8 @@ interface AnalysisData {
   strengths: string[];
   weaknesses: string[];
   recommendations: string[];
+  targetRole?: string;
+  scoreDetails?: ScoreDetails;
 }
 
 interface DashboardProps {
@@ -155,6 +157,59 @@ function Ring({ value, size = 56 }: { value: number; size?: number }) {
   );
 }
 
+/** Shows where every point of the score came from, with the lines of the resume behind it. */
+function ScoreReasons({ score, details }: { score: number; details: ScoreDetails }) {
+  return (
+    <div className="rpt-card rpt-why">
+      <div className="rpt-head">
+        <div>
+          <h2><Target size={19} /> Why you scored {score}</h2>
+          <p>Each point below comes from your resume. &quot;Counted&quot; means we measured it. &quot;AI reading&quot; means AI judged it from what you wrote.</p>
+        </div>
+      </div>
+
+      <div className="rpt-why-sum">
+        {details.groups.map((g, i) => (
+          <span key={g.id} className="rpt-why-part">
+            {i > 0 && <i aria-hidden="true">+</i>}
+            <span><b>{g.points}</b>/{g.max}<small>{g.label}</small></span>
+          </span>
+        ))}
+        <span className="rpt-why-part rpt-why-total"><i aria-hidden="true">=</i><span><b>{score}</b>/100<small>Your score</small></span></span>
+      </div>
+
+      {details.groups.map((g) => (
+        <div key={g.id} className="rpt-why-group">
+          <h3>{g.label}</h3>
+          {g.criteria.map((c) => {
+            const lost = c.max - c.points;
+            return (
+              <div key={c.id} className="rpt-why-row">
+                <div className="rpt-why-top">
+                  <b>{c.label}</b>
+                  <span className="rpt-why-source">{c.source === 'ai' ? 'AI reading' : 'Counted'}</span>
+                  <span className={`rpt-why-points tone-${toneOf((c.points / c.max) * 100)}`}>{c.points}/{c.max}</span>
+                </div>
+                <div className={`rpt-why-bar tone-${toneOf((c.points / c.max) * 100)}`}><span style={{ width: `${(c.points / c.max) * 100}%` }} /></div>
+                <p>{c.reason}</p>
+                {c.evidence.length > 0 && (
+                  <div className="rpt-why-quotes">
+                    <small>{c.evidenceLabel}</small>
+                    {c.evidence.map((quote) => <blockquote key={quote}>{quote}</blockquote>)}
+                  </div>
+                )}
+                {lost > 0 && c.fix && <p className="rpt-why-fix"><Plus size={13} /> <span><b>{lost} {lost === 1 ? 'point' : 'points'} to gain.</b> {c.fix}</span></p>}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+
+      <p className="rpt-fine">This score is CVMind&apos;s own check of your resume text. Each employer&apos;s system works differently, so no score can promise a shortlist.</p>
+    </div>
+  );
+}
+
 export default function Dashboard({ setCurrentPage, analysisResult, resumeText, resetAnalysis, customApiKey, isLoggedIn, setLoadedWork }: DashboardProps) {
   const [copied, setCopied] = useState<string | null>(null);
   const [done, setDone] = useState<Record<number, boolean>>({});
@@ -242,6 +297,7 @@ export default function Dashboard({ setCurrentPage, analysisResult, resumeText, 
   const matchPct = totalKeywords ? Math.round((atsKeywords.matched.length / totalKeywords) * 100) : 0;
   const doneCount = recommendations.filter((_, i) => done[i]).length;
   const issueCount = weaknesses.length + atsKeywords.missing.length + contentAndImpact.suggestions.length;
+  const pointsToGain = analysisResult.scoreDetails?.gains.reduce((sum, g) => sum + g.gain, 0);
 
   const copy = (text: string, key: string) => {
     void navigator.clipboard.writeText(text).then(() => {
@@ -300,7 +356,7 @@ export default function Dashboard({ setCurrentPage, analysisResult, resumeText, 
     { id: 'actions', label: 'Action plan', icon: ListChecks, badge: `${doneCount}/${recommendations.length}` },
     { id: 'keywords', label: 'ATS keywords', icon: Target, score: atsKeywords.score },
     { id: 'impact', label: 'Content & impact', icon: PenLine, score: contentAndImpact.score },
-    { id: 'formatting', label: 'Formatting', icon: FileText, score: formattingAndStyle.score },
+    { id: 'formatting', label: analysisResult.scoreDetails ? 'Structure' : 'Formatting', icon: FileText, score: formattingAndStyle.score },
     { id: 'autofix', label: 'AI auto-fix', icon: Sparkles, badge: optimizedResume ? 'Ready' : undefined },
     { id: 'templates', label: 'Resume templates', icon: PencilLine },
   ];
@@ -331,7 +387,9 @@ export default function Dashboard({ setCurrentPage, analysisResult, resumeText, 
             <Gauge value={score} />
             <b className={`rpt-grade tone-${toneOf(score)}`}>{gradeOf(score)}</b>
             <p className="rpt-score-sub">
-              {issueCount > 0 ? <><b>{issueCount}</b> things to improve</> : 'Nothing major to fix'}
+              {pointsToGain !== undefined
+                ? (pointsToGain > 0 ? <>You can gain up to <b>{pointsToGain}</b> points</> : 'Nothing major to fix')
+                : (issueCount > 0 ? <><b>{issueCount}</b> things to improve</> : 'Nothing major to fix')}
             </p>
             {analysisResult.scoreChange && (
               <p className={`rpt-change is-${analysisResult.scoreChange.trend}`}>
@@ -379,7 +437,7 @@ export default function Dashboard({ setCurrentPage, analysisResult, resumeText, 
                 {[
                   { id: 'keywords' as const, label: 'ATS keywords', value: atsKeywords.score },
                   { id: 'impact' as const, label: 'Content & impact', value: contentAndImpact.score },
-                  { id: 'formatting' as const, label: 'Formatting', value: formattingAndStyle.score },
+                  { id: 'formatting' as const, label: analysisResult.scoreDetails ? 'Structure' : 'Formatting', value: formattingAndStyle.score },
                 ].map((s) => (
                   <button key={s.id} type="button" className="rpt-subscore" onClick={() => go(s.id)}>
                     <Ring value={s.value} />
@@ -392,6 +450,8 @@ export default function Dashboard({ setCurrentPage, analysisResult, resumeText, 
                 ))}
               </div>
             </div>
+
+            {analysisResult.scoreDetails && <ScoreReasons score={score} details={analysisResult.scoreDetails} />}
 
             <div className="rpt-two">
               <div className="rpt-card rpt-list-card is-good">
@@ -440,6 +500,7 @@ export default function Dashboard({ setCurrentPage, analysisResult, resumeText, 
                 <div>
                   <h2><Target size={19} /> ATS keywords</h2>
                   <p>{atsKeywords.feedback}</p>
+                  {analysisResult.targetRole && <p>Checked against what {analysisResult.targetRole} job ads usually ask for.</p>}
                 </div>
                 <span className={`rpt-score-chip tone-${toneOf(atsKeywords.score)}`}>{atsKeywords.score}/100</span>
               </div>
@@ -523,7 +584,7 @@ export default function Dashboard({ setCurrentPage, analysisResult, resumeText, 
           <section className={partClass('formatting')} aria-label="Formatting">
             <div className="rpt-card">
               <div className="rpt-head">
-                <div><h2><FileText size={19} /> Formatting &amp; layout</h2></div>
+                <div><h2><FileText size={19} /> {analysisResult.scoreDetails ? 'Structure' : <>Formatting &amp; layout</>}</h2></div>
                 <span className={`rpt-score-chip tone-${toneOf(formattingAndStyle.score)}`}>{formattingAndStyle.score}/100</span>
               </div>
               <p className="rpt-body">{formattingAndStyle.feedback}</p>

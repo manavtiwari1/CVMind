@@ -1291,9 +1291,6 @@ apiRouter.post('/api/analyze', optionalUser, upload.single('resume'), async (req
       });
     }
 
-    // Extract custom API key from custom header if present
-    const customApiKey = req.headers['x-gemini-key'] || null;
-
     let extractedText = '';
 
     try {
@@ -1309,8 +1306,7 @@ apiRouter.post('/api/analyze', optionalUser, upload.single('resume'), async (req
       });
     }
 
-    // Analyze with Gemini
-    const evaluation = await analyzeResumeWithGemini(extractedText, customApiKey);
+    const evaluation = await analyzeResumeWithGemini(extractedText);
 
     // Persist admin analytics after successful parsing.
     const userId = req.auth?.sub || '';

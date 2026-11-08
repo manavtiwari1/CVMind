@@ -431,6 +431,36 @@
 @keyframes rpt-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .rpt-part.is-active { animation: none; } }
 
+/* ── Why this score ── */
+.rpt-why-sum { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 0.75rem; margin-top: 1.1rem; padding: 0.9rem 1rem; background: var(--rpt-soft); border-radius: 14px; font-size: 0.86rem; color: var(--rpt-muted); }
+.rpt-why-part { display: inline-flex; align-items: center; gap: 0.75rem; }
+.rpt-why-part > i { font-style: normal; font-weight: 700; color: var(--rpt-faint); }
+.rpt-why-part b { font-size: 1.3rem; font-weight: 800; color: var(--rpt-ink); }
+.rpt-why-part small { display: block; font-size: 0.74rem; line-height: 1.3; }
+.rpt-why-total b { color: var(--rpt-accent); }
+.rpt-why-group { margin-top: 1.5rem; }
+.rpt .rpt-why-group h3 { padding-bottom: 0.5rem; font-size: 0.98rem; font-weight: 750; color: var(--rpt-ink); border-bottom: 1px solid var(--rpt-line); }
+.rpt-why-row { padding: 0.95rem 0; border-bottom: 1px solid var(--rpt-line); }
+.rpt-why-row:last-child { border-bottom: none; padding-bottom: 0; }
+.rpt-why-top { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.3rem 0.55rem; }
+.rpt-why-top > b { font-size: 0.93rem; font-weight: 700; color: var(--rpt-ink); }
+.rpt-why-source { font-size: 0.68rem; font-weight: 700; padding: 0.08rem 0.5rem; color: var(--rpt-muted); background: var(--rpt-soft); border-radius: 999px; }
+.rpt-why-points { margin-left: auto; font-size: 0.9rem; font-weight: 800; }
+.rpt-why-bar { height: 6px; margin: 0.45rem 0 0.55rem; background: var(--rpt-soft); border-radius: 999px; overflow: hidden; }
+.rpt-why-bar span { display: block; height: 100%; background: currentColor; border-radius: inherit; }
+.rpt .rpt-why-row p { font-size: 0.89rem; line-height: 1.55; overflow-wrap: anywhere; }
+.rpt-why-quotes { margin-top: 0.55rem; }
+.rpt-why-quotes small { font-size: 0.72rem; font-weight: 700; color: var(--rpt-muted); }
+.rpt-why-quotes blockquote { margin: 0.3rem 0 0; padding: 0.45rem 0.7rem; font-size: 0.85rem; line-height: 1.5; color: var(--rpt-text); background: var(--rpt-soft); border-left: 3px solid var(--rpt-line); border-radius: 0 8px 8px 0; overflow-wrap: anywhere; }
+.rpt .rpt-why-row p.rpt-why-fix { display: flex; gap: 0.4rem; margin-top: 0.55rem; color: var(--rpt-ink); }
+.rpt-why-fix svg { flex: none; margin-top: 0.25rem; color: var(--rpt-accent); }
+.rpt .rpt-why > .rpt-fine { margin-top: 1.1rem; font-size: 0.78rem; color: var(--rpt-muted); }
+@media (max-width: 520px) {
+  .rpt-why-sum { gap: 0.5rem 0.6rem; padding: 0.8rem; }
+  .rpt-why-part { gap: 0.6rem; }
+  .rpt-why-part b { font-size: 1.1rem; }
+}
+
 /* ── Responsive ── */
 @media (max-width: 1100px) {
   .rpt-overview { grid-template-columns: 1fr; }
