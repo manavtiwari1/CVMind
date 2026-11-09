@@ -42,8 +42,8 @@ const WORK_PAGES: Record<string, string> = {
   'offer-negotiation': 'offer-negotiation',
 };
 
-// Works that are documents (made in the resume editor) rather than tool results
-export const DOCUMENT_TYPES = ['resume', 'cover-letter'];
+// Works listed on the Documents tab: things the user keeps, rather than tool results
+export const DOCUMENT_TYPES = ['resume', 'cover-letter', 'portfolio-gen'];
 
 export const workLabel = (type: string) => WORK_LABELS[type] || 'Resume';
 

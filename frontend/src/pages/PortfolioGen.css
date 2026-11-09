@@ -436,6 +436,103 @@
   cursor: pointer;
 }
 .pgx-panel-download:hover { background: #2f2f2c; }
+.pgx-panel-publish { background: var(--pgx-accent); }
+.pgx-panel-publish:hover { background: var(--pgx-accent-hover); }
+
+/* ── Publish dialog ───────────────────────── */
+.pgx-publish-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(20, 20, 19, 0.45);
+  animation: pgx-publish-fade 0.16s ease-out;
+}
+.pgx-publish {
+  width: 100%;
+  max-width: 460px;
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 1.25rem;
+  color: var(--pgx-text);
+  background: var(--pgx-surface);
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+  animation: pgx-publish-rise 0.2s ease-out;
+}
+@keyframes pgx-publish-fade { from { opacity: 0; } }
+@keyframes pgx-publish-rise { from { opacity: 0; transform: translateY(12px); } }
+.pgx-publish-head { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 1rem; }
+.pgx-publish-head h2 { flex: 1; min-width: 0; margin: 0; font-family: var(--pgx-serif); font-size: 1.3rem; font-weight: 500; color: var(--pgx-ink); }
+.pgx-publish-label { display: block; margin-bottom: 0.4rem; font-size: 0.9rem; font-weight: 500; color: var(--pgx-ink); }
+.pgx-publish-field {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background: var(--pgx-bg);
+  border: 1px solid var(--pgx-line);
+  border-radius: 10px;
+}
+.pgx-publish-field:focus-within { border-color: var(--pgx-accent); }
+.pgx-publish-field.is-bad { border-color: #b3261e; }
+.pgx-publish-field input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.65rem 0 0.65rem 0.75rem;
+  /* 16px stops iOS zooming the page when the field is focused */
+  font-size: 16px;
+  color: var(--pgx-ink);
+  background: transparent;
+  border: 0;
+  outline: 0;
+}
+.pgx-publish-field span { flex: none; padding-right: 0.75rem; font-size: 0.88rem; color: var(--pgx-muted); }
+.pgx-publish-hint { min-height: 1.3em; margin: 0.4rem 0 1rem; font-size: 0.84rem; line-height: 1.4; color: var(--pgx-muted); }
+.pgx-publish-hint.is-ok { color: #1b7f4b; }
+.pgx-publish-hint.is-bad { color: #b3261e; }
+.pgx-publish-note { margin: 0 0 1rem; font-size: 0.95rem; line-height: 1.55; }
+.pgx-publish-public { margin-bottom: 1rem; padding: 0.75rem 0.85rem; font-size: 0.88rem; line-height: 1.5; background: var(--pgx-sunk); border-radius: 10px; }
+.pgx-publish-public strong { color: var(--pgx-ink); font-weight: 500; }
+.pgx-publish-public ul { margin: 0.3rem 0; padding-left: 1.1rem; overflow-wrap: anywhere; }
+.pgx-publish-public span { color: var(--pgx-muted); }
+.pgx-publish-link {
+  display: block;
+  margin-bottom: 1rem;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.98rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+  color: var(--pgx-accent);
+  text-decoration: none;
+  background: var(--pgx-sunk);
+  border-radius: 10px;
+}
+.pgx-publish-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 0.5rem; }
+.pgx-publish-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 38px;
+  padding: 0 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #fff;
+  text-decoration: none;
+  background: var(--pgx-accent);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.pgx-publish-primary:hover:not(:disabled) { background: var(--pgx-accent-hover); }
+.pgx-publish-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+@media (prefers-reduced-motion: reduce) {
+  .pgx-publish-scrim, .pgx-publish { animation: none; }
+}
 
 .pgx-panel-body { flex: 1; min-height: 0; overflow: auto; background: var(--pgx-bg); }
 .pgx-frame { height: 100%; }
@@ -464,6 +561,10 @@
   /* A phone already shows the phone layout, so the device switch only takes up room */
   .pgx-device, .pgx-dl-label { display: none; }
   .pgx-panel-download { width: 34px; padding: 0; justify-content: center; }
+  /* A sheet from the bottom edge on phones, with full-width buttons within thumb reach */
+  .pgx-publish-scrim { align-items: flex-end; padding: 0; }
+  .pgx-publish { max-width: none; max-height: 92dvh; padding-bottom: calc(1.25rem + env(safe-area-inset-bottom)); border-radius: 18px 18px 0 0; }
+  .pgx-publish-actions > * { flex: 1; justify-content: center; min-height: 44px; }
   .pgx-frame.is-mobile { padding: 0; }
   .pgx-frame.is-mobile iframe { width: 100%; border: 0; border-radius: 0; box-shadow: none; }
   .pgx-user { max-width: 92%; }

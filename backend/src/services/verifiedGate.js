@@ -23,6 +23,7 @@ const VERIFIED_ONLY = [
   { path: '/api/linkedin' },
   { path: '/api/career' },
   { path: '/api/portfolio/generate-site' },
+  { path: '/api/portfolio/publish' },
   { path: '/api/job-finder' },
   { path: '/api/chat' },
   { path: '/api/ai' },

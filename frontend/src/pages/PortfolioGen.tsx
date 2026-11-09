@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import {
   ArrowLeft, ArrowUp, Paperclip, ChevronDown, Check, Copy, Download, X, Monitor, Smartphone,
-  Globe, Code2, Eye, FileText, SquarePen, RotateCcw,
+  Globe, Code2, Eye, FileText, SquarePen, RotateCcw, Rocket,
 } from 'lucide-react';
 import { Leo, LeoAvatar } from '../components/ResumeOnboarding';
 import { getErrorMessage } from '../utils/errors';
-import { authFetch } from '../lib/authFetch';
-import type { ExperienceEntry } from '../types/api';
+import { authFetch, getSessionToken } from '../lib/authFetch';
+import { parseSavedContent } from '../utils/savedWork';
+import type { ExperienceEntry, LoadedWork, SavedWork } from '../types/api';
+import PortfolioPublish, { type PublishedSite } from './PortfolioPublish';
 import './PortfolioGen.css';
 
 // Parsed resume behind a generated site (/api/portfolio/generate-site)
@@ -14,6 +16,8 @@ interface PortfolioData {
   name?: string;
   title?: string;
   email?: string;
+  phone?: string;
+  location?: string;
   skills?: string[];
   experience?: ExperienceEntry[];
 }
@@ -24,6 +28,16 @@ interface PortfolioGenProps {
   setCurrentPage?: (page: string) => void;
   /** Leave the generator (back to the previous page). */
   onExit?: () => void;
+  /** A saved portfolio opened from My Documents. */
+  loadedWork: LoadedWork | null;
+  setLoadedWork: (work: LoadedWork | null) => void;
+}
+
+// What generate-site stores in a saved work's htmlContent
+interface SavedPortfolio {
+  portfolioData?: PortfolioData | null;
+  colorTheme?: string;
+  portfolioHTML?: string;
 }
 
 // The colour themes the backend knows (themeColors in /api/portfolio/generate-site)
@@ -53,7 +67,13 @@ interface Turn {
   status: 'building' | 'done' | 'error';
   html?: string;
   data?: PortfolioData | null;
+  /** The saved document behind this page; publishing reads the page from it. */
+  workId?: string;
   error?: string;
+  /** Built, but not saved to the account yet. */
+  saveFailed?: boolean;
+  saving?: boolean;
+  saveError?: string;
 }
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_BACKEND_URL
@@ -75,7 +95,25 @@ function greeting() {
   }
 }
 
-export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage, onExit }: PortfolioGenProps) {
+const isSavedPortfolio = (work: LoadedWork | null): work is SavedWork =>
+  Boolean(work) && !('deleted' in work!) && (work as SavedWork).type === 'portfolio-gen';
+
+// A saved portfolio as a chat turn. Saved works don't keep the resume, so source.text is empty.
+function savedTurn(work: SavedWork, id: number): Turn | null {
+  const saved = parseSavedContent<SavedPortfolio>(work.htmlContent);
+  if (!saved?.portfolioHTML) return null;
+  return {
+    id,
+    source: { text: '' },
+    theme: saved.colorTheme || 'dark-pro',
+    status: 'done',
+    html: saved.portfolioHTML,
+    data: saved.portfolioData || null,
+    workId: work.id || work._id,
+  };
+}
+
+export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage, onExit, loadedWork, setLoadedWork }: PortfolioGenProps) {
   const [draft, setDraft] = useState('');
   const [attachment, setAttachment] = useState<Source | null>(null);
   const [attaching, setAttaching] = useState(false);
@@ -90,14 +128,61 @@ export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage,
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
   const [copied, setCopied] = useState<number | null>(null);
 
+  // This account's published site, and the turn the Publish dialog is open for
+  const [site, setSite] = useState<PublishedSite | null>(null);
+  const [publishTurn, setPublishTurn] = useState<number | null>(null);
+
   const fileRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const threadEnd = useRef<HTMLDivElement>(null);
   const nextId = useRef(1);
+  const openedFromDocuments = useRef(isSavedPortfolio(loadedWork));
 
   const building = turns.some(t => t.status === 'building');
-  const lastSource = turns.length ? turns[turns.length - 1].source : null;
+  // A reopened portfolio has no resume behind it, so it can't be rebuilt in another theme
+  const lastSource = turns.length && turns[turns.length - 1].source.text ? turns[turns.length - 1].source : null;
   const shown = turns.find(t => t.id === openTurn && t.status === 'done');
+  const publishing = turns.find(t => t.id === publishTurn && t.status === 'done');
+
+  useEffect(() => {
+    if (!getSessionToken()) return;
+    let current = true;
+    authFetch(`${baseUrl}/api/portfolio/site`)
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => { if (current && data?.site) setSite(data.site); })
+      .catch(() => { /* Publish still works; it just starts as a first publish */ });
+    return () => { current = false; };
+  }, []);
+
+  // Coming back to the builder shows the newest saved portfolio, unless the user has already started
+  useEffect(() => {
+    if (!getSessionToken() || openedFromDocuments.current) return;
+    let current = true;
+    authFetch(`${baseUrl}/api/portfolio/latest`)
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (!current || !data?.work || inputRef.current?.value.trim()) return;
+        const turn = savedTurn(data.work, nextId.current++);
+        if (turn) setTurns(prev => (prev.length ? prev : [turn]));
+      })
+      .catch(() => { /* The builder just starts empty */ });
+    return () => { current = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!loadedWork) return;
+    if (isSavedPortfolio(loadedWork)) {
+      const turn = savedTurn(loadedWork, nextId.current++);
+      if (turn) {
+        setTurns([turn]);
+        setOpenTurn(turn.id);
+        setPanelTab('preview');
+      } else {
+        setComposerError('That saved portfolio could not be opened. Build it again from your resume.');
+      }
+    }
+    setLoadedWork(null);
+  }, [loadedWork, setLoadedWork]);
 
   // Grow the textarea with its content, up to a cap
   useEffect(() => {
@@ -124,11 +209,34 @@ export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage,
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Generation failed');
-      setTurns(prev => prev.map(t => t.id === id ? { ...t, status: 'done', html: data.data.portfolioHTML, data: data.data.portfolioData } : t));
+      setTurns(prev => prev.map(t => t.id === id ? { ...t, status: 'done', html: data.data.portfolioHTML, data: data.data.portfolioData, workId: data.work?.id || data.work?._id, saveFailed: Boolean(data.saveFailed) } : t));
       setOpenTurn(id);
       setPanelTab('preview');
     } catch (err) {
       setTurns(prev => prev.map(t => t.id === id ? { ...t, status: 'error', error: getErrorMessage(err) || 'Generation failed. Please try again.' } : t));
+    }
+  };
+
+  // Saves a page that's already built, so a failed save never costs another AI run
+  const saveAgain = async (turn: Turn) => {
+    const update = (changes: Partial<Turn>) => setTurns(prev => prev.map(t => t.id === turn.id ? { ...t, ...changes } : t));
+    update({ saving: true, saveError: undefined });
+    try {
+      const res = await authFetch(`${baseUrl}/api/user/work`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: `Portfolio - ${turn.data?.name || 'My Portfolio'}`,
+          type: 'portfolio-gen',
+          templateId: `portfolio-${turn.theme}`,
+          htmlContent: JSON.stringify({ portfolioData: turn.data, colorTheme: turn.theme, style: turn.theme, portfolioHTML: turn.html }),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not save your portfolio.');
+      update({ saving: false, saveFailed: false, workId: data.data.id || data.data._id });
+    } catch (err) {
+      update({ saving: false, saveError: getErrorMessage(err) || 'Could not save your portfolio. Please try again.' });
     }
   };
 
@@ -243,7 +351,7 @@ export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage,
           value={draft}
           onChange={e => setDraft(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder={turns.length
+          placeholder={lastSource
             ? 'Paste an updated resume, or pick another theme and press Enter'
             : 'Paste your resume here, or attach a file'}
           aria-label="Resume text"
@@ -318,7 +426,7 @@ export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage,
     </div>
   );
 
-  const userMessage = (t: Turn) => (
+  const userMessage = (t: Turn) => t.source.text && (
     <div className="pgx-user">
       {t.source.fileName ? (
         <span className="pgx-file pgx-file--sent">
@@ -376,7 +484,8 @@ export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage,
         <LeoAvatar size={32} className="pgx-leo" />
         <div className="pgx-assistant-body">
           <p>
-            Done! I built a portfolio site for <strong>{d?.name || 'you'}</strong>{d?.title ? `, ${d.title}` : ''}, in the {themeOf(t.theme).label} theme.
+            {t.source.text ? 'Done! I built a portfolio site for ' : 'Here is the saved portfolio for '}
+            <strong>{d?.name || 'you'}</strong>{d?.title ? `, ${d.title}` : ''}, in the {themeOf(t.theme).label} theme.
             {parts.length > 0 && <> It has {parts.join(' and ')}.</>}
           </p>
 
@@ -388,9 +497,12 @@ export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage,
             </span>
           </button>
 
-          <p>To put it online, download the file and upload it to a static host such as GitHub Pages, Netlify Drop or Vercel. You'll get a public link to share.</p>
+          <p>Publish it to get your own link to share, or download the HTML and host it yourself.</p>
 
           <div className="pgx-actions">
+            <button type="button" className="pgx-chip" onClick={() => setPublishTurn(t.id)}>
+              <Rocket size={15} /> {site?.enabled ? 'Update site' : 'Publish'}
+            </button>
             <button type="button" className="pgx-icon-btn" onClick={() => copyHtml(t)} aria-label="Copy HTML" title="Copy HTML">
               {copied === t.id ? <Check size={16} /> : <Copy size={16} />}
             </button>
@@ -399,7 +511,16 @@ export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage,
             </button>
           </div>
 
-          {isLast && (
+          {t.saveFailed && (
+            <>
+              <p className="pgx-error" role="alert">{t.saveError || "This page couldn't be saved to your account, so it will be lost if you leave. Save it again; it won't use any AI tokens."}</p>
+              <button type="button" className="pgx-chip" onClick={() => void saveAgain(t)} disabled={t.saving}>
+                <RotateCcw size={14} /> {t.saving ? 'Saving…' : 'Save again'}
+              </button>
+            </>
+          )}
+
+          {isLast && t.source.text && (
             <div className="pgx-followups">
               <span>Want a different look? I can rebuild it in another theme</span>
               <div>
@@ -441,7 +562,7 @@ export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage,
             <div className="pgx-empty">
               <div className="pgx-empty-leo"><Leo pose="idea" /></div>
               <h1 className="pgx-greeting">{greeting()}</h1>
-              <p className="pgx-empty-sub">I'm Leo. Share your resume and I'll turn it into a portfolio website you can download and host anywhere.</p>
+              <p className="pgx-empty-sub">I'm Leo. Share your resume and I'll turn it into a portfolio website you can publish at your own link.</p>
               {composer}
               <div className="pgx-starters">
                 {resumeText.trim().length >= MIN_RESUME_CHARS && (
@@ -508,6 +629,9 @@ export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage,
                 <button type="button" className="pgx-panel-download" onClick={() => download(shown)}>
                   <Download size={15} /><span className="pgx-dl-label">Download</span>
                 </button>
+                <button type="button" className="pgx-panel-download pgx-panel-publish" onClick={() => setPublishTurn(shown.id)} aria-label={site?.enabled ? 'Update site' : 'Publish'}>
+                  <Rocket size={15} /><span className="pgx-dl-label">{site?.enabled ? 'Update site' : 'Publish'}</span>
+                </button>
                 <button type="button" className="pgx-icon-btn" onClick={() => setOpenTurn(null)} aria-label="Close preview" title="Close">
                   <X size={17} />
                 </button>
@@ -525,6 +649,21 @@ export default function PortfolioGen({ customApiKey, resumeText, setCurrentPage,
           </aside>
         )}
       </div>
+
+      {publishing && (
+        <PortfolioPublish
+          baseUrl={baseUrl}
+          workId={publishing.workId}
+          suggestedUsername={slug(publishing.data?.name).slice(0, 40).replace(/-$/, '')}
+          publicDetails={[publishing.data?.email, publishing.data?.phone, publishing.data?.location].filter((d): d is string => Boolean(d))}
+          site={site}
+          onSiteChange={setSite}
+          onClose={() => setPublishTurn(null)}
+          onSaveAgain={publishing.saveFailed ? () => void saveAgain(publishing) : undefined}
+          saving={publishing.saving}
+          saveError={publishing.saveError}
+        />
+      )}
     </div>
   );
 }

@@ -628,6 +628,8 @@ export default function App() {
             resumeText={resumeText}
             setCurrentPage={setCurrentPage}
             onExit={goBack}
+            loadedWork={loadedWork}
+            setLoadedWork={setLoadedWork}
           />
         );
       case 'products':

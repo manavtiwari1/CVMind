@@ -15,6 +15,9 @@ import collegeRouter from './college/router.js';
 import collegeStudentRouter from './routes/collegeStudent.js';
 import { previousScan, scoreChange } from './growth/scans.js';
 import { startJobAlerts } from './growth/alerts.js';
+import { createSiteServer } from './portfolio/sites.js';
+import { createPortfolioSiteRouter } from './routes/portfolioSites.js';
+import { ensureMongoConnection } from './db.js';
 import cors from 'cors';
 import multer from 'multer';
 import bcrypt from 'bcryptjs';
@@ -111,6 +114,9 @@ const sendWelcomeEmail = async (email, name) => {
     console.error('[WELCOME EMAIL] Send failed:', err.message);
   }
 };
+
+// Published portfolios are public pages on their own hosts, so they skip the API gates below
+app.use(createSiteServer({ ready: ensureMongoConnection }));
 
 // Enable CORS for all requests, allow credentials and specific headers
 app.use(cors({
@@ -2518,13 +2524,18 @@ Return this exact JSON structure:
         templateId: `portfolio-${colorTheme || 'dark-pro'}`,
         htmlContent: JSON.stringify({ portfolioData, colorTheme, style, portfolioHTML })
       });
-      const user = await findUserById(userId);
-      if (user) {
-        await savePortfolioGenLog({ email: user.email, userId, theme: colorTheme || 'dark-pro' });
+      // The log is only for admin counts, so it must not cost the user a finished page
+      try {
+        const user = await findUserById(userId);
+        if (user) {
+          await savePortfolioGenLog({ email: user.email, userId, theme: colorTheme || 'dark-pro' });
+        }
+      } catch (logError) {
+        console.error('Portfolio log failed:', logError.message);
       }
     }
 
-    return res.json({ success: true, data: { portfolioData, portfolioHTML }, work: savedWork });
+    return res.json({ success: true, data: { portfolioData, portfolioHTML }, work: savedWork, saveFailed: Boolean(userId && !savedWork) });
   } catch (error) {
     console.error('Portfolio Generator API Error:', error);
     return res.status(500).json({ error: error.message || 'Failed to generate portfolio.' });
@@ -2916,6 +2927,9 @@ app.use('/_/backend', billingRouter);
 app.use('/', billingRouter);
 app.use('/_/backend', growthRouter);
 app.use('/', growthRouter);
+const portfolioSiteRouter = createPortfolioSiteRouter({ ready: ensureMongoConnection });
+app.use('/_/backend', portfolioSiteRouter);
+app.use('/', portfolioSiteRouter);
 app.use('/_/backend', apiRouter);
 app.use('/', apiRouter);
 app.use('/api/auto-apply', autoApplyRouter);
