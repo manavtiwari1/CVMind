@@ -629,7 +629,7 @@ export async function createUser({ email, name, password, isGoogleUser = false, 
 
 
 // Await active MongoDB connection during startup to prevent race condition fallback
-async function ensureMongoConnection() {
+export async function ensureMongoConnection() {
   if (!mongoURI || mongoose.connection.readyState === 1) return;
   await connectMongo();
 }
@@ -1450,6 +1450,18 @@ export async function getUserWorks(userId) {
   return db.works.filter(w => w.userId === cleanUserId);
 }
 
+export async function getLatestUserWork(userId, type) {
+  await ensureMongoConnection();
+  const cleanUserId = String(userId || '').trim();
+
+  if (mongoURI && mongoose.connection.readyState === 1) {
+    return await Work.findOne({ userId: cleanUserId, type }).sort({ updatedAt: -1 });
+  }
+  const db = readDb();
+  const works = (db.works || []).filter(w => w.userId === cleanUserId && w.type === type);
+  return works.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0] || null;
+}
+
 export async function deleteUserWork(workId, userId) {
   await ensureMongoConnection();
   const cleanUserId = String(userId || '').trim();
@@ -1555,6 +1567,8 @@ export async function deleteAccount(userId) {
   const cleanId = String(userId || '').trim();
   if (mongoURI && mongoose.connection.readyState === 1) {
     await Work.deleteMany({ userId: cleanId });
+    const { PortfolioSite } = await import('./portfolio/sites.js');
+    await PortfolioSite.deleteOne({ userId: cleanId });
     await resetUserCodingProgress(cleanId);
     await LoginLog.deleteMany({ $or: [{ userId: cleanId }] });
     const { JobApplyLog } = await import('./jobFinder/models.js');

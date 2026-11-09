@@ -80,6 +80,15 @@ export function createLeoChatRouter({ upload, extractResumeText }) {
       throw httpError(404, 'Reply not found.');
     }
 
+    // Undo or a version button on a portfolio card; no model is needed to work out what was asked
+    if (action === 'restore') {
+      const cardId = clip(value.cardId, 30);
+      return streamTurn(req, res, async () => ({
+        message: cardId ? 'Go back to this version' : 'Undo the last change',
+        preCalls: [{ name: 'restore_portfolio', arguments: { card_id: cardId } }]
+      }), { viaButton: true });
+    }
+
     if (!['choose', 'confirm', 'template'].includes(action)) throw httpError(400, 'Unknown action.');
     await streamTurn(req, res, (flow, ctx) => applyAction(flow, { action, value }, ctx), { viaButton: true });
   }));

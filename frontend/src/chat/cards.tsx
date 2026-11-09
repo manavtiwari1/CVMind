@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { ArrowRight, Briefcase, Check, ChevronDown, Copy, Download, ExternalLink, Lock, MapPin, Paperclip, TriangleAlert } from 'lucide-react';
-import type { AtsCard, Card, CoverLetterCard, InterviewCard, JobsCard, LockedCard, RoadmapCard, TailorCard } from './chatApi';
+import type { AtsCard, Card, CoverLetterCard, InterviewCard, JobsCard, LockedCard, PortfolioCard, RoadmapCard, TailorCard } from './chatApi';
 import { Choices, ResumeResult, Summary, TemplatePicker, type FlowActions } from './flowCards';
+import PortfolioResult, { PortfolioLooks } from './PortfolioResult';
 
 // The result cards Leo's tools return (backend/src/leo/tools.js, leo/flows). Every card shows the
 // real result in the chat, plus a way into the full tool.
@@ -10,6 +11,9 @@ export interface CardActions extends FlowActions {
   go: (page: string) => void;
   attach: () => void;
   followUp: (prompt: string) => void;
+  portfolioSaved: (card: PortfolioCard, workId: string) => void;
+  // The newest portfolio in this chat; older cards can't publish
+  latestPortfolioId?: string;
 }
 
 // live: the card is in the newest Leo message, so it takes taps. fresh: it arrived in this visit.
@@ -286,6 +290,8 @@ export default function ResultCard({ card, actions, live, fresh, busy }: { card:
   if (card.type === 'summary_confirm') return <div className="lc-card"><Summary card={card} live={live} busy={busy} actions={actions} /></div>;
   if (card.type === 'template_picker') return <div className="lc-card"><TemplatePicker card={card} live={live} busy={busy} actions={actions} /></div>;
   if (card.type === 'document') return <div className="lc-card lc-card-document"><ResumeResult card={card} fresh={fresh} actions={actions} /></div>;
+  if (card.type === 'portfolio') return <div className="lc-card lc-card-portfolio"><PortfolioResult card={card} actions={actions} latest={actions.latestPortfolioId === card.id} busy={busy} /></div>;
+  if (card.type === 'portfolio_looks') return <div className="lc-card lc-card-choices"><PortfolioLooks card={card} live={live} busy={busy} tap={(label) => actions.tap('choose', { field: '', label }, label)} /></div>;
   if (card.type === 'link') {
     return (
       <button type="button" className="lc-link" onClick={() => actions.go(card.page)}>

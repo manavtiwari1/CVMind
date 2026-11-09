@@ -14,6 +14,21 @@ import {
 import { searchJobs } from '../services/jobSearch.js';
 import { FREE_WEEKLY } from '../billing/plans.js';
 import { isPro, featureAllowance, recordFeatureUse } from '../billing/service.js';
+import { getSettings } from '../admin/settings.js';
+import { hasProductAccess } from '../services/productGate.js';
+import { PORTFOLIO_THEMES, HIDEABLE_DETAILS, CUSTOM_LOOK, lookLabel, buildPortfolioSite, savePortfolio } from '../portfolio/generate.js';
+import { editPortfolioSiteWithClaude } from '../services/gemini.js';
+import { getLatestUserWork } from '../db.js';
+import { LeoTurn } from './models.js';
+import crypto from 'node:crypto';
+
+// Tests swap the AI build for a fixed page
+let buildSite = buildPortfolioSite;
+let editSite = editPortfolioSiteWithClaude;
+export function setPortfolioBuilder(fn, editor) {
+  buildSite = fn || buildPortfolioSite;
+  editSite = editor || editPortfolioSiteWithClaude;
+}
 
 const clip = (value, max) => String(value ?? '').trim().slice(0, max);
 const list = (value, max = 8, chars = 300) => (Array.isArray(value) ? value : []).map((v) => clip(v, chars)).filter(Boolean).slice(0, max);
@@ -75,6 +90,19 @@ export const TOOL_DEFINITIONS = [
   fn('find_jobs', 'Search real open jobs on company career pages.', {
     query: str('Role and optionally place, e.g. "react developer bangalore" or "data analyst remote".')
   }, ['query']),
+  fn('build_portfolio', 'Build the user\'s portfolio website here in the chat, with a preview and a Publish button. Call it once they said what they want on it. Leave theme and design out until they have chosen: the tool then shows the looks as buttons.', {
+    theme: { type: 'string', enum: [...Object.keys(PORTFOLIO_THEMES), CUSTOM_LOOK], description: `Only the look the user picked. "${CUSTOM_LOOK}" when they let you decide.` },
+    design: str('How the user wants it to look, in their words, when they described a style of their own.'),
+    wishes: str('What the user wants from the site, in their words: who it is for, what to highlight, what to leave out, the tone. "No preference" if they said so.'),
+    details: str('Everything the user told you about themselves in this chat, when there is no attached resume or they added to it: name, role, education, work, projects, skills, links, contact. Their words only.'),
+    hide: { type: 'array', items: { type: 'string', enum: HIDEABLE_DETAILS }, description: 'Contact details the user does not want on the public page.' }
+  }),
+  fn('edit_portfolio', 'Change the portfolio website the user already built: its text, order, sections, colours or contact details. Keeps everything else as it is.', {
+    changes: str('The changes the user asked for, in their words.')
+  }, ['changes']),
+  fn('restore_portfolio', 'Undo the last change to the user\'s portfolio, or bring back an earlier version from this chat.', {
+    card_id: str('Leave out to go back one version. Set only by the version buttons.')
+  }),
   fn('open_tool', 'Show a button to a CVMind page when the user needs the full tool.', {
     page: { type: 'string', enum: Object.keys(TOOL_PAGES) },
     reason: str('One short line on what the user will do there.')
@@ -103,6 +131,91 @@ async function allowance(ctx, key) {
   }
   return { commit: () => recordFeatureUse(ctx.email, key).catch((err) => console.error('[leo] free-use record failed:', err.message)) };
 }
+
+// The looks as tap-to-pick tiles
+export const looksCard = () => ({
+  type: 'portfolio_looks',
+  looks: [
+    ...Object.entries(PORTFOLIO_THEMES).map(([id, t]) => ({ id, label: t.label, bg: t.bg, accent: t.accent, text: t.text })),
+    { id: CUSTOM_LOOK, label: 'Leo decides', bg: '#e6f4ee', accent: '#12805c', text: '#10231c' }
+  ]
+});
+
+// Leo wrote the looks out as text and showed no buttons, so the buttons still have to appear
+export function looksListedInText(reply, toolLog) {
+  if (toolLog.some((t) => ['portfolio', 'portfolio_looks'].includes(t.card?.type))) return false;
+  return Object.values(PORTFOLIO_THEMES).filter((t) => new RegExp(`\\b${t.label}\\b`, 'i').test(reply)).length >= 3;
+}
+
+// Sends a build's stages and page text to the chat, the text in small batches
+function liveBuild(ctx) {
+  let pending = '';
+  let timer = null;
+  const flush = () => {
+    clearTimeout(timer);
+    timer = null;
+    if (pending) ctx.progress?.({ html: pending });
+    pending = '';
+  };
+  return {
+    stage: (stage) => { flush(); ctx.progress?.({ stage }); },
+    html: (text) => { pending += text; timer ||= setTimeout(flush, 200); },
+    reset: () => { flush(); ctx.progress?.({ reset: true }); },
+    flush
+  };
+}
+
+// Sign-in, the admin switch and the product lock, for building and editing alike
+async function portfolioRefused(ctx, signIn) {
+  if (!ctx.email) return blocked('signin', signIn);
+  // The Studio's route is behind these two admin controls; the chat honours them too
+  const { features, productAccess } = await getSettings();
+  if (features.portfolio === false) return blocked('info', 'The Portfolio Generator is switched off right now. Please try again later.');
+  if (productAccess.locked.includes('portfolio') && !(await hasProductAccess(ctx.email, 'portfolio'))) {
+    return blocked('info', "Your account doesn't have access to the Portfolio Generator yet. Contact support to get access.");
+  }
+  return null;
+}
+
+// The versions in this chat, oldest first. An edit of a page saved outside this chat carries that
+// page on its card, so it can still be undone.
+async function portfolioVersions(ctx) {
+  const turns = await LeoTurn.find({ conversationId: ctx.conversationId, userId: ctx.userId, deletedAt: null, 'toolCalls.card.type': 'portfolio' })
+    .sort({ createdAt: -1 }).limit(20).select('toolCalls').lean();
+  return turns.reverse()
+    .flatMap((turn) => (turn.toolCalls || []).map((t) => t?.card).filter((c) => c?.type === 'portfolio'))
+    .flatMap((c) => (c.previous ? [{ ...c, id: `${c.id}-before`, html: c.previous.html, data: c.previous.data, previous: null }, c] : [c]));
+}
+
+// The page to edit: the newest one in this chat, or else the newest one the user saved
+async function currentPortfolio(ctx) {
+  const card = (await portfolioVersions(ctx)).at(-1);
+  if (card) return { html: card.html, data: card.data || {}, theme: card.theme, workId: card.workId || null, inChat: true };
+
+  const work = await getLatestUserWork(ctx.userId, 'portfolio-gen');
+  if (!work) return null;
+  try {
+    const saved = JSON.parse(work.htmlContent);
+    const theme = Object.hasOwn(PORTFOLIO_THEMES, saved.colorTheme) || saved.colorTheme === CUSTOM_LOOK ? saved.colorTheme : 'dark-pro';
+    return saved.portfolioHTML ? { html: saved.portfolioHTML, data: saved.portfolioData || {}, theme, workId: String(work._id || work.id), inChat: false } : null;
+  } catch {
+    return null;
+  }
+}
+
+const portfolioCard = ({ theme, data, html, work, edited = false, restored = false, previous }) => ({
+  type: 'portfolio',
+  id: crypto.randomUUID().slice(0, 12),
+  theme,
+  themeLabel: lookLabel(theme),
+  data,
+  html,
+  workId: work ? String(work._id || work.id) : '',
+  saveFailed: !work,
+  edited,
+  restored,
+  ...(previous ? { previous } : {})
+});
 
 const RUNNERS = {
   async check_resume_ats(args, ctx) {
@@ -260,6 +373,79 @@ const RUNNERS = {
     };
   },
 
+  async build_portfolio(args, ctx) {
+    const refused = await portfolioRefused(ctx, 'Sign in free to build your portfolio website. Then ask me again.');
+    if (refused) return refused;
+
+    const wishes = clip(args.wishes, 1000);
+    if (!wishes) return { card: null, summary: 'Not built yet: ask what they want on the site (who it is for, what to highlight, what to leave out, which contact details to keep private).' };
+    const design = clip(args.design, 500);
+    const picked = String(args.theme || '').trim().toLowerCase().replace(/\s+/g, '-');
+    const theme = design || picked === CUSTOM_LOOK || picked === 'leo-decides' ? CUSTOM_LOOK : picked;
+    if (theme !== CUSTOM_LOOK && !Object.hasOwn(PORTFOLIO_THEMES, theme)) return { card: looksCard(), summary: 'The looks are shown as buttons. In one short sentence ask them to tap one or type the style they want. Do not name or list the looks.' };
+
+    const details = clip(args.details, 6000);
+    const resumeText = [ctx.resumeText, details && `More details from the candidate:\n${details}`].filter(Boolean).join('\n\n');
+    if (resumeText.length < 50) return blocked('attach', 'Attach your resume with the paperclip, or tell me your name, role, education, work or projects, skills and links.');
+
+    const gate = await allowance(ctx, 'portfolio');
+    if (gate.stop) return gate.stop;
+    const hide = (Array.isArray(args.hide) ? args.hide : []).filter((d) => HIDEABLE_DETAILS.includes(d));
+    const live = liveBuild(ctx);
+    let built;
+    try {
+      built = await buildSite({ resumeText, colorTheme: theme, style: theme, wishes, hide, design, live });
+    } finally {
+      live.flush();
+    }
+    const { portfolioData, portfolioHTML } = built;
+    live.stage('saving');
+    const work = await savePortfolio({ userId: ctx.userId, portfolioData, portfolioHTML, colorTheme: theme, style: theme });
+    await gate.commit();
+    const card = portfolioCard({ theme, data: portfolioData, html: portfolioHTML, work });
+    return { card, summary: `Portfolio built (${card.themeLabel}); the card shows the preview and a Publish button. In at most two sentences, ask them to check names, dates and links, and ask if they want anything changed (they can just tell you here), or tap Publish if it looks right.` };
+  },
+
+  async edit_portfolio(args, ctx) {
+    const refused = await portfolioRefused(ctx, 'Sign in free to edit your portfolio website.');
+    if (refused) return refused;
+    const changes = clip(args.changes, 2000);
+    if (!changes) return { card: null, summary: 'Nothing changed: ask what they want to change.' };
+    const current = await currentPortfolio(ctx);
+    if (!current) return { card: null, summary: 'There is no portfolio to edit yet. Offer to build one.' };
+
+    const live = liveBuild(ctx);
+    live.stage('editing');
+    let html;
+    try {
+      html = await editSite({ html: current.html, changes, onHtml: live.html });
+    } finally {
+      live.flush();
+    }
+    live.stage('saving');
+    // The Publish dialog lists the contact details on the page, so one taken off must leave the list
+    const data = { ...current.data };
+    for (const field of ['email', 'phone', 'location']) if (data[field] && !html.includes(data[field])) delete data[field];
+    const work = await savePortfolio({ userId: ctx.userId, portfolioData: data, portfolioHTML: html, colorTheme: current.theme, style: current.theme, workId: current.workId });
+    const previous = current.inChat ? undefined : { html: current.html, data: current.data };
+    return { card: portfolioCard({ theme: current.theme, data, html, work, edited: true, previous }), summary: 'The change is made; the new card shows the updated preview and an Undo button. In at most two sentences, say what changed, ask if there is anything else, and say a site that is already live changes only when they tap Update on this card.' };
+  },
+
+  // No AI here: the earlier page is put back exactly as it was
+  async restore_portfolio(args, ctx) {
+    const refused = await portfolioRefused(ctx, 'Sign in free to manage your portfolio website.');
+    if (refused) return refused;
+    const versions = await portfolioVersions(ctx);
+    const latest = versions.at(-1);
+    if (versions.length < 2) return { card: null, summary: 'There is no earlier version in this chat to go back to. Tell them so.' };
+    const wanted = clip(args.card_id, 30);
+    const target = wanted ? versions.find((v) => v.id === wanted) : versions.at(-2);
+    if (!target || target === latest) return { card: null, summary: 'That is already the newest version. Tell them so.' };
+    const data = target.data || {};
+    const work = await savePortfolio({ userId: ctx.userId, portfolioData: data, portfolioHTML: target.html, colorTheme: target.theme, style: target.theme, workId: latest.workId || target.workId || null });
+    return { card: portfolioCard({ theme: target.theme, data, html: target.html, work, edited: true, restored: true }), summary: 'The earlier version is back; the new card shows it. In at most two sentences, confirm it and say a site that is already live changes only when they tap Update on this card.' };
+  },
+
   async open_tool(args) {
     const page = Object.hasOwn(TOOL_PAGES, args.page) ? args.page : null;
     if (!page) return { card: null, summary: 'Unknown page; nothing shown.' };
@@ -275,6 +461,9 @@ export const TOOL_STATUS = {
   interview_questions: 'Preparing interview questions',
   career_roadmap: 'Planning your roadmap',
   find_jobs: 'Searching open jobs',
+  build_portfolio: 'Working on your portfolio website',
+  edit_portfolio: 'Updating your portfolio website',
+  restore_portfolio: 'Bringing back that version',
   open_tool: 'Finding the right tool'
 };
 

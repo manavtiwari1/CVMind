@@ -241,7 +241,7 @@ export default function MyDocuments({ setCurrentPage, handleSignOut, setLoadedWo
     <div className="md-empty">
       <FileText size={28} />
       <strong>No documents yet</strong>
-      <span>Resumes and cover letters you save in the builder will show up here.</span>
+      <span>Resumes, cover letters and portfolios you make will show up here.</span>
       <button type="button" className="md-btn md-btn--solid" onClick={() => setCurrentPage('resume-editor')}>Create a resume</button>
     </div>
   );

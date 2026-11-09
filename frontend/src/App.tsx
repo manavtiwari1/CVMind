@@ -28,6 +28,7 @@ import ProductLocked from './components/ProductLocked';
 import UpgradeModal from './components/UpgradeModal';
 import ComingSoonModal from './learnLeo/ComingSoonModal';
 import { readUser, saveUser, USER_CHANGE_EVENT } from './lib/currentUser';
+import { workPage } from './lib/works';
 import type { LoadedWork, ResumeAnalysis } from './types/api';
 import './styles/theme.css';
 import './styles/3d-effects.css';
@@ -628,6 +629,8 @@ export default function App() {
             resumeText={resumeText}
             setCurrentPage={setCurrentPage}
             onExit={goBack}
+            loadedWork={loadedWork}
+            setLoadedWork={setLoadedWork}
           />
         );
       case 'products':
@@ -705,13 +708,14 @@ export default function App() {
             isLoggedIn={isLoggedIn}
             onSignIn={() => setShowAuthModal(true)}
             openWork={(work) => {
-              // Same tab when the editor is on this host; across hosts the work travels in the URL hash
-              if (isCrossHost('resume-editor')) {
-                window.location.assign(urlForPage('resume-editor') + workHash(work));
+              // Same tab when the page is on this host; across hosts the work travels in the URL hash
+              const page = workPage(work.type);
+              if (isCrossHost(page)) {
+                window.location.assign(urlForPage(page) + workHash(work));
                 return;
               }
               setLoadedWork(work);
-              setCurrentPage('resume-editor');
+              setCurrentPage(page);
             }}
           />
         );
@@ -739,7 +743,7 @@ export default function App() {
   // Signed-in app pages, the guided tools included, never show the site header or footer
   const isProductPage = APP_PAGES.includes(currentPage);
   // Account and My Documents have their own Back button / top bar; the editor's full-screen flows have Exit
-  // The Portfolio Generator is a full-screen chat with its own top bar and Back button
+  // The Portfolio Generator is a full-screen studio with its own top bar and Back button
   const isPortfolioStudio = currentPage === 'portfolio-gen';
   // Job Finder has its own top bar
   const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && currentPage !== 'job-finder' && currentPage !== 'learn-with-leo' && !isFocusFlow && !isPortfolioStudio;

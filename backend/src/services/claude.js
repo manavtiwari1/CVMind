@@ -43,8 +43,11 @@ export const claudeTokens = (usage = {}) => ({
 });
 
 // One full reply as text. Streams underneath so long replies don't hit HTTP timeouts.
-export async function completeClaude({ system, prompt, effort }) {
-  const message = await openClaudeStream({ system, messages: [{ role: 'user', content: prompt }], effort }).finalMessage();
+// onText gets the reply's words as they are written.
+export async function completeClaude({ system, prompt, effort, onText }) {
+  const stream = openClaudeStream({ system, messages: [{ role: 'user', content: prompt }], effort });
+  if (onText) stream.on('text', (delta) => onText(delta));
+  const message = await stream.finalMessage();
   chargeAiUsage(claudeTokens(message.usage));
   logAiCall({ provider: 'claude', model: message.model, ...claudeTokens(message.usage) });
   if (message.stop_reason === 'refusal') throw new Error('The AI declined this request.');
