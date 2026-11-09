@@ -41,7 +41,7 @@ export default function Privacy({ setCurrentPage }: PrivacyProps) {
         <li><strong>Documents you save are stored in your account</strong> so you can open them on any device. Only you can see them unless you share a link, or you join your college on our Placements Portal.</li>
         <li><strong>Your college sees your resumes and scores only if you agree.</strong> If your college invites you to CVMind, it sees nothing from your account until you accept, and you can leave at any time.</li>
         <li><strong>Your text is sent to an AI model</strong> to produce the feedback you ask for. We do not use your content to train AI models.</li>
-        <li><strong>We do not sell your personal information.</strong></li>
+        <li><strong>We do not sell your personal information.</strong> Your resumes, chats and saved documents are never given to anyone for advertising or marketing.</li>
         <li><strong>Some pages show Google ads</strong>, which use cookies. You can opt out of personalised ads.</li>
       </ul>
 
@@ -77,7 +77,7 @@ export default function Privacy({ setCurrentPage }: PrivacyProps) {
       </ul>
 
       <h2 id="ai">AI processing</h2>
-      <p>Our AI features send the text needed for your request (for example your resume text and a job description) to our AI model providers, Anthropic (Claude), DeepSeek and Google Gemini, which return the feedback or draft you asked for. We use these services through their APIs, and we do not use your resumes, prompts or answers to train any AI model. These providers may process data on servers outside India.</p>
+      <p>Our AI features send the text needed for your request (for example your resume text and a job description) to the AI service providers we work with, which return the feedback or draft you asked for. We use these services through their APIs, and we do not use your resumes, prompts or answers to train any AI model. Some of these providers process data on servers outside India.</p>
 
       <p><strong>AI Job Finder.</strong> To find jobs, the role and city you search for are sent to our job listings providers (JSearch, through RapidAPI, and Adzuna); your resume is not. We save the resume and preferences you choose for Job Finder, and the jobs you tell us you applied to, with the date, so the same job can show that you already applied. If you apply to a job a recruiter posted on CVMind, your name, email, phone and resume text are sent to that recruiter. Deleting your account removes your Job Finder records.</p>
 
@@ -101,17 +101,15 @@ export default function Privacy({ setCurrentPage }: PrivacyProps) {
       <p>Chats, missions and reminders are deleted automatically 12 months after they were created. Deleting a chat removes its text and its missions. Your Career Profile and connected tools stay until you delete them or your account.</p>
 
       <h2 id="share">Who we share it with</h2>
-      <p>We do not sell or rent your personal information. We share it only with service providers that help us run CV Mind, and only as much as they need:</p>
+      <p>We do not sell or rent your personal information, and we never give your resumes, chats or saved documents to anyone for advertising or marketing. To run CV Mind we rely on a small number of service providers, and we send them only what they need to deliver the feature you asked for:</p>
       <div className="rsc-table-wrap">
         <table>
           <thead>
             <tr><th>Provider</th><th>What for</th><th>What they receive</th></tr>
           </thead>
           <tbody>
-            <tr><td>Anthropic (Claude)</td><td>AI feedback, writing and the Leo chat</td><td>The text of your request, and your Career Profile and resume text when Leo needs them</td></tr>
-            <tr><td>DeepSeek</td><td>AI feedback and writing for some features</td><td>The text of your request</td></tr>
-            <tr><td>Google (Gemini)</td><td>AI feedback and writing for some features</td><td>The text of your request</td></tr>
-            <tr><td>MongoDB Atlas</td><td>Database hosting</td><td>Account details, saved documents, Leo chats, your Career Profile and usage records</td></tr>
+            <tr><td>AI service providers</td><td>AI feedback, writing and the Leo chat</td><td>The text of your request, and your Career Profile and resume text when Leo needs them</td></tr>
+            <tr><td>Cloud hosting provider</td><td>Securely storing our database</td><td>Account details, saved documents, Leo chats, your Career Profile and usage records</td></tr>
             <tr><td>Resend</td><td>Sending emails</td><td>Your email address and the email content</td></tr>
             <tr><td>Google Sign-In</td><td>Signing in with Google</td><td>Handled by Google; we receive your name, email and photo</td></tr>
             <tr><td>Google AdSense</td><td>Showing ads on some pages</td><td>Cookie and device data, as described below</td></tr>
