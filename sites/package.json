@@ -1,0 +1,7 @@
+{
+  "name": "cvmind-sites",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Serves published portfolios at username.portfolio.cvmind.in",
+  "type": "module"
+}
