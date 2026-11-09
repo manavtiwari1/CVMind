@@ -218,6 +218,21 @@ export function refundRejectedEmail({ name, plan, note, until }) {
   };
 }
 
+// A reminder the user asked Leo to send them
+export function leoReminderEmail({ name, text }) {
+  return {
+    subject: `Reminder: ${text.slice(0, 70)}`,
+    html: renderEmail({
+      preheader: text.slice(0, 120),
+      eyebrow: 'Leo reminder',
+      title: 'You asked Leo to remind you',
+      greetingName: name,
+      body: text,
+      footerReason: 'You received this email because you asked Leo to remind you. It is sent once.'
+    })
+  };
+}
+
 export function resumePdfEmail({ name, fileName }) {
   return {
     subject: `Your resume: ${fileName}`,

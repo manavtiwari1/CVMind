@@ -38,6 +38,8 @@ before(async () => {
   const { createLeoChatRouter } = await import('../../src/routes/leoChat.js');
 
   while (mongoose.connection.readyState !== 1) await new Promise((r) => setTimeout(r, 50));
+  // These tests cover the chat by itself; missions.test.js covers Agent Mode
+  await saveSettingGroup('features', { 'leo-agent': false }, 'test');
 
   setLeoStream(async function* ({ messages, tools }) {
     seen.push({ messages: structuredClone(messages), tools: !!tools, toolNames: (tools || []).map((t) => t.function.name) });
@@ -756,4 +758,26 @@ test('only the page itself is shown as it is written', async () => {
   for (const part of ['Sure, here is', ' your page:\n```html\n<!DOC', 'TYPE html><html>', '<body>Hi</body>', '</html>\n```\nHope you like it']) feed(part);
   assert.equal(seenText.join(''), '<!DOCTYPE html><html><body>Hi</body></html>');
   assert.equal(htmlOnly(undefined), undefined);
+});
+
+test('a cover letter keeps its edited words and chosen design for a reopened chat', async () => {
+  const user = await newUser();
+  const conversationId = new mongoose.Types.ObjectId().toString();
+  const card = { type: 'cover_letter', id: 'letter1', name: 'Priya', greeting: 'Dear Team,', paragraphs: ['Old words.'], closing: 'Regards,' };
+  await LeoTurn.create({ conversationId, userId: user.id, page: 'chat', prompt: 'letter', reply: 'done', toolCalls: [{ name: 'write_cover_letter', card, summary: 'done' }] });
+  const save = (value) => call('/api/leo-chat/action', { method: 'POST', token: user.token, body: { conversationId, action: 'built', value: { cardId: 'letter1', ...value } } });
+  const saved = async () => (await LeoTurn.findOne({ conversationId }).lean()).toolCalls[0].card;
+
+  // Edited before any design is chosen: there is no html yet
+  const letter = { name: 'Priya S', greeting: 'Dear Hiring Team,', paragraphs: ['New words.', '  ', 'More words.'], closing: 'Best,' };
+  assert.equal((await save({ html: '', designId: '', letter })).status, 200);
+  assert.deepEqual((await saved()).paragraphs, ['New words.', 'More words.']);
+  assert.equal((await saved()).name, 'Priya S');
+
+  assert.equal((await save({ html: '<div>letter page</div>', designId: 'cl-clean', letter })).status, 200);
+  assert.equal((await saved()).html, '<div>letter page</div>');
+  assert.equal((await saved()).designId, 'cl-clean');
+
+  // Nothing to keep is still refused
+  assert.equal((await save({ html: '' })).status, 400);
 });

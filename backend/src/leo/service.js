@@ -1,17 +1,21 @@
 import mongoose from 'mongoose';
 import { LeoConversation, LeoTurn } from './models.js';
-import { PERSONA, PROMPT_VERSION } from './persona.js';
+import { AGENT_PROMPT, PERSONA, PROMPT_VERSION } from './persona.js';
 import { streamChat } from './llm.js';
 import { TOOL_DEFINITIONS, TOOL_STATUS, runTool, looksCard, looksListedInText } from './tools.js';
 import {
   FLOW_TOOL_DEFINITIONS, FLOW_TOOL_STATUS, isFlowTool, runFlowTool, flowPrompt, publicFlow, beginTurn, endTurn
 } from './flows/index.js';
+import { AGENT_TOOL_STATUS, agentToolDefinitions, isAgentTool, runAgentTool } from './missions/index.js';
+import { getProfile, profilePrompt } from './careerProfile.js';
+import { MAX_RESUME_CHARS } from './limits.js';
+import { blockedToolsFor, connectCard, connectorForTool, connectorPrompt } from './connectors.js';
+
+export { MAX_RESUME_CHARS };
 
 // Earlier turns sent back to the model with each new message
 const HISTORY_TURNS = 8;
 export const MAX_MESSAGE_CHARS = 4000;
-// Resume text kept in the prompt; enough for a two-page resume
-export const MAX_RESUME_CHARS = 15000;
 // Model calls per message: tool rounds, then a final reply without tools
 const MAX_ROUNDS = 3;
 const MAX_TOOLS_PER_ROUND = 2;
@@ -26,17 +30,20 @@ const clip = (value, max) => String(value ?? '').trim().slice(0, max);
 const firstName = (name) => clip(name, 60).split(/\s+/)[0] || '';
 
 // The per-user part of the system prompt: who the user is and what they attached
-export function buildContext({ user, resume }) {
+export function buildContext({ user, resume, profile = null }) {
   const lines = [];
   const name = firstName(user?.name);
   if (name) lines.push(`The user's first name is ${name}.`);
-  else if (!user) lines.push('The user is not signed in. Tailoring, cover letters and portfolios need a free account; the tool will ask them to sign in.');
+  else if (!user) lines.push('The user is not signed in. Tailoring, cover letters, interview questions and portfolios need a free account; the tool will ask them to sign in.');
   const text = clip(resume?.text, MAX_RESUME_CHARS);
   if (text.length >= 50) {
     lines.push(`The user attached their resume${resume.name ? ` ("${clip(resume.name, 120)}")` : ''}:\n<data>\n${text.replace(/<\/?data>/gi, '')}\n</data>`);
-  } else {
+  } else if (!profile?.masterResumeText) {
     lines.push('No resume is attached.');
   }
+  // The saved resume reaches the tools but not the prompt, so it doesn't cost tokens on every message
+  const saved = profilePrompt(profile);
+  if (saved) lines.push(saved);
   return lines.join('\n');
 }
 
@@ -77,12 +84,20 @@ export function guestHistory(history) {
     .map((m) => ({ role: m.role, content: clip(m.content, MAX_MESSAGE_CHARS) || '…' }));
 }
 
-// Runs a tool call, flow tools included. Never throws: failures come back as an error card.
+// Runs a tool call, flow and agent tools included. Never throws: failures come back as an error card.
 async function execute(call, ctx) {
-  if (!isFlowTool(call.name)) return runTool(call, ctx);
+  // Leo isn't offered these tools; this stops a call that names one anyway
+  if (ctx.blockedTools.has(call.name)) return connectCard(connectorForTool(call.name));
+  if (!isFlowTool(call.name) && !isAgentTool(call.name)) return runTool(call, ctx);
   let args = {};
   try { args = call.arguments ? JSON.parse(call.arguments) : {}; } catch { /* bad JSON: run with defaults */ }
   try {
+    if (isAgentTool(call.name)) {
+      const result = await runAgentTool(call.name, args, ctx);
+      // Later tools in this turn see what was just saved
+      if (call.name === 'update_career_profile') ctx.profile = await getProfile(ctx.userId);
+      return result;
+    }
     return await runFlowTool(call.name, args, ctx);
   } catch (err) {
     console.error(`[leo] flow tool ${call.name} failed:`, err.message);
@@ -102,13 +117,25 @@ async function execute(call, ctx) {
  *
  * flows: guided flows are on ('leo-flows' switch). flow: the open flow (normalized), or null.
  * preCalls: tool calls a card tap asked for, run before the model speaks.
+ * agent: missions and the Career Profile are on ('leo-agent' switch). profile: the user's saved one.
+ * notes: cards to show before the reply, such as a resume just saved to the profile.
  */
-export async function runTurn({ user, email, conversation, history = [], message, resume, settings, signal, send, flows = false, flow = null, preCalls = [], viaButton = false, flowBefore: savedFlow }) {
+export async function runTurn({ user, email, conversation, history = [], message, resume, settings, signal, send, flows: flowsWanted = false, flow = null, preCalls = [], viaButton = false, flowBefore: savedFlow, agent = false, profile = null, notes = [], connected = null }) {
   const started = Date.now();
   // A card tap changes the flow before the turn starts; savedFlow is how it looked before that,
   // so the change is still saved
   const flowBefore = savedFlow ?? JSON.stringify(flow);
-  const system = [PERSONA, buildContext({ user, resume })];
+  const useAgent = agent && !!user && !!conversation;
+  // connected is null when there's nothing to enforce: guests, Agent Mode off, or the lookup failed
+  const blockedTools = useAgent && connected ? blockedToolsFor(connected) : new Set();
+  const flows = flowsWanted && !blockedTools.has('start_flow');
+  const system = [PERSONA, buildContext({ user, resume, profile: useAgent ? profile : null })];
+  if (useAgent) {
+    if (connected) system.push(connectorPrompt(connected));
+    system.push(AGENT_PROMPT, `The time now is ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'full', timeStyle: 'short' })} IST.`);
+    const { mock } = conversation;
+    if (mock) system.push(`A mock interview is open: question ${mock.at + 1} of ${mock.questions.length}. Unless the user clearly asks something else, their message is their answer: pass it word for word to answer_mock_interview. If they want to stop, call it with stop set.`);
+  }
   if (flows) {
     beginTurn(flow);
     system.push(flowPrompt(flow));
@@ -118,28 +145,42 @@ export async function runTurn({ user, email, conversation, history = [], message
     ...(conversation ? await savedHistory(String(conversation._id)) : guestHistory(history)),
     { role: 'user', content: message }
   ];
-  const tools = flows ? [...TOOL_DEFINITIONS, ...FLOW_TOOL_DEFINITIONS] : TOOL_DEFINITIONS;
+  const tools = [...TOOL_DEFINITIONS, ...(flows ? FLOW_TOOL_DEFINITIONS : []), ...(useAgent ? agentToolDefinitions(blockedTools) : [])].filter((t) => !blockedTools.has(t.function.name));
+  const attached = clip(resume?.text, MAX_RESUME_CHARS);
+  const saved = useAgent ? clip(profile?.masterResumeText, MAX_RESUME_CHARS) : '';
   const ctx = {
     email: user ? email : null,
-    resumeText: clip(resume?.text, MAX_RESUME_CHARS),
+    resumeText: attached.length >= 50 ? attached : saved,
+    // The resume comes from the Career Profile, not from a file attached to this chat
+    usingSavedResume: attached.length < 50 && saved.length >= 50,
     userId: conversation?.userId || 'guest',
     conversationId: conversation ? String(conversation._id) : 'guest',
     viaButton,
     flow,
     setFlow(next) { ctx.flow = next; },
-    summaryShown: false
+    summaryShown: false,
+    agent: useAgent,
+    blockedTools,
+    profile: useAgent ? profile : null,
+    settings,
+    emailVerified: user ? user.emailVerified !== false : false,
+    firstName: firstName(user?.name)
   };
 
   let reply = '';
   const usage = { tokensIn: 0, tokensOut: 0 };
   const toolLog = [];
+  for (const card of notes) {
+    send('card', { id: 'profile_note', card });
+    toolLog.push({ name: 'save_resume', card, summary: 'Saved the attached resume to the Career Profile.' });
+  }
   let model = settings.model;
   let stopReason = '';
   let nudged = false;
 
   const runCalls = async (calls) => {
     for (const call of calls) {
-      send('tool', { id: call.id, name: call.name, label: TOOL_STATUS[call.name] || FLOW_TOOL_STATUS[call.name] || 'Working on it' });
+      send('tool', { id: call.id, name: call.name, label: TOOL_STATUS[call.name] || FLOW_TOOL_STATUS[call.name] || AGENT_TOOL_STATUS[call.name] || 'Working on it' });
       ctx.progress = (data) => send('progress', { id: call.id, ...data });
       const result = await execute(call, ctx);
       ctx.progress = null;
@@ -275,6 +316,28 @@ export async function runTurn({ user, email, conversation, history = [], message
   }
   checkBudget(settings).catch((err) => console.error('[leo] budget check failed:', err.message));
   return { turnId, reply, toolLog, usage, flow: ctx.flow };
+}
+
+// One row per mission run, in the same table as chat turns, so the admin AI activity list and the
+// budget alert include missions. It has no chat of its own, so it never shows in a thread.
+// The provider split isn't known at this level, so all tokens are priced as input.
+export async function recordMissionUsage({ mission, tokens, status, settings, latencyMs }) {
+  await LeoTurn.create({
+    conversationId: `mission:${mission._id}`,
+    userId: mission.userId,
+    email: mission.email,
+    page: 'mission',
+    prompt: mission.goal,
+    reply: status,
+    toolCalls: (mission.steps || []).filter((s) => s.status === 'done').map((s) => ({ name: s.tool })),
+    model: settings.model,
+    promptVersion: PROMPT_VERSION,
+    tokensIn: tokens,
+    costUsd: turnCost({ tokensIn: tokens, tokensOut: 0 }, settings),
+    latencyMs,
+    stopReason: status === 'done' ? '' : status
+  });
+  await checkBudget(settings);
 }
 
 // Warns once per day (per server instance) when today's Leo spend crosses the budget in settings

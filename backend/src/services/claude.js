@@ -1,6 +1,7 @@
 // Claude client. Serves every AI feature except the five that stay on DeepSeek:
 // AI Proofreading, Offer Negotiation, LinkedIn Profile PDF Audit, Bio & Banner, Outreach & DM.
 
+import { AsyncLocalStorage } from 'async_hooks';
 import Anthropic from '@anthropic-ai/sdk';
 import { chargeAiUsage } from '../billing/aiContext.js';
 import { logAiCall } from '../billing/aiCalls.js';
@@ -42,11 +43,17 @@ export const claudeTokens = (usage = {}) => ({
   tokensOut: usage.output_tokens || 0
 });
 
+// Lets Leo watch what a feature deep in the call stack writes, without every function passing it along
+const liveText = new AsyncLocalStorage();
+export const runWithLiveText = (onText, fn) => liveText.run(onText, fn);
+export const liveTextWatcher = () => liveText.getStore();
+
 // One full reply as text. Streams underneath so long replies don't hit HTTP timeouts.
 // onText gets the reply's words as they are written.
 export async function completeClaude({ system, prompt, effort, onText }) {
   const stream = openClaudeStream({ system, messages: [{ role: 'user', content: prompt }], effort });
-  if (onText) stream.on('text', (delta) => onText(delta));
+  const watcher = onText || liveTextWatcher();
+  if (watcher) stream.on('text', (delta) => watcher(delta));
   const message = await stream.finalMessage();
   chargeAiUsage(claudeTokens(message.usage));
   logAiCall({ provider: 'claude', model: message.model, ...claudeTokens(message.usage) });

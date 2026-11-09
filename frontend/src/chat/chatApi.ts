@@ -1,5 +1,6 @@
 import { API_BASE } from '../lib/apiBase';
 import { authFetch } from '../lib/authFetch';
+import { readUser } from '../lib/currentUser';
 import type { ExtractedResume } from '../types/api';
 
 // Client for /api/leo-chat (backend/src/routes/leoChat.js)
@@ -24,15 +25,33 @@ export interface TailorCard {
   missing: string[];
   summary: string;
   bullets: { role: string; points: string[] }[];
+  id?: string;
+  // The whole tailored resume, so the chat can build the document
+  data?: ExtractedResume;
+  html?: string;
+  workId?: string;
+  templateId?: string;
 }
 export interface CoverLetterCard {
   type: 'cover_letter';
+  // Missing on letters written before designs came to the chat
+  id?: string;
   name: string;
+  title?: string;
+  email?: string;
+  phone?: string;
+  location?: string;
+  linkedin?: string;
+  recipient?: string;
   jobTitle: string;
   company: string;
   greeting: string;
   paragraphs: string[];
   closing: string;
+  // Set once the user chose a design
+  html?: string;
+  designId?: string;
+  workId?: string;
 }
 export interface InterviewCard {
   type: 'interview';
@@ -94,8 +113,52 @@ export interface PortfolioCard {
 }
 export interface PortfolioLooksCard { type: 'portfolio_looks'; looks: { id: string; label: string; bg: string; accent: string; text: string }[] }
 
+// Leo Agent Mode (backend/src/leo/missions): one goal, several tools, run after a single Start tap
+export interface MissionStep {
+  id: string;
+  tool: string;
+  title: string;
+  detail: string;
+  risk: 'read' | 'create' | 'external';
+  review: boolean;
+  status: 'pending' | 'locked' | 'running' | 'done' | 'failed' | 'blocked' | 'awaiting_approval';
+  card: Card | null;
+  // Finished, and the user has to check it before the next step
+  needsReview: boolean;
+}
+export interface MissionState {
+  id: string;
+  status: 'planned' | 'running' | 'waiting_review' | 'paused' | 'done' | 'stopped';
+  goal: string;
+  pausedReason: string;
+  message: string;
+  pendingStepId: string;
+  steps: MissionStep[];
+  quota: { left: number; limit: number; period: 'day' | 'week' } | null;
+  tokensUsed: number;
+  tokenCap: number;
+}
+export interface MissionCardData { type: 'mission'; id: string; mission: MissionState }
+export interface ProfileNoteCard { type: 'profile_note'; message: string; page?: string }
+export interface WritingCard { type: 'writing'; kicker: string; title: string; score?: number; blocks: { title: string; text: string; copy?: boolean; saveAsResume?: boolean }[] }
+export interface PickJob { jobKey: string; title: string; company: string; location: string; remote: boolean; score: number | null; matched: string[]; missing: string[]; applyUrl: string }
+export interface JobPickCard { type: 'job_pick'; query: string; location: string; maxPicks: number; jobs: PickJob[] }
+export interface ApplyPackCard {
+  type: 'apply_pack';
+  id: string;
+  job: { jobKey: string; title: string; company: string; location: string; applyUrl: string; score: number | null };
+  changes: string[];
+  tailor: TailorCard;
+  letter: CoverLetterCard;
+  referral: { connectionRequest: string; referralPitch: string } | null;
+}
+export interface ConnectCard { type: 'connect'; connector: { id: string; label: string; description: string } }
+export interface RemindersCard { type: 'reminders'; items: { id: string; text: string; dueAt: string }[] }
+export interface CareerProfileCard { type: 'career_profile'; resumeName: string; sections: { title: string; lines: string[] }[] }
+
 export type Card = AtsCard | TailorCard | CoverLetterCard | InterviewCard | RoadmapCard | JobsCard | LinkCard | LockedCard | ErrorCard
-  | ChoicesCard | SummaryCard | TemplatePickerCard | DocumentCard | PortfolioCard | PortfolioLooksCard;
+  | ChoicesCard | SummaryCard | TemplatePickerCard | DocumentCard | PortfolioCard | PortfolioLooksCard
+  | MissionCardData | ProfileNoteCard | CareerProfileCard | WritingCard | JobPickCard | ApplyPackCard | RemindersCard | ConnectCard;
 
 // The guided flow open in a chat. Guests keep it in the browser and send it back with each message.
 export interface LeoFlow {
@@ -107,7 +170,8 @@ export interface LeoFlow {
   [key: string]: unknown;
 }
 
-export interface LiveProgress { stage: string; html: string }
+// A long tool's work so far: a portfolio's stage and page, or the words a tool is writing
+export interface LiveProgress { stage: string; html: string; text: string }
 export interface ToolRun {
   id: string;
   name?: string;
@@ -155,7 +219,7 @@ export interface StreamHandlers {
   onMeta: (meta: { conversationId: string | null; guest: boolean; remaining: number }) => void;
   onDelta: (text: string) => void;
   onTool: (tool: { id: string; name: string; label: string }) => void;
-  onProgress: (progress: { id: string; stage?: string; html?: string; reset?: boolean }) => void;
+  onProgress: (progress: { id: string; stage?: string; html?: string; text?: string; reset?: boolean }) => void;
   onCard: (result: { id: string; card: Card }) => void;
   onFlow: (flow: LeoFlow | null) => void;
   onDone: (done: { turnId: string | null; stopReason: string }) => void;
@@ -191,8 +255,21 @@ async function streamFrom(path: string, body: ChatRequest | ActionRequest, handl
     body: JSON.stringify(body),
     signal,
   });
-  if (!res.ok || !res.body) throw await failure(res);
+  await readEvents(res, (event, payload) => {
+    if (event === 'meta') handlers.onMeta(payload);
+    else if (event === 'delta') handlers.onDelta(payload.text);
+    else if (event === 'tool') handlers.onTool(payload);
+    else if (event === 'progress') handlers.onProgress(payload);
+    else if (event === 'card') handlers.onCard(payload);
+    else if (event === 'flow') handlers.onFlow(payload.flow);
+    else if (event === 'done') handlers.onDone(payload);
+  });
+}
 
+// Reads a server-sent event response until it ends. An error event rejects.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function readEvents(res: Response, onEvent: (event: string, payload: any) => void) {
+  if (!res.ok || !res.body) throw await failure(res);
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
@@ -212,16 +289,31 @@ async function streamFrom(path: string, body: ChatRequest | ActionRequest, handl
       }
       if (!event || !data) continue; // heartbeat comments
       const payload = JSON.parse(data);
-      if (event === 'meta') handlers.onMeta(payload);
-      else if (event === 'delta') handlers.onDelta(payload.text);
-      else if (event === 'tool') handlers.onTool(payload);
-      else if (event === 'progress') handlers.onProgress(payload);
-      else if (event === 'card') handlers.onCard(payload);
-      else if (event === 'flow') handlers.onFlow(payload.flow);
-      else if (event === 'done') handlers.onDone(payload);
-      else if (event === 'error') throw new ChatError(payload.error, payload.code);
+      if (event === 'error') throw new ChatError(payload.error, payload.code);
+      onEvent(event, payload);
     }
   }
+}
+
+// A tap on a mission card. Streams the run until the mission finishes or has to wait.
+export async function streamMission(
+  id: string,
+  verb: 'start' | 'continue' | 'approve',
+  body: { removeSteps?: string[]; stepId?: string; picks?: string[] },
+  handlers: { onMission: (mission: MissionState) => void; onStep: (step: MissionStep) => void; onProgress: (progress: { stepId: string; text?: string }) => void },
+  signal?: AbortSignal,
+) {
+  const res = await authFetch(`${API_BASE}/api/leo-chat/missions/${id}/${verb}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  });
+  await readEvents(res, (event, payload) => {
+    if (event === 'mission') handlers.onMission(payload.mission);
+    else if (event === 'step') handlers.onStep(payload.step);
+    else if (event === 'progress') handlers.onProgress(payload);
+  });
 }
 
 // Reads a PDF, DOCX or TXT resume to text on the server
@@ -253,12 +345,80 @@ export interface SavedChat {
 }
 
 // The browser filled a document card's template: keep the result with the card
-export const saveBuilt = (conversationId: string, cardId: string, html: string, workId: string) =>
-  call('/action', { method: 'POST', body: JSON.stringify({ conversationId, action: 'built', value: { cardId, html, workId } }) });
+export const saveBuilt = (conversationId: string, cardId: string, html: string, workId: string, templateId?: string) =>
+  call('/action', { method: 'POST', body: JSON.stringify({ conversationId, action: 'built', value: { cardId, html, workId, templateId } }) });
+
+// A cover letter's edited words and chosen design: kept with the card
+export const saveLetter = (conversationId: string, cardId: string, letter: { name: string; greeting: string; paragraphs: string[]; closing: string }, html: string, designId: string, workId: string) =>
+  call('/action', { method: 'POST', body: JSON.stringify({ conversationId, action: 'built', value: { cardId, html, designId, workId, letter } }) });
+
+// Saves a finished document to My Documents. Returns its id, or '' when it couldn't be saved.
+export async function saveDocument(doc: { title: string; type: string; templateId: string; htmlContent: string; workId?: string }): Promise<string> {
+  const user = readUser();
+  const userId = user?.id || user?._id;
+  if (!userId) return '';
+  try {
+    const res = await authFetch(`${API_BASE}/api/user/work`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, source: 'leo-chat', ...doc }),
+    });
+    const body = await res.json();
+    return res.ok ? String(body.data?._id || body.data?.id || '') : '';
+  } catch {
+    return '';
+  }
+}
+
+// Listens to a mission already running on the server, until it rests
+export async function watchMission(id: string, handlers: { onMission: (mission: MissionState) => void; onStep: (step: MissionStep) => void }, signal?: AbortSignal) {
+  const res = await authFetch(`${API_BASE}/api/leo-chat/missions/${id}/stream`, { signal });
+  await readEvents(res, (event, payload) => {
+    if (event === 'mission') handlers.onMission(payload.mission);
+    else if (event === 'step') handlers.onStep(payload.step);
+  });
+}
+
+export const saveResumeText = (text: string) => call('/profile/resume', { method: 'PUT', body: JSON.stringify({ resume: { name: 'Improved resume', text } }) });
+export const cancelReminder = (id: string) => call(`/reminders/${id}/cancel`, { method: 'POST', body: '{}' });
+
+// The user says they applied: logged in Job Finder, within its free limit
+export async function markApplied(jobKey: string) {
+  const res = await authFetch(`${API_BASE}/api/job-finder/apply`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobKey }) });
+  if (!res.ok) throw await failure(res);
+}
 
 // What the user did with a result, for the flow funnel
 export const trackResult = (product: string, action: 'edit' | 'pdf' | 'word') =>
   call('/action', { method: 'POST', body: JSON.stringify({ action: 'track', value: { product, action } }) }).catch(() => {});
+
+export const getMission = (id: string) => call<{ data: MissionState }>(`/missions/${id}`).then((r) => r.data);
+export const stopMission = (id: string) => call<{ data: MissionState }>(`/missions/${id}/stop`, { method: 'POST', body: '{}' }).then((r) => r.data);
+
+// The Career Profile: what Leo remembers across chats
+export interface CareerProfileData {
+  level: string; targetRole: string; fullName: string; email: string; phone: string; location: string; linkedin: string; summary: string;
+  education: { degree: string; university: string; gradYear: string; cgpa: string }[];
+  experience: { jobTitle: string; company: string; location: string; startDate: string; endDate: string; description: string }[];
+  projects: { name: string; tech: string; description: string; link: string }[];
+  skills: string[];
+  achievements: { title: string; description: string }[];
+}
+export interface CareerProfile { data: CareerProfileData; sources: Record<string, string>; resumeName: string; hasData: boolean; updatedAt: string | null }
+
+export const getCareerProfile = () => call<{ data: CareerProfile }>('/profile').then((r) => r.data);
+export const saveCareerProfile = (data: CareerProfileData) => call<{ data: CareerProfile }>('/profile', { method: 'PUT', body: JSON.stringify({ data }) }).then((r) => r.data);
+export const deleteCareerProfile = () => call('/profile', { method: 'DELETE' });
+
+// Connectors: the CVMind tools Leo can use for this account
+export interface Connector { id: string; label: string; description: string; connected: boolean }
+export const getConnectors = () => call<{ data: Connector[] }>('/connectors').then((r) => r.data);
+export const connectTool = (id: string) => call<{ data: Connector[] }>(`/connectors/${id}`, { method: 'POST', body: '{}' }).then((r) => r.data);
+export const disconnectTool = (id: string) => call<{ data: Connector[] }>(`/connectors/${id}`, { method: 'DELETE' }).then((r) => r.data);
+export async function connectAllTools() {
+  const all = await getConnectors();
+  return call<{ data: Connector[] }>('/connectors', { method: 'PUT', body: JSON.stringify({ connected: all.map((c) => c.id) }) }).then((r) => r.data);
+}
 
 export const listChats = () => call<{ data: ChatSummary[] }>('/conversations').then((r) => r.data);
 export const getChat = (id: string) => call<{ data: SavedChat }>(`/conversations/${id}`).then((r) => r.data);

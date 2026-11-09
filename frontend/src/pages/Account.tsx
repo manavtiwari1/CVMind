@@ -7,6 +7,7 @@ import AccountCollege from '../components/AccountCollege';
 import { fetchMyCollege } from '../lib/myCollege';
 import type { MyCollege } from '../lib/myCollege';
 import AccountSessions from '../components/AccountSessions';
+import AccountCareerProfile from '../components/AccountCareerProfile';
 import { API_BASE } from '../lib/apiBase';
 import { authFetch } from '../lib/authFetch';
 import { readUser, saveUser, isProUser, USER_CHANGE_EVENT } from '../lib/currentUser';
@@ -435,6 +436,8 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
                 </select>
                 <span className="acct-hint"><Globe size={13} /> More languages are coming soon.</span>
               </div>
+
+              <AccountCareerProfile />
 
               <div className="acct-field">
                 <span className="acct-label">Account</span>

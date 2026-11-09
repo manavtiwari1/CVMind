@@ -676,3 +676,105 @@
   .lx-dw .dw-toran { top: -22px; }
   .lx-dw-rangoli.dw-rangoli { width: 180px; height: 180px; margin: -90px 0 0 -90px; }
 }
+
+/* ── Leo Agent Mode: mission plan, steps and the Career Profile ── */
+.lm-card { display: flex; flex-direction: column; gap: 12px; }
+.lm-head { display: flex; flex-direction: column; gap: 2px; }
+.lm-label { font-size: 12px; font-weight: 600; color: var(--green); }
+.lm-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.lm-step { border-radius: 10px; }
+.lm-step-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; min-height: 44px; }
+.lm-step + .lm-step { border-top: 1px solid var(--border); }
+.lm-step-icon { width: 24px; height: 24px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--bg-secondary); color: var(--text-tertiary); }
+.lm-done .lm-step-icon { background: var(--green); color: #fff; }
+.lm-running .lm-step-icon { color: var(--green); }
+.lm-failed .lm-step-icon, .lm-blocked .lm-step-icon { color: #c2410c; }
+.lm-step-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.lm-step-title { font-weight: 500; overflow-wrap: anywhere; }
+.lm-step-text small { color: var(--text-tertiary); font-size: 13px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.lm-locked .lm-step-title { color: var(--text-tertiary); }
+.lm-icon { width: 36px; height: 36px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; color: var(--text-tertiary) !important; }
+.lm-icon:hover { background: var(--bg-card-hover) !important; }
+.lm-turned { transform: rotate(180deg); }
+.lm-result { padding: 0 0 10px; }
+.lm-result .lc-card { margin: 0; }
+.lm-message { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 14px; }
+.lm-bad { color: #c2410c; }
+.lm-note { color: var(--text-tertiary); font-size: 13px; }
+.lm-note-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 2px 0; color: var(--text-tertiary); font-size: 13px; }
+.lm-note-row button { color: var(--green); font-weight: 600; text-decoration: underline; min-height: 32px; }
+.lm-section { display: flex; flex-direction: column; gap: 1px; overflow-wrap: anywhere; }
+.lm-section-title { font-size: 12px; font-weight: 600; color: var(--text-tertiary); }
+
+@media (max-width: 640px) {
+  .lm-actions .lc-btn { flex: 1 1 auto; justify-content: center; min-height: 44px; }
+}
+
+/* Cover letter: edit in place */
+.lc-letter-edit { display: flex; flex-direction: column; gap: 10px; }
+.lc-letter-edit label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: var(--text-tertiary); }
+.lc-letter-edit input, .lc-letter-edit textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg-primary); color: var(--text-primary); font: inherit; font-size: 15px; font-weight: 400; line-height: 1.5; resize: vertical; }
+
+/* ── Leo at work: glowing status line and words appearing live ── */
+.lx-status { display: flex; align-items: center; gap: 9px; padding: 4px 0; font-size: 14.5px; font-weight: 500; }
+.lx-status-dot { width: 9px; height: 9px; flex-shrink: 0; border-radius: 50%; background: var(--green); }
+.lx-status-text { color: var(--text-secondary); overflow-wrap: anywhere; }
+.lx-live-writing { display: flex; flex-direction: column; gap: 6px; }
+.lx-live-words { display: flex; flex-direction: column; gap: 10px; white-space: pre-line; overflow-wrap: anywhere; color: var(--text-primary); }
+.lx-live-caret, .lx-reply.is-streaming > p:last-child::after, .lx-reply.is-streaming > ul:last-child > li:last-child::after, .lx-reply.is-streaming > ol:last-child > li:last-child::after {
+  content: ''; display: inline-block; width: 8px; height: 8px; margin-left: 5px; border-radius: 50%; background: var(--green); vertical-align: 0.05em;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lx-status-dot { animation: lx-breathe 1.3s ease-in-out infinite; }
+  .lx-status-text {
+    color: transparent;
+    background: linear-gradient(90deg, var(--text-tertiary) 25%, var(--green) 50%, var(--text-tertiary) 75%);
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: lx-glow 1.9s linear infinite;
+  }
+  .lx-live-caret, .lx-reply.is-streaming > p:last-child::after, .lx-reply.is-streaming > ul:last-child > li:last-child::after, .lx-reply.is-streaming > ol:last-child > li:last-child::after { animation: lx-breathe 1s ease-in-out infinite; }
+}
+@keyframes lx-breathe { 0%, 100% { opacity: 0.35; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.1); } }
+@keyframes lx-glow { from { background-position: 110% 0; } to { background-position: -110% 0; } }
+
+/* ── Leo Agent Mode: writing, job picker, apply pack, reminders ── */
+.lw-block { display: flex; flex-direction: column; gap: 8px; }
+.lw-text { white-space: pre-line; overflow-wrap: anywhere; }
+.lj-list { display: flex; flex-direction: column; gap: 8px; }
+.lj-job, .lj-reminder { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 10px 12px; border: 1px solid var(--border) !important; border-radius: 12px; text-align: left; min-height: 44px; }
+.lj-job.is-on { border-color: var(--green) !important; background: var(--green-dim) !important; }
+.lj-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.lj-main small { color: var(--text-tertiary); font-size: 13px; }
+.lj-score { flex-shrink: 0; font-weight: 700; color: var(--green); }
+.lj-pack { display: flex; flex-direction: column; gap: 14px; }
+.lj-pack .lc-card { margin: 0; }
+@media (max-width: 640px) { .lj-reminder { flex-direction: column; align-items: stretch; } }
+.lj-main small svg { display: inline; vertical-align: -1px; }
+
+/* ── Connectors ── */
+.lk-backdrop { position: fixed; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, 0.45); }
+.lk-panel { width: 100%; max-width: 560px; max-height: calc(100dvh - 32px); display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: 20px; background: var(--bg-elevated); box-shadow: var(--shadow-lg, 0 18px 50px rgba(0, 0, 0, 0.25)); }
+.lk-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.lk-head h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 19px; font-weight: 700; color: var(--text-primary); }
+.lk-head p { margin: 4px 0 0; color: var(--text-tertiary); font-size: 14px; }
+.lk-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 0; }
+.lk-list li, .lk-ask { display: flex; align-items: center; gap: 12px; }
+.lk-list li { padding: 10px 12px; border: 1px solid var(--border); border-radius: 14px; }
+.lk-list li.is-on { border-color: var(--green); background: var(--green-dim); }
+.lk-icon { width: 36px; height: 36px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; background: var(--bg-secondary); color: var(--green); }
+.lk-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; overflow-wrap: anywhere; }
+.lk-text small { color: var(--text-tertiary); font-size: 13px; line-height: 1.35; }
+.lk-list .lc-btn, .lk-ask .lc-btn { flex-shrink: 0; min-height: 40px; }
+.lk-foot { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.lk-foot .lc-btn { min-height: 44px; justify-content: center; }
+.lk-empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 32px 0; color: var(--text-secondary); }
+.lk-count { margin-left: auto; min-width: 20px; padding: 0 6px; border-radius: 10px; background: var(--green-dim); color: var(--green); font-size: 12px; font-weight: 700; text-align: center; }
+.lk-ask { flex-wrap: wrap; }
+@media (max-width: 640px) {
+  .lk-backdrop { align-items: flex-end; padding: 0; }
+  .lk-panel { max-width: none; max-height: 92dvh; border-radius: 20px 20px 0 0; padding: 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+  .lk-foot .lc-btn { flex: 1 1 auto; }
+}

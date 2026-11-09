@@ -23,7 +23,7 @@ import multer from 'multer';
 import bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
 import { parsePdf, parseDocx, parseTxt, fetchResumeFromUrl } from './services/parser.js';
-import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, generateCoverLetterWithAI, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek, callClaude, generateInterviewPlan, evaluateInterviewAnswer, generateInterviewReport } from './services/gemini.js';
+import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, generateLinkedinPostsWithAI, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, generateCoverLetterWithAI, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek, callClaude, generateInterviewPlan, evaluateInterviewAnswer, generateInterviewReport } from './services/gemini.js';
 import { getPublicStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, updateUserFields, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, saveLinkedinPostLog, getWorkById, saveProofreadLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, hasAutoApplyAccess } from './db.js';
 import adminRouter from './admin/router.js';
 import adminPublicRoutes from './admin/publicRoutes.js';
@@ -41,6 +41,7 @@ import { productGate } from './services/productGate.js';
 import { buildPortfolioSite, savePortfolio } from './portfolio/generate.js';
 import billingRouter, { startOrderSweep } from './billing/routes.js';
 import { aiBudgetGate, requireFreeUse, interviewFeature } from './billing/gate.js';
+import { startLeoWorker } from './leo/missions/worker.js';
 import { chargeAiUsage, keepAiContext } from './billing/aiContext.js';
 import { issueVerification, verifyEmailToken, resendCooldown, hashToken, frontendUrl, markEmailVerified, verifyThroughProvider, VERIFY_MESSAGES } from './services/emailVerification.js';
 import { assessSignupRisk, isHighRisk, RISK_HIGH } from './services/emailRisk.js';
@@ -2139,41 +2140,7 @@ apiRouter.post('/api/linkedin/post', optionalUser, async (req, res) => {
       return res.status(400).json({ error: 'Topic and Job Title are required.' });
     }
 
-    const prompt = `You are a LinkedIn content strategist. Generate 3 high-engagement LinkedIn posts for a ${jobTitle} professional.
-
-Topic/Achievement: "${topic}"
-Tone Preference: ${tone || 'Professional'}
-${resumeText ? `Resume Context: ${resumeText.substring(0, 800)}` : ''}
-
-Generate exactly 3 LinkedIn posts in this JSON format:
-{
-  "posts": [
-    {
-      "style": "Professional & Data-Driven",
-      "content": "Full post text with line breaks, emojis, numbers. 150-250 words.",
-      "hook": "Opening line that grabs attention",
-      "hashtags": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5"]
-    },
-    {
-      "style": "Storytelling & Personal",
-      "content": "Full post text with narrative arc. 150-250 words.",
-      "hook": "Opening line",
-      "hashtags": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5"]
-    },
-    {
-      "style": "Bold & Punchy Hook",
-      "content": "Short, punchy post with strong CTA. 80-130 words.",
-      "hook": "Opening line",
-      "hashtags": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5"]
-    }
-  ],
-  "bestTimeToPost": "Tuesday-Thursday, 8-10 AM or 5-6 PM",
-  "engagementTip": "One quick tip to boost this post's engagement"
-}
-
-Return ONLY valid JSON.`;
-
-    const data = await callClaude({ prompt, jsonMode: true, plainStyle: false });
+    const data = await generateLinkedinPostsWithAI({ topic, jobTitle, tone, resumeText });
 
     let savedWork = null;
     if (userId) {
@@ -2768,6 +2735,8 @@ if (process.env.NODE_ENV !== 'test') {
     if (!process.env.VERCEL) startOrderSweep();
     // Send job alert emails that are due (on Vercel, Vercel Cron calls /api/cron/job-alerts instead)
     if (!process.env.VERCEL) startJobAlerts();
+    // Leo: picks up missions left running by a restart and sends reminders that are due
+    if (!process.env.VERCEL) startLeoWorker();
     if (process.env.INLINE_WORKERS === 'true' && !process.env.VERCEL) {
       startWorkers().catch((err) => console.error('[agent] failed to start inline workers:', err.message));
     } else if (!process.env.VERCEL) {

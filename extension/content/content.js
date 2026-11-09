@@ -209,6 +209,14 @@
         $('cvmind-badge-score').innerText = `${application.score}% match`;
       }
       setStatus(application.hasTailored ? 'Tailored resume ready for this job.' : 'Scored in CVMind.');
+    } else if (pageContext.applyPack) {
+      banner.style.display = 'block';
+      $('cvmind-job-title').innerText = `${pageContext.applyPack.title} at ${pageContext.applyPack.company}`;
+      if (typeof pageContext.applyPack.score === 'number') {
+        $('cvmind-score-val').innerText = `${pageContext.applyPack.score}%`;
+        $('cvmind-score-bar').style.width = `${pageContext.applyPack.score}%`;
+      }
+      setStatus('Leo prepared this application. Fill it, check it, then submit it yourself.');
     } else if (pageContext.canTrack) {
       $('cvmind-track-card').style.display = 'block';
       setStatus('Not tracked in CVMind yet.');
@@ -270,6 +278,15 @@
     }
     if (result.failed.length) notes.push(`${result.failed.length} field(s) could not be filled automatically.`);
     if (!currentPlan.resumeFile) notes.push('No tailored PDF yet — attach your resume file yourself, or tailor this job in CVMind first.');
+
+    // Every field Leo touched, so nothing goes in unseen
+    const filled = (currentPlan.items || []).filter((item) => !result.failed.some((f) => f.selector === item.selector));
+    if (filled.length) {
+      const names = filled.map((item) => String(item.label || item.canonicalKey || 'Field').replace(/[<>&]/g, '')).join(', ');
+      notes.push(`<strong>Filled, please check:</strong> ${names}.`);
+    }
+    if (currentPlan.fromApplyPack) notes.push('The cover letter is from your Leo apply pack. Attach the tailored resume you downloaded from it.');
+    notes.push('CVMind never submits. Press Submit yourself when it looks right.');
 
     if (!notes.length) {
       box.style.display = 'none';

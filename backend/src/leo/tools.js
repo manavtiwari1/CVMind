@@ -12,14 +12,15 @@ import {
   generateCareerRoadmapWithGemini
 } from '../services/gemini.js';
 import { searchJobs } from '../services/jobSearch.js';
-import { FREE_WEEKLY } from '../billing/plans.js';
-import { isPro, featureAllowance, recordFeatureUse } from '../billing/service.js';
 import { getSettings } from '../admin/settings.js';
 import { hasProductAccess } from '../services/productGate.js';
 import { PORTFOLIO_THEMES, HIDEABLE_DETAILS, CUSTOM_LOOK, lookLabel, buildPortfolioSite, savePortfolio } from '../portfolio/generate.js';
 import { editPortfolioSiteWithClaude } from '../services/gemini.js';
 import { getLatestUserWork } from '../db.js';
 import { LeoTurn } from './models.js';
+import { LIVE_FIELDS, withLiveText } from './liveText.js';
+import { allowance, blocked, clip, fn, list, needResume, str } from './toolHelpers.js';
+import { CAREER_RUNNERS, CAREER_TOOL_META, CAREER_TOOL_STATUS } from './careerTools.js';
 import crypto from 'node:crypto';
 
 // Tests swap the AI build for a fixed page
@@ -29,9 +30,6 @@ export function setPortfolioBuilder(fn, editor) {
   buildSite = fn || buildPortfolioSite;
   editSite = editor || editPortfolioSiteWithClaude;
 }
-
-const clip = (value, max) => String(value ?? '').trim().slice(0, max);
-const list = (value, max = 8, chars = 300) => (Array.isArray(value) ? value : []).map((v) => clip(v, chars)).filter(Boolean).slice(0, max);
 
 // Pages open_tool may link to, with the button label the chat shows
 export const TOOL_PAGES = {
@@ -59,12 +57,6 @@ export const TOOL_PAGES = {
 // Words that don't narrow a job search on their own
 const JOB_GENERIC = new Set(['jobs', 'job', 'role', 'roles', 'in', 'at', 'for', 'and', 'or', 'the', 'a', 'an', 'of', 'developer', 'developers', 'engineer', 'engineers', 'engineering', 'intern', 'internship', 'internships', 'fresher', 'freshers', 'entry', 'level', 'junior', 'senior', 'sr', 'jr', 'lead', 'remote', 'hybrid', 'onsite', 'full', 'time', 'part', 'openings', 'opening', 'position', 'positions', 'near', 'me', 'india', 'software', 'specialist', 'associate', 'executive']);
 const JOB_PLACES = new Set(['bangalore', 'bengaluru', 'mumbai', 'delhi', 'ncr', 'new', 'pune', 'hyderabad', 'chennai', 'noida', 'gurgaon', 'gurugram', 'kolkata', 'ahmedabad', 'jaipur', 'kochi', 'indore', 'chandigarh', 'coimbatore', 'usa', 'uk', 'london', 'singapore', 'dubai', 'berlin', 'york', 'san', 'francisco']);
-
-const fn = (name, description, properties = {}, required = []) => ({
-  type: 'function',
-  function: { name, description, parameters: { type: 'object', properties, required } }
-});
-const str = (description) => ({ type: 'string', description });
 
 export const TOOL_DEFINITIONS = [
   fn('check_resume_ats', 'Score the attached resume for ATS and give a full review. Needs an attached resume.'),
@@ -109,27 +101,55 @@ export const TOOL_DEFINITIONS = [
   }, ['page'])
 ];
 
-// A card telling the user what's needed instead of a result
-const blocked = (action, message) => ({ card: { type: 'locked', action, message }, summary: `Not run: ${message}` });
+// The tools a mission may run. risk: read, create or external (external waits for a tap every
+// time). limit: the FREE_WEEKLY key the tool spends. Leo Agent Mode PRD, Safety.
+export const TOOL_META = {
+  check_resume_ats: { risk: 'read', needsResume: true },
+  tailor_resume: { risk: 'create', needsResume: true, limit: 'tailor' },
+  write_cover_letter: { risk: 'create', needsResume: true, limit: 'cover-letter' },
+  interview_questions: { risk: 'read', limit: 'interview-text' },
+  career_roadmap: { risk: 'read' },
+  find_jobs: { risk: 'read' },
+  build_portfolio: { risk: 'create', limit: 'portfolio' },
+  ...CAREER_TOOL_META
+};
 
-const needResume = (ctx) => (ctx.resumeText.length < 50
-  ? blocked('attach', 'Attach your resume (PDF, DOCX or TXT) with the paperclip button, then ask again.')
-  : null);
+// The tailored resume as a chat card. data is the whole resume, so the chat can build the document.
+export function tailorCardFrom(r) {
+  const data = r.tailoredData || {};
+  return {
+    type: 'tailor',
+    id: crypto.randomUUID().slice(0, 12),
+    matchScore: Number(r.matchScore) || 0,
+    insights: list(r.keyTailoringInsights, 4),
+    matched: list(r.matchedSkills, 12, 60),
+    missing: list(r.missingSkillsRecommended, 10, 60),
+    summary: clip(data.summary, 1200),
+    bullets: (data.workExperiences || []).slice(0, 2).map((w) => ({
+      role: clip([w.jobTitle, w.company].filter(Boolean).join(' · '), 120),
+      points: list(String(w.description || '').split('\n').map((line) => line.replace(/^\s*[•\-*]\s*/, '')), 4, 400)
+    })).filter((w) => w.points.length),
+    data
+  };
+}
 
-// Checks a weekly free-use feature. Returns { stop } with a card, or { commit } to call once the tool worked.
-async function allowance(ctx, key) {
-  if (!ctx.email) return { stop: blocked('signin', `Sign in to use the ${FREE_WEEKLY[key].label.toLowerCase()}. It's free.`) };
-  try {
-    if (await isPro(ctx.email)) return { commit: async () => {} };
-    const used = await featureAllowance(ctx.email, key);
-    if (used.used >= used.limit) {
-      const { label, limit } = FREE_WEEKLY[key];
-      return { stop: blocked('upgrade', `You've used your ${limit} free ${label.toLowerCase()}${limit === 1 ? '' : 's'} this week. CVMind Pro has unlimited use.`) };
-    }
-  } catch (err) {
-    console.error('[leo] free-use check failed, allowing:', err.message);
-  }
-  return { commit: () => recordFeatureUse(ctx.email, key).catch((err) => console.error('[leo] free-use record failed:', err.message)) };
+export function coverLetterCardFrom(r) {
+  return {
+    type: 'cover_letter',
+    id: crypto.randomUUID().slice(0, 12),
+    name: clip(r.name, 120),
+    title: clip(r.title, 120),
+    email: clip(r.email, 160),
+    phone: clip(r.phone, 40),
+    location: clip(r.location, 120),
+    linkedin: clip(r.linkedin, 200),
+    recipient: clip(r.recipient, 120),
+    jobTitle: clip(r.jobTitle, 120),
+    company: clip(r.company, 120),
+    greeting: clip(r.greeting, 120) || 'Dear Hiring Manager,',
+    paragraphs: list(r.paragraphs, 5, 1500),
+    closing: clip(r.closing, 60) || 'Sincerely,'
+  };
 }
 
 // The looks as tap-to-pick tiles
@@ -249,19 +269,7 @@ const RUNNERS = {
     const gate = await allowance(ctx, 'tailor');
     if (gate.stop) return gate.stop;
     const r = await tailorResumeWithGemini(ctx.resumeText, jd);
-    const data = r.tailoredData || {};
-    const card = {
-      type: 'tailor',
-      matchScore: Number(r.matchScore) || 0,
-      insights: list(r.keyTailoringInsights, 4),
-      matched: list(r.matchedSkills, 12, 60),
-      missing: list(r.missingSkillsRecommended, 10, 60),
-      summary: clip(data.summary, 1200),
-      bullets: (data.workExperiences || []).slice(0, 2).map((w) => ({
-        role: clip([w.jobTitle, w.company].filter(Boolean).join(' · '), 120),
-        points: list(String(w.description || '').split('\n').map((line) => line.replace(/^\s*[•\-*]\s*/, '')), 4, 400)
-      })).filter((w) => w.points.length)
-    };
+    const card = tailorCardFrom(r);
     await gate.commit();
     return { card, summary: `Tailored. Match ${card.matchScore}/100. Missing skills: ${card.missing.join(', ')}. Insights: ${card.insights.join(' ')}` };
   },
@@ -275,17 +283,9 @@ const RUNNERS = {
     if (gate.stop) return gate.stop;
     const tone = ['professional', 'conversational', 'enthusiastic'].includes(args.tone) ? args.tone : 'professional';
     const r = await generateCoverLetterWithAI({ resumeText: ctx.resumeText, jobDescription: jd, tone, company: clip(args.company, 120) });
-    const card = {
-      type: 'cover_letter',
-      name: clip(r.name, 120),
-      jobTitle: clip(r.jobTitle, 120),
-      company: clip(r.company, 120),
-      greeting: clip(r.greeting, 120) || 'Dear Hiring Manager,',
-      paragraphs: list(r.paragraphs, 5, 1500),
-      closing: clip(r.closing, 60) || 'Sincerely,'
-    };
+    const card = coverLetterCardFrom(r);
     await gate.commit();
-    return { card, summary: `Cover letter written for ${card.jobTitle || 'the role'}${card.company ? ` at ${card.company}` : ''} (${tone} tone).` };
+    return { card, summary: `Cover letter written for ${card.jobTitle || 'the role'}${card.company ? ` at ${card.company}` : ''} (${tone} tone). In one or two short sentences, say they can edit it with the Edit button on the card, and if it looks right they can tap the button to choose a design, then download a one-page PDF or Word file. Don't repeat the letter. Write a new letter only if they ask for a different one.` };
   },
 
   async interview_questions(args, ctx) {
@@ -293,6 +293,8 @@ const RUNNERS = {
     if (!role) return blocked('info', 'Which role are you interviewing for?');
     const level = ['Intern', 'Entry-level', 'Mid-level', 'Senior'].includes(args.level) ? args.level : 'Entry-level';
     const round = ['Mixed', 'HR', 'Behavioural', 'Technical'].includes(args.round) ? args.round : 'Mixed';
+    const gate = await allowance(ctx, 'interview-text');
+    if (gate.stop) return gate.stop;
     const r = await generateInterviewPlan({ resumeText: ctx.resumeText, role, jobDescription: clip(args.job_description, 6000), level, round, count: 6 });
     const card = {
       type: 'interview',
@@ -306,6 +308,7 @@ const RUNNERS = {
         keyPoints: list(q.keyPoints, 4, 200)
       }))
     };
+    await gate.commit();
     return { card, summary: `${card.questions.length} ${round} questions for ${level} ${role}: ${card.questions.map((q) => q.question).join(' | ')}` };
   },
 
@@ -446,6 +449,8 @@ const RUNNERS = {
     return { card: portfolioCard({ theme: target.theme, data, html: target.html, work, edited: true, restored: true }), summary: 'The earlier version is back; the new card shows it. In at most two sentences, confirm it and say a site that is already live changes only when they tap Update on this card.' };
   },
 
+  ...CAREER_RUNNERS,
+
   async open_tool(args) {
     const page = Object.hasOwn(TOOL_PAGES, args.page) ? args.page : null;
     if (!page) return { card: null, summary: 'Unknown page; nothing shown.' };
@@ -464,7 +469,8 @@ export const TOOL_STATUS = {
   build_portfolio: 'Working on your portfolio website',
   edit_portfolio: 'Updating your portfolio website',
   restore_portfolio: 'Bringing back that version',
-  open_tool: 'Finding the right tool'
+  open_tool: 'Finding the right tool',
+  ...CAREER_TOOL_STATUS
 };
 
 // Runs one tool call. Never throws: failures come back as an error card and summary.
@@ -474,7 +480,8 @@ export async function runTool(call, ctx) {
   let args = {};
   try { args = call.arguments ? JSON.parse(call.arguments) : {}; } catch { /* model sent bad JSON: run with defaults */ }
   try {
-    return await runner(args || {}, ctx);
+    const fields = Object.hasOwn(LIVE_FIELDS, call.name) ? LIVE_FIELDS[call.name] : null;
+    return await (fields && ctx.progress ? withLiveText(fields, ctx, () => runner(args || {}, ctx)) : runner(args || {}, ctx));
   } catch (err) {
     console.error(`[leo] tool ${call.name} failed:`, err.message);
     return { card: { type: 'error', message: "That didn't work just now. Please try again in a moment." }, summary: `The tool failed: ${clip(err.message, 200)}` };

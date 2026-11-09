@@ -592,3 +592,9 @@
     flex-direction: column;
   }
 }
+
+/* Leo's Career Profile */
+.acct-career-row { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+.acct-career-list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.acct-career-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; overflow-wrap: anywhere; }
+.acct-career-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }

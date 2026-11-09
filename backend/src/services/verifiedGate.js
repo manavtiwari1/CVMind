@@ -29,6 +29,8 @@ const VERIFIED_ONLY = [
   { path: '/api/ai' },
   { path: '/api/code/ai' },
   { path: '/api/leo' },
+  { path: '/api/leo-chat/missions' },
+  { path: '/api/leo-chat/reminders' },
   { path: '/api/negotiation' },
   { path: '/api/user/work', methods: ['POST'] },
   { path: '/api/user/share', methods: ['PUT'] },

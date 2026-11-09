@@ -1,8 +1,7 @@
 import crypto from 'crypto';
 import mongoose from 'mongoose';
-import { getPreferences } from '@cvmind/auto-apply-agent/preferences/service.js';
 import { buildFeed } from '../jobFinder/feed.js';
-import { resumeForMatching } from '../jobFinder/resume.js';
+import { matchingFor } from '../leo/careerProfile.js';
 import { isPro } from '../billing/service.js';
 import { getSettings } from '../admin/settings.js';
 import { hasProductAccess } from '../services/productGate.js';
@@ -78,15 +77,12 @@ const nothing = async () => ({ jobs: [] });
 // The jobs one alert would send now: new since the last run, at or above the minimum match,
 // not applied to and never sent before
 export async function jobsForAlert(alert, { sources = {}, loadWork } = {}) {
-  const [profile, preferences] = await Promise.all([
-    resumeForMatching(alert.userId, { loadWork }),
-    getPreferences(alert.userId)
-  ]);
+  const { profile, preferences } = await matchingFor(alert.userId, { loadWork });
   if (!profile) return { jobs: [], reason: 'no-resume' };
   const days = alert.frequency === 'daily' ? 1 : 7;
   const feed = await buildFeed({
     profile,
-    preferences: preferences || {},
+    preferences,
     filters: { days },
     email: alert.email,
     sources: { ...sources, jsearch: nothing, adzuna: nothing }

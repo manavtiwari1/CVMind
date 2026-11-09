@@ -1682,6 +1682,45 @@ Write the cover letter and return the structured JSON now.`;
   }
 }
 
+// Three LinkedIn post options about a topic or achievement
+export async function generateLinkedinPostsWithAI({ topic, jobTitle, tone = '', resumeText = '' }) {
+  const prompt = `You are a LinkedIn content strategist. Generate 3 high-engagement LinkedIn posts for a ${jobTitle} professional.
+
+Topic/Achievement: "${topic}"
+Tone Preference: ${tone || 'Professional'}
+${resumeText ? `Resume Context: ${resumeText.substring(0, 800)}` : ''}
+
+Generate exactly 3 LinkedIn posts in this JSON format:
+{
+  "posts": [
+  {
+    "style": "Professional & Data-Driven",
+    "content": "Full post text with line breaks, emojis, numbers. 150-250 words.",
+    "hook": "Opening line that grabs attention",
+    "hashtags": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5"]
+  },
+  {
+    "style": "Storytelling & Personal",
+    "content": "Full post text with narrative arc. 150-250 words.",
+    "hook": "Opening line",
+    "hashtags": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5"]
+  },
+  {
+    "style": "Bold & Punchy Hook",
+    "content": "Short, punchy post with strong CTA. 80-130 words.",
+    "hook": "Opening line",
+    "hashtags": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5"]
+  }
+  ],
+  "bestTimeToPost": "Tuesday-Thursday, 8-10 AM or 5-6 PM",
+  "engagementTip": "One quick tip to boost this post's engagement"
+}
+
+Return ONLY valid JSON.`;
+
+  return callClaude({ prompt, jsonMode: true, plainStyle: false });
+}
+
 export async function generateCareerRoadmapWithGemini({ currentRole, targetRole, years, resumeText, hoursPerWeek = '', customApiKey = null }) {
   const systemPrompt = `You are an elite Career Strategist and Transition Planner. Your job is to generate a comprehensive, highly actionable 4-step vertical career roadmap (exactly 4 phases) to transition from the candidate's current role/background to their target role.
   Ensure each step has realistic timeframes that add up to the timeframe given, specific focuses, 2-3 tangible action items, and a clear, measurable completion milestone.

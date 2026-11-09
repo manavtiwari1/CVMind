@@ -12,12 +12,12 @@ import { LeoFlowEvent } from '../models.js';
 import { PRO_TEMPLATES } from '../../billing/plans.js';
 import { isPro } from '../../billing/service.js';
 import { extractResumeDataWithAI } from '../../services/gemini.js';
+import { mergeFacts, publicProfile } from '../careerProfile.js';
 
 const clip = (value, max) => String(value ?? '').trim().slice(0, max);
 
 export const FLOWS = { [resume.PRODUCT]: resume };
-const STEPS = ['collect', 'confirm', 'template', 'built'];
-const TEMPLATE_ID = /^[a-z0-9][a-z0-9-]{1,59}$/;
+const STEPS = ['collect', 'confirm', 'template', 'built'];const TEMPLATE_ID = /^[a-z0-9][a-z0-9-]{1,59}$/;
 
 // A clean flow from anything (a stored one, a guest's browser copy). Null when there is none.
 export function normalizeFlow(input) {
@@ -147,7 +147,7 @@ const RUNNERS = {
     const current = ctx.flow;
     if (current && current.step !== 'built') {
       // A resume attached mid-flow ("I have an old resume"): fill the draft from it
-      if (current.product === product && current.source === 'typed' && ctx.resumeText.length >= 50) {
+      if (current.product === product && current.source === 'typed' && ctx.resumeText.length >= 50 && !ctx.usingSavedResume) {
         try {
           const parsed = resume.draftFromParsed(await extractResumeDataWithAI(ctx.resumeText, null, true));
           const typedLevel = current.data.level;
@@ -169,7 +169,13 @@ const RUNNERS = {
     }
     const flow = newFlow(product);
     let source = 'typed';
-    if (ctx.resumeText.length >= 50) {
+    const saved = ctx.usingSavedResume || !ctx.resumeText ? publicProfile(ctx.profile) : null;
+    if (saved?.hasData) {
+      // The Career Profile already has the facts, so no AI call is needed
+      flow.data = FLOWS[product].normalizeDraft(saved.data);
+      flow.source = 'attached';
+      source = 'profile';
+    } else if (ctx.resumeText.length >= 50) {
       try {
         flow.data = resume.draftFromParsed(await extractResumeDataWithAI(ctx.resumeText, null, true));
         flow.source = 'attached';
@@ -182,7 +188,7 @@ const RUNNERS = {
     logFlowEvent(ctx, 'flow_started', { product, source: ctx.viaButton ? 'button' : source });
     return {
       card: null,
-      summary: `${FLOWS[product].LABEL} started${source === 'attached' ? ' and pre-filled from the attached resume' : ''}. ${status(flow)}`
+      summary: `${FLOWS[product].LABEL} started${source === 'attached' ? ' and pre-filled from the attached resume' : source === 'profile' ? ' and pre-filled from the saved Career Profile' : ''}. ${status(flow)}`
     };
   },
 
@@ -261,6 +267,8 @@ const RUNNERS = {
       keepFacts: flow.source === 'attached' && !flow.edited
     };
     logFlowEvent(ctx, 'build_done', { product: resume.PRODUCT, value: flow.templateId, ok: true });
+    // What the user confirmed is remembered for next time; a failure here must not lose the resume
+    if (ctx.agent) await mergeFacts(ctx.userId, flow.data, flow.source === 'attached' && !flow.edited ? 'resume' : 'chat').catch((err) => console.error('[leo] saving the draft to the profile failed:', err.message));
     return { card, summary: `Resume built with template ${flow.templateId}; the card shows the preview with Edit in Editor and Download. Suggest one next step: check its ATS score or write a cover letter.` };
   }
 };

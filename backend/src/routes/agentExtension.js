@@ -18,6 +18,9 @@ import { tryConsume } from '@cvmind/auto-apply-agent/rateLimit.js';
 import { logEvent } from '@cvmind/auto-apply-agent/events.js';
 import { sha256 } from '@cvmind/auto-apply-agent/resume/derive.js';
 
+import { packForUrl, packLetterText } from '../leo/missions/applyPack.js';
+import { autofillProfile, getProfile } from '../leo/profileData.js';
+
 const HOUR_MS = 60 * 60 * 1000;
 const asyncRoute = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -96,13 +99,14 @@ export function createExtensionRouter({ buildPlan = buildFillPlan, loadLatestRes
     const userId = req.auth.sub;
     const application = await findApplicationForPage({ userId, url: req.query.url });
     const posting = application ? await JobPosting.findById(application.jobPostingId).select('-embeddings').lean() : null;
-    const resume = await pickResume(userId, null);
+    const [resume, pack, career] = await Promise.all([pickResume(userId, null), packForUrl(userId, req.query.url), getProfile(userId)]);
 
     return res.json({
       success: true,
       data: {
         email: req.auth.email,
-        resumeReady: Boolean(resume && resume.status === 'ready'),
+        resumeReady: Boolean((resume && resume.status === 'ready') || autofillProfile(career)),
+        applyPack: pack ? { title: pack.job.title, company: pack.job.company, score: pack.job.score } : null,
         canTrack: !application,
         application: application ? {
           id: String(application._id),
@@ -138,16 +142,20 @@ export function createExtensionRouter({ buildPlan = buildFillPlan, loadLatestRes
     const resume = application?.resumeProfileId
       ? await ResumeProfile.findOne({ _id: application.resumeProfileId, userId }).select('-embeddings').lean()
       : await pickResume(userId, null);
-    if (!resume || resume.status !== 'ready') {
+    // Someone who only uses Leo has a Career Profile rather than a parsed resume
+    const profile = resume?.status === 'ready' ? resume.structured : autofillProfile(await getProfile(userId));
+    if (!profile) {
       return res.status(400).json({ success: false, code: 'NO_RESUME', error: 'Add and parse a resume in CVMind before autofilling.' });
     }
+    // A Leo apply pack for this job supplies the cover letter
+    const pack = application?.tailored ? null : await packForUrl(userId, url);
 
     const posting = application ? await JobPosting.findById(application.jobPostingId).select('-embeddings').lean() : null;
     const plan = await buildPlan(descriptors, {
-      profile: resume.structured,
-      derived: resume.derived,
+      profile,
+      derived: resume?.status === 'ready' ? resume.derived : {},
       preferences: (await getPreferences(userId)) ?? structuredClone(DEFAULT_PREFERENCES),
-      tailored: application?.tailored || null,
+      tailored: application?.tailored || (pack ? { coverLetter: { body: packLetterText(pack) } } : null),
       job: posting
     }, {});
 
@@ -167,6 +175,7 @@ export function createExtensionRouter({ buildPlan = buildFillPlan, loadLatestRes
       data: {
         ...plan,
         applicationId: application ? String(application._id) : null,
+        fromApplyPack: Boolean(pack),
         resumeFile: application?.tailored?.pdf?.gridFsId
           ? { filename: application.tailored.pdf.filename, url: `/api/agent/extension/resume.pdf?applicationId=${application._id}` }
           : null

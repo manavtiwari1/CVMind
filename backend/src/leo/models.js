@@ -16,6 +16,8 @@ const conversationSchema = new Schema({
   // The guided flow open in this chat (leo/flows): { product, step, data, skipped, templateId, ... }.
   // Holds personal details, so it is wiped when the chat is deleted.
   flow: { type: Schema.Types.Mixed, default: null },
+  // The mock interview open in this chat: { role, level, questions, at, turns }
+  mock: { type: Schema.Types.Mixed, default: null },
   // Copied from the user when the chat starts; deleted or opted-out chats never enter training
   trainingOptOut: { type: Boolean, default: false },
   deletedAt: { type: Date, default: null },
@@ -71,8 +73,81 @@ const flowEventSchema = new Schema({
 flowEventSchema.index({ event: 1, product: 1, createdAt: -1 });
 flowEventSchema.index({ createdAt: 1 }, { expireAfterSeconds: RETENTION_SECONDS });
 
+// What Leo knows about one account, across all its chats (PRD: Leo Agent Mode, R1–R5).
+// data has the shape of a resume draft (flows/resume.js). sources says where each field came from:
+// 'resume', 'chat' or 'user'. A field from chat or the user is never overwritten by a resume.
+const careerProfileSchema = new Schema({
+  userId: { type: String, required: true, unique: true },
+  data: { type: Schema.Types.Mixed, default: {} },
+  sources: { type: Schema.Types.Mixed, default: {} },
+  masterResumeName: { type: String, default: '' },
+  masterResumeText: { type: String, default: '' },
+  // Stops the same file being read by the AI twice
+  masterResumeHash: { type: String, default: '' },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+// One multi-step job Leo runs for a user (leo/missions). Steps are saved one by one, so a closed
+// tab or a retry never repeats finished work.
+const missionSchema = new Schema({
+  userId: { type: String, required: true, index: true },
+  email: { type: String, default: '' },
+  conversationId: { type: String, required: true, index: true },
+  goal: { type: String, default: '' },
+  // planned, running, waiting_review, paused, done, stopped
+  status: { type: String, default: 'planned' },
+  // True from Start until done or stopped; the unique index below allows one per user
+  active: { type: Boolean, default: false },
+  // closed, cap, failed, blocked, expired
+  pausedReason: { type: String, default: '' },
+  message: { type: String, default: '' },
+  pendingStepId: { type: String, default: '' },
+  // Each: { id, tool, title, detail, args, risk, review, status, card, summary, approvedAt, reviewedAt }
+  steps: { type: [Schema.Types.Mixed], default: [] },
+  // How the plan card describes the user's limits: { left, limit, period }
+  quota: { type: Schema.Types.Mixed, default: null },
+  tokensUsed: { type: Number, default: 0 },
+  tokenCap: { type: Number, default: 0 },
+  stopRequested: { type: Boolean, default: false },
+  // A running mission whose lease ran out belonged to a server that died; it may be claimed again
+  leaseUntil: { type: Date, default: null },
+  startedAt: { type: Date, default: null },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+missionSchema.index({ userId: 1 }, { name: 'one_active_mission', unique: true, partialFilterExpression: { active: true } });
+missionSchema.index({ createdAt: 1 }, { expireAfterSeconds: RETENTION_SECONDS });
+
+// A reminder the user asked for (leo/reminders.js)
+const reminderSchema = new Schema({
+  userId: { type: String, required: true, index: true },
+  email: { type: String, required: true },
+  name: { type: String, default: '' },
+  text: { type: String, required: true },
+  dueAt: { type: Date, required: true },
+  sentAt: { type: Date, default: null },
+  cancelledAt: { type: Date, default: null },
+  createdAt: { type: Date, default: Date.now }
+});
+reminderSchema.index({ dueAt: 1, sentAt: 1, cancelledAt: 1 });
+reminderSchema.index({ createdAt: 1 }, { expireAfterSeconds: RETENTION_SECONDS });
+
+// The CVMind tools this account has connected for Leo (leo/connectors.js)
+const connectorsSchema = new Schema({
+  userId: { type: String, required: true, unique: true },
+  connected: { type: [String], default: [] },
+  updatedAt: { type: Date, default: Date.now }
+});
+
 export const LeoConversation = mongoose.models.LeoConversation || mongoose.model('LeoConversation', conversationSchema);
 export const LeoTurn = mongoose.models.LeoTurn || mongoose.model('LeoTurn', turnSchema);
 export const LeoFlowEvent = mongoose.models.LeoFlowEvent || mongoose.model('LeoFlowEvent', flowEventSchema);
+export const CareerProfile = mongoose.models.CareerProfile || mongoose.model('CareerProfile', careerProfileSchema);
+export const LeoMission = mongoose.models.LeoMission || mongoose.model('LeoMission', missionSchema);
 
-export const LEO_MODELS = [LeoConversation, LeoTurn, LeoFlowEvent];
+export const LeoReminder = mongoose.models.LeoReminder || mongoose.model('LeoReminder', reminderSchema);
+
+export const LeoConnectors = mongoose.models.LeoConnectors || mongoose.model('LeoConnectors', connectorsSchema);
+
+export const LEO_MODELS = [LeoConversation, LeoTurn, LeoFlowEvent, CareerProfile, LeoMission, LeoReminder, LeoConnectors];

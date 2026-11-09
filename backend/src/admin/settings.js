@@ -21,6 +21,8 @@ export const FEATURES = {
   'leo-chat': { label: 'Leo AI chat', description: 'The chat home on app.cvmind.in that runs CVMind tools from a prompt', paths: ['/api/leo-chat'] },
   // Off: Leo goes back to linking to the product pages (the chat itself stays on)
   'leo-flows': { label: 'Leo guided flows', description: 'Leo builds a resume step by step inside the chat', paths: ['/api/leo-chat/action'] },
+  // Off: no missions and no Career Profile; the chat and the guided flows stay on
+  'leo-agent': { label: 'Leo Agent Mode', description: 'Leo runs multi-step missions and remembers a Career Profile', paths: ['/api/leo-chat/missions', '/api/leo-chat/profile', '/api/leo-chat/reminders', '/api/leo-chat/connectors'] },
   'auto-apply': { label: 'Auto Apply', description: 'Auto Apply agent and extension', paths: ['/api/auto-apply', '/api/agent'] },
   'company-portal': { label: 'Company portal', description: 'Recruiter sign-up and job posting', paths: ['/api/company'] },
   signups: { label: 'New sign-ups', description: 'New accounts by email or social login', paths: ['/api/auth/signup'] }
@@ -28,7 +30,7 @@ export const FEATURES = {
 
 // Products a user can be given manual access to from the admin panel. When an admin locks one,
 // only accounts with an active grant can use it; unlocked products stay open to everyone.
-export const PRODUCT_KEYS = Object.keys(FEATURES).filter((key) => !['signups', 'company-portal', 'auto-apply', 'leo-flows'].includes(key));
+export const PRODUCT_KEYS = Object.keys(FEATURES).filter((key) => !['signups', 'company-portal', 'auto-apply', 'leo-flows', 'leo-agent'].includes(key));
 
 export const VERSION_CLIENTS = {
   android: { label: 'Android app' },
@@ -51,7 +53,12 @@ export const LEO_LIMITS = {
   maxTokens: { label: 'Max tokens per reply', default: 1500, min: 50, max: 4000 },
   guestDailyMessages: { label: 'Messages per day, signed-out visitors', default: 3, min: 0, max: 100 },
   freeDailyMessages: { label: 'Messages per day, free users', default: 30, min: 1, max: 10000 },
-  proDailyMessages: { label: 'Messages per day, Pro users', default: 200, min: 1, max: 10000 }
+  proDailyMessages: { label: 'Messages per day, Pro users', default: 200, min: 1, max: 10000 },
+  // Starting values from the Leo Agent Mode PRD; set the caps from real usage after the test missions
+  freeWeeklyMissions: { label: 'Missions per week, free users', default: 1, min: 0, max: 100 },
+  proDailyMissions: { label: 'Missions per day, Pro users', default: 1, min: 0, max: 100 },
+  freeMissionTokenCap: { label: 'AI tokens per mission, free users', default: 150000, min: 1000, max: 5000000 },
+  proMissionTokenCap: { label: 'AI tokens per mission, Pro users', default: 400000, min: 1000, max: 5000000 }
 };
 
 const DEFAULTS = {

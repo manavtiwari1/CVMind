@@ -2,14 +2,16 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 're
 import { createPortal } from 'react-dom';
 import {
   ArrowUp, Briefcase, FileSearch, FileText, Globe, Loader2, Mail, Map as MapIcon, Menu, MessageSquare, Paperclip, Sparkles,
-  PenSquare, Square, Target, ThumbsDown, ThumbsUp, Trash2, X, Check, FolderOpen, LayoutGrid, Copy, RotateCcw
+  PenSquare, Plug, Square, Target, ThumbsDown, ThumbsUp, Trash2, X, Check, FolderOpen, Copy, RotateCcw
 } from 'lucide-react';
 import LeoReply from './LeoReply';
 import LeoAvatar from './LeoAvatar';
 import ResultCard, { type CardActions } from './cards';
 import LiveBuild from './LiveBuild';
+import LiveText, { LeoStatus } from './LiveText';
+import ConnectorsPanel from './ConnectorsPanel';
 import {
-  attachResume, ChatError, deleteChat, getChat, listChats, saveBuilt, sendFeedback, streamAction, streamChat,
+  attachResume, ChatError, deleteChat, getChat, getConnectors, listChats, saveBuilt, saveLetter, sendFeedback, streamAction, streamChat,
   type ActionRequest, type ChatMessage, type ChatSummary, type DocumentCard, type LeoFlow, type Resume, type StreamHandlers
 } from './chatApi';
 import type { SavedWork } from '../types/api';
@@ -110,6 +112,8 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork
   const carryFlow = useRef(false);
   // A reopened chat with an unfinished flow offers to continue it
   const [resumeOffer, setResumeOffer] = useState(false);
+  const [connectorsOpen, setConnectorsOpen] = useState(false);
+  const [connectedCount, setConnectedCount] = useState<number | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -124,6 +128,11 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork
   }, [isLoggedIn]);
 
   useEffect(() => { refreshChats(); }, [refreshChats]);
+
+  useEffect(() => {
+    if (!isLoggedIn) { setConnectedCount(null); return; }
+    getConnectors().then((list) => setConnectedCount(list.filter((c) => c.connected).length)).catch(() => setConnectedCount(null));
+  }, [isLoggedIn]);
 
   // Signing in (or out) starts a fresh chat; an attached resume carries over
   const wasLoggedIn = useRef(isLoggedIn);
@@ -218,12 +227,12 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork
           ...(m.tools.length === 0 && m.text ? { lead: m.text, text: '' } : {}),
           tools: [...m.tools, { id: tool.id, name: tool.name, label: tool.label, done: false }],
         })),
-        onProgress: ({ id, stage, html, reset }) => patch(leoMsg.id, (m) => ({
+        onProgress: ({ id, stage, html, text, reset }) => patch(leoMsg.id, (m) => ({
           ...m,
           tools: m.tools.map((t) => {
             if (t.id !== id) return t;
-            const live = t.live || { stage: '', html: '' };
-            return { ...t, live: { stage: stage || live.stage, html: reset ? '' : live.html + (html || '') } };
+            const live = t.live || { stage: '', html: '', text: '' };
+            return { ...t, live: { stage: stage || live.stage, html: reset ? '' : live.html + (html || ''), text: live.text + (text || '') } };
           }),
         })),
         // The finished card replaces the live view, so the page text can go
@@ -404,11 +413,16 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork
       setMessages((list) => list.map((m) => (m.cards.some((c) => c.type === 'document' && c.id === card.id)
         ? { ...m, cards: m.cards.map((c) => (c.type === 'document' && c.id === card.id ? { ...c, html, workId } : c)) }
         : m)));
-      if (conversationId) saveBuilt(conversationId, card.id, html, workId).catch(() => {});
+      if (conversationId) saveBuilt(conversationId, card.id, html, workId, card.templateId).catch(() => {});
     },
     // A portfolio saved on the second try: remembered with the card, so a reopened chat can publish it
     portfolioSaved: (card, workId) => {
       if (conversationId) saveBuilt(conversationId, card.id, card.html, workId).catch(() => {});
+    },
+    connectorsChanged: setConnectedCount,
+    retryLast: () => { void Promise.resolve().then(() => send(lastUserText())); },
+    letterSaved: (card, text, html, designId, workId) => {
+      if (conversationId && card.id) saveLetter(conversationId, card.id, text, html, designId, workId).catch(() => {});
     },
     latestPortfolioId: messages.flatMap((m) => m.cards).reduce<string | undefined>((id, c) => (c.type === 'portfolio' ? c.id : id), undefined),
   };
@@ -457,6 +471,12 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork
             <Paperclip size={18} />
             <span className="lx-attach-label">{resume ? 'Replace resume' : 'Attach resume'}</span>
           </button>
+          {isLoggedIn && connectedCount !== null && (
+            <button type="button" className="lx-icon-btn" onClick={() => setConnectorsOpen(true)} aria-label="Connectors" title="Connectors">
+              <Plug size={18} />
+              <span className="lx-attach-label">{connectedCount ? `${connectedCount} connected` : 'Connect tools'}</span>
+            </button>
+          )}
           <input ref={fileRef} type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" hidden onChange={(e) => void onFile(e.target.files?.[0])} />
           {sending ? (
             <button type="button" className="lx-send" onClick={() => abortRef.current?.abort()} aria-label="Stop Leo"><Square size={14} fill="currentColor" /></button>
@@ -495,7 +515,7 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork
         <button type="button" className="lx-new" onClick={newChat}><PenSquare size={16} /> New chat</button>
         <nav className="lx-side-links">
           <button type="button" onClick={() => setCurrentPage(isLoggedIn ? 'my-documents' : 'resume-builder')}><FolderOpen size={16} /> {isLoggedIn ? 'My Documents' : 'Resume Builder'}</button>
-          <button type="button" onClick={() => setCurrentPage('products')}><LayoutGrid size={16} /> All tools</button>
+          <button type="button" onClick={() => { setDrawer(false); setConnectorsOpen(true); }}><Plug size={16} /> Connectors{connectedCount ? <span className="lk-count">{connectedCount}</span> : null}</button>
         </nav>
         <div className="lx-history">
           {isLoggedIn ? (
@@ -579,17 +599,18 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork
                     <LeoAvatar mood={m.streaming ? (m.text ? 'typing' : 'thinking') : 'still'} size={32} />
                     <div className="lx-leo-body">
                       {m.lead && <div className="lx-reply"><LeoReply text={m.lead} /></div>}
-                      {m.tools.map((t) => (t.live && !t.done ? <LiveBuild key={t.id} live={t.live} edit={t.name === 'edit_portfolio'} /> : (
-                        <div key={t.id} className={`lx-tool ${t.done ? 'is-done' : ''}`}>
-                          {t.done ? <Check size={14} /> : <Loader2 size={14} className="lx-spin" />}{' '}
-                          {t.finishedLive ? (t.name === 'edit_portfolio' ? 'Changes made' : 'Your website is ready') : `${t.label}${t.done ? '' : '…'}`}
-                        </div>
-                      )))}
+                      {m.tools.map((t) => {
+                        // A finished step's result is its card; only a website build keeps a line
+                        if (t.done) return t.finishedLive ? <div key={t.id} className="lx-tool is-done"><Check size={14} /> {t.name === 'edit_portfolio' ? 'Changes made' : 'Your website is ready'}</div> : null;
+                        if (t.live?.text) return <LiveText key={t.id} label={t.label} text={t.live.text} />;
+                        if (t.live) return <LiveBuild key={t.id} live={t.live} edit={t.name === 'edit_portfolio'} />;
+                        return <LeoStatus key={t.id} label={t.label} />;
+                      })}
                       {m.cards.map((card, i) => (
                         <ResultCard key={i} card={card} actions={actions} live={m.id === lastLeoId} fresh={!!m.fresh} busy={sending || outOfFree} />
                       ))}
-                      {m.text && <div className="lx-reply"><LeoReply text={m.text} /></div>}
-                      {m.streaming && !m.text && !m.tools.some((t) => !t.done) && <div className="lx-typing" aria-label="Leo is thinking"><span /><span /><span /></div>}
+                      {m.text && <div className={`lx-reply ${m.streaming ? 'is-streaming' : ''}`}><LeoReply text={m.text} /></div>}
+                      {m.streaming && !m.text && !m.tools.some((t) => !t.done) && <LeoStatus label="Leo is thinking" />}
                       {m.error && <div className="lx-error">{m.error}</div>}
                       {!m.streaming && (m.text || m.lead || m.cards.length > 0) && (
                         <div className="lx-msg-tools">
@@ -612,6 +633,7 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork
           </>
         )}
       </main>
+      {connectorsOpen && <ConnectorsPanel isLoggedIn={isLoggedIn} onSignIn={() => { setConnectorsOpen(false); onSignIn(); }} onClose={() => setConnectorsOpen(false)} onChange={setConnectedCount} />}
     </div>
   , document.querySelector('.app-container') ?? document.body);
 }

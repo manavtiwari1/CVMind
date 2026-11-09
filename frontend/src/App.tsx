@@ -65,7 +65,6 @@ const Blog = lazy(() => import('./pages/Blog'));
 const LinkedInPost = lazy(() => import('./pages/linkedin/LinkedInPost'));
 const VoicePrep = lazy(() => import('./pages/VoicePrep'));
 const PortfolioGen = lazy(() => import('./pages/PortfolioGen'));
-const Products = lazy(() => import('./pages/Products'));
 const ResumeBuilderLanding = lazy(() => import('./pages/ResumeBuilderLanding'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const PricingSoon = lazy(() => import('./pages/PricingSoon'));
@@ -633,8 +632,6 @@ export default function App() {
             setLoadedWork={setLoadedWork}
           />
         );
-      case 'products':
-        return <Products setCurrentPage={setCurrentPage} />;
       case 'job-finder':
         return <JobFinderApp setCurrentPage={setCurrentPage} />;
       case 'ai-job-finder':

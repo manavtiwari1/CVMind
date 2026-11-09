@@ -15,7 +15,9 @@ export const AI_PATHS = [
 ];
 
 const normalizePath = (path) => path.replace(/^\/_\/backend/, '');
-const isAiPath = (path) => AI_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
+// Missions have their own limit and token cap (leo/missions), so they neither spend nor need the chat budget
+const OWN_BUDGET = /^\/api\/leo-chat\/(missions|profile|reminders|connectors)(\/|$)/;
+const isAiPath = (path) => !OWN_BUDGET.test(path) && AI_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
 
 const formatReset = (date) => (date
   ? new Date(date).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' })

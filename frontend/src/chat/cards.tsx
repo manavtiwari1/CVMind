@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { ArrowRight, Briefcase, Check, ChevronDown, Copy, Download, ExternalLink, Lock, MapPin, Paperclip, TriangleAlert } from 'lucide-react';
+import { ArrowRight, Briefcase, Check, ChevronDown, Copy, ExternalLink, Lock, MapPin, Paperclip, TriangleAlert } from 'lucide-react';
 import type { AtsCard, Card, CoverLetterCard, InterviewCard, JobsCard, LockedCard, PortfolioCard, RoadmapCard, TailorCard } from './chatApi';
 import { Choices, ResumeResult, Summary, TemplatePicker, type FlowActions } from './flowCards';
 import PortfolioResult, { PortfolioLooks } from './PortfolioResult';
+import MissionResult, { CareerProfileView, ProfileNote } from './MissionResult';
+import CoverLetterResult, { type LetterText } from './CoverLetterResult';
+import { ApplyPackView, ConnectView, JobPickView, RemindersView, TailorDocument, WritingView } from './AgentCards';
 
 // The result cards Leo's tools return (backend/src/leo/tools.js, leo/flows). Every card shows the
 // real result in the chat, plus a way into the full tool.
@@ -12,6 +15,11 @@ export interface CardActions extends FlowActions {
   attach: () => void;
   followUp: (prompt: string) => void;
   portfolioSaved: (card: PortfolioCard, workId: string) => void;
+  // The letter's words or design changed: kept with the card so a reopened chat shows them
+  letterSaved: (card: CoverLetterCard, text: LetterText, html: string, designId: string, workId: string) => void;
+  // A tool was connected from a card: updates the count and sends the user's request again
+  connectorsChanged: (connectedCount: number) => void;
+  retryLast: () => void;
   // The newest portfolio in this chat; older cards can't publish
   latestPortfolioId?: string;
 }
@@ -66,7 +74,7 @@ function List({ title, items }: { title: string; items: string[] }) {
   );
 }
 
-function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) {
+export function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <button
@@ -120,7 +128,7 @@ function Ats({ card, actions }: { card: AtsCard; actions: CardActions }) {
           ))}
         </div>
       )}
-      <FollowUps actions={actions} prompts={['Rewrite my weakest bullets', 'Tailor my resume to a job', 'Interview questions from my resume']} />
+      <FollowUps actions={actions} prompts={['Fix my resume for me', 'Rewrite my weakest bullets', 'Tailor my resume to a job', 'Interview questions from my resume']} />
     </>
   );
 }
@@ -148,35 +156,9 @@ function Tailor({ card, actions }: { card: TailorCard; actions: CardActions }) {
       ))}
       <div className="lc-actions">
         <CopyButton text={copyText} />
-        <button type="button" className="lc-btn lc-btn-primary" onClick={() => actions.go('tailor')}>Make the full resume in Tailor <ArrowRight size={15} /></button>
+        {!card.data && <button type="button" className="lc-btn lc-btn-primary" onClick={() => actions.go('tailor')}>Make the full resume in Tailor <ArrowRight size={15} /></button>}
       </div>
-    </>
-  );
-}
-
-function CoverLetter({ card, actions }: { card: CoverLetterCard; actions: CardActions }) {
-  const text = [card.greeting, ...card.paragraphs, `${card.closing}\n${card.name}`].filter(Boolean).join('\n\n');
-  const download = () => {
-    const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Cover letter${card.company ? ` - ${card.company}` : ''}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-  return (
-    <>
-      <div className="lc-kicker">Cover letter{card.jobTitle ? ` · ${card.jobTitle}` : ''}{card.company ? ` at ${card.company}` : ''}</div>
-      <div className="lc-letter">
-        <p>{card.greeting}</p>
-        {card.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
-        <p>{card.closing}<br />{card.name}</p>
-      </div>
-      <div className="lc-actions">
-        <CopyButton text={text} />
-        <button type="button" className="lc-btn" onClick={download}><Download size={15} /> Download</button>
-        <button type="button" className="lc-btn lc-btn-primary" onClick={() => actions.go('cover-letter-start')}>Design it in Cover Letter Builder <ArrowRight size={15} /></button>
-      </div>
+      <TailorDocument card={card} actions={actions} />
     </>
   );
 }
@@ -286,6 +268,14 @@ function Locked({ card, actions }: { card: LockedCard; actions: CardActions }) {
 }
 
 export default function ResultCard({ card, actions, live, fresh, busy }: { card: Card; actions: CardActions } & Where) {
+  if (card.type === 'mission') return <MissionResult card={card} actions={actions} fresh={fresh} busy={busy} />;
+  if (card.type === 'profile_note') return <ProfileNote card={card} actions={actions} />;
+  if (card.type === 'career_profile') return <CareerProfileView card={card} actions={actions} />;
+  if (card.type === 'connect') return <div className="lc-card"><ConnectView card={card} actions={actions} live={live} busy={busy} /></div>;
+  if (card.type === 'writing') return <div className="lc-card"><WritingView card={card} /></div>;
+  if (card.type === 'job_pick') return <div className="lc-card"><JobPickView card={card} /></div>;
+  if (card.type === 'apply_pack') return <div className="lc-card"><ApplyPackView card={card} actions={actions} fresh={fresh} busy={busy} /></div>;
+  if (card.type === 'reminders') return <div className="lc-card"><RemindersView card={card} /></div>;
   if (card.type === 'choices') return <div className="lc-card lc-card-choices"><Choices card={card} live={live} busy={busy} actions={actions} /></div>;
   if (card.type === 'summary_confirm') return <div className="lc-card"><Summary card={card} live={live} busy={busy} actions={actions} /></div>;
   if (card.type === 'template_picker') return <div className="lc-card"><TemplatePicker card={card} live={live} busy={busy} actions={actions} /></div>;
@@ -310,7 +300,7 @@ export default function ResultCard({ card, actions, live, fresh, busy }: { card:
     <div className={`lc-card lc-card-${card.type}`}>
       {card.type === 'ats' && <Ats card={card} actions={actions} />}
       {card.type === 'tailor' && <Tailor card={card} actions={actions} />}
-      {card.type === 'cover_letter' && <CoverLetter card={card} actions={actions} />}
+      {card.type === 'cover_letter' && <CoverLetterResult card={card} actions={actions} />}
       {card.type === 'interview' && <Interview card={card} actions={actions} />}
       {card.type === 'roadmap' && <Roadmap card={card} />}
       {card.type === 'jobs' && <Jobs card={card} actions={actions} />}
