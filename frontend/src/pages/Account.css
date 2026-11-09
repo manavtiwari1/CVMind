@@ -598,3 +598,7 @@
 .acct-career-list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .acct-career-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; overflow-wrap: anywhere; }
 .acct-career-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+/* Updates and offers switch */
+.acct-email-pref { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 0.92rem; color: #1f2937; cursor: pointer; }
+.acct-email-pref input { width: 18px; height: 18px; flex-shrink: 0; accent-color: #1d4ed8; }

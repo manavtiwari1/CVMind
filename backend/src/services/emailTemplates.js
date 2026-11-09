@@ -65,7 +65,7 @@ export function passwordResetEmail({ name, link, byAdmin = false }) {
 }
 
 // Announcements and updates sent from Admin → Notifications
-export function notificationEmail({ name, title, body, ctaLabel = '', ctaUrl = '' }) {
+export function notificationEmail({ name, title, body, ctaLabel = '', ctaUrl = '', unsubscribeUrl = '' }) {
   return {
     subject: title,
     html: renderEmail({
@@ -76,6 +76,7 @@ export function notificationEmail({ name, title, body, ctaLabel = '', ctaUrl = '
       body: body && body !== title ? body : '',
       ctaLabel,
       ctaUrl,
+      unsubscribeUrl,
       footerReason: 'You received this email because you have a CVMind account.'
     })
   };
@@ -91,7 +92,7 @@ export const DIWALI_EMAIL = {
   pricingUrl: 'https://www.cvmind.in/pricing'
 };
 
-export function diwaliEmail({ name }) {
+export function diwaliEmail({ name, unsubscribeUrl = '' }) {
   const { code, ends, image, chatUrl, pricingUrl } = DIWALI_EMAIL;
   const codeBox = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:6px 0 22px"><tr>
 <td align="center" bgcolor="#fff7e6" style="padding:18px 16px;background:#fff7e6;border:1px dashed #e8590c;border-radius:12px">
@@ -125,6 +126,7 @@ export function diwaliEmail({ name }) {
       ctaLabel: 'Chat with Leo',
       ctaUrl: chatUrl,
       afterword: 'Have a safe and happy Diwali. If you have any question, just reply to this email.',
+      unsubscribeUrl,
       footerReason: 'You received this email because you have a CVMind account.'
     })
   };
@@ -137,7 +139,7 @@ export const LEO_LIVE_EMAIL = {
   chatUrl: 'https://app.cvmind.in/chat'
 };
 
-export function leoLiveEmail({ name }) {
+export function leoLiveEmail({ name, unsubscribeUrl = '' }) {
   const { image, chatUrl } = LEO_LIVE_EMAIL;
   return {
     subject: 'Leo is on. Tell him what you need.',
@@ -160,6 +162,7 @@ export function leoLiveEmail({ name }) {
       ctaLabel: 'Open Leo',
       ctaUrl: chatUrl,
       afterword: 'Leo prepares the work and you stay in charge: he never applies, posts or sends anything for you. If you have any question, just reply to this email.',
+      unsubscribeUrl,
       footerReason: 'You received this email because you have a CVMind account.'
     })
   };

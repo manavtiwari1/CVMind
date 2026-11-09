@@ -5,6 +5,7 @@ import { Notification } from '../models.js';
 import { sendEmailBatch, emailConfigured } from '../mailer.js';
 import { notificationEmail } from '../../services/emailTemplates.js';
 import { FEATURE_LOGS } from './analytics.js';
+import { optOutFields, optedOutEmails, withoutOptedOut } from '../../services/emailOptOut.js';
 import { model, clean, handle, httpError, paging, isEmail } from '../util.js';
 
 const router = express.Router();
@@ -55,7 +56,7 @@ router.post('/preview', requireAdmin('notifications.send'), handle(async (req, r
   const User = model('User');
   const [count, emailCount, sample] = await Promise.all([
     User.countDocuments(filter),
-    User.countDocuments({ $and: [filter, VERIFIED] }),
+    optedOutEmails().then((out) => User.countDocuments({ $and: [filter, VERIFIED, { email: { $nin: out } }] })),
     User.find(filter).sort({ createdAt: -1 }).limit(5).select('name email emailVerified').lean()
   ]);
   res.json({ success: true, data: { count, emailCount, sample: sample.map((u) => ({ name: u.name, email: u.email, emailVerified: !!u.emailVerified })), emailConfigured: emailConfigured(), maxEmailRecipients: MAX_EMAIL_RECIPIENTS } });
@@ -76,7 +77,8 @@ router.post('/', requireAdmin('notifications.send'), handle(async (req, res) => 
   const filter = await segmentFilter(segment);
   const users = await model('User').find(filter).select('name email emailVerified').lean();
   if (!users.length) throw httpError(400, 'No users match this audience.');
-  const emailUsers = users.filter((u) => u.emailVerified);
+  // People who unsubscribed still get the in-app notification
+  const emailUsers = await withoutOptedOut(users.filter((u) => u.emailVerified));
   if (channels.includes('email') && emailUsers.length > MAX_EMAIL_RECIPIENTS) {
     throw httpError(400, `Email can go to at most ${MAX_EMAIL_RECIPIENTS} people at a time. Narrow the audience or send in-app only.`);
   }
@@ -95,7 +97,10 @@ router.post('/', requireAdmin('notifications.send'), handle(async (req, res) => 
 
   if (channels.includes('email')) {
     const ctaUrl = link.startsWith('/') ? `${(process.env.FRONTEND_URL || 'https://www.cvmind.in').replace(/\/$/, '')}${link}` : link;
-    const messages = emailUsers.map((user) => ({ to: user.email, ...notificationEmail({ name: user.name, title, body, ctaLabel: link ? 'Open CVMind' : '', ctaUrl }) }));
+    const messages = emailUsers.map((user) => {
+      const { url, headers } = optOutFields(user.email);
+      return { to: user.email, headers, ...notificationEmail({ name: user.name, title, body, ctaLabel: link ? 'Open CVMind' : '', ctaUrl, unsubscribeUrl: url }) };
+    });
     const { sent, failed, errors } = messages.length ? await sendEmailBatch(messages) : { sent: 0, failed: 0, errors: [] };
     for (const e of errors) console.error('[notifications] email failed for', e.to.join(', '), e.message);
     notification.emailSent = sent;

@@ -5,6 +5,7 @@ import { requireFreeUse } from '../billing/gate.js';
 import { isPro } from '../billing/service.js';
 import { clientIp } from '../services/limiter.js';
 import { escapeHtml } from '../admin/mailer.js';
+import { emailFromToken, isOptedOut, optIn, optOut } from '../services/emailOptOut.js';
 import { generateOfferNegotiationWithGemini } from '../services/gemini.js';
 import { planProgress, setPlanHidden } from '../growth/progress.js';
 import { listScans } from '../growth/scans.js';
@@ -56,6 +57,26 @@ function cronAllowed(req) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
+// a***@gmail.com: enough to recognise, not enough to read from a shared screen
+const maskEmail = (email) => email.replace(/^(.)[^@]*/, '$1***');
+
+function emailPrefsPage(state, email, token) {
+  const here = `/api/email/unsubscribe/${encodeURIComponent(token)}`;
+  const views = {
+    ask: { title: 'Unsubscribe from CVMind emails?', text: `You'll stop getting updates and offers at ${maskEmail(email)}. Account emails such as password resets and invoices still arrive.`, label: 'Unsubscribe', href: `${here}?do=unsubscribe` },
+    out: { title: 'You are unsubscribed', text: `We won't send updates or offers to ${maskEmail(email)} any more. Account emails such as password resets and invoices still arrive.`, label: 'Subscribe again', href: `${here}?do=resubscribe` },
+    in: { title: 'You are subscribed again', text: `We'll send updates and offers to ${maskEmail(email)}.`, label: 'Open CVMind', href: (process.env.FRONTEND_URL || 'https://www.cvmind.in').replace(/\/$/, '') }
+  };
+  const view = views[state];
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>${escapeHtml(view.title)} · CVMind</title>
+<style>body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f3f5f9;color:#0f172a;display:grid;place-items:center;min-height:100vh;padding:16px;box-sizing:border-box}
+main{max-width:440px;background:#fff;border:1px solid #e4e8ef;border-radius:14px;padding:32px 28px;text-align:center}
+h1{font-size:22px;margin:0 0 10px}p{color:#475569;line-height:1.6;margin:0 0 20px}
+a{display:inline-block;padding:12px 22px;border-radius:10px;background:#1d4ed8;color:#fff;text-decoration:none;font-weight:700}</style></head>
+<body><main><h1>${escapeHtml(view.title)}</h1><p>${escapeHtml(view.text)}</p><a href="${escapeHtml(view.href)}">${escapeHtml(view.label)}</a></main></body></html>`;
+}
+
 export function createGrowthRouter({ loadWork = defaultLoadWork, findUser = defaultFindUser, sources = {}, negotiate = generateOfferNegotiationWithGemini } = {}) {
   const router = express.Router();
 
@@ -83,6 +104,37 @@ export function createGrowthRouter({ loadWork = defaultLoadWork, findUser = defa
   router.post('/api/unsubscribe/:token', asyncRoute(async (req, res) => {
     const done = await unsubscribe(req.params.token);
     res.status(done ? 200 : 404).json({ success: done });
+  }));
+
+  // ── Updates and offers: unsubscribe (no sign-in) ─────────────────────────
+  // Opening the link only asks. Mail scanners open every link in an email, so the change happens
+  // on the page's own button, or on the POST that mail apps send for their Unsubscribe button.
+  router.get('/api/email/unsubscribe/:token', asyncRoute(async (req, res) => {
+    const email = emailFromToken(req.params.token);
+    if (!email) return res.status(404).type('html').send(unsubscribePage(false));
+    if (req.query.do === 'unsubscribe') await optOut(email);
+    if (req.query.do === 'resubscribe') {
+      await optIn(email);
+      return res.type('html').send(emailPrefsPage('in', email, req.params.token));
+    }
+    res.type('html').send(emailPrefsPage(await isOptedOut(email) ? 'out' : 'ask', email, req.params.token));
+  }));
+  router.post('/api/email/unsubscribe/:token', asyncRoute(async (req, res) => {
+    const email = emailFromToken(req.params.token);
+    if (!email) return res.status(404).json({ success: false });
+    await optOut(email);
+    res.json({ success: true });
+  }));
+
+  // The same setting from the Account page
+  router.get('/api/user/email-preferences', requireUser, asyncRoute(async (req, res) => {
+    res.json({ success: true, subscribed: !(await isOptedOut(req.auth.email)) });
+  }));
+
+  router.put('/api/user/email-preferences', requireUser, asyncRoute(async (req, res) => {
+    if (typeof req.body?.subscribed !== 'boolean') return res.status(400).json({ success: false, error: 'Choose on or off.' });
+    await (req.body.subscribed ? optIn(req.auth.email) : optOut(req.auth.email));
+    res.json({ success: true, subscribed: req.body.subscribed });
   }));
 
   const runAlerts = asyncRoute(async (req, res) => {

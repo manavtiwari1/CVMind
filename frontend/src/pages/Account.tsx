@@ -8,6 +8,7 @@ import { fetchMyCollege } from '../lib/myCollege';
 import type { MyCollege } from '../lib/myCollege';
 import AccountSessions from '../components/AccountSessions';
 import AccountCareerProfile from '../components/AccountCareerProfile';
+import AccountEmailPrefs from '../components/AccountEmailPrefs';
 import { API_BASE } from '../lib/apiBase';
 import { authFetch } from '../lib/authFetch';
 import { readUser, saveUser, isProUser, USER_CHANGE_EVENT } from '../lib/currentUser';
@@ -438,6 +439,8 @@ export default function Account({ setCurrentPage, handleSignOut, setLoadedWork }
               </div>
 
               <AccountCareerProfile />
+
+              <AccountEmailPrefs />
 
               <div className="acct-field">
                 <span className="acct-label">Account</span>

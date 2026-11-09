@@ -6,6 +6,7 @@ import { AuthEvent, Coupon, Notification, UserSession } from '../models.js';
 import { invalidateSessionCache, revokeAllSessions } from '../sessions.js';
 import { sendEmailBatch, emailConfigured } from '../mailer.js';
 import { notificationEmail } from '../../services/emailTemplates.js';
+import { optOutFields, withoutOptedOut } from '../../services/emailOptOut.js';
 import { logAuthEvent } from '../../services/authEvents.js';
 import { AiUsage, FeatureUse } from '../../billing/models.js';
 import { setUserStatus, deleteAccount } from '../../db.js';
@@ -125,7 +126,7 @@ router.post('/bulk', requireAdmin(), handle(async (req, res) => {
     if (link && !/^(https:\/\/|\/)/i.test(link)) throw httpError(400, 'The link must start with https:// or /');
     if (!emailConfigured()) throw httpError(503, 'Email is not configured on this server (RESEND_API_KEY).');
     // Unverified addresses are often fake and bounce, which hurts cvmind.in's sender reputation
-    const to = users.filter((u) => u.emailVerified);
+    const to = await withoutOptedOut(users.filter((u) => u.emailVerified));
     if (!to.length) throw httpError(400, 'None of the selected users have a verified email address.');
     if (to.length > MAX_EMAIL) throw httpError(400, `Email can go to at most ${MAX_EMAIL} people at a time.`);
 
@@ -157,7 +158,10 @@ router.post('/bulk', requireAdmin(), handle(async (req, res) => {
     }
 
     const ctaUrl = link.startsWith('/') ? `${(process.env.FRONTEND_URL || 'https://www.cvmind.in').replace(/\/$/, '')}${link}` : link;
-    const { sent, failed, errors } = await sendEmailBatch(to.map((u) => ({ to: u.email, ...notificationEmail({ name: u.name, title, body, ctaLabel: link ? 'Open CVMind' : '', ctaUrl }) })));
+    const { sent, failed, errors } = await sendEmailBatch(to.map((u) => {
+      const { url, headers } = optOutFields(u.email);
+      return { to: u.email, headers, ...notificationEmail({ name: u.name, title, body, ctaLabel: link ? 'Open CVMind' : '', ctaUrl, unsubscribeUrl: url }) };
+    }));
     for (const e of errors) console.error('[user-activity] email failed for', e.to.join(', '), e.message);
     // Kept in the Notifications history like any other send
     const notification = await Notification.create({
