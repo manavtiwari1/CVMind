@@ -130,6 +130,41 @@ export function diwaliEmail({ name }) {
   };
 }
 
+// Leo going live. Like the Diwali banner, the image is served from the site, so it has to be
+// deployed before this email goes out.
+export const LEO_LIVE_EMAIL = {
+  image: 'https://www.cvmind.in/email/leo-is-on.jpg',
+  chatUrl: 'https://app.cvmind.in/chat'
+};
+
+export function leoLiveEmail({ name }) {
+  const { image, chatUrl } = LEO_LIVE_EMAIL;
+  return {
+    subject: 'Leo is on. Tell him what you need.',
+    html: renderEmail({
+      preheader: 'Your resume, cover letter, job hunt and interview prep, done by asking Leo.',
+      heroImage: image,
+      heroAlt: 'Leo is on. Tell him what you need. He does the work.',
+      title: 'Leo is on',
+      greetingName: name,
+      body: 'You can now get your career work done just by asking. Tell Leo what you need in your own words, and he does it right there in the chat:',
+      bullets: [
+        'Checks your resume and fixes what is holding it back',
+        'Tailors your resume to a job and writes a one-page cover letter',
+        'Finds real jobs and prepares everything you need to apply',
+        'Runs a mock interview with feedback on every answer',
+        'Writes your LinkedIn bio, posts and messages',
+        'Builds your own portfolio website'
+      ],
+      note: 'To start: open Leo, tap Connectors, connect the tools you want, then type what you need.',
+      ctaLabel: 'Open Leo',
+      ctaUrl: chatUrl,
+      afterword: 'Leo prepares the work and you stay in charge: he never applies, posts or sends anything for you. If you have any question, just reply to this email.',
+      footerReason: 'You received this email because you have a CVMind account.'
+    })
+  };
+}
+
 export function supportReplyEmail({ name, subject, number, body }) {
   return {
     subject: `Re: ${subject} [#${number}]`,
