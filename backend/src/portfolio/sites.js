@@ -162,8 +162,8 @@ const SITE_HEADERS = {
 };
 
 const NOT_FOUND_PAGE = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Portfolio not found · CVMind</title>
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;padding:16px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#faf9f5;color:#141413;text-align:center}
-h1{font-size:24px;margin:0 0 8px}p{margin:0 0 20px;color:#73726c;line-height:1.6}a{color:#c96442;font-weight:600}</style></head>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;padding:16px;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f2faf6;color:#10231c;text-align:center}
+h1{font-size:24px;margin:0 0 8px}p{margin:0 0 20px;color:#5f736a;line-height:1.6}a{color:#12805c;font-weight:600}</style></head>
 <body><main><h1>This portfolio isn't here</h1><p>The link may be wrong, or its owner may have taken it down.</p><a href="https://www.cvmind.in/">Build your own portfolio with CVMind</a></main></body></html>`;
 
 // lvh.me resolves to 127.0.0.1 and stands in for portfolio.cvmind.in locally. In production the
