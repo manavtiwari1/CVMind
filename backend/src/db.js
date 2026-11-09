@@ -1573,6 +1573,9 @@ export async function deleteAccount(userId) {
     await LoginLog.deleteMany({ $or: [{ userId: cleanId }] });
     const { JobApplyLog } = await import('./jobFinder/models.js');
     await JobApplyLog.deleteMany({ userId: cleanId });
+    // Leo: chats, Career Profile, missions, reminders and connectors
+    const { LEO_MODELS } = await import('./leo/models.js');
+    await Promise.all(LEO_MODELS.map((model) => model.deleteMany({ userId: cleanId })));
     // A college on the placements portal stops seeing this student, and their reviews go
     const { endCollegeLinks } = await import('./college/membership.js');
     const user = await User.findById(cleanId, { email: 1 }).lean().catch(() => null);

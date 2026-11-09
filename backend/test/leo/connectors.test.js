@@ -180,3 +180,20 @@ test('with Agent Mode off, signed-in users keep every chat tool', async () => {
     await saveSettingGroup('features', { 'leo-agent': true }, 'test');
   }
 });
+
+test('deleting an account removes everything Leo kept', async () => {
+  const user = await newUser();
+  const other = await newUser();
+  await connect(user, 'tailor');
+  await connect(other, 'tailor');
+  const { LEO_MODELS, CareerProfile, LeoReminder } = await import('../../src/leo/models.js');
+  await CareerProfile.create({ userId: user.id, masterResumeName: 'cv.pdf', masterResumeText: 'private' });
+  await LeoReminder.create({ userId: user.id, email: user.email, text: 'Interview', dueAt: new Date(Date.now() + 100000) });
+  await chat(user);
+
+  const { deleteAccount } = await import('../../src/db.js');
+  await deleteAccount(user.id);
+
+  for (const model of LEO_MODELS) assert.equal(await model.countDocuments({ userId: user.id }), 0, model.modelName);
+  assert.deepEqual(await connected(other), ['tailor']);
+});

@@ -10,6 +10,7 @@ const TOC = [
   { id: 'resumes', label: 'How uploaded resumes are handled' },
   { id: 'use', label: 'How we use your information' },
   { id: 'ai', label: 'AI processing' },
+  { id: 'leo', label: 'Leo, your Career Profile and background work' },
   { id: 'share', label: 'Who we share it with' },
   { id: 'placements', label: 'Colleges and the Placements Portal' },
   { id: 'cookies', label: 'Advertising and cookies' },
@@ -28,14 +29,15 @@ export default function Privacy({ setCurrentPage }: PrivacyProps) {
   );
 
   return (
-    <LegalLayout page="privacy" title="Privacy Policy" updated="October 25, 2026" setCurrentPage={setCurrentPage} toc={TOC}>
+    <LegalLayout page="privacy" title="Privacy Policy" updated="November 10, 2026" setCurrentPage={setCurrentPage} toc={TOC}>
       <h2>Introduction</h2>
       <p>This Privacy Policy explains how CV Mind ("<strong>we</strong>", "<strong>us</strong>" or "<strong>our</strong>") collects, uses, stores and shares your information when you use our website at <a href="https://www.cvmind.in" target="_blank" rel="noopener noreferrer">https://www.cvmind.in</a>, the CV Mind app and our other services ("<strong>Services</strong>").</p>
       <p><strong>Questions or concerns?</strong> Reading this policy will help you understand your privacy rights and choices. If you do not agree with how we handle your information, please do not use the Services. If you still have questions, email us at <strong>{SUPPORT_EMAIL}</strong>.</p>
 
       <h3>Summary of key points</h3>
       <ul>
-        <li><strong>Uploaded resume files are not kept.</strong> We read them in memory to score or rewrite them, then discard the file. We keep the result (such as your score), not the file.</li>
+        <li><strong>Uploaded resume files are not kept.</strong> We read them in memory to score or rewrite them, then discard the file. We keep the result (such as your score), not the file. If you attach a resume in the Leo chat, its text is kept in your Career Profile until you delete it.</li>
+        <li><strong>Leo remembers details across your chats</strong> in a Career Profile that you can see, change or delete at any time, and keeps working on a mission you started after you close the chat. Leo never applies, posts, sends or pays for you.</li>
         <li><strong>Documents you save are stored in your account</strong> so you can open them on any device. Only you can see them unless you share a link, or you join your college on our Placements Portal.</li>
         <li><strong>Your college sees your resumes and scores only if you agree.</strong> If your college invites you to CVMind, it sees nothing from your account until you accept, and you can leave at any time.</li>
         <li><strong>Your text is sent to an AI model</strong> to produce the feedback you ask for. We do not use your content to train AI models.</li>
@@ -49,6 +51,7 @@ export default function Privacy({ setCurrentPage }: PrivacyProps) {
         <li><strong>Account details:</strong> your name, email address and password (stored as a secure hash, never in plain text). If you sign in with Google, we receive your name, email address and profile photo from Google.</li>
         <li><strong>Profile details:</strong> anything you add to your profile, such as a photo or address.</li>
         <li><strong>Documents and content:</strong> resumes, cover letters and portfolios you save, and the text you type into our tools (for example a job description, interview answers or a LinkedIn profile).</li>
+        <li><strong>Leo chats and Career Profile:</strong> what you write to Leo and its replies, your Career Profile, the missions and reminders you set up, and which tools you have connected. See <a href="#leo" onClick={e => { e.preventDefault(); document.getElementById('leo')?.scrollIntoView({ behavior: 'smooth' }); }}>Leo, your Career Profile and background work</a>.</li>
         <li><strong>Messages:</strong> your name, email and message when you contact us through the Help Desk.</li>
         <li><strong>Payments:</strong> when you buy Pro, we record your email, the amount, the payment method type and a transaction ID. We do not store your card or UPI details.</li>
       </ul>
@@ -62,6 +65,7 @@ export default function Privacy({ setCurrentPage }: PrivacyProps) {
       <h2 id="resumes">How uploaded resumes are handled</h2>
       <p>When you upload a PDF, DOCX or TXT resume (up to 5 MB) to check or tailor it, the file is held in memory while we read its text, and is not written to disk. Once the result is ready, the file itself is discarded. We keep the result, such as your score and summary, so it can appear in your history.</p>
       <p>If you choose to save a resume or cover letter in the builder, its content is stored in your account until you delete it.</p>
+      <p>A resume you attach in the Leo chat is handled differently: the file is read and discarded in the same way, but the text from it is saved with that chat and in your Career Profile, so Leo can use it later.</p>
 
       <h2 id="use">How we use your information</h2>
       <ul>
@@ -73,9 +77,28 @@ export default function Privacy({ setCurrentPage }: PrivacyProps) {
       </ul>
 
       <h2 id="ai">AI processing</h2>
-      <p>Our AI features send the text needed for your request (for example your resume text and a job description) to our AI model providers, DeepSeek and Google Gemini, which return the feedback or draft you asked for. We use these services through their APIs, and we do not use your resumes, prompts or answers to train any AI model. These providers may process data on servers outside India.</p>
+      <p>Our AI features send the text needed for your request (for example your resume text and a job description) to our AI model providers, Anthropic (Claude), DeepSeek and Google Gemini, which return the feedback or draft you asked for. We use these services through their APIs, and we do not use your resumes, prompts or answers to train any AI model. These providers may process data on servers outside India.</p>
 
       <p><strong>AI Job Finder.</strong> To find jobs, the role and city you search for are sent to our job listings providers (JSearch, through RapidAPI, and Adzuna); your resume is not. We save the resume and preferences you choose for Job Finder, and the jobs you tell us you applied to, with the date, so the same job can show that you already applied. If you apply to a job a recruiter posted on CVMind, your name, email, phone and resume text are sent to that recruiter. Deleting your account removes your Job Finder records.</p>
+
+      <h2 id="leo">Leo, your Career Profile and background work</h2>
+      <p>Leo is the assistant in the CV Mind chat. This section explains what it keeps and what it does when you are signed in. If you are not signed in, your chat stays in your browser tab, and we keep only usage counts, never what you wrote.</p>
+
+      <h3>Your Career Profile</h3>
+      <p>So that you don't have to repeat yourself, Leo keeps one Career Profile for your account. It can hold the text of the resume you attached, your name and contact details, your target role, education, work, projects, skills and achievements, and a note of whether each item came from your resume or from you.</p>
+      <p>The details are filled in from a resume you attach in the chat, which is read by our AI provider, and from what you tell Leo. A LinkedIn profile PDF you attach for an audit does not replace your saved resume. A short summary of your profile is sent to our AI provider with your messages, and your saved resume text is sent when a tool you ask for needs it.</p>
+      <p>You can see, change or delete your Career Profile on your Account page, or ask Leo to show it and use the Delete button. Deleting it removes it straight away. If you attach a resume in the chat afterwards, a new profile is saved and Leo tells you so.</p>
+
+      <h3>Chats, missions and background work</h3>
+      <p>Your chats with Leo are saved to your account. A mission is a job with several steps that you start yourself with the Start button, such as finding jobs and preparing applications. We save its plan, each step's result and the AI usage. Once you start a mission, it can keep running on our servers after you close the chat, and it stops if you press Stop.</p>
+      <p>Leo prepares work for you to review. It does not apply to jobs, publish, post, send messages or make payments on your behalf. If you use the CV Mind browser extension, it fills a form on the employer's site only when you ask it to, using your details and your application pack, and you decide whether to submit it. Whatever you submit goes to that employer under its own privacy policy.</p>
+      <p>We also record which tools you have connected in Connectors. Leo can use only those tools for you, and you can disconnect them at any time.</p>
+
+      <h3>Reminders and job alerts</h3>
+      <p>Leo sets an email reminder or turns on job alert emails only when you ask. For a reminder we keep its text, its time and your email address, and you can cancel it before it is sent. Every job alert email has an unsubscribe link.</p>
+
+      <h3>How long this is kept</h3>
+      <p>Chats, missions and reminders are deleted automatically 12 months after they were created. Deleting a chat removes its text and its missions. Your Career Profile and connected tools stay until you delete them or your account.</p>
 
       <h2 id="share">Who we share it with</h2>
       <p>We do not sell or rent your personal information. We share it only with service providers that help us run CV Mind, and only as much as they need:</p>
@@ -85,9 +108,10 @@ export default function Privacy({ setCurrentPage }: PrivacyProps) {
             <tr><th>Provider</th><th>What for</th><th>What they receive</th></tr>
           </thead>
           <tbody>
-            <tr><td>DeepSeek</td><td>AI feedback and writing</td><td>The text of your request</td></tr>
+            <tr><td>Anthropic (Claude)</td><td>AI feedback, writing and the Leo chat</td><td>The text of your request, and your Career Profile and resume text when Leo needs them</td></tr>
+            <tr><td>DeepSeek</td><td>AI feedback and writing for some features</td><td>The text of your request</td></tr>
             <tr><td>Google (Gemini)</td><td>AI feedback and writing for some features</td><td>The text of your request</td></tr>
-            <tr><td>MongoDB Atlas</td><td>Database hosting</td><td>Account details, saved documents and usage records</td></tr>
+            <tr><td>MongoDB Atlas</td><td>Database hosting</td><td>Account details, saved documents, Leo chats, your Career Profile and usage records</td></tr>
             <tr><td>Resend</td><td>Sending emails</td><td>Your email address and the email content</td></tr>
             <tr><td>Google Sign-In</td><td>Signing in with Google</td><td>Handled by Google; we receive your name, email and photo</td></tr>
             <tr><td>Google AdSense</td><td>Showing ads on some pages</td><td>Cookie and device data, as described below</td></tr>
@@ -138,7 +162,7 @@ export default function Privacy({ setCurrentPage }: PrivacyProps) {
 
       <h2 id="retention">Keeping and deleting your data</h2>
       <p>We keep your account details and saved documents for as long as your account is open. You can delete any saved document from My Documents at any time.</p>
-      <p>You can delete your whole account from Account → Your Profile → Delete account. This permanently removes your profile, your saved documents and your sign-in records, and ends any link to a college on the Placements Portal. We may keep payment records where the law requires us to.</p>
+      <p>You can delete your whole account from Account → Your Profile → Delete account. This permanently removes your profile, your saved documents, your sign-in records, your Leo chats, Career Profile, missions and reminders, and ends any link to a college on the Placements Portal. We may keep payment records where the law requires us to.</p>
       <p>A college's student list stays with that college until the college removes a student or its account with us is closed.</p>
 
       <h2 id="rights">Your choices and rights</h2>
