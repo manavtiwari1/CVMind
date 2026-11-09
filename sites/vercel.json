@@ -1,0 +1,9 @@
+{
+  "functions": {
+    "api/*.js": { "maxDuration": 30 }
+  },
+  "rewrites": [
+    { "source": "/", "destination": "/api/site" },
+    { "source": "/(.+)", "destination": "/api/missing" }
+  ]
+}
