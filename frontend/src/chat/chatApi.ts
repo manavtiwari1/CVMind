@@ -78,8 +78,24 @@ export interface DocumentCard {
   workId?: string;
 }
 
+// A portfolio website Leo built in the chat (build_portfolio in backend/src/leo/tools.js)
+export interface PortfolioCard {
+  type: 'portfolio';
+  id: string;
+  theme: string;
+  themeLabel: string;
+  data: { name?: string; title?: string; email?: string; phone?: string; location?: string };
+  html: string;
+  // Empty when saving failed; the card offers to save it again
+  workId: string;
+  saveFailed?: boolean;
+  edited?: boolean;
+  restored?: boolean;
+}
+export interface PortfolioLooksCard { type: 'portfolio_looks'; looks: { id: string; label: string; bg: string; accent: string; text: string }[] }
+
 export type Card = AtsCard | TailorCard | CoverLetterCard | InterviewCard | RoadmapCard | JobsCard | LinkCard | LockedCard | ErrorCard
-  | ChoicesCard | SummaryCard | TemplatePickerCard | DocumentCard;
+  | ChoicesCard | SummaryCard | TemplatePickerCard | DocumentCard | PortfolioCard | PortfolioLooksCard;
 
 // The guided flow open in a chat. Guests keep it in the browser and send it back with each message.
 export interface LeoFlow {
@@ -91,7 +107,17 @@ export interface LeoFlow {
   [key: string]: unknown;
 }
 
-export interface ToolRun { id: string; label: string; done: boolean }
+export interface LiveProgress { stage: string; html: string }
+export interface ToolRun {
+  id: string;
+  name?: string;
+  label: string;
+  done: boolean;
+  // Set while a long tool shows its work
+  live?: LiveProgress;
+  // It showed its work and finished
+  finishedLive?: boolean;
+}
 
 export interface ChatMessage {
   id: string;
@@ -129,6 +155,7 @@ export interface StreamHandlers {
   onMeta: (meta: { conversationId: string | null; guest: boolean; remaining: number }) => void;
   onDelta: (text: string) => void;
   onTool: (tool: { id: string; name: string; label: string }) => void;
+  onProgress: (progress: { id: string; stage?: string; html?: string; reset?: boolean }) => void;
   onCard: (result: { id: string; card: Card }) => void;
   onFlow: (flow: LeoFlow | null) => void;
   onDone: (done: { turnId: string | null; stopReason: string }) => void;
@@ -147,7 +174,7 @@ export interface ChatRequest {
 
 // A tap on a guided-flow card; streamed like a message
 export interface ActionRequest extends Omit<ChatRequest, 'message'> {
-  action: 'choose' | 'confirm' | 'template';
+  action: 'choose' | 'confirm' | 'template' | 'restore';
   value?: Record<string, string>;
 }
 
@@ -188,6 +215,7 @@ async function streamFrom(path: string, body: ChatRequest | ActionRequest, handl
       if (event === 'meta') handlers.onMeta(payload);
       else if (event === 'delta') handlers.onDelta(payload.text);
       else if (event === 'tool') handlers.onTool(payload);
+      else if (event === 'progress') handlers.onProgress(payload);
       else if (event === 'card') handlers.onCard(payload);
       else if (event === 'flow') handlers.onFlow(payload.flow);
       else if (event === 'done') handlers.onDone(payload);

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, Copy, ExternalLink, Globe, X } from 'lucide-react';
 import { authFetch } from '../lib/authFetch';
 import { getErrorMessage } from '../utils/errors';
+import { siteUrl } from '../lib/portfolioSite';
 
 export interface PublishedSite {
   username: string;
@@ -27,20 +28,11 @@ interface PortfolioPublishProps {
 
 type NameCheck = { state: 'idle' | 'checking' | 'ok' } | { state: 'bad'; message: string };
 
-// Locally the backend serves the page on lvh.me, which resolves to this machine
-function siteUrl(username: string, baseUrl: string) {
-  if (import.meta.env.DEV) {
-    const port = new URL(baseUrl).port;
-    return `http://${username}.portfolio.lvh.me${port ? `:${port}` : ''}/`;
-  }
-  return `https://${username}.portfolio.cvmind.in/`;
-}
-
 const USERNAME_SHAPE = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;
 
 export default function PortfolioPublish({ baseUrl, workId, suggestedUsername, publicDetails, site, onSiteChange, onClose, onSaveAgain, saving, saveError }: PortfolioPublishProps) {
   const [username, setUsername] = useState(site?.username ?? suggestedUsername);
-  const [nameCheck, setNameCheck] = useState<NameCheck>({ state: 'idle' });
+  const [checked, setChecked] = useState<{ name: string; result: NameCheck } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
@@ -49,29 +41,28 @@ export default function PortfolioPublish({ baseUrl, workId, suggestedUsername, p
   // The username is fixed by the first publish, so only a new one needs checking
   const choosing = !site;
 
+  const wellFormed = USERNAME_SHAPE.test(username);
+  let nameCheck: NameCheck = { state: 'checking' };
+  if (!username) nameCheck = { state: 'idle' };
+  else if (!wellFormed) nameCheck = { state: 'bad', message: 'Use 3 to 40 lowercase letters, numbers and hyphens, starting and ending with a letter or number.' };
+  else if (checked?.name === username) nameCheck = checked.result;
+
   useEffect(() => {
-    if (!choosing) return;
-    if (!USERNAME_SHAPE.test(username)) {
-      setNameCheck(username
-        ? { state: 'bad', message: 'Use 3 to 40 lowercase letters, numbers and hyphens, starting and ending with a letter or number.' }
-        : { state: 'idle' });
-      return;
-    }
+    if (!choosing || !wellFormed) return;
     let current = true;
-    setNameCheck({ state: 'checking' });
+    const finish = (result: NameCheck) => { if (current) setChecked({ name: username, result }); };
     const timer = setTimeout(async () => {
       try {
         const res = await authFetch(`${baseUrl}/api/portfolio/username-check?name=${encodeURIComponent(username)}`);
         const data = await res.json().catch(() => ({}));
-        if (!current) return;
-        if (!res.ok) setNameCheck({ state: 'bad', message: data.error || 'Could not check that username.' });
-        else setNameCheck(data.available ? { state: 'ok' } : { state: 'bad', message: data.problem });
+        if (!res.ok) finish({ state: 'bad', message: data.error || 'Could not check that username.' });
+        else finish(data.available ? { state: 'ok' } : { state: 'bad', message: data.problem });
       } catch (err) {
-        if (current) setNameCheck({ state: 'bad', message: getErrorMessage(err) || 'Could not check that username.' });
+        finish({ state: 'bad', message: getErrorMessage(err) || 'Could not check that username.' });
       }
     }, 350);
     return () => { current = false; clearTimeout(timer); };
-  }, [username, choosing, baseUrl]);
+  }, [username, wellFormed, choosing, baseUrl]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };

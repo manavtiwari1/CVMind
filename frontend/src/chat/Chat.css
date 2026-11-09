@@ -137,6 +137,7 @@
   transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
 }
 .lx-suggest button:hover { background: var(--bg-card-hover); border-color: var(--border-strong) !important; transform: translateY(-1px); }
+.lx-suggest .lx-suggest-wide { grid-column: 1 / -1; }
 .lx-suggest svg { flex-shrink: 0; margin-top: 2px; color: var(--purple); }
 .lx-suggest span { display: flex; flex-direction: column; min-width: 0; }
 .lx-suggest strong { font-weight: 600; color: var(--text-primary); font-size: 14px; }
@@ -438,7 +439,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lx-spin, .lx-typing span, .lx-msg, .lx-leo-pfp { animation: none !important; }
+  .lx-spin, .lx-typing span, .lx-msg, .lx-leo-pfp, .lc-live, .lc-live *, .lc-live *::after { animation: none !important; }
   .lx-side, .lc-ring-value, .lc-bar-fill { transition: none; }
 }
 
@@ -524,6 +525,69 @@
 .lc-build { display: flex; align-items: flex-start; gap: 12px; }
 .lc-build > svg { flex-shrink: 0; margin-top: 3px; color: var(--purple); }
 .lc-build > div { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+/* A portfolio being built */
+.lc-live { display: flex; flex-direction: column; gap: 9px; animation: lc-live-in 0.35s ease-out; }
+@keyframes lc-live-in { from { opacity: 0; transform: translateY(8px); } }
+.lc-live-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.lc-live-title { font-family: var(--font-script); font-size: 24px; font-weight: 700; line-height: 1.1; color: var(--text-primary); }
+.lc-live-time { flex-shrink: 0; font-family: var(--font-mono, 'Space Mono', monospace); font-size: 12px; font-variant-numeric: tabular-nums; color: var(--text-tertiary); }
+.lc-live-bars { display: flex; gap: 4px; }
+.lc-live-bars i { position: relative; flex: 1; height: 5px; overflow: hidden; background: var(--border); border-radius: 3px; }
+.lc-live-bars i.is-done { background: var(--green); }
+.lc-live-bars i.is-now::after { content: ''; position: absolute; inset: 0; width: 45%; background: var(--green); border-radius: 3px; animation: lc-live-slide 1.25s ease-in-out infinite alternate; }
+@keyframes lc-live-slide { from { transform: translateX(-30%); } to { transform: translateX(150%); } }
+.lc-live-step { margin: 0; font-size: 14px; font-weight: 500; color: var(--text-secondary); }
+
+.lc-live-dot { flex-shrink: 0; width: 7px; height: 7px; background: var(--green); border-radius: 50%; animation: lc-live-pulse 1.1s ease-in-out infinite; }
+@keyframes lc-live-pulse { 50% { opacity: 0.35; transform: scale(0.8); } }
+.lc-live-stage { position: relative; height: 340px; overflow: hidden; }
+.lc-live-stage > * { position: absolute; inset: 0; width: 100%; height: 100%; box-sizing: border-box; opacity: 0; visibility: hidden; transition: opacity 0.45s, visibility 0.45s; }
+.lc-live-stage.is-waiting .lc-live-waiting, .lc-live-stage.is-code .lc-live-code, .lc-live-stage.is-page iframe { opacity: 1; visibility: visible; }
+.lc-live-stage iframe { border: 0; background: #fff; pointer-events: none; }
+
+.lc-live-waiting { display: flex; flex-direction: column; justify-content: space-between; padding: 18px; background: var(--green-dim); }
+.lc-live-waiting p { margin: 0; font-size: 14.5px; font-weight: 500; text-align: center; color: var(--text-secondary); animation: lc-live-in 0.4s ease-out; }
+.lc-live-shimmer { display: flex; flex-direction: column; gap: 11px; }
+.lc-live-shimmer i { display: block; height: 14px; background: linear-gradient(100deg, rgba(45, 192, 141, 0.16) 30%, rgba(45, 192, 141, 0.42) 50%, rgba(45, 192, 141, 0.16) 70%); background-size: 220% 100%; border-radius: 7px; animation: lc-live-shine 1.5s linear infinite; }
+.lc-live-shimmer > i:nth-child(1) { width: 34%; }
+.lc-live-shimmer > i:nth-child(2) { width: 76%; height: 42px; }
+.lc-live-shimmer > i:nth-child(3) { width: 52%; }
+.lc-live-shimmer div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-top: 6px; }
+.lc-live-shimmer div i { height: 84px; border-radius: 10px; }
+@keyframes lc-live-shine { to { background-position: -220% 0; } }
+
+.lc-live-code { margin: 0; padding: 14px 16px; overflow: hidden; font-family: var(--font-mono, 'Space Mono', monospace); font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; color: #b9e8d4; background: #0f1b16; }
+.lc-live-code code { font: inherit; }
+.lc-live-caret { display: inline-block; width: 7px; height: 13px; margin-left: 2px; vertical-align: -2px; background: var(--green); animation: lc-live-blink 0.9s steps(2) infinite; }
+@keyframes lc-live-blink { 50% { opacity: 0; } }
+
+.lc-looks { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-top: 10px; }
+/* !important as for .lc-link and .lc-btn: the chat's button reset would remove the frame */
+.lc-look { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 5px 5px 7px; font: inherit; background: var(--bg-card, #fff) !important; border: 2px solid var(--border) !important; border-radius: 14px; cursor: pointer; transition: transform 0.18s cubic-bezier(0.3, 1.5, 0.6, 1), border-color 0.15s; }
+.lc-look:hover:not(:disabled) { transform: translateY(-3px); border-color: var(--green) !important; }
+.lc-look:active:not(:disabled) { transform: scale(0.97); }
+.lc-look:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.lc-look:disabled { cursor: default; opacity: 0.6; }
+.lc-look.is-picked { border-color: var(--green) !important; opacity: 1; }
+.lc-look-mini { display: flex; flex-direction: column; gap: 4px; height: 62px; padding: 8px; box-sizing: border-box; background: var(--look-bg); border-radius: 9px; box-shadow: inset 0 0 0 1px rgba(16, 35, 28, 0.1); }
+.lc-look-mini i { width: 13px; height: 13px; background: var(--look-accent); border-radius: 50%; }
+.lc-look-mini b { display: block; width: 80%; height: 4px; background: var(--look-text); border-radius: 2px; opacity: 0.85; }
+.lc-look-mini b + b { width: 55%; opacity: 0.45; }
+.lc-look-mini u { display: block; width: 26px; height: 7px; margin-top: auto; background: var(--look-accent); border-radius: 4px; }
+.lc-look-name { display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 13px; font-weight: 600; white-space: nowrap; color: var(--text-primary); }
+.lc-look-name svg { color: var(--green); }
+.lc-portfolio { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.lc-portfolio-frame { overflow: hidden; background: #fff; border: 1px solid var(--border); border-radius: 12px; }
+.lc-portfolio-url { display: flex; align-items: center; gap: 6px; padding: 8px 12px; font-family: var(--font-mono, 'Space Mono', monospace); font-size: 12px; color: var(--text-tertiary); background: var(--bg-primary); border-bottom: 1px solid var(--border); }
+.lc-portfolio-url svg { flex-shrink: 0; }
+.lc-portfolio-url span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* A preview only: taps and scrolling go to the chat. The full view is in the Studio. */
+.lc-portfolio-frame iframe { display: block; width: 100%; height: 340px; border: 0; pointer-events: none; }
+.lc-portfolio-live { display: flex; align-items: center; gap: 7px; padding: 9px 12px; font-size: 14px; font-weight: 600; color: var(--text-link); text-decoration: none; background: var(--green-dim); border-radius: 10px; }
+.lc-portfolio-live i { flex-shrink: 0; width: 8px; height: 8px; background: var(--green); border-radius: 50%; }
+.lc-portfolio-live span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.lc-portfolio-live svg { flex-shrink: 0; }
+.lc-portfolio-alert { padding: 10px 12px; font-size: 14px; line-height: 1.45; color: #b3261e; background: rgba(179, 38, 30, 0.08); border-radius: 10px; }
 .lc-doc { display: grid; grid-template-columns: 200px 1fr; gap: 18px; align-items: start; }
 .lc-doc-preview { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: #fff; box-shadow: var(--shadow-sm); }
 .lc-doc-side { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
@@ -554,6 +618,12 @@
   .lc-templates { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .lc-summary > div { grid-template-columns: 1fr; }
   .lc-summary dt { grid-row: auto; }
+  .lc-portfolio-frame iframe { height: 260px; }
+  .lc-live-stage { height: 260px; }
+  .lc-live-stage iframe { height: 100%; }
+  .lc-live-code { font-size: 11px; }
+  .lc-live-shimmer div i { height: 54px; }
+  .lc-portfolio .lc-actions .lc-btn { flex: 1 1 auto; justify-content: center; min-height: 44px; }
   .lc-doc { grid-template-columns: 1fr; }
   .lc-doc-preview { max-width: 240px; }
   .lc-doc-actions { max-width: none; }

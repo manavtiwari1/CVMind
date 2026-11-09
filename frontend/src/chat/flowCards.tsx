@@ -13,7 +13,7 @@ import { trackResult, type ChoicesCard, type DocumentCard, type SummaryCard, typ
 // server as actions, not as model messages, so they are instant and can't be misread.
 
 export interface FlowActions {
-  tap: (action: 'choose' | 'confirm' | 'template', value: Record<string, string>, label: string) => void;
+  tap: (action: 'choose' | 'confirm' | 'template' | 'restore', value: Record<string, string>, label: string) => void;
   // Puts text in the message box for the user to finish
   compose: (text: string) => void;
   attachForFlow: () => void;

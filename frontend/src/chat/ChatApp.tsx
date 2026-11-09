@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  ArrowUp, Briefcase, FileSearch, FileText, Loader2, Mail, Map as MapIcon, Menu, MessageSquare, Paperclip, Sparkles,
+  ArrowUp, Briefcase, FileSearch, FileText, Globe, Loader2, Mail, Map as MapIcon, Menu, MessageSquare, Paperclip, Sparkles,
   PenSquare, Square, Target, ThumbsDown, ThumbsUp, Trash2, X, Check, FolderOpen, LayoutGrid, Copy, RotateCcw
 } from 'lucide-react';
 import LeoReply from './LeoReply';
 import LeoAvatar from './LeoAvatar';
 import ResultCard, { type CardActions } from './cards';
+import LiveBuild from './LiveBuild';
 import {
   attachResume, ChatError, deleteChat, getChat, listChats, saveBuilt, sendFeedback, streamAction, streamChat,
   type ActionRequest, type ChatMessage, type ChatSummary, type DocumentCard, type LeoFlow, type Resume, type StreamHandlers
@@ -42,6 +43,7 @@ const SUGGESTIONS = [
   FESTIVE
     ? { icon: Sparkles, title: 'Diwali break plan', hint: '2 weeks to placement-ready', prompt: 'Plan my Diwali break: 2 weeks to get placement-ready. Make a day-by-day plan.' }
     : { icon: MapIcon, title: 'Plan my career', hint: 'Step-by-step roadmap', prompt: 'Make me a 1-year roadmap to become a Data Analyst' },
+  { icon: Globe, title: 'Build my portfolio website', hint: 'Leo asks what you want, builds it, and you publish your own link', prompt: 'Build my portfolio website', wide: true },
 ];
 
 const GUEST_KEY = 'cvmind_leo_guest';
@@ -214,11 +216,20 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork
         onTool: (tool) => patch(leoMsg.id, (m) => ({
           ...m,
           ...(m.tools.length === 0 && m.text ? { lead: m.text, text: '' } : {}),
-          tools: [...m.tools, { id: tool.id, label: tool.label, done: false }],
+          tools: [...m.tools, { id: tool.id, name: tool.name, label: tool.label, done: false }],
         })),
+        onProgress: ({ id, stage, html, reset }) => patch(leoMsg.id, (m) => ({
+          ...m,
+          tools: m.tools.map((t) => {
+            if (t.id !== id) return t;
+            const live = t.live || { stage: '', html: '' };
+            return { ...t, live: { stage: stage || live.stage, html: reset ? '' : live.html + (html || '') } };
+          }),
+        })),
+        // The finished card replaces the live view, so the page text can go
         onCard: ({ id, card }) => patch(leoMsg.id, (m) => ({
           ...m,
-          tools: m.tools.map((t) => (t.id === id ? { ...t, done: true } : t)),
+          tools: m.tools.map((t) => (t.id === id ? { ...t, done: true, live: undefined, finishedLive: !!t.live } : t)),
           cards: [...m.cards, card],
         })),
         onFlow: (next) => {
@@ -395,6 +406,11 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork
         : m)));
       if (conversationId) saveBuilt(conversationId, card.id, html, workId).catch(() => {});
     },
+    // A portfolio saved on the second try: remembered with the card, so a reopened chat can publish it
+    portfolioSaved: (card, workId) => {
+      if (conversationId) saveBuilt(conversationId, card.id, card.html, workId).catch(() => {});
+    },
+    latestPortfolioId: messages.flatMap((m) => m.cards).reduce<string | undefined>((id, c) => (c.type === 'portfolio' ? c.id : id), undefined),
   };
 
   const openFlow = flow && flow.step !== 'built' ? flow : null;
@@ -542,7 +558,7 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork
             ) : composer}
             <div className="lx-suggest">
               {SUGGESTIONS.map((s) => (
-                <button key={s.title} type="button" onClick={() => pickSuggestion(s.prompt)}>
+                <button key={s.title} type="button" className={'wide' in s ? 'lx-suggest-wide' : undefined} onClick={() => pickSuggestion(s.prompt)}>
                   <s.icon size={18} />
                   <span><strong>{s.title}</strong><small>{s.hint}</small></span>
                 </button>
@@ -563,11 +579,12 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork
                     <LeoAvatar mood={m.streaming ? (m.text ? 'typing' : 'thinking') : 'still'} size={32} />
                     <div className="lx-leo-body">
                       {m.lead && <div className="lx-reply"><LeoReply text={m.lead} /></div>}
-                      {m.tools.map((t) => (
+                      {m.tools.map((t) => (t.live && !t.done ? <LiveBuild key={t.id} live={t.live} edit={t.name === 'edit_portfolio'} /> : (
                         <div key={t.id} className={`lx-tool ${t.done ? 'is-done' : ''}`}>
-                          {t.done ? <Check size={14} /> : <Loader2 size={14} className="lx-spin" />} {t.label}{t.done ? '' : '…'}
+                          {t.done ? <Check size={14} /> : <Loader2 size={14} className="lx-spin" />}{' '}
+                          {t.finishedLive ? (t.name === 'edit_portfolio' ? 'Changes made' : 'Your website is ready') : `${t.label}${t.done ? '' : '…'}`}
                         </div>
-                      ))}
+                      )))}
                       {m.cards.map((card, i) => (
                         <ResultCard key={i} card={card} actions={actions} live={m.id === lastLeoId} fresh={!!m.fresh} busy={sending || outOfFree} />
                       ))}

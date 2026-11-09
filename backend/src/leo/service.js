@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { LeoConversation, LeoTurn } from './models.js';
 import { PERSONA, PROMPT_VERSION } from './persona.js';
 import { streamChat } from './llm.js';
-import { TOOL_DEFINITIONS, TOOL_STATUS, runTool } from './tools.js';
+import { TOOL_DEFINITIONS, TOOL_STATUS, runTool, looksCard, looksListedInText } from './tools.js';
 import {
   FLOW_TOOL_DEFINITIONS, FLOW_TOOL_STATUS, isFlowTool, runFlowTool, flowPrompt, publicFlow, beginTurn, endTurn
 } from './flows/index.js';
@@ -30,7 +30,7 @@ export function buildContext({ user, resume }) {
   const lines = [];
   const name = firstName(user?.name);
   if (name) lines.push(`The user's first name is ${name}.`);
-  else if (!user) lines.push('The user is not signed in. Tailoring and cover letters need a free account; the tool will ask them to sign in.');
+  else if (!user) lines.push('The user is not signed in. Tailoring, cover letters and portfolios need a free account; the tool will ask them to sign in.');
   const text = clip(resume?.text, MAX_RESUME_CHARS);
   if (text.length >= 50) {
     lines.push(`The user attached their resume${resume.name ? ` ("${clip(resume.name, 120)}")` : ''}:\n<data>\n${text.replace(/<\/?data>/gi, '')}\n</data>`);
@@ -94,6 +94,7 @@ async function execute(call, ctx) {
  * Runs one chat turn. Streams through send(event, data):
  *   delta { text }            — Leo's words as they arrive
  *   tool  { id, name, label } — a tool started
+ *   progress { id, stage | html | reset } — a long tool showing its work (a portfolio being built)
  *   card  { id, card }        — a tool's result (see leo/tools.js, leo/flows)
  *   flow  { flow }            — the guided flow changed (the browser keeps it for guests)
  *   done  { turnId, stopReason } or error { code, error }
@@ -139,7 +140,9 @@ export async function runTurn({ user, email, conversation, history = [], message
   const runCalls = async (calls) => {
     for (const call of calls) {
       send('tool', { id: call.id, name: call.name, label: TOOL_STATUS[call.name] || FLOW_TOOL_STATUS[call.name] || 'Working on it' });
+      ctx.progress = (data) => send('progress', { id: call.id, ...data });
       const result = await execute(call, ctx);
+      ctx.progress = null;
       if (signal?.aborted) throw new Error('aborted');
       if (result.card) send('card', { id: call.id, card: result.card });
       toolLog.push({ name: call.name, card: result.card, summary: clip(result.summary, 1500) });
@@ -205,6 +208,12 @@ export async function runTurn({ user, email, conversation, history = [], message
   } catch (err) {
     stopReason = signal?.aborted ? 'aborted' : 'error';
     if (!signal?.aborted) console.error('[leo] model call failed:', err.message);
+  }
+
+  if (!signal?.aborted && looksListedInText(reply, toolLog)) {
+    const card = looksCard();
+    send('card', { id: 'portfolio_looks', card });
+    toolLog.push({ name: 'build_portfolio', card, summary: 'Showed the looks as buttons.' });
   }
 
   // The draft decides when it's complete, not the model: show the summary if it was missed
