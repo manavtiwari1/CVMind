@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "backend",
-    "auto-apply-agent"
+    "auto-apply-agent",
+    "tidb-store"
   ],
   "scripts": {
     "dev": "npm run dev -w backend",

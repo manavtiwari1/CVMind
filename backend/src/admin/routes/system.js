@@ -1,5 +1,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import { databaseDriver, isDatabaseConfigured } from '@cvmind/tidb-store';
 import { requireAdmin, requireDb, dbReady } from '../auth.js';
 import { audit } from '../audit.js';
 import { metricsSnapshot } from '../metrics.js';
@@ -13,7 +14,7 @@ const DB_STATES = ['disconnected', 'connected', 'connecting', 'disconnecting'];
 
 router.get('/health', requireAdmin('system.view'), handle(async (req, res) => {
   const ready = await dbReady(1000);
-  let database = { state: DB_STATES[mongoose.connection.readyState] || 'unknown', configured: !!process.env.MONGODB_URI };
+  let database = { state: DB_STATES[mongoose.connection.readyState] || 'unknown', configured: isDatabaseConfigured(), driver: databaseDriver() || null };
   let queue = null;
   let worker = null;
 
@@ -64,6 +65,7 @@ router.get('/health', requireAdmin('system.view'), handle(async (req, res) => {
       metrics: metricsSnapshot(),
       // Only whether each key is set, never the value
       integrations: [
+        { key: 'TIDB_DATABASE_URL', label: 'TiDB', configured: !!process.env.TIDB_DATABASE_URL },
         { key: 'MONGODB_URI', label: 'MongoDB', configured: !!process.env.MONGODB_URI },
         { key: 'AUTH_SECRET', label: 'Session signing secret', configured: !!process.env.AUTH_SECRET },
         { key: 'GEMINI_API_KEY', label: 'Google Gemini', configured: !!process.env.GEMINI_API_KEY },

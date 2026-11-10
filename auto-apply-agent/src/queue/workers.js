@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { connectDatabase, isDatabaseConfigured } from '@cvmind/tidb-store';
 import { QueueRunner } from './runner.js';
 import { makeWorkerId } from './queue.js';
 import { QUEUES } from '../models/QueueJob.js';
@@ -14,8 +15,8 @@ async function ensureConnected() {
   if (readyState === 1) return;
   // db.js may already be connecting on import; wait for it instead of opening a second connection
   if (readyState === 2) return void await mongoose.connection.asPromise();
-  if (!process.env.MONGODB_URI) throw new Error('MONGODB_URI is required to run agent workers.');
-  await mongoose.connect(process.env.MONGODB_URI);
+  if (!isDatabaseConfigured()) throw new Error('A database is required to run agent workers: set DATABASE_DRIVER=tidb and TIDB_DATABASE_URL, or MONGODB_URI.');
+  await connectDatabase(mongoose);
 }
 
 // The PDF is optional (the tailored text is still usable), so a dead render must not fail the application

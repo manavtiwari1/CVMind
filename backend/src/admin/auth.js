@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
+import { isDatabaseConfigured } from '@cvmind/tidb-store';
 import { signToken, verifyToken } from '../services/authToken.js';
 import { AdminUser } from './models.js';
 import { isFullAccess, permissionsFor, ROLES } from './permissions.js';
@@ -11,7 +12,7 @@ const CONNECTED = 1;
 const CONNECTING = 2;
 
 export async function dbReady(waitMs = 5000) {
-  if (!process.env.MONGODB_URI) return false;
+  if (!isDatabaseConfigured()) return false;
   const deadline = Date.now() + waitMs;
   while (mongoose.connection.readyState === CONNECTING && Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -22,7 +23,7 @@ export async function dbReady(waitMs = 5000) {
 // Route guard for admin features that only work with MongoDB
 export async function requireDb(req, res, next) {
   if (await dbReady()) return next();
-  return res.status(503).json({ success: false, code: 'ADMIN_REQUIRES_MONGODB', error: 'This admin feature needs MongoDB. Set MONGODB_URI on the server.' });
+  return res.status(503).json({ success: false, code: 'ADMIN_REQUIRES_MONGODB', error: 'This admin feature needs the database. Set DATABASE_DRIVER=tidb and TIDB_DATABASE_URL (or MONGODB_URI) on the server.' });
 }
 
 function envCredentials() {

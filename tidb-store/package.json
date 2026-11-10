@@ -1,0 +1,15 @@
+{
+  "name": "@cvmind/tidb-store",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Runs CVMind's Mongoose models on TiDB (MySQL) tables instead of MongoDB",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "dependencies": {
+    "mingo": "7.2.5",
+    "mysql2": "3.24.6"
+  }
+}

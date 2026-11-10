@@ -1,0 +1,17 @@
+{
+  "name": "cvmind-db-migration",
+  "private": true,
+  "type": "module",
+  "description": "One-off MongoDB -> TiDB copy. Reads MongoDB only.",
+  "scripts": {
+    "introspect": "cd ../backend && node ../db-migration/introspect.mjs",
+    "scan": "node scan.mjs",
+    "plan": "node plan.mjs",
+    "copy:dry": "node copy.mjs --dry-run",
+    "copy": "node copy.mjs",
+    "verify": "node verify.mjs"
+  },
+  "dependencies": {
+    "mysql2": "3.24.6"
+  }
+}

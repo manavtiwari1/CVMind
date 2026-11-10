@@ -3,10 +3,13 @@ import assert from 'node:assert/strict';
 import { requireMongo, requireAgentAccess } from '../../src/middleware/agentAuth.js';
 import { signToken } from '../../src/services/authToken.js';
 
-const originalUri = process.env.MONGODB_URI;
+const DB_VARS = ['MONGODB_URI', 'DATABASE_DRIVER', 'TIDB_DATABASE_URL'];
+const originalEnv = Object.fromEntries(DB_VARS.map((k) => [k, process.env[k]]));
 afterEach(() => {
-  if (originalUri === undefined) delete process.env.MONGODB_URI;
-  else process.env.MONGODB_URI = originalUri;
+  for (const k of DB_VARS) {
+    if (originalEnv[k] === undefined) delete process.env[k];
+    else process.env[k] = originalEnv[k];
+  }
 });
 
 function run(middleware, req = { headers: {} }) {
@@ -20,8 +23,8 @@ function run(middleware, req = { headers: {} }) {
   });
 }
 
-test('requireMongo rejects when MONGODB_URI is missing', async () => {
-  delete process.env.MONGODB_URI;
+test('requireMongo rejects when no database is configured', async () => {
+  for (const k of DB_VARS) delete process.env[k];
   const out = await run(requireMongo());
   assert.equal(out.status, 503);
   assert.equal(out.body.code, 'AGENT_REQUIRES_MONGODB');

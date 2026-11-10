@@ -18,6 +18,7 @@ import { startJobAlerts } from './growth/alerts.js';
 import { createSiteServer } from './portfolio/sites.js';
 import { createPortfolioSiteRouter } from './routes/portfolioSites.js';
 import { ensureMongoConnection } from './db.js';
+import { isDatabaseConfigured } from '@cvmind/tidb-store';
 import cors from 'cors';
 import multer from 'multer';
 import bcrypt from 'bcryptjs';
@@ -1270,7 +1271,7 @@ async function importCheckerResumeForAgent(req, file) {
   const header = req.headers.authorization || '';
   const auth = header.startsWith('Bearer ') ? verifyToken(header.slice(7).trim()) : null;
   if (auth?.kind !== 'user' || !file || !RESUME_MIME_TYPES.includes(file.mimetype)) return null;
-  if (!process.env.MONGODB_URI || mongoose.connection.readyState !== 1) return null;
+  if (!isDatabaseConfigured() || mongoose.connection.readyState !== 1) return null;
 
   try {
     const { profile, deduped } = await importUploadedResume({

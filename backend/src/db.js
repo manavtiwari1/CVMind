@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import { connectDatabase, databaseDriver, isDatabaseConfigured } from '@cvmind/tidb-store';
 
 dotenv.config();
 
@@ -54,8 +55,11 @@ function writeDb(db) {
   fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
 }
 
-// ─── CLOUD MONGODB (MONGOOSE) SETUP ──────────────────────────────────────────
-const mongoURI = process.env.MONGODB_URI;
+// ─── DATABASE (MONGOOSE MODELS ON TIDB OR MONGODB) ───────────────────────────
+// DATABASE_DRIVER=tidb runs every model on TiDB through @cvmind/tidb-store; otherwise MongoDB (MONGODB_URI).
+// `mongoURI` keeps its old name but now means "a database is configured".
+const mongoURI = isDatabaseConfigured();
+const driverName = databaseDriver() === 'tidb' ? 'TiDB' : 'MongoDB';
 
 // One shared connection attempt. Every DB helper awaits it, so a request that arrives
 // while a serverless instance is still cold-starting never falls through to the local JSON file.
@@ -65,17 +69,20 @@ function connectMongo() {
   if (!mongoURI) return null;
   if (mongoose.connection.readyState === 1) return Promise.resolve();
   if (!connectPromise) {
-    connectPromise = mongoose.connect(mongoURI, {
+    connectPromise = connectDatabase(mongoose, {
       serverSelectionTimeoutMS: 8000,
       socketTimeoutMS: 45000,
-      maxPoolSize: 10
+      // Serverless hosts run many copies, each with its own pool: keep it small and close idle connections
+      maxPoolSize: 3,
+      minPoolSize: 0,
+      maxIdleTimeMS: 10000
     })
       .then(() => {
-        console.log('MongoDB connected successfully!');
+        console.log(`${driverName} connected successfully!`);
       })
       .catch((err) => {
         connectPromise = null; // allow a retry on the next request
-        console.error('MongoDB connection error. Falling back to Local JSON database. Error:', err.message);
+        console.error(`${driverName} connection error. Falling back to Local JSON database. Error:`, err.message);
       });
   }
   return connectPromise;

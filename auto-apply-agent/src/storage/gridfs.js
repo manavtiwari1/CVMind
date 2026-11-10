@@ -7,7 +7,9 @@ export const BUCKETS = {
 
 function getBucket(bucketName) {
   const { db } = mongoose.connection;
-  if (!db) throw new Error('MongoDB is not connected.');
+  if (!db) throw new Error('The database is not connected.');
+  // On TiDB the connection's db is the adapter's SqlDb, which brings its own GridFS-compatible bucket
+  if (typeof db.gridfsBucket === 'function') return db.gridfsBucket({ bucketName });
   return new mongoose.mongo.GridFSBucket(db, { bucketName });
 }
 

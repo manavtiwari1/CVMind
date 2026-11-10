@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { isDatabaseConfigured } from '@cvmind/tidb-store';
 import { verifyToken, checkAccount } from '../services/authToken.js';
 import { findActiveDevice, touchDevice, DEVICE_TOKEN_TTL_MS } from '../services/extensionDevices.js';
 
@@ -49,10 +50,10 @@ async function defaultCheckAccess(email) {
   return hasAutoApplyAccess(email);
 }
 
-// The agent needs real MongoDB (queue leases, GridFS); there is no JSON-file fallback
+// The agent needs the real database (queue leases, file storage); there is no JSON-file fallback
 export function requireMongo({ waitMs = 5000 } = {}) {
   return async (req, res, next) => {
-    if (!process.env.MONGODB_URI) {
+    if (!isDatabaseConfigured()) {
       return res.status(503).json({ success: false, code: 'AGENT_REQUIRES_MONGODB', error: 'Auto-apply agent requires MongoDB to be configured.' });
     }
     const deadline = Date.now() + waitMs;
