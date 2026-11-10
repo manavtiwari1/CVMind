@@ -15,6 +15,10 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const args = new Set(process.argv.slice(2));
 const dryRun = args.has('--dry-run');
 const fresh = args.has('--fresh');
+// --refill: tables already exist and the app may be connected (e.g. at cutover). Keep the tables, replace the rows.
+// App settings (maintenance mode) are replaced first, inside one transaction, so they are never missing.
+const refill = args.has('--refill');
+if (fresh && refill) { console.error('Use either --fresh or --refill, not both'); process.exit(1); }
 
 const plan = loadPlan(new URL('./plan.json', import.meta.url));
 const schemaSql = fs.readFileSync(path.join(here, 'schema.sql'), 'utf8');
@@ -39,24 +43,41 @@ if (!dryRun) {
   const [existing] = await db.query('SELECT TABLE_NAME AS name FROM information_schema.TABLES WHERE TABLE_SCHEMA = ?', [database]);
   const existingNames = new Set(existing.map((r) => r.name));
   const ours = tables.filter((t) => existingNames.has(t.name));
-  if (ours.length && !fresh) {
+  if (refill) {
+    const missing = tables.filter((t) => !existingNames.has(t.name));
+    if (missing.length) { console.error(`Stopped: --refill needs every table; missing ${missing[0].name}`); process.exit(1); }
+    console.log('--refill: keeping tables, replacing rows (MongoDB is not touched)');
+  } else if (ours.length && !fresh) {
     console.error(`Stopped: ${ours.length} of the plan's tables already exist in TiDB (e.g. ${ours[0].name}). Run with --fresh to drop and copy again.`);
     process.exit(1);
   }
-  if (ours.length) {
+  // Only --fresh ever drops tables; --refill must never reach here
+  if (fresh && !refill && ours.length) {
     console.log(`--fresh: dropping ${ours.length} existing plan tables in TiDB (MongoDB is not touched)`);
     for (const t of [...tables].reverse()) if (existingNames.has(t.name)) await db.query(`DROP TABLE IF EXISTS ${q(t.name)}`);
   }
-  const creates = statements.filter((s) => s.startsWith('CREATE TABLE'));
-  for (const stmt of creates) await db.query(stmt);
-  console.log(`Created ${creates.length} tables`);
+  if (!refill) {
+    const creates = statements.filter((s) => s.startsWith('CREATE TABLE'));
+    for (const stmt of creates) await db.query(stmt);
+    console.log(`Created ${creates.length} tables`);
+  }
 }
+
+// In --refill mode the settings collection goes first, so maintenance mode stays in force throughout
+const FIRST = ['appsettings'];
+const roots = [...plan.roots].sort((a, b) => (FIRST.includes(b.collection) ? 1 : 0) - (FIRST.includes(a.collection) ? 1 : 0));
 
 const mongo = await openMongo();
 const report = { startedAt: new Date().toISOString(), dryRun, collections: {}, rowsWithExtra: [], errors: [] };
 
-for (const root of plan.roots) {
+for (const root of roots) {
   const tree = allTables(root);
+  // --refill: one connection-level transaction per collection: clear its rows, insert the copy, commit
+  if (db && refill) {
+    await db.query('BEGIN');
+    await db.query('SET FOREIGN_KEY_CHECKS = 0');
+    for (const t of [...tree].reverse()) await db.query(`DELETE FROM ${q(t.name)}`);
+  }
   const pending = new Map(tree.map((t) => [t.name, []]));
   const counts = Object.fromEntries(tree.map((t) => [t.name, 0]));
   let pendingBytes = 0;
@@ -103,7 +124,9 @@ for (const root of plan.roots) {
       if (pendingBytes > MAX_BATCH_BYTES * 2) await flush();
     }
     await flush();
+    if (db && refill) { await db.query('SET FOREIGN_KEY_CHECKS = 1'); await db.query('COMMIT'); }
   } catch (err) {
+    if (db && refill) { await db.query('ROLLBACK').catch(() => {}); await db.query('SET FOREIGN_KEY_CHECKS = 1').catch(() => {}); }
     const msg = `${root.name}: ${err.code || ''} ${err.message}`;
     report.errors.push(msg);
     console.error('  ERROR', msg);
@@ -116,7 +139,7 @@ for (const root of plan.roots) {
 
 await mongo.close();
 
-if (db && !report.errors.length) {
+if (db && !refill && !report.errors.length) {
   console.log('\nVector search: TiFlash replicas and HNSW indexes');
   report.vector = [];
   for (const stmt of statements.filter((s) => /^ALTER TABLE .* (SET TIFLASH REPLICA|ADD VECTOR INDEX)/.test(s))) {
