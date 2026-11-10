@@ -11,5 +11,8 @@
   "dependencies": {
     "mingo": "7.2.5",
     "mysql2": "3.24.6"
+  },
+  "peerDependencies": {
+    "mongoose": "^9.6.2"
   }
 }
