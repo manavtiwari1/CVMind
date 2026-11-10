@@ -1,0 +1,41 @@
+name: Nightly backup (TiDB -> MongoDB)
+
+# Copies the live TiDB database into MongoDB every night, so MongoDB stays a fresh fallback.
+# Needs repository secrets TIDB_DATABASE_URL and MONGODB_URI.
+on:
+  schedule:
+    - cron: '30 21 * * *' # 03:00 IST
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Only compare counts, write nothing'
+        type: boolean
+        default: false
+
+concurrency:
+  group: nightly-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      - name: Back up TiDB into MongoDB
+        working-directory: db-migration
+        run: node backup-to-mongo.mjs ${{ inputs.dry_run && '--dry-run' || '' }}
+        env:
+          TIDB_DATABASE_URL: ${{ secrets.TIDB_DATABASE_URL }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
