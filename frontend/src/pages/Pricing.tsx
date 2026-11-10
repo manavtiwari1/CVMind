@@ -137,13 +137,13 @@ function DiwaliBanner() {
     navigator.clipboard?.writeText(DIWALI_OFFER.code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600); }).catch(() => {});
   };
   return (
-    <section className="pr-dw" aria-label="Diwali offer">
+    <section className="pr-dw" aria-label="Bhai Dooj offer">
       <Toran />
       <Twinkles />
       <Diya className="pr-dw-b-diya pr-dw-b-diya--l" />
       <Diya className="pr-dw-b-diya pr-dw-b-diya--r" />
       <div className="pr-dw-inner">
-        <span className="pr-dw-kicker">Happy Diwali from CVMind</span>
+        <span className="pr-dw-kicker">Happy Bhai Dooj from CVMind</span>
         <p className="pr-dw-title"><b>{DIWALI_OFFER.percent}% off</b> every Pro plan</p>
         <div className="pr-dw-code">
           <span>Use code</span>
@@ -246,7 +246,7 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
         <Waves />
 
         <header className="pr-hero">
-          <span className="pr-eyebrow"><Crown size={14} /> {FESTIVE ? `CVMind Pro · Diwali offer, ${DIWALI_OFFER.percent}% off` : 'CVMind Pro'}</span>
+          <span className="pr-eyebrow"><Crown size={14} /> {FESTIVE ? `CVMind Pro · Bhai Dooj offer, ${DIWALI_OFFER.percent}% off` : 'CVMind Pro'}</span>
           <h1 className="pr-title">Pay for the weeks you're job hunting. <em>Not a month more.</em></h1>
           <p className="pr-lede">Pick a pass for a sprint or a plan for the long run. Every plan is a one-time payment and ends on its own; nothing renews behind your back.</p>
         </header>

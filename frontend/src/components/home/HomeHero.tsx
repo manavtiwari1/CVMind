@@ -134,7 +134,7 @@ export default function HomeHero({ setCurrentPage, onAnalyzeClick }: HomeHeroPro
                 <span className="hx-mode-short">{m.short}</span>
               </button>
             ))}
-            {FESTIVE && <span className="dw-tag"><i aria-hidden="true" /> Happy Diwali</span>}
+            {FESTIVE && <span className="dw-tag"><i aria-hidden="true" /> Happy Bhai Dooj</span>}
           </div>
 
           {mode === 'check' ? (

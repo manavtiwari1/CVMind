@@ -563,10 +563,10 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork
             <h1>
               {/* Phones: the diyas sit beside the greeting instead of beside the box */}
               {FESTIVE && <Diya className="lx-title-diya" />}
-              {FESTIVE ? 'Happy Diwali' : greeting()}{firstName ? `, ${firstName}` : ''}
+              {FESTIVE ? 'Happy Bhai Dooj' : greeting()}{firstName ? `, ${firstName}` : ''}
               {FESTIVE && <Diya className="lx-title-diya" />}
             </h1>
-            <p className="lx-welcome-sub">{FESTIVE ? 'Roshni bhari Diwali! What do you want to do today?' : 'What do you want to do today?'}</p>
+            <p className="lx-welcome-sub">{FESTIVE ? 'Bhai Dooj ki shubhkamnayein! What do you want to do today?' : 'What do you want to do today?'}</p>
             {FESTIVE ? (
               <div className="lx-dw is-diwali">
                 <Toran />
