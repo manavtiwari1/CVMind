@@ -61,6 +61,16 @@ import { searchJobs, getJobDetail, warmJobSearch, JOB_SEARCH_COMPANIES } from '.
 const app = express();
 // Render/Vercel sit behind one proxy; trust it so rate limiting sees the real client IP
 app.set('trust proxy', 1);
+// Don't advertise the framework, and send basic hardening headers on API responses
+// (published portfolio pages set their own headers in createSiteServer)
+app.disable('x-powered-by');
+app.use('/api', (req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
+  next();
+});
 const PORT = process.env.PORT || 5000;
 
 // Refuse to boot in production without a token signing secret
