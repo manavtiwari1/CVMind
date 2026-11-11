@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  ArrowUp, Briefcase, FileSearch, FileText, Globe, Loader2, Mail, Map as MapIcon, Menu, MessageSquare, Paperclip, Sparkles,
+  ArrowUp, Briefcase, FileSearch, FileText, Globe, Loader2, Mail, Map as MapIcon, Menu, MessageSquare, Paperclip,
   PenSquare, Plug, Square, Target, ThumbsDown, ThumbsUp, Trash2, X, Check, FolderOpen, Copy, RotateCcw
 } from 'lucide-react';
 import LeoReply from './LeoReply';
@@ -17,12 +17,11 @@ import {
 import type { SavedWork } from '../types/api';
 import { readUser } from '../lib/currentUser';
 import { siteOrigin } from '../lib/hosts';
-import { Diya, Rangoli, Toran, Twinkles } from '../components/home/Diwali';
-import { isDiwaliSeason } from '../lib/festive';
+import { isBhaiDooj } from '../lib/festive';
 import './Chat.css';
 
-// Diwali dressing on the welcome screen, only during the festival (lib/festive.ts)
-const FESTIVE = isDiwaliSeason();
+// Bhai Dooj greeting on the welcome screen, until midnight IST on 11 Nov (lib/festive.ts)
+const FESTIVE = isBhaiDooj();
 
 // The ChatGPT-style home of app.cvmind.in: the user types what they want and Leo does it, showing
 // each tool's result as a card in the thread. Signed-out visitors get a few free messages a day.
@@ -42,9 +41,7 @@ const SUGGESTIONS = [
   { icon: Mail, title: 'Write a cover letter', hint: 'For any role', prompt: 'Write a cover letter for this job: ' },
   { icon: MessageSquare, title: 'Interview questions', hint: 'With what to say', prompt: 'Give me interview questions for a Software Engineer intern role' },
   { icon: Briefcase, title: 'Find jobs', hint: 'Real openings', prompt: 'Find React developer jobs in Bangalore' },
-  FESTIVE
-    ? { icon: Sparkles, title: 'Diwali break plan', hint: '2 weeks to placement-ready', prompt: 'Plan my Diwali break: 2 weeks to get placement-ready. Make a day-by-day plan.' }
-    : { icon: MapIcon, title: 'Plan my career', hint: 'Step-by-step roadmap', prompt: 'Make me a 1-year roadmap to become a Data Analyst' },
+  { icon: MapIcon, title: 'Plan my career', hint: 'Step-by-step roadmap', prompt: 'Make me a 1-year roadmap to become a Data Analyst' },
   { icon: Globe, title: 'Build my portfolio website', hint: 'Leo asks what you want, builds it, and you publish your own link', prompt: 'Build my portfolio website', wide: true },
 ];
 
@@ -557,25 +554,11 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork
         {empty ? (
           <div className="lx-welcome">
             <div className="lx-hero-leo">
-              {FESTIVE && <Rangoli className="lx-dw-rangoli" />}
               <LeoAvatar mood={sending ? 'thinking' : 'idle'} size={112} />
             </div>
-            <h1>
-              {/* Phones: the diyas sit beside the greeting instead of beside the box */}
-              {FESTIVE && <Diya className="lx-title-diya" />}
-              {FESTIVE ? 'Happy Bhai Dooj' : greeting()}{firstName ? `, ${firstName}` : ''}
-              {FESTIVE && <Diya className="lx-title-diya" />}
-            </h1>
+            <h1>{FESTIVE ? 'Happy Bhai Dooj' : greeting()}{firstName ? `, ${firstName}` : ''}</h1>
             <p className="lx-welcome-sub">{FESTIVE ? 'Bhai Dooj ki shubhkamnayein! What do you want to do today?' : 'What do you want to do today?'}</p>
-            {FESTIVE ? (
-              <div className="lx-dw is-diwali">
-                <Toran />
-                <Diya className="dw-diya--l" />
-                <Diya className="dw-diya--r" />
-                <Twinkles />
-                {composer}
-              </div>
-            ) : composer}
+            {composer}
             <div className="lx-suggest">
               {SUGGESTIONS.map((s) => (
                 <button key={s.title} type="button" className={'wide' in s ? 'lx-suggest-wide' : undefined} onClick={() => pickSuggestion(s.prompt)}>

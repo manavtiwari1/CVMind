@@ -9,8 +9,7 @@ import { withSampleData } from '../data/samplePreview';
 import { LETTER_DESIGNS } from '../lib/coverLetter';
 import { FALLBACK_LAUNCH, PRO_LETTER_IDS, PRO_TEMPLATE_IDS, formatInr, launchTimeText, launchTimes, loadPlans, startCheckout, userIsPro, verifyOrder, type LaunchTimes, type Plan } from '../lib/billing';
 import { readUser, USER_CHANGE_EVENT } from '../lib/currentUser';
-import { DIWALI_OFFER, diwaliPrice, isDiwaliSeason } from '../lib/festive';
-import { Diya, Toran, Twinkles } from '../components/home/Diwali';
+import { DIWALI_OFFER, diwaliPrice, isBhaiDooj, isOfferLive } from '../lib/festive';
 import { setContactSubject } from '../data/support';
 import './Pricing.css';
 
@@ -128,8 +127,9 @@ const savingFor = (p: Plan, monthly?: Plan) => (monthly && p.days > monthly.days
 
 type ReturnState = { status: 'checking' | 'paid' | 'pending' | 'failed' | 'error'; message?: string; expiresAt?: string | null } | null;
 
-// Diwali dressing and the LEODIWALI offer, only during the festival (lib/festive.ts)
-const FESTIVE = isDiwaliSeason();
+// The LEODIWALI offer, until the coupon expires (lib/festive.ts). The Bhai Dooj wording ends a day earlier.
+const FESTIVE = isOfferLive();
+const OFFER_NAME = isBhaiDooj() ? 'Bhai Dooj offer' : 'Festive offer, last day';
 
 function DiwaliBanner() {
   const [copied, setCopied] = useState(false);
@@ -137,13 +137,9 @@ function DiwaliBanner() {
     navigator.clipboard?.writeText(DIWALI_OFFER.code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600); }).catch(() => {});
   };
   return (
-    <section className="pr-dw" aria-label="Bhai Dooj offer">
-      <Toran />
-      <Twinkles />
-      <Diya className="pr-dw-b-diya pr-dw-b-diya--l" />
-      <Diya className="pr-dw-b-diya pr-dw-b-diya--r" />
+    <section className="pr-dw" aria-label={OFFER_NAME}>
       <div className="pr-dw-inner">
-        <span className="pr-dw-kicker">Happy Bhai Dooj from CVMind</span>
+        <span className="pr-dw-kicker">{isBhaiDooj() ? 'Happy Bhai Dooj from CVMind' : 'Festive offer: last day'}</span>
         <p className="pr-dw-title"><b>{DIWALI_OFFER.percent}% off</b> every Pro plan</p>
         <div className="pr-dw-code">
           <span>Use code</span>
@@ -235,7 +231,7 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
   const opensText = `Payments open ${launchTimeText(launch.paymentsOpenAt)}`;
 
   return (
-    <div className={`pr${FESTIVE ? ' pr--diwali' : ''}`}>
+    <div className="pr">
       <SlotBanner slot="promo" setCurrentPage={setCurrentPage} />
       {FESTIVE && <DiwaliBanner />}
 
@@ -246,7 +242,7 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
         <Waves />
 
         <header className="pr-hero">
-          <span className="pr-eyebrow"><Crown size={14} /> {FESTIVE ? `CVMind Pro · Bhai Dooj offer, ${DIWALI_OFFER.percent}% off` : 'CVMind Pro'}</span>
+          <span className="pr-eyebrow"><Crown size={14} /> {FESTIVE ? `CVMind Pro · ${OFFER_NAME}, ${DIWALI_OFFER.percent}% off` : 'CVMind Pro'}</span>
           <h1 className="pr-title">Pay for the weeks you're job hunting. <em>Not a month more.</em></h1>
           <p className="pr-lede">Pick a pass for a sprint or a plan for the long run. Every plan is a one-time payment and ends on its own; nothing renews behind your back.</p>
         </header>
@@ -269,7 +265,6 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
           </article>
 
           <article className="pr-pass pr-pass--pro" aria-labelledby="pr-pro-name">
-            {FESTIVE && <><Diya className="pr-dw-diya pr-dw-diya--l" /><Diya className="pr-dw-diya pr-dw-diya--r" /></>}
             <div className="pr-pass-top">
               <span className="pr-spark pr-spark--a" aria-hidden="true"><Sparkles size={16} /></span>
               <span className="pr-spark pr-spark--b" aria-hidden="true"><Sparkles size={12} /></span>

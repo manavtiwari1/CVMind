@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Check, FileSearch, Sparkles, Target, Upload } from 'lucide-react';
 import { HOME_HERO } from '../../data/homeCopy';
 import { urlForPage } from '../../lib/hosts';
-import { Diya, Rangoli, Toran, Twinkles } from './Diwali';
-import { isDiwaliSeason } from '../../lib/festive';
+import { isBhaiDooj } from '../../lib/festive';
+import './diwali.css'; // styles the festive tag
 
 interface HomeHeroProps {
   setCurrentPage: (page: string) => void;
@@ -22,10 +22,9 @@ const MODES: { id: Mode; label: string; short: string; icon: typeof Sparkles }[]
 ];
 
 // Typed one after another in the empty Ask box
-// During Diwali the festive example comes first
-const FESTIVE = isDiwaliSeason();
+// "Happy Bhai Dooj" tag beside the modes, until midnight IST on 11 Nov (lib/festive.ts)
+const FESTIVE = isBhaiDooj();
 const EXAMPLES = [
-  ...(FESTIVE ? ['Plan my Diwali break: 2 weeks to get placement-ready'] : []),
   'Interview questions for a data analyst fresher role',
   'Write a cover letter for a frontend internship at Zomato',
   'Find React developer jobs in Bangalore',
@@ -102,7 +101,7 @@ export default function HomeHero({ setCurrentPage, onAnalyzeClick }: HomeHeroPro
   };
 
   return (
-    <section className={`hp-hero hx-hero ${FESTIVE ? 'is-diwali-hero' : ''}`}>
+    <section className="hp-hero hx-hero">
       <div className="hx-glow" aria-hidden="true" />
       <div className="hx-dots dot-grid" aria-hidden="true" />
       <div className="hx-inner">
@@ -116,8 +115,7 @@ export default function HomeHero({ setCurrentPage, onAnalyzeClick }: HomeHeroPro
         </h1>
         <p className="hx-lead hx-rise">{HOME_HERO.lead}</p>
 
-        <div className={`hx-box-wrap hx-rise ${FESTIVE ? 'is-diwali' : ''}`}>
-        {FESTIVE && <><Toran /><Rangoli /><Rangoli className="dw-rangoli--l" /><Diya className="dw-diya--l" /><Diya className="dw-diya--r" /><Twinkles /></>}
+        <div className="hx-box-wrap hx-rise">
         <form className="hx-box" onSubmit={(e) => { e.preventDefault(); submit(); }}>
           <div className="hx-modes" role="tablist" aria-label="What do you want to do?">
             {MODES.map((m) => (
