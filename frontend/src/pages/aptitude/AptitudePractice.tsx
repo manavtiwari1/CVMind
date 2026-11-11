@@ -1,15 +1,27 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { ArrowLeft, ArrowRight, Check, Clock, Loader2, RotateCcw, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Clock, FileText, Loader2, RotateCcw, Sparkles, X } from 'lucide-react';
 import { urlForPage } from '../../lib/hosts';
 import {
-  APTITUDE_TESTS, checkAptitudeTest, startAptitudeTest, useAptitudeAccess,
-  type AptitudeResult, type AptitudeResultRow, type AptitudeTest, type AptitudeTopic,
+  APTITUDE_TESTS, checkAptitudeTest, getAptitudeHistory, getAptitudeTest, savedFromWork, startAptitudeTest, useAptitudeAccess,
+  type AptitudeHistoryItem, type AptitudeResult, type AptitudeResultRow, type AptitudeTest, type AptitudeTopic,
 } from '../../lib/aptitude';
+import type { LoadedWork } from '../../types/api';
 import { ComingSoonScreen } from '../../learnLeo/ComingSoonModal';
 import './Aptitude.css';
 
 // The Aptitude Tests app page (app.cvmind.in/aptitude-practice): pick a test, answer against the clock,
-// then see the score and every answer worked out. Accounts without access see the coming-soon screen.
+// then see the score and every answer worked out. Each checked test is saved to My Documents and
+// reopens here. Accounts without access see the coming-soon screen.
+
+// Where a result on screen came from: just taken (saved or not), or reopened from My Documents / history
+type ResultSource = { kind: 'new'; saved: boolean } | { kind: 'saved'; takenAt: string | null; seconds: number | null };
+
+const when = (iso: string | null | undefined) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+};
+const duration = (seconds: number | null) => (seconds === null ? '' : `${Math.floor(seconds / 60)} min ${seconds % 60} s`);
 
 const letter = (i: number) => String.fromCharCode(65 + i);
 const clock = (ms: number) => {
@@ -30,13 +42,42 @@ function askLeo(row: AptitudeResultRow) {
   window.location.assign(urlForPage('chat', `?q=${encodeURIComponent(prompt.slice(0, 4000))}`));
 }
 
-export default function AptitudePractice({ setCurrentPage }: { setCurrentPage: (page: string) => void }) {
+export default function AptitudePractice({ setCurrentPage, loadedWork = null }: { setCurrentPage: (page: string) => void; loadedWork?: LoadedWork | null }) {
   const access = useAptitudeAccess();
-  const [topic, setTopic] = useState<AptitudeTopic>(topicFromUrl);
+  // A test opened from My Documents shows its result straight away
+  const [opened] = useState(() => savedFromWork(loadedWork));
+  const [topic, setTopic] = useState<AptitudeTopic>(() => opened?.topic || topicFromUrl());
   const [test, setTest] = useState<AptitudeTest | null>(null);
-  const [result, setResult] = useState<AptitudeResult | null>(null);
+  const [result, setResult] = useState<AptitudeResult | null>(() => opened?.result || null);
+  const [source, setSource] = useState<ResultSource>(() => ({ kind: 'saved', takenAt: opened?.takenAt || null, seconds: opened?.seconds ?? null }));
+  const [history, setHistory] = useState<AptitudeHistoryItem[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  // Recent tests under the picker; fetched again whenever the picker shows
+  const picking = access === 'open' && !test && !result;
+  useEffect(() => {
+    if (!picking) return;
+    let alive = true;
+    getAptitudeHistory().then((tests) => { if (alive) setHistory(tests); }).catch(() => { if (alive) setHistory([]); });
+    return () => { alive = false; };
+  }, [picking]);
+
+  const openSaved = async (id: string) => {
+    setBusy(true);
+    setError('');
+    try {
+      const saved = await getAptitudeTest(id);
+      setTopic(saved.topic);
+      setResult(saved.result);
+      setSource({ kind: 'saved', takenAt: saved.takenAt || null, seconds: saved.seconds });
+      window.scrollTo({ top: 0 });
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const start = async (t: AptitudeTopic) => {
     setBusy(true);
@@ -52,11 +93,14 @@ export default function AptitudePractice({ setCurrentPage }: { setCurrentPage: (
     }
   };
 
-  const finish = useCallback(async (answers: { id: string; choice: number | null }[]) => {
+  const finish = useCallback(async (answers: { id: string; choice: number | null }[], seconds: number) => {
+    if (!test) return;
     setBusy(true);
     setError('');
     try {
-      setResult(await checkAptitudeTest(answers));
+      const checked = await checkAptitudeTest(answers, test.topic, seconds);
+      setResult(checked);
+      setSource({ kind: 'new', saved: !!checked.work });
       setTest(null);
       window.scrollTo({ top: 0 });
     } catch (err) {
@@ -64,13 +108,13 @@ export default function AptitudePractice({ setCurrentPage }: { setCurrentPage: (
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [test]);
 
   if (access === 'checking') return <div className="apt-center"><Loader2 className="apt-spin" size={26} /></div>;
   if (access === 'locked') return <ComingSoonScreen setCurrentPage={setCurrentPage} product="aptitude" />;
 
   if (test) return <TestRunner key={test.questions.map((q) => q.id).join()} test={test} busy={busy} error={error} onFinish={finish} />;
-  if (result) return <ResultView result={result} topic={topic} busy={busy} onRetake={() => start(topic)} onPick={() => setResult(null)} />;
+  if (result) return <ResultView result={result} topic={topic} source={source} busy={busy} onRetake={() => start(topic)} onPick={() => { setResult(null); setError(''); }} setCurrentPage={setCurrentPage} />;
 
   return (
     <div className="apt">
@@ -92,6 +136,26 @@ export default function AptitudePractice({ setCurrentPage }: { setCurrentPage: (
       <button type="button" className="apt-btn apt-btn--go" disabled={busy} onClick={() => start(topic)}>
         {busy ? <Loader2 className="apt-spin" size={17} /> : null} Start the test <ArrowRight size={17} />
       </button>
+
+      {history && history.length > 0 && (
+        <section className="apt-history" aria-labelledby="apt-history-title">
+          <div className="apt-history-head">
+            <h2 id="apt-history-title">Your recent tests</h2>
+            <button type="button" className="apt-link" onClick={() => setCurrentPage('my-documents')}>All in My Documents</button>
+          </div>
+          <ul>
+            {history.map((h) => (
+              <li key={h.id}>
+                <button type="button" disabled={busy} onClick={() => openSaved(h.id)}>
+                  <span className="apt-history-name"><strong>{h.label}</strong><small>{when(h.createdAt)}</small></span>
+                  <span className="apt-history-score">{h.score}/{h.total}</span>
+                  <ArrowRight size={16} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }
@@ -100,11 +164,12 @@ function TestRunner({ test, busy, error, onFinish }: {
   test: AptitudeTest;
   busy: boolean;
   error: string;
-  onFinish: (answers: { id: string; choice: number | null }[]) => void;
+  onFinish: (answers: { id: string; choice: number | null }[], seconds: number) => void;
 }) {
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [deadline] = useState(() => Date.now() + test.minutes * 60 * 1000);
+  const [startedAt] = useState(() => Date.now());
+  const [deadline] = useState(() => startedAt + test.minutes * 60 * 1000);
   const [now, setNow] = useState(() => Date.now());
   const sent = useRef(false);
 
@@ -115,8 +180,9 @@ function TestRunner({ test, busy, error, onFinish }: {
   const submit = useCallback(() => {
     if (sent.current) return;
     sent.current = true;
-    onFinish(test.questions.map((x) => ({ id: x.id, choice: answers[x.id] ?? null })));
-  }, [answers, onFinish, test.questions]);
+    const seconds = Math.min(Math.round((Date.now() - startedAt) / 1000), test.minutes * 60);
+    onFinish(test.questions.map((x) => ({ id: x.id, choice: answers[x.id] ?? null })), seconds);
+  }, [answers, onFinish, startedAt, test.minutes, test.questions]);
 
   // A failed submit can be sent again
   useEffect(() => { if (error) sent.current = false; }, [error]);
@@ -194,12 +260,14 @@ function TestRunner({ test, busy, error, onFinish }: {
   );
 }
 
-function ResultView({ result, topic, busy, onRetake, onPick }: {
+function ResultView({ result, topic, source, busy, onRetake, onPick, setCurrentPage }: {
   result: AptitudeResult;
   topic: AptitudeTopic;
+  source: ResultSource;
   busy: boolean;
   onRetake: () => void;
   onPick: () => void;
+  setCurrentPage: (page: string) => void;
 }) {
   const [filter, setFilter] = useState<'all' | 'wrong'>(result.score < result.total ? 'wrong' : 'all');
   const rows = useMemo(() => (filter === 'all' ? result.results : result.results.filter((r) => !r.correct)), [filter, result.results]);
@@ -216,6 +284,15 @@ function ResultView({ result, topic, busy, onRetake, onPick }: {
           <p className="apl-eyebrow">{label}</p>
           <h1>{pct >= 80 ? 'Great score.' : pct >= 50 ? 'Good start.' : 'Keep practising.'}</h1>
           <p>{result.score} right · {result.wrong} wrong · {result.skipped} skipped</p>
+          {source.kind === 'new' ? (
+            source.saved
+              ? <p className="apt-saved"><FileText size={14} /> Saved to <button type="button" className="apt-link" onClick={() => setCurrentPage('my-documents')}>My Documents</button></p>
+              : <p className="apt-saved apt-saved--off">This result couldn't be saved to My Documents.</p>
+          ) : (
+            (source.takenAt || source.seconds !== null) && (
+              <p className="apt-saved"><FileText size={14} /> Taken {when(source.takenAt)}{source.seconds !== null ? ` · ${duration(source.seconds)}` : ''}</p>
+            )
+          )}
           <div className="apt-sections">
             {Object.entries(result.sections).map(([key, s]) => (
               <div key={key} className="apt-section">

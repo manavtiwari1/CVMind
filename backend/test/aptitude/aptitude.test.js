@@ -149,6 +149,56 @@ test('checking grades right, wrong and skipped answers, with sections and explan
   assert.equal((await call('/api/aptitude/check', { method: 'POST', token: me.token, body: { answers: [] } })).status, 400);
 });
 
+test('a checked test is saved to My Documents and listed in the history, newest first', async () => {
+  const me = await account();
+  const other = await account();
+  const Work = mongoose.model('Work');
+
+  const first = await call('/api/aptitude/check', {
+    method: 'POST',
+    token: me.token,
+    body: { topic: 'quant', seconds: 312.4, answers: [{ id: 'q-train-pole', choice: 1 }, { id: 'q-dice-seven', choice: 0 }, { id: 'q-age-ratio', choice: 0 }] }
+  });
+  assert.equal(first.status, 200);
+  assert.equal(first.body.work.title, 'Quantitative Aptitude - 2/3');
+
+  const work = await Work.findById(first.body.work.id).lean();
+  assert.equal(work.userId, (await mongoose.model('User').findOne({ email: me.email }))._id.toString());
+  assert.equal(work.type, 'aptitude');
+  assert.equal(work.templateId, 'quant');
+  const saved = JSON.parse(work.htmlContent);
+  assert.equal(saved.seconds, 312);
+  assert.equal(saved.result.score, 2);
+  assert.equal(saved.result.results.length, 3);
+  assert.match(saved.result.results[0].explanation, /\w/); // reopening from My Documents shows the worked answers
+
+  // No topic sent: questions from several sections count as a mixed test
+  await new Promise((r) => setTimeout(r, 5));
+  const second = await call('/api/aptitude/check', {
+    method: 'POST',
+    token: me.token,
+    body: { seconds: -4, answers: [{ id: 'v-if-were', choice: 1 }, { id: 'r-clock-330', choice: 1 }] }
+  });
+  assert.equal(second.body.topic, 'mixed');
+  assert.equal(JSON.parse((await Work.findById(second.body.work.id).lean()).htmlContent).seconds, null);
+
+  const history = await call('/api/aptitude/history', { token: me.token });
+  assert.equal(history.status, 200);
+  assert.deepEqual(history.body.tests.map((t) => [t.label, t.score, t.total]), [['Mixed Mock Test', 2, 2], ['Quantitative Aptitude', 2, 3]]);
+
+  // One saved test opens with every answer, for its owner only
+  const one = await call(`/api/aptitude/history/${first.body.work.id}`, { token: me.token });
+  assert.equal(one.status, 200);
+  assert.equal(one.body.result.score, 2);
+  assert.equal(one.body.topic, 'quant');
+  assert.equal(one.body.result.results.length, 3);
+  assert.equal((await call(`/api/aptitude/history/${first.body.work.id}`, { token: other.token })).status, 404);
+  assert.equal((await call('/api/aptitude/history/not-an-id', { token: me.token })).status, 404);
+
+  // Someone else's history is their own
+  assert.deepEqual((await call('/api/aptitude/history', { token: other.token })).body.tests, []);
+});
+
 test('Leo: locked accounts get a coming-soon button, allowed accounts get the practice page', async () => {
   process.env.APTITUDE_EMAILS = 'allowed@example.com';
   try {

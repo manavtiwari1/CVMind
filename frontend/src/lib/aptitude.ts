@@ -39,6 +39,35 @@ export interface AptitudeResult {
   results: AptitudeResultRow[];
 }
 
+/** What /check sends back: the result, which test it was, and the My Documents entry it was saved as */
+export interface AptitudeChecked extends AptitudeResult {
+  topic: AptitudeTopic;
+  work: { id: string; title: string } | null;
+}
+
+/** One row of the history list */
+export interface AptitudeHistoryItem {
+  id: string;
+  title: string;
+  createdAt: string;
+  topic: AptitudeTopic;
+  label: string;
+  score: number;
+  total: number;
+  seconds: number | null;
+}
+
+/** A saved test, as stored in My Documents (work type 'aptitude', htmlContent is this JSON) */
+export interface AptitudeSaved {
+  topic: AptitudeTopic;
+  label: string;
+  seconds: number | null;
+  takenAt?: string;
+  result: AptitudeResult;
+}
+
+export const APTITUDE_WORK_TYPE = 'aptitude';
+
 // Shown on the public page and the test picker. Counts match backend aptitude/questions.js.
 export const APTITUDE_TESTS: { id: AptitudeTopic; label: string; desc: string; questions: number }[] = [
   { id: 'quant', label: 'Quantitative Aptitude', desc: 'Percentages, profit and loss, time and work, interest, speed and distance', questions: 10 },
@@ -78,8 +107,8 @@ export function useAptitudeAccess(): 'checking' | 'open' | 'locked' {
   return state;
 }
 
-async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await authFetch(`${API_BASE}/api/aptitude/${path}`, {
+async function call<T>(path: string, body?: unknown): Promise<T> {
+  const res = await authFetch(`${API_BASE}/api/aptitude/${path}`, body === undefined ? undefined : {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -89,6 +118,23 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return data as T;
 }
 
-export const startAptitudeTest = (topic: AptitudeTopic) => post<AptitudeTest>('start', { topic });
+export const startAptitudeTest = (topic: AptitudeTopic) => call<AptitudeTest>('start', { topic });
 
-export const checkAptitudeTest = (answers: { id: string; choice: number | null }[]) => post<AptitudeResult>('check', { answers });
+/** Grades the test on the server, which also saves it to My Documents */
+export const checkAptitudeTest = (answers: { id: string; choice: number | null }[], topic: AptitudeTopic, seconds: number) =>
+  call<AptitudeChecked>('check', { answers, topic, seconds });
+
+export const getAptitudeHistory = () => call<{ tests: AptitudeHistoryItem[] }>('history').then((d) => d.tests);
+
+export const getAptitudeTest = (id: string) => call<AptitudeSaved & { id: string }>(`history/${encodeURIComponent(id)}`);
+
+/** A test reopened from My Documents, or null when the work isn't a readable aptitude test */
+export function savedFromWork(work: { type?: string; htmlContent?: string; deleted?: boolean } | null): AptitudeSaved | null {
+  if (!work || work.deleted || work.type !== APTITUDE_WORK_TYPE || !work.htmlContent) return null;
+  try {
+    const saved = JSON.parse(work.htmlContent) as AptitudeSaved;
+    return saved?.result && Array.isArray(saved.result.results) ? saved : null;
+  } catch {
+    return null;
+  }
+}
