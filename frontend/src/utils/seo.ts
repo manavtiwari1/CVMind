@@ -121,6 +121,16 @@ const PAGE_SEO: Record<string, PageSEO> = {
     description: 'Leo explains one technical topic at a time, out loud, while drawing code and diagrams on a board. Quick checkpoints, then practise it in Interview Prep. 1 free lesson a day.',
     keywords: 'AI Tutor, Learn DSA, Binary Search Explained, Placement Preparation, Coding Interview Preparation, Learn with Leo',
   },
+  aptitude: {
+    title: 'Aptitude Tests - Placement Mock Tests with Answers | CV Mind',
+    description: 'Timed mock tests in quantitative aptitude, logical reasoning and verbal ability for placements. Every answer worked out step by step, and Leo explains the ones you got wrong. Coming soon.',
+    keywords: 'Aptitude Test, Placement Aptitude Mock Test, Quantitative Aptitude, Logical Reasoning, Verbal Ability, Aptitude Questions with Answers',
+  },
+  'aptitude-practice': {
+    title: 'Aptitude Practice | CV Mind',
+    description: 'Take a timed aptitude mock test and see every answer worked out.',
+    keywords: 'Aptitude Practice, Aptitude Mock Test',
+  },
   'learn-with-leo': {
     title: 'Learn with Leo - Visual Lessons for Placements | CV Mind',
     description: 'Leo teaches one technical topic at a time: he talks you through it, draws it on a board, and checks you understood before you practise it in Interview Prep.',

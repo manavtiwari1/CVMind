@@ -9,6 +9,7 @@ import { startWorkers } from '@cvmind/auto-apply-agent/queue/workers.js';
 import companyRouter from './routes/company.js';
 import codeRouter from './routes/code.js';
 import learnLeoRouter from './routes/learnLeo.js';
+import aptitudeRouter from './routes/aptitude.js';
 import { createLeoChatRouter } from './routes/leoChat.js';
 import growthRouter from './routes/growth.js';
 import collegeRouter from './college/router.js';
@@ -2708,6 +2709,9 @@ app.use('/api/code', codeRouter);
 app.use('/_/backend/api/code', codeRouter);
 app.use('/api/leo', learnLeoRouter);
 app.use('/_/backend/api/leo', learnLeoRouter);
+// Aptitude Tests (coming soon: routes/aptitude.js checks the allow-list)
+app.use('/api/aptitude', aptitudeRouter);
+app.use('/_/backend/api/aptitude', aptitudeRouter);
 // Leo chat: the prompt-first home of app.cvmind.in
 const leoChatRouter = createLeoChatRouter({ upload, extractResumeText: (file) => extractResumeText(file, '') });
 app.use('/api/leo-chat', leoChatRouter);

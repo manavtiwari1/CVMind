@@ -22,8 +22,11 @@ export function leoAccess(): Promise<boolean> {
   return cached.result;
 }
 
-export function showComingSoon() {
-  window.dispatchEvent(new Event(COMING_SOON_EVENT));
+// Products that can be "coming soon"; the dialog's text comes from learnLeo/ComingSoonModal.tsx
+export type SoonProduct = 'learn-leo' | 'aptitude';
+
+export function showComingSoon(product: SoonProduct = 'learn-leo') {
+  window.dispatchEvent(new CustomEvent(COMING_SOON_EVENT, { detail: { product } }));
 }
 
 /** Runs `go` for accounts with access, otherwise shows the coming-soon dialog. */

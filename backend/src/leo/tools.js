@@ -21,6 +21,8 @@ import { LeoTurn } from './models.js';
 import { LIVE_FIELDS, withLiveText } from './liveText.js';
 import { allowance, blocked, clip, fn, list, needResume, str } from './toolHelpers.js';
 import { CAREER_RUNNERS, CAREER_TOOL_META, CAREER_TOOL_STATUS } from './careerTools.js';
+import { TOPICS as APTITUDE_TOPICS } from '../aptitude/questions.js';
+import { hasAptitudeAccess } from '../aptitude/access.js';
 import crypto from 'node:crypto';
 
 // Tests swap the AI build for a fixed page
@@ -94,6 +96,9 @@ export const TOOL_DEFINITIONS = [
   }, ['changes']),
   fn('restore_portfolio', 'Undo the last change to the user\'s portfolio, or bring back an earlier version from this chat.', {
     card_id: str('Leave out to go back one version. Set only by the version buttons.')
+  }),
+  fn('aptitude_practice', 'Aptitude test practice for placements (quantitative aptitude, logical reasoning, verbal ability, or a mixed mock test). Call it whenever the user wants aptitude practice or a mock aptitude test.', {
+    topic: { type: 'string', enum: Object.keys(APTITUDE_TOPICS), description: 'quant, reasoning, verbal, or mixed when they want a full mock or did not say.' }
   }),
   fn('open_tool', 'Show a button to a CVMind page when the user needs the full tool.', {
     page: { type: 'string', enum: Object.keys(TOOL_PAGES) },
@@ -451,6 +456,22 @@ const RUNNERS = {
 
   ...CAREER_RUNNERS,
 
+  // Aptitude Tests are coming soon: only allow-listed accounts get the practice page (aptitude/access.js)
+  async aptitude_practice(args, ctx) {
+    const topic = Object.hasOwn(APTITUDE_TOPICS, args.topic) ? args.topic : 'mixed';
+    const { label, count } = APTITUDE_TOPICS[topic];
+    if (!ctx.email || !hasAptitudeAccess(ctx.email)) {
+      return {
+        card: { type: 'link', page: 'aptitude', label: 'Aptitude Tests: coming soon', reason: 'Quant, reasoning and verbal mock tests for placements' },
+        summary: 'Aptitude Tests are coming soon on CVMind and are not open yet. In one or two sentences, tell the user that, and that the button shows what is coming. Do not quiz them with aptitude questions in the chat. Offer something you can do now, such as interview questions or a CVMind Code practice problem.'
+      };
+    }
+    return {
+      card: { type: 'link', page: 'aptitude-practice', label: `Start the ${label}`, reason: `${count} questions, about ${count} minutes, answers explained at the end` },
+      summary: `Showed a button to start the ${label} (${count} questions, a minute each). In one sentence, tell them to tap it, and that after the test they can ask you to explain any question they got wrong.`
+    };
+  },
+
   async open_tool(args) {
     const page = Object.hasOwn(TOOL_PAGES, args.page) ? args.page : null;
     if (!page) return { card: null, summary: 'Unknown page; nothing shown.' };
@@ -470,6 +491,7 @@ export const TOOL_STATUS = {
   edit_portfolio: 'Updating your portfolio website',
   restore_portfolio: 'Bringing back that version',
   open_tool: 'Finding the right tool',
+  aptitude_practice: 'Opening aptitude practice',
   ...CAREER_TOOL_STATUS
 };
 
