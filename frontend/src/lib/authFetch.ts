@@ -22,10 +22,10 @@ const UPGRADE_EVENT = 'cvmind-upgrade-required';
 // Tells the app about verification, sign-in and plan refusals; the caller still gets the response and shows its error
 function announceRefusal(res: Response) {
   if (![401, 402, 403, 429].includes(res.status)) return;
-  res.clone().json().then((data: { code?: string; error?: string; feature?: string }) => {
+  res.clone().json().then((data: { code?: string; error?: string; feature?: string; product?: string }) => {
     if (data?.code === 'EMAIL_NOT_VERIFIED') window.dispatchEvent(new Event(VERIFY_REQUIRED_EVENT));
     else if (data?.code === 'AUTH_REQUIRED') window.dispatchEvent(new Event(AUTH_REQUIRED_EVENT));
-    else if (data?.code === 'COMING_SOON') window.dispatchEvent(new Event(COMING_SOON_EVENT));
+    else if (data?.code === 'COMING_SOON') window.dispatchEvent(new CustomEvent(COMING_SOON_EVENT, { detail: { product: data.product || 'learn-leo' } }));
     else if (data?.code === 'UPGRADE_REQUIRED' || data?.code === 'TOKEN_LIMIT') {
       const reason = data.code === 'TOKEN_LIMIT' ? 'tokens' : data.feature === 'learn-leo' ? 'learn-leo' : 'limit';
       window.dispatchEvent(new CustomEvent(UPGRADE_EVENT, { detail: { reason, message: data.error } }));

@@ -87,6 +87,8 @@ const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const CollegeInvite = lazy(() => import('./pages/CollegeInvite'));
 const LeoLessonPage = lazy(() => import('./learnLeo/LeoLessonPage'));
 const LearnWithLeoLanding = lazy(() => import('./pages/LearnWithLeoLanding'));
+const AptitudeLanding = lazy(() => import('./pages/aptitude/AptitudeLanding'));
+const AptitudePractice = lazy(() => import('./pages/aptitude/AptitudePractice'));
 const ChatApp = lazy(() => import('./chat/ChatApp'));
 
 // VALID_PAGES and AUTH_PATHS live in lib/routes.ts, which the build also reads
@@ -698,6 +700,10 @@ export default function App() {
         return <LearnWithLeoLanding />;
       case 'learn-with-leo':
         return <LeoLessonPage setCurrentPage={setCurrentPage} />;
+      case 'aptitude':
+        return <AptitudeLanding />;
+      case 'aptitude-practice':
+        return <AptitudePractice setCurrentPage={setCurrentPage} />;
       case 'chat':
         return (
           <ChatApp
@@ -752,7 +758,7 @@ export default function App() {
   // The Help Center (and its Contact form) is full-width with its own top bar and footer instead of the site ones
   const isHelpPage = currentPage === 'help-center' || currentPage === 'contact';
   // Landing pages that run edge to edge under the site navbar
-  const isWidePage = currentPage === 'cover-letter-generator' || currentPage === 'cover-letter-builder' || currentPage === 'resume-builder' || currentPage === 'pricing' || currentPage === 'ai-tutor';
+  const isWidePage = currentPage === 'cover-letter-generator' || currentPage === 'cover-letter-builder' || currentPage === 'resume-builder' || currentPage === 'pricing' || currentPage === 'ai-tutor' || currentPage === 'aptitude';
 
   // Unverified accounts see the verify screen over locked app pages, or when the server refused a request
   const unverified = isLoggedIn && emailVerified === false;

@@ -1,7 +1,7 @@
 import {
   FileText, ScanSearch, Target, Globe, MessageSquare, Mic, SpellCheck, Code2,
   Briefcase, Send, UserCheck, PenLine, MessagesSquare, GraduationCap, Presentation,
-  Map as MapIcon, Info, LifeBuoy, HelpCircle, BookOpen, Mail, Handshake,
+  Map as MapIcon, Info, LifeBuoy, HelpCircle, BookOpen, Mail, Handshake, Calculator,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -71,7 +71,7 @@ export const NAV_MENUS: NavMenu[] = [
   },
   {
     label: 'AI Tools',
-    pages: ['prep', 'voice-prep', 'ai-job-finder', 'proofreading', 'auto-apply', 'code', 'offer-negotiation'],
+    pages: ['prep', 'voice-prep', 'aptitude', 'aptitude-practice', 'ai-job-finder', 'proofreading', 'auto-apply', 'code', 'offer-negotiation'],
     columns: [
       {
         heading: 'Interview',
@@ -79,6 +79,7 @@ export const NAV_MENUS: NavMenu[] = [
           { page: 'prep', title: 'Interview Prep AI', desc: 'Mock interview from your CV and the job', icon: MessageSquare },
           { page: 'code', title: 'CVMind Code', desc: 'DSA practice, AI code judge & assessments', icon: Code2, badge: 'new' },
           { page: 'voice-prep', title: 'Voice Prep AI', desc: 'Answer out loud, get speaking feedback', icon: Mic },
+          { page: 'aptitude', title: 'Aptitude Tests', desc: 'Coming soon: quant, reasoning & verbal mock tests', icon: Calculator, badge: 'soon' },
           { page: 'proofreading', title: 'AI Proofreading', desc: 'Grammar, tone & power verbs', icon: SpellCheck },
         ],
       },

@@ -264,6 +264,9 @@ export default function Navbar({
                     <button className={`mobile-drawer-link mobile-sub-sub-link${currentPage === 'voice-prep' ? ' active' : ''}`} onClick={() => go('voice-prep')}>
                       Voice Prep AI
                     </button>
+                    <button className={`mobile-drawer-link mobile-sub-sub-link${currentPage === 'aptitude' || currentPage === 'aptitude-practice' ? ' active' : ''}`} onClick={() => go('aptitude')}>
+                      Aptitude Tests <span className="nm-badge nm-badge--soon" style={{ marginLeft: 8 }}>COMING SOON</span>
+                    </button>
                     <button className={`mobile-drawer-link mobile-sub-sub-link${currentPage === 'proofreading' ? ' active' : ''}`} onClick={() => go('proofreading')}>
                       AI Proofreading
                     </button>
