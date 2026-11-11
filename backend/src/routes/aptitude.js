@@ -1,12 +1,29 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import { requireUser, optionalUser } from '../services/authToken.js';
+import { saveWork } from '../db.js';
 import { hasAptitudeAccess, COMING_SOON } from '../aptitude/access.js';
 import { TOPICS, MINUTES_PER_QUESTION, pickQuestions, publicQuestion, questionById } from '../aptitude/questions.js';
 
 // Aptitude Tests (coming soon). Mounted at /api/aptitude.
 // Grading happens here: the site only ever gets questions, never the answers, until it submits.
+// Every checked test is saved to the user's My Documents as a work of type 'aptitude'.
 
 const MAX_ANSWERS = 50;
+const HISTORY = 10;
+export const WORK_TYPE = 'aptitude';
+
+const asyncRoute = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+
+// The short line My Documents and the history list show for a saved test
+const summaryOf = (work) => {
+  try {
+    const saved = JSON.parse(work.htmlContent);
+    return { score: saved.result.score, total: saved.result.total, topic: saved.topic, label: saved.label, seconds: saved.seconds ?? null };
+  } catch {
+    return null;
+  }
+};
 
 export function createAptitudeRouter() {
   const router = express.Router();
@@ -34,8 +51,33 @@ export function createAptitudeRouter() {
     res.json({ success: true, topic, label: TOPICS[topic].label, minutes: questions.length * MINUTES_PER_QUESTION, questions: questions.map(publicQuestion) });
   });
 
-  // Grades a submitted test. choice is the option index, or null for a skipped question.
-  router.post('/check', (req, res) => {
+  // The user's latest saved tests, newest first
+  router.get('/history', asyncRoute(async (req, res) => {
+    const works = await mongoose.model('Work')
+      .find({ userId: String(req.auth.sub), type: WORK_TYPE })
+      .sort({ createdAt: -1 })
+      .limit(HISTORY)
+      .lean();
+    const tests = works
+      .map((w) => ({ id: String(w._id), title: w.title, createdAt: w.createdAt, ...summaryOf(w) }))
+      .filter((t) => Number.isInteger(t.score));
+    res.json({ success: true, tests });
+  }));
+
+  // One saved test with every answer, for its owner only
+  router.get('/history/:id', asyncRoute(async (req, res) => {
+    const id = String(req.params.id);
+    const work = mongoose.isValidObjectId(id)
+      ? await mongoose.model('Work').findOne({ _id: id, userId: String(req.auth.sub), type: WORK_TYPE }).lean()
+      : null;
+    let saved = null;
+    try { saved = work && JSON.parse(work.htmlContent); } catch { /* unreadable: treated as missing */ }
+    if (!saved?.result) return res.status(404).json({ success: false, error: 'That test was not found.' });
+    res.json({ success: true, id, title: work.title, createdAt: work.createdAt, topic: saved.topic, label: saved.label, seconds: saved.seconds ?? null, result: saved.result });
+  }));
+
+  // Grades a submitted test and saves it to My Documents. choice is the option index, or null for a skipped question.
+  router.post('/check', asyncRoute(async (req, res) => {
     const answers = Array.isArray(req.body?.answers) ? req.body.answers.slice(0, MAX_ANSWERS) : [];
     const seen = new Set();
     const results = [];
@@ -57,8 +99,32 @@ export function createAptitudeRouter() {
       s.total += 1;
       if (r.correct) s.correct += 1;
     }
-    res.json({ success: true, score: correct, total: results.length, skipped, wrong: results.length - correct - skipped, sections, results });
-  });
+    const result = { score: correct, total: results.length, skipped, wrong: results.length - correct - skipped, sections, results };
+
+    // Which test this was: the topic the site says, else worked out from the questions
+    const topics = new Set(results.map((r) => r.topic));
+    const asked = String(req.body?.topic || '');
+    const topic = Object.hasOwn(TOPICS, asked) ? asked : topics.size === 1 ? [...topics][0] : 'mixed';
+    const label = TOPICS[topic].label;
+    const rawSeconds = Number(req.body?.seconds);
+    const seconds = Number.isFinite(rawSeconds) && rawSeconds >= 0 ? Math.min(Math.round(rawSeconds), 3 * 60 * 60) : null;
+
+    // A failed save never costs the user their result; it just isn't in My Documents
+    let work = null;
+    try {
+      const saved = await saveWork({
+        userId: req.auth.sub,
+        title: `${label} - ${correct}/${results.length}`,
+        type: WORK_TYPE,
+        templateId: topic,
+        htmlContent: JSON.stringify({ topic, label, seconds, takenAt: new Date().toISOString(), result })
+      });
+      work = saved ? { id: String(saved._id || saved.id), title: saved.title } : null;
+    } catch (err) {
+      console.error('[aptitude] could not save the test:', err.message);
+    }
+    res.json({ success: true, ...result, topic, work });
+  }));
 
   return router;
 }

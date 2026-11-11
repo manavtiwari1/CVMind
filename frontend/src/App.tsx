@@ -703,7 +703,7 @@ export default function App() {
       case 'aptitude':
         return <AptitudeLanding />;
       case 'aptitude-practice':
-        return <AptitudePractice setCurrentPage={setCurrentPage} />;
+        return <AptitudePractice setCurrentPage={setCurrentPage} loadedWork={loadedWork} />;
       case 'chat':
         return (
           <ChatApp
