@@ -226,6 +226,17 @@ test('every member gets an ID card number: CVM/EMP/ for employees, CVM/INTERNS/ 
   assert.match(saved.body.admin.idNumber, /^CVM\/INTERNS\//);
   assert.equal((await call('/team/me', { method: 'PATCH', token: intern.token, body: { phone: 'call me' } })).status, 400);
 
+  // Accounts made before ID cards have no idNumber field at all
+  const raw = mongoose.connection.collection('adminusers');
+  const { insertedId } = await raw.insertOne({ username: 'old-timer', name: 'Old Timer', role: 'support', passwordHash: 'x', active: true, createdAt: new Date() });
+  const counter = async () => (await mongoose.connection.collection('appsettings').findOne({ key: 'counter.idcard.emp' })).value;
+  const before = await counter();
+  const withOld = (await call('/team/members', { token: intern.token })).body.data;
+  assert.match(withOld.find((p) => p.id === String(insertedId)).idNumber, /^CVM\/EMP\/\d{4}$/);
+  await call('/team/members', { token: intern.token });
+  assert.equal(await counter(), before + 1, 'no numbers are used up on later loads');
+  await raw.deleteOne({ _id: insertedId });
+
   // Managers set numbers by hand, which also moves someone between the series
   const staff = people.find((p) => !p.role.includes('intern') && p.username !== 'owner' && p.active);
   const set = (id, idNumber, token = owner.token) => call(`/team/members/${id}/id-number`, { method: 'PATCH', token, body: { idNumber } });

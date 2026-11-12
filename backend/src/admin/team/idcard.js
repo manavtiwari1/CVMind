@@ -30,8 +30,9 @@ export async function assignIdNumbers() {
     if (p.idManual && p.idNumber) continue;
     if (matchesSeries(p.idNumber, p.role)) continue;
     const idNumber = await nextNumber(idSeries(p.role));
-    // Only if nobody else assigned one in the meantime
-    await AdminUser.updateOne({ _id: p._id, idNumber: p.idNumber || '' }, { $set: { idNumber } });
+    // Only if nobody else assigned one in the meantime. Accounts made before ID cards have no
+    // idNumber field at all, which only `null` matches.
+    await AdminUser.updateOne({ _id: p._id, idNumber: p.idNumber || { $in: ['', null] } }, { $set: { idNumber } });
   }
 }
 
