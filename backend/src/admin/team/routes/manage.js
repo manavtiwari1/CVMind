@@ -11,6 +11,7 @@ import { FULL_ACCESS_ROLES, ROLES, isFullAccess } from '../../permissions.js';
 import { clean, escapeRegex, handle, httpError, isId, paging } from '../../util.js';
 import { MANAGE, oid, requireTeam } from '../access.js';
 import { publicFile } from '../files.js';
+import { setIdNumber } from '../idcard.js';
 import { INVITE_STATUSES, TeamChannel, TeamChannelMember, TeamFile, TeamInvitation, TeamLeave, TeamMeeting, TeamMessage, TeamStandup, TeamTask } from '../models.js';
 import { istDay, isWorkingDay, TEAM_APP_URL } from '../notify.js';
 import { disconnectUser, emitToChannel } from '../realtime.js';
@@ -224,6 +225,19 @@ router.patch('/access/:adminId', manage, handle(async (req, res) => {
   if (!member.chatAccess) disconnectUser(String(member._id));
   await audit(req, member.chatAccess ? 'teamchat.access_granted' : 'teamchat.access_removed', { targetType: 'admin', targetId: member._id, targetLabel: member.username });
   res.json({ success: true });
+}));
+
+// A manager sets someone's ID card number by hand, e.g. CVM/EMP/0002 or CVM/INTERNS/0005
+router.patch('/members/:adminId/id-number', manage, handle(async (req, res) => {
+  if (!isId(req.params.adminId)) throw httpError(404, 'Person not found.');
+  const member = await AdminUser.findById(req.params.adminId, { username: 1, idNumber: 1 }).lean();
+  if (!member) throw httpError(404, 'Person not found.');
+  const error = await setIdNumber(member._id, req.body?.idNumber);
+  if (error) throw httpError(400, error);
+  const saved = await AdminUser.findById(member._id, { idNumber: 1 }).lean();
+  invalidateAdminCache(String(member._id));
+  await audit(req, 'teamchat.id_number_set', { targetType: 'admin', targetId: member._id, targetLabel: member.username, details: { from: member.idNumber || '', to: saved.idNumber } });
+  res.json({ success: true, idNumber: saved.idNumber });
 }));
 
 // ── Overview ─────────────────────────────────────────────────────────────────

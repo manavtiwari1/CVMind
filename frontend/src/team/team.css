@@ -754,3 +754,6 @@ p.pad { padding: 0 16px 14px; }
   .tm-idcard-rows > div { grid-template-columns: 1fr; gap: 1px; }
   .tm-idcard-photo { width: 80px; height: 98px; }
 }
+.tm-idcard-edit { max-width: 380px; margin: 16px auto 0; }
+.tm-idcard-edit .tm-inline { display: flex; gap: 8px; }
+.tm-idcard-edit .tm-input { flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }

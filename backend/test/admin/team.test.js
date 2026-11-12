@@ -225,6 +225,19 @@ test('every member gets an ID card number: CVM/EMP/ for employees, CVM/INTERNS/ 
   assert.equal(saved.body.admin.department, 'Engineering');
   assert.match(saved.body.admin.idNumber, /^CVM\/INTERNS\//);
   assert.equal((await call('/team/me', { method: 'PATCH', token: intern.token, body: { phone: 'call me' } })).status, 400);
+
+  // Managers set numbers by hand, which also moves someone between the series
+  const staff = people.find((p) => !p.role.includes('intern') && p.username !== 'owner' && p.active);
+  const set = (id, idNumber, token = owner.token) => call(`/team/members/${id}/id-number`, { method: 'PATCH', token, body: { idNumber } });
+  assert.equal((await set(staff.id, 'CVM/INTERNS/0009', intern.token)).status, 403, 'members cannot set numbers');
+  assert.equal((await set(staff.id, 'EMP-2')).status, 400);
+  assert.equal((await set(staff.id, 'CVM/EMP/0001')).status, 400, 'number already taken');
+  const moved = await set(staff.id, 'cvm/interns/0009');
+  assert.equal(moved.status, 200, JSON.stringify(moved.body));
+  assert.equal(moved.body.idNumber, 'CVM/INTERNS/0009');
+  const after = (await call('/team/members', { token: intern.token })).body.data;
+  assert.equal(after.find((p) => p.id === staff.id).idNumber, 'CVM/INTERNS/0009', 'a hand-set number survives automatic numbering');
+  assert.equal(new Set(after.map((p) => p.idNumber)).size, after.length);
 });
 
 test('revoking an unaccepted invitation turns the account off', async () => {

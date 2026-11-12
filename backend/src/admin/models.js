@@ -25,6 +25,8 @@ const adminUserSchema = new Schema({
   avatarFileId: { type: Schema.Types.ObjectId, default: null },
   // ID card: CVM/EMP/0001 or CVM/INTERNS/0001, given by team/idcard.js
   idNumber: { type: String, default: '' },
+  // Set by a manager by hand: automatic numbering leaves it alone
+  idManual: { type: Boolean, default: false },
   phone: { type: String, default: '' },
   department: { type: String, default: '' },
   lastSeenAt: { type: Date, default: null }

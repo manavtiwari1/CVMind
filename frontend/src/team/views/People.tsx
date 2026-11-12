@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { IdCard as IdCardIcon, MessageSquare, Search, Sparkles } from 'lucide-react';
 import { IdCard } from '../IdCard';
 import { ProgressReport } from './Leo';
 import { api } from '../api';
 import type { Person } from '../api';
 import { go, useTeam } from '../store';
-import { Avatar, Modal, PresenceLabel } from '../ui';
+import { Avatar, Modal, PresenceLabel, Spinner } from '../ui';
 
 export default function People() {
   const { people, me, manager, toast } = useTeam();
@@ -68,10 +69,45 @@ export default function People() {
       {card && (
         <Modal title="ID card" onClose={() => setCard(null)}>
           <IdCard person={card} />
+          {manager && <IdNumberForm person={card} onSaved={(idNumber) => setCard({ ...card, idNumber })} />}
           {card.id === me.id && <p className="tm-hint" style={{ marginTop: 12 }}>Change your photo, phone number and department from <a href="#" onClick={(e) => { e.preventDefault(); setCard(null); go('profile'); }}>Profile</a>.</p>}
         </Modal>
       )}
       {report && <ProgressReport adminId={report} onClose={() => setReport(null)} />}
     </div>
+  );
+}
+
+// Managers can set a number by hand, e.g. to move someone between CVM/EMP and CVM/INTERNS
+function IdNumberForm({ person, onSaved }: { person: Person; onSaved: (idNumber: string) => void }) {
+  const { toast, reloadPeople } = useTeam();
+  const [value, setValue] = useState(person.idNumber);
+  const [busy, setBusy] = useState(false);
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const { idNumber } = await api<{ idNumber: string }>(`/members/${person.id}/id-number`, { method: 'PATCH', body: { idNumber: value } });
+      setValue(idNumber);
+      onSaved(idNumber);
+      reloadPeople().catch(() => {});
+      toast(`ID number set to ${idNumber}`);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Could not change the ID number.', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <form className="tm-form tm-idcard-edit" onSubmit={save}>
+      <div className="tm-field">
+        <label htmlFor="id-number">ID number <span className="tm-muted small">(managers only)</span></label>
+        <div className="tm-inline">
+          <input id="id-number" className="tm-input" value={value} onChange={(e) => setValue(e.target.value.toUpperCase())} maxLength={20} placeholder="CVM/EMP/0001" spellCheck={false} />
+          <button type="submit" className="tm-btn primary" disabled={busy || !value.trim() || value.trim() === person.idNumber}>{busy && <Spinner size={14} />} Save</button>
+        </div>
+        <span className="tm-hint">CVM/EMP/0001 for employees, CVM/INTERNS/0001 for interns. A number you set here stays even if their role changes.</span>
+      </div>
+    </form>
   );
 }
