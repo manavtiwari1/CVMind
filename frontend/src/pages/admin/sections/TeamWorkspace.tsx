@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { CalendarOff, CheckSquare, ClipboardCheck, Copy, ExternalLink, Hash, HardDrive, Lock, Mail, Megaphone, Pin, Plus, RefreshCw, Send, Trash2, Users, Video } from 'lucide-react';
 import { AttendanceTab, CheckInsTab, LeaveTab, MeetingsTab, TasksTab } from './TeamOps';
+import { PastMembersTab } from './TeamPastMembers';
 import { api } from '../api';
 import { useAction, useAdmin, useApi, useDebounced } from '../hooks';
 import { ago, count, dateTime } from '../format';
@@ -11,7 +12,7 @@ import type { Tone } from '../ui';
 // CVMind Team (team.cvmind.in): attendance, check-ins, leave, meetings, tasks, invitations, access,
 // channels, announcements and moderation
 
-type View = 'overview' | 'attendance' | 'checkins' | 'leave' | 'meetings' | 'tasks' | 'invitations' | 'access' | 'channels' | 'announcements' | 'moderation';
+type View = 'overview' | 'attendance' | 'checkins' | 'leave' | 'meetings' | 'tasks' | 'invitations' | 'access' | 'past' | 'channels' | 'announcements' | 'moderation';
 
 interface Person { id: string; name: string; username: string; roleLabel: string; active: boolean }
 const usePeople = () => {
@@ -42,6 +43,7 @@ export default function TeamWorkspace() {
           { id: 'tasks', label: 'Tasks' },
           { id: 'invitations', label: 'Invitations', count: overview.data?.data.pendingInvites || undefined },
           { id: 'access', label: 'Access' },
+          { id: 'past', label: 'Past members' },
           { id: 'channels', label: 'Channels' },
           { id: 'announcements', label: 'Announcements' },
           { id: 'moderation', label: 'Moderation' }
@@ -55,6 +57,7 @@ export default function TeamWorkspace() {
       {view === 'tasks' && <TasksTab />}
       {view === 'invitations' && <InvitationsTab onChanged={overview.reload} />}
       {view === 'access' && <AccessTab />}
+      {view === 'past' && <PastMembersTab />}
       {view === 'channels' && <ChannelsTab />}
       {view === 'announcements' && <AnnouncementsTab />}
       {view === 'moderation' && <ModerationTab />}

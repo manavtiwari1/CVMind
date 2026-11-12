@@ -316,3 +316,28 @@ const meetingCaptionSchema = new Schema({
 });
 meetingCaptionSchema.index({ meetingId: 1, at: 1 });
 export const TeamMeetingCaption = mongoose.models.TeamMeetingCaption || mongoose.model('TeamMeetingCaption', meetingCaptionSchema);
+
+// Past members: people whose time at CVMind ended (internship completed, resigned, …). Either made
+// from a current account ("mark as left", which keeps adminId) or typed in by hand for older records.
+export const PAST_REASONS = ['internship_completed', 'resigned', 'contract_ended', 'terminated', 'other'];
+const pastMemberSchema = new Schema({
+  adminId: { type: Id, default: null },
+  name: { type: String, required: true },
+  email: { type: String, default: '' },
+  phone: { type: String, default: '' },
+  idNumber: { type: String, default: '' },
+  role: { type: String, default: '' },
+  department: { type: String, default: '' },
+  // YYYY-MM-DD
+  joinedOn: { type: String, default: '' },
+  leftOn: { type: String, required: true },
+  reason: { type: String, enum: PAST_REASONS, default: 'other' },
+  certificateIssued: { type: Boolean, default: false },
+  lorIssued: { type: Boolean, default: false },
+  notes: { type: String, default: '' },
+  addedBy: { type: Id, default: null },
+  addedByName: { type: String, default: '' }
+}, { timestamps: true });
+pastMemberSchema.index({ leftOn: -1 });
+pastMemberSchema.index({ adminId: 1 });
+export const TeamPastMember = mongoose.models.TeamPastMember || mongoose.model('TeamPastMember', pastMemberSchema);

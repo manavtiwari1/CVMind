@@ -940,3 +940,36 @@ test('the admin panel sees attendance, check-ins, leave, meetings and tasks', as
   assert.ok(past.length >= 1);
   assert.equal((await call(`/team/meetings/${past[0].id}/chat`, { token: panel })).status, 200);
 });
+
+test('past members: mark a member as left, add an old record by hand, edit and delete', async () => {
+  const panel = await adminLogin('owner', 'owner-password-123');
+  const before = (await call('/team/members', { token: panel })).body.data.find((p) => p.id === neha.id);
+
+  // Members can't see or change the records
+  assert.equal((await call('/team/past-members', { token: neha.token })).status, 403);
+
+  const left = await call(`/team/past-members/from-member/${neha.id}`, { method: 'POST', token: panel, body: { joinedOn: '2026-09-21', leftOn: '2026-11-12', reason: 'internship_completed', certificateIssued: true, lorIssued: true, removeAccess: true } });
+  assert.equal(left.status, 200, JSON.stringify(left.body));
+  assert.equal(left.body.data.name, before.name);
+  assert.equal(left.body.data.idNumber, before.idNumber, 'the ID number is kept on the record');
+  assert.equal(left.body.data.role, 'Content Writing Intern');
+  assert.equal(left.body.data.lorIssued, true);
+  assert.equal((await call('/team/channels', { token: neha.token })).status, 403, 'their Team access is turned off');
+  assert.equal((await call(`/team/past-members/from-member/${neha.id}`, { method: 'POST', token: panel, body: { leftOn: '2026-11-12' } })).status, 409, 'only one record per person');
+
+  assert.equal((await call('/team/past-members', { method: 'POST', token: panel, body: { name: 'Old Intern', leftOn: '2026-01-01', joinedOn: '2026-02-01' } })).status, 400, 'left before joining');
+  assert.equal((await call('/team/past-members', { method: 'POST', token: panel, body: { name: 'Old Intern', leftOn: '2026-03-31', idNumber: 'CVM/EMP/0001' } })).status, 400, 'a current member holds that number');
+  const manual = await call('/team/past-members', { method: 'POST', token: panel, body: { name: 'Old Intern', email: 'old@example.com', role: 'Content Writing Intern', joinedOn: '2026-01-01', leftOn: '2026-03-31', reason: 'resigned', idNumber: 'cvm/interns/0090' } });
+  assert.equal(manual.status, 200, JSON.stringify(manual.body));
+  assert.equal(manual.body.data.idNumber, 'CVM/INTERNS/0090');
+
+  const list = (await call('/team/past-members?q=intern', { token: panel })).body.data;
+  assert.deepEqual(list.map((r) => r.name).sort(), [before.name, 'Old Intern'].sort());
+  assert.equal(list[0].leftOn, '2026-11-12', 'newest leaver first');
+
+  const edited = await call(`/team/past-members/${manual.body.data.id}`, { method: 'PATCH', token: panel, body: { certificateIssued: true, notes: 'Wrote the blog series' } });
+  assert.equal(edited.body.data.certificateIssued, true);
+  assert.equal(edited.body.data.leftOn, '2026-03-31', 'untouched fields stay');
+  assert.equal((await call(`/team/past-members/${manual.body.data.id}`, { method: 'DELETE', token: panel })).status, 200);
+  assert.equal((await call('/team/past-members', { token: panel })).body.data.length, 1);
+});

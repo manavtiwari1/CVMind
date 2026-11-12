@@ -1,4 +1,5 @@
 import { AdminUser, AppSetting } from '../models.js';
+import { TeamPastMember } from './models.js';
 
 // Team ID cards: employees get CVM/EMP/0001, interns get CVM/INTERNS/0001. Each series has its own
 // counter, so numbers are never reused, even after someone leaves. Managers can also set a number
@@ -13,12 +14,12 @@ export const idSeries = (role) => (String(role || '').includes('intern') ? 'inte
 const matchesSeries = (idNumber, role) => !!idNumber && idNumber.startsWith(SERIES[idSeries(role)].prefix);
 const format = (series, n) => `${SERIES[series].prefix}${String(n).padStart(4, '0')}`;
 
-// The next free number in a series; skips any number a manager already gave by hand
+// The next free number in a series; skips any number a manager gave by hand or a past member holds
 async function nextNumber(series) {
   for (;;) {
     const row = await AppSetting.findOneAndUpdate({ key: SERIES[series].counter }, { $inc: { value: 1 } }, { upsert: true, returnDocument: 'after' }).lean();
     const idNumber = format(series, Number(row.value || 1));
-    if (!(await AdminUser.exists({ idNumber }))) return idNumber;
+    if (!(await AdminUser.exists({ idNumber })) && !(await TeamPastMember.exists({ idNumber }))) return idNumber;
   }
 }
 
