@@ -56,6 +56,11 @@ for (const root of store.plan.roots) {
     let written = 0;
     let removed = 0;
     if (!dryRun) {
+      // Remove documents deleted in TiDB first: a row re-created there gets a new _id but keeps its
+      // unique key (e.g. finderjobs.jobKey), so upserting before this hits E11000 on the old copy.
+      const keep = docs.map((d) => d._id);
+      const r = await col.deleteMany(keep.length ? { _id: { $nin: keep } } : {});
+      removed = r.deletedCount || 0;
       for (let i = 0; i < docs.length; i += BATCH) {
         const ops = docs.slice(i, i + BATCH).map((doc) => ({ replaceOne: { filter: { _id: doc._id }, replacement: doc, upsert: true } }));
         if (ops.length) {
@@ -63,10 +68,6 @@ for (const root of store.plan.roots) {
           written += (r.modifiedCount || 0) + (r.upsertedCount || 0);
         }
       }
-      // Documents deleted in TiDB since the last backup
-      const keep = docs.map((d) => d._id);
-      const r = await col.deleteMany(keep.length ? { _id: { $nin: keep } } : {});
-      removed = r.deletedCount || 0;
     }
     summary.push({ name, tidb: docs.length, backup: existing, written, removed, status: dryRun ? 'dry run' : 'ok' });
   } catch (err) {
