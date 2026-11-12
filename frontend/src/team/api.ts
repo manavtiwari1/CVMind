@@ -20,6 +20,10 @@ export interface TeamAccount {
   notifyPush: boolean;
   statusText: string;
   avatarFileId: string | null;
+  // ID card: CVM/EMP/0001 or CVM/INTERNS/0001
+  idNumber: string;
+  phone: string;
+  department: string;
 }
 
 export interface Session {
@@ -38,6 +42,9 @@ export interface Person {
   active: boolean;
   statusText: string;
   avatarFileId: string | null;
+  idNumber: string;
+  phone: string;
+  department: string;
   presence: 'online' | 'away' | 'offline';
   lastSeenAt: string | null;
 }

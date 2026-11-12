@@ -15,6 +15,7 @@ import { presenceOf } from '../realtime.js';
 import { filesFor, publicNotification, publicTask } from '../serialize.js';
 import { FILE_TYPES, IMAGE_TYPES, MAX_AVATAR_BYTES, MAX_FILE_BYTES, MAX_RECORDING_BYTES, RECORDING_TYPES, fileTypeError, headObject, presignDownload, presignUpload, removeObject } from '../storage.js';
 import { ensureGeneral } from './chat.js';
+import { assignIdNumbers } from '../idcard.js';
 
 const router = express.Router();
 const team = requireTeam();
@@ -47,6 +48,9 @@ function publicPerson(a) {
     active: a.active !== false && a.chatAccess !== false,
     statusText: a.statusText || '',
     avatarFileId: a.avatarFileId ? String(a.avatarFileId) : null,
+    idNumber: a.idNumber || '',
+    phone: a.phone || '',
+    department: a.department || '',
     presence: presenceOf(a._id),
     lastSeenAt: a.lastSeenAt || null
   };
@@ -68,7 +72,13 @@ router.post('/login', loginLimiter, handle(async (req, res) => {
 
 router.get('/me', profile, handle(async (req, res) => {
   if (!req.admin.mustChangePassword) await ensureGeneral(req.admin.id);
-  res.json({ success: true, admin: req.admin, manager: isManager(req.admin) });
+  let admin = req.admin;
+  if (!admin.idNumber) {
+    await assignIdNumbers();
+    invalidateAdminCache(req.admin.id);
+    admin = toPublicAdmin(await AdminUser.findById(req.admin.id).lean());
+  }
+  res.json({ success: true, admin, manager: isManager(req.admin) });
 }));
 
 router.patch('/me', profile, handle(async (req, res) => {
@@ -87,6 +97,12 @@ router.patch('/me', profile, handle(async (req, res) => {
   if (typeof req.body?.notifyEmail === 'boolean') update.notifyEmail = req.body.notifyEmail;
   if (typeof req.body?.notifyPush === 'boolean') update.notifyPush = req.body.notifyPush;
   if (req.body?.statusText !== undefined) update.statusText = clean(req.body.statusText, 80);
+  if (req.body?.phone !== undefined) {
+    const phone = clean(req.body.phone, 20);
+    if (phone && !/^\+?[0-9][0-9 -]{6,18}$/.test(phone)) throw httpError(400, 'Enter a valid phone number.');
+    update.phone = phone;
+  }
+  if (req.body?.department !== undefined) update.department = clean(req.body.department, 60);
   if (req.body?.avatarFileId !== undefined) {
     if (req.body.avatarFileId === null) {
       update.avatarFileId = null;
@@ -145,6 +161,7 @@ router.delete('/push/subscribe', team, handle(async (req, res) => {
 // ── People ───────────────────────────────────────────────────────────────────
 // Everyone, including former members, so old messages still show a name; the directory shows active ones
 router.get('/members', panel, handle(async (req, res) => {
+  await assignIdNumbers();
   const people = await AdminUser.find({}, { passwordHash: 0, tokenVersion: 0 }).sort({ name: 1, username: 1 }).lean();
   res.json({ success: true, data: people.map(publicPerson) });
 }));

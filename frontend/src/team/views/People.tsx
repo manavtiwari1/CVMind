@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { MessageSquare, Search, Sparkles } from 'lucide-react';
+import { IdCard as IdCardIcon, MessageSquare, Search, Sparkles } from 'lucide-react';
+import { IdCard } from '../IdCard';
 import { ProgressReport } from './Leo';
 import { api } from '../api';
 import type { Person } from '../api';
 import { go, useTeam } from '../store';
-import { Avatar, PresenceLabel } from '../ui';
+import { Avatar, Modal, PresenceLabel } from '../ui';
 
 export default function People() {
   const { people, me, manager, toast } = useTeam();
   const [q, setQ] = useState('');
   const [report, setReport] = useState<string | null>(null);
+  const [card, setCard] = useState<Person | null>(null);
   const query = q.trim().toLowerCase();
   const list = [...people.values()]
     .filter((p) => p.active)
@@ -37,6 +39,7 @@ export default function People() {
       <span className="tm-dir-role">{p.roleLabel}</span>
       <span className="tm-dir-status">{p.statusText ? <span className="tm-status-text">{p.statusText}</span> : <PresenceLabel person={p} />}</span>
       <span className="tm-dir-action">
+        <button type="button" className="tm-btn sm ghost" onClick={() => setCard(p)} aria-label={`ID card of ${p.name}`} title="ID card"><IdCardIcon size={14} /> <span>ID card</span></button>
         {manager && p.id !== me.id && <button type="button" className="tm-btn sm ghost" onClick={() => setReport(p.id)} aria-label={`Progress report for ${p.name}`} title="Progress report by Leo"><Sparkles size={14} /> <span>Report</span></button>}
         {p.id !== me.id && <button type="button" className="tm-btn sm" onClick={() => message(p.id)} aria-label={`Message ${p.name}`}><MessageSquare size={14} /> <span>Message</span></button>}
       </span>
@@ -62,6 +65,12 @@ export default function People() {
         </section>
       )}
       {!list.length && <p className="tm-muted">Nobody matches “{q}”.</p>}
+      {card && (
+        <Modal title="ID card" onClose={() => setCard(null)}>
+          <IdCard person={card} />
+          {card.id === me.id && <p className="tm-hint" style={{ marginTop: 12 }}>Change your photo, phone number and department from <a href="#" onClick={(e) => { e.preventDefault(); setCard(null); go('profile'); }}>Profile</a>.</p>}
+        </Modal>
+      )}
       {report && <ProgressReport adminId={report} onClose={() => setReport(null)} />}
     </div>
   );

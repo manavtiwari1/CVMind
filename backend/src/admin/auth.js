@@ -50,7 +50,10 @@ export function toPublicAdmin(admin) {
     notifyEmail: admin.notifyEmail !== false,
     notifyPush: admin.notifyPush !== false,
     statusText: admin.statusText || '',
-    avatarFileId: admin.avatarFileId ? String(admin.avatarFileId) : null
+    avatarFileId: admin.avatarFileId ? String(admin.avatarFileId) : null,
+    idNumber: admin.idNumber || '',
+    phone: admin.phone || '',
+    department: admin.department || ''
   };
 }
 

@@ -27,7 +27,7 @@ const COLORS = ['#2dc08d', '#7c3aed', '#2563eb', '#db2777', '#ea580c', '#0891b2'
 const colorFor = (s: string) => COLORS[[...s].reduce((n, c) => n + c.charCodeAt(0), 0) % COLORS.length];
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('') || '?';
 
-function useFileUrl(fileId: string | null | undefined) {
+export function useFileUrl(fileId: string | null | undefined) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!fileId) return;

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Bell, BellOff, Camera, Shield, Trash2 } from 'lucide-react';
+import { Bell, BellOff, Camera, IdCard as IdCardIcon, Shield, Trash2 } from 'lucide-react';
 import { disablePush, enablePush, isInstalled, isIos, pushState } from '../push';
 import { PhotoDialog } from '../../components/ResumePhoto';
 import { api, saveSession, loadSession } from '../api';
 import { confirmDialog } from '../confirm';
 import type { TeamAccount } from '../api';
 import { useTeam } from '../store';
-import { Avatar, Spinner } from '../ui';
+import { IdCard } from '../IdCard';
+import { Spinner } from '../ui';
 import { fileUrl, uploadFile } from '../upload';
 
 // Grey circle with initials, shown in the photo dialog when there is no photo yet
@@ -28,6 +29,8 @@ export default function Profile() {
   const [name, setName] = useState(me.name);
   const [statusText, setStatusText] = useState(me.statusText);
   const [email, setEmail] = useState(me.email);
+  const [phone, setPhone] = useState(me.phone);
+  const [department, setDepartment] = useState(me.department);
   const [notifyEmail, setNotifyEmail] = useState(me.notifyEmail);
   const [busy, setBusy] = useState('');
   const [photoDialog, setPhotoDialog] = useState<string | null>(null);
@@ -43,7 +46,7 @@ export default function Profile() {
     e.preventDefault();
     setBusy('profile');
     try {
-      const { admin } = await api<{ admin: TeamAccount }>('/me', { method: 'PATCH', body: { name, statusText, notifyEmail, email } });
+      const { admin } = await api<{ admin: TeamAccount }>('/me', { method: 'PATCH', body: { name, statusText, notifyEmail, email, phone, department } });
       apply(admin);
       toast('Profile saved');
     } catch (err) {
@@ -89,18 +92,23 @@ export default function Profile() {
     }
   };
 
+  const photoButtons = (
+    <>
+      <button type="button" className="tm-btn sm" onClick={openPhoto} disabled={!!busy}>{busy === 'photo' ? <Spinner size={14} /> : <Camera size={14} />} {me.avatarFileId ? 'Change photo' : 'Add photo'}</button>
+      {me.avatarFileId && <button type="button" className="tm-btn sm ghost tm-danger" onClick={removePhoto} disabled={!!busy}>{busy === 'remove' ? <Spinner size={14} /> : <Trash2 size={14} />} Remove photo</button>}
+    </>
+  );
+  const myCard = { ...person(me.id), ...me, presence: 'online' as const, manager: false, lastSeenAt: null, active: true };
+
   return (
     <div className="tm-page narrow">
       <header className="tm-page-head"><h1>Profile and settings</h1></header>
+      <section className="tm-card pad tm-form">
+        <h2 className="tm-h2"><IdCardIcon size={16} /> Your ID card</h2>
+        <IdCard person={myCard} photoAction={photoButtons} />
+        <span className="tm-hint">Your phone number and department come from the form below. CVMind official mail IDs aren't given out yet, so they show NA.</span>
+      </section>
       <form className="tm-card pad tm-form" onSubmit={save}>
-        <div className="tm-profile-photo">
-          <Avatar person={person(me.id)} size={72} />
-          <div className="tm-photo-actions">
-            <button type="button" className="tm-btn sm" onClick={openPhoto} disabled={!!busy}>{busy === 'photo' ? <Spinner size={14} /> : <Camera size={14} />} {me.avatarFileId ? 'Change photo' : 'Add photo'}</button>
-            {me.avatarFileId && <button type="button" className="tm-btn sm ghost tm-danger" onClick={removePhoto} disabled={!!busy}>{busy === 'remove' ? <Spinner size={14} /> : <Trash2 size={14} />} Remove photo</button>}
-          </div>
-          <span className="tm-hint">JPG, PNG or WebP. You can drag and zoom to fit it in the circle.</span>
-        </div>
         <div className="tm-field">
           <label htmlFor="pf-name">Display name</label>
           <input id="pf-name" className="tm-input" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
@@ -114,9 +122,19 @@ export default function Profile() {
           <input id="pf-email" type="email" className="tm-input" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} placeholder="you@cvmind.in" autoComplete="email" />
           <span className="tm-hint">Notifications, reminders and announcements are sent here. You can also sign in with it.</span>
         </div>
+        <div className="tm-form-row">
+          <div className="tm-field">
+            <label htmlFor="pf-phone">Phone number</label>
+            <input id="pf-phone" type="tel" className="tm-input" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} placeholder="+91 98765 43210" autoComplete="tel" />
+          </div>
+          <div className="tm-field">
+            <label htmlFor="pf-dept">Department</label>
+            <input id="pf-dept" className="tm-input" value={department} onChange={(e) => setDepartment(e.target.value)} maxLength={60} placeholder="Engineering" />
+          </div>
+        </div>
         <div className="tm-field">
           <span className="tm-label">Account</span>
-          <p className="tm-muted">@{me.username} · {me.roleLabel}</p>
+          <p className="tm-muted">@{me.username} · {me.roleLabel}{me.idNumber && <> · {me.idNumber}</>}</p>
         </div>
         <label className="tm-check"><input type="checkbox" checked={notifyEmail} onChange={(e) => setNotifyEmail(e.target.checked)} /> <span><strong>Email me</strong> about mentions, messages and tasks I haven't seen for 30 minutes</span></label>
         <div><button type="submit" className="tm-btn primary" disabled={busy === 'profile'}>{busy === 'profile' && <Spinner size={14} />} Save</button></div>

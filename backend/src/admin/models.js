@@ -23,6 +23,10 @@ const adminUserSchema = new Schema({
   notifyPush: { type: Boolean, default: true },
   statusText: { type: String, default: '' },
   avatarFileId: { type: Schema.Types.ObjectId, default: null },
+  // ID card: CVM/EMP/0001 or CVM/INTERNS/0001, given by team/idcard.js
+  idNumber: { type: String, default: '' },
+  phone: { type: String, default: '' },
+  department: { type: String, default: '' },
   lastSeenAt: { type: Date, default: null }
 }, { timestamps: true });
 export const AdminUser = mongoose.models.AdminUser || mongoose.model('AdminUser', adminUserSchema);

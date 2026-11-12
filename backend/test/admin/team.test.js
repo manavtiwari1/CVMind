@@ -186,8 +186,11 @@ test('leadership roles have full access to the admin panel and manage the worksp
   assert.ok(me.body.admin.permissions.includes('teamchat.manage'));
 });
 
+let neha;
+
 test('team-only roles use CVMind Team but never the admin panel', async () => {
   const intern = await onboard(ownerPanel, { username: 'neha', role: 'content_intern' });
+  neha = intern;
   assert.equal((await call('/team/channels', { token: intern.token })).status, 200);
   const panelLogin = await call('/login', { method: 'POST', body: { username: 'neha', password: 'real-neha-password' } });
   assert.equal(panelLogin.status, 403);
@@ -204,6 +207,24 @@ test('team-only roles use CVMind Team but never the admin panel', async () => {
   assert.equal(assigned.status, 200);
   const file = await upload(intern.token, { scope: 'task', scopeId: assigned.body.data.id });
   assert.equal((await call(`/team/tasks/${assigned.body.data.id}/submissions`, { method: 'POST', token: intern.token, body: { note: 'Done', fileIds: [file.id] } })).status, 200, 'interns can still submit work');
+});
+
+test('every member gets an ID card number: CVM/EMP/ for employees, CVM/INTERNS/ for interns', async () => {
+  // Reuses an existing account: the team login limit is 10 per 15 minutes
+  const intern = neha;
+  const people = (await call('/team/members', { token: intern.token })).body.data;
+  for (const p of people) assert.match(p.idNumber, p.role.includes('intern') ? /^CVM\/INTERNS\/\d{4}$/ : /^CVM\/EMP\/\d{4}$/, p.username);
+  assert.equal(new Set(people.map((p) => p.idNumber)).size, people.length, 'numbers are unique');
+  assert.equal(people.find((p) => p.username === 'owner').idNumber, 'CVM/EMP/0001', 'oldest member is first');
+  const again = (await call('/team/members', { token: intern.token })).body.data;
+  assert.deepEqual(again.map((p) => p.idNumber), people.map((p) => p.idNumber), 'numbers stay the same');
+
+  const saved = await call('/team/me', { method: 'PATCH', token: intern.token, body: { phone: '+91 98765 43210', department: 'Engineering' } });
+  assert.equal(saved.status, 200);
+  assert.equal(saved.body.admin.phone, '+91 98765 43210');
+  assert.equal(saved.body.admin.department, 'Engineering');
+  assert.match(saved.body.admin.idNumber, /^CVM\/INTERNS\//);
+  assert.equal((await call('/team/me', { method: 'PATCH', token: intern.token, body: { phone: 'call me' } })).status, 400);
 });
 
 test('revoking an unaccepted invitation turns the account off', async () => {
