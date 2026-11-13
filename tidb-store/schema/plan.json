@@ -18630,6 +18630,239 @@
    "gridfs": false
   },
   {
+   "name": "teampastmembers",
+   "kind": "root",
+   "parent": null,
+   "columns": [
+    {
+     "name": "id",
+     "path": [
+      "_id"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": false,
+     "ref": null
+    },
+    {
+     "name": "admin_id",
+     "path": [
+      "adminId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "name",
+     "path": [
+      "name"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "email",
+     "path": [
+      "email"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "phone",
+     "path": [
+      "phone"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "id_number",
+     "path": [
+      "idNumber"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "role",
+     "path": [
+      "role"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "department",
+     "path": [
+      "department"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "joined_on",
+     "path": [
+      "joinedOn"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "left_on",
+     "path": [
+      "leftOn"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "reason",
+     "path": [
+      "reason"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(64)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "internship_completed",
+      "resigned",
+      "contract_ended",
+      "terminated",
+      "other"
+     ]
+    },
+    {
+     "name": "certificate_issued",
+     "path": [
+      "certificateIssued"
+     ],
+     "mode": "Boolean",
+     "type": "BOOLEAN",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "lor_issued",
+     "path": [
+      "lorIssued"
+     ],
+     "mode": "Boolean",
+     "type": "BOOLEAN",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "notes",
+     "path": [
+      "notes"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "added_by",
+     "path": [
+      "addedBy"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "added_by_name",
+     "path": [
+      "addedByName"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_at",
+     "path": [
+      "createdAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "updated_at",
+     "path": [
+      "updatedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "doc_version",
+     "path": [
+      "__v"
+     ],
+     "mode": "Number",
+     "type": "INT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "_extra",
+     "mode": "extra",
+     "type": "JSON",
+     "nullable": true
+    }
+   ],
+   "children": [],
+   "indexes": [
+    {
+     "name": "ix_left_on",
+     "unique": false,
+     "parts": [
+      "`left_on`"
+     ]
+    },
+    {
+     "name": "ix_admin_id",
+     "unique": false,
+     "parts": [
+      "`admin_id`"
+     ]
+    }
+   ],
+   "collection": "teampastmembers",
+   "models": [
+    "TeamPastMember"
+   ],
+   "docs": 0,
+   "gridfs": false
+  },
+  {
    "name": "teampushsubscriptions",
    "kind": "root",
    "parent": null,
