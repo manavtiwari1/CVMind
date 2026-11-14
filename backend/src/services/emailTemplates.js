@@ -194,6 +194,40 @@ export function blackFridayEmail({ name, round = 0, unsubscribeUrl = '' }) {
   return { subject: copy.subject, html: html.replace('</head>', `${BLACK_FRIDAY_GMAIL_DEAL}</head>`) };
 }
 
+// Sent once before the sale: Black Friday is coming. Like the Diwali banner, the image is served from the
+// site (frontend/public/email/), so it has to be deployed before this email goes out.
+export const BLACK_FRIDAY_SOON_IMAGE = 'https://www.cvmind.in/email/leo-black-friday.jpg';
+
+export function blackFridaySoonEmail({ name, unsubscribeUrl = '' }) {
+  const { code, pricingUrl } = BLACK_FRIDAY_EMAIL;
+  const codeBox = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:6px 0 22px"><tr>
+<td align="center" bgcolor="#0a0a0a" style="padding:20px 16px;background:#0a0a0a;border-radius:12px">
+<p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#facc15">Starts 19 November, 12:00 am IST</p>
+<p style="margin:0 0 8px"><span style="display:inline-block;padding:8px 16px;border:2px dashed #facc15;border-radius:10px;font-family:'Courier New',monospace;font-size:26px;font-weight:800;letter-spacing:0.12em;color:#facc15">${code}</span></p>
+<p style="margin:0;font-size:13px;line-height:1.5;color:#d4d4d8">50% off any Pro plan, 19 to 30 November. One use per account.</p>
+</td></tr></table>`;
+  const html = renderEmail({
+    preheader: 'From 19 to 30 November, every CVMind Pro plan is half price. Here is your code.',
+    heroImage: BLACK_FRIDAY_SOON_IMAGE,
+    heroAlt: 'Black Friday is coming: 50% off every CVMind Pro plan, from Leo and the CVMind team',
+    eyebrow: 'Black Friday week',
+    title: 'Black Friday is coming',
+    greetingName: name,
+    body: [
+      'Our Black Friday sale starts on 19 November at midnight. For 12 days, until 30 November, every CVMind Pro plan is half price.',
+      'Pro unlocks every resume template and cover letter design, unlimited Resume Tailor and AI cover letters, unlimited interview and voice practice, and unlimited Job Finder applications. Plans are one-time payments that never renew on their own.',
+      'Save this code. It starts working on 19 November:'
+    ].join('\n\n'),
+    htmlBlock: codeBox,
+    ctaLabel: 'See the Pro plans',
+    ctaUrl: pricingUrl,
+    afterword: 'If you have any question, just reply to this email.',
+    unsubscribeUrl,
+    footerReason: 'You received this email because you have a CVMind account.'
+  });
+  return { subject: 'Black Friday is coming: 50% off CVMind Pro from 19 Nov', html: html.replace('</head>', `${BLACK_FRIDAY_GMAIL_DEAL}</head>`) };
+}
+
 // Leo going live. Like the Diwali banner, the image is served from the site, so it has to be
 // deployed before this email goes out.
 export const LEO_LIVE_EMAIL = {

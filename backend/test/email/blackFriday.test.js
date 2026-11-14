@@ -106,3 +106,14 @@ test('the email carries the Gmail deal badge with the code and end date', () => 
   assert.equal(deal.discountCode, 'BLACKFRIDAY');
   assert.equal(new Date(deal.availabilityEnds).getTime(), Date.UTC(2026, 10, 30, 18, 29));
 });
+
+test('the "Black Friday is coming" email has the Leo banner, the code and the start date', () => {
+  const { subject, html } = tpl.blackFridaySoonEmail({ name: 'Priya' });
+  assert.match(subject, /Black Friday/);
+  assert.ok(html.includes(`src="${tpl.BLACK_FRIDAY_SOON_IMAGE}"`));
+  assert.ok(html.includes('BLACKFRIDAY'));
+  assert.ok(html.includes('19 November'));
+  assert.ok(html.includes('Hi Priya,'));
+  const urls = [...html.matchAll(/(?:href|src)="([^"]+)"/g)].map((m) => m[1]).filter((u) => !u.startsWith('mailto:'));
+  for (const u of urls) assert.match(u, /^https:\/\/(www|app)\.cvmind\.in(\/|$)/, u);
+});
