@@ -132,7 +132,11 @@ const LABELS = {
   claim_approved: 'Your expense claim was approved',
   claim_declined: 'declined your expense claim',
   claim_reimbursed: 'Your expense claim was paid back',
-  claim_to_reimburse: 'An approved claim is waiting to be paid back'
+  claim_to_reimburse: 'An approved claim is waiting to be paid back',
+  candidate_applied: 'New job application',
+  interview_scheduled: 'You are interviewing a candidate',
+  offer_accepted: 'A candidate accepted their offer',
+  offer_declined: 'A candidate declined their offer'
 };
 export const notificationLabel = (type) => LABELS[type] || 'New activity';
 

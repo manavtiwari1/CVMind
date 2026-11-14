@@ -221,3 +221,58 @@ expenseSchema.index({ submittedBy: 1, createdAt: -1 });
 expenseSchema.index({ managerId: 1, status: 1 });
 expenseSchema.index({ recurring: 1, nextDueOn: 1 });
 export const ErpExpense = mongoose.models.ErpExpense || mongoose.model('ErpExpense', expenseSchema);
+
+// ── Hiring ─────────────────────────────────────────────────────────────────
+const openingSchema = new Schema({
+  title: { type: String, required: true },
+  slug: { type: String, required: true, unique: true },
+  employmentType: { type: String, enum: EMPLOYMENT_TYPES, default: 'intern' },
+  department: { type: String, default: '' },
+  location: { type: String, default: 'Remote' },
+  payType: { type: String, enum: PAY_TYPES, default: 'stipend' },
+  payMin: { type: Number, default: 0 },
+  payMax: { type: Number, default: 0 },
+  duration: { type: String, default: '' },
+  description: { type: String, default: '' },
+  questions: { type: [String], default: [] },
+  status: { type: String, enum: ['open', 'closed'], default: 'open' },
+  ownerId: { type: Id, default: null },
+  closedAt: { type: Date, default: null },
+  createdByName: { type: String, default: '' }
+}, { timestamps: true });
+openingSchema.index({ status: 1, createdAt: -1 });
+export const ErpOpening = mongoose.models.ErpOpening || mongoose.model('ErpOpening', openingSchema);
+
+export const CANDIDATE_STAGES = ['applied', 'screening', 'task', 'interview', 'offer', 'joined', 'rejected'];
+const candidateSchema = new Schema({
+  openingId: { type: Id, required: true },
+  name: { type: String, required: true },
+  email: { type: String, required: true, lowercase: true, trim: true },
+  phone: { type: String, default: '' },
+  college: { type: String, default: '' },
+  links: { type: [String], default: [] },
+  answers: { type: [{ _id: false, question: String, answer: String }], default: [] },
+  resumeFileId: { type: Id, default: null },
+  stage: { type: String, enum: CANDIDATE_STAGES, default: 'applied' },
+  rating: { type: Number, default: 0 },
+  notes: { type: [{ _id: false, byName: String, text: String, rating: Number, at: Date }], default: [] },
+  events: { type: [{ _id: false, at: Date, text: String, byName: String }], default: [] },
+  taskLink: { type: String, default: '' },
+  interviewAt: { type: Date, default: null },
+  interviewLink: { type: String, default: '' },
+  interviewerIds: { type: [Id], default: [] },
+  rejectedReason: { type: String, default: '' },
+  // Offer: the letter, its accept link and the answer
+  offerLetterId: { type: Id, default: null },
+  offerToken: { type: String, default: '' },
+  offerStatus: { type: String, enum: ['', 'sent', 'accepted', 'declined'], default: '' },
+  offerAnsweredAt: { type: Date, default: null },
+  offerTerms: { type: Schema.Types.Mixed, default: null },
+  adminId: { type: Id, default: null },
+  ip: { type: String, default: '' }
+}, { timestamps: true });
+candidateSchema.index({ openingId: 1, email: 1 }, { unique: true });
+candidateSchema.index({ email: 1 });
+candidateSchema.index({ stage: 1, createdAt: -1 });
+candidateSchema.index({ offerToken: 1 });
+export const ErpCandidate = mongoose.models.ErpCandidate || mongoose.model('ErpCandidate', candidateSchema);

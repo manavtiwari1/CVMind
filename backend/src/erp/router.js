@@ -4,6 +4,7 @@ import payrollRoutes from './routes/payroll.js';
 import letterRoutes from './routes/letters.js';
 import expenseRoutes from './routes/expenses.js';
 import financeRoutes from './routes/finance.js';
+import hiringRoutes from './routes/hiring.js';
 
 // Everything under /api/admin/erp: admin panel routes, which need hr.* or finance.view.
 // The member's own view (My HR file, payslips, …) is under /api/admin/team/me/* (erp/routes/me.js).
@@ -14,5 +15,6 @@ router.use('/', payrollRoutes);
 router.use('/', letterRoutes);
 router.use('/', expenseRoutes);
 router.use('/', financeRoutes);
+router.use('/', hiringRoutes);
 
 export default router;

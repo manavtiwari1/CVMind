@@ -5775,6 +5775,526 @@
    "gridfs": false
   },
   {
+   "name": "erpcandidates",
+   "kind": "root",
+   "parent": null,
+   "columns": [
+    {
+     "name": "id",
+     "path": [
+      "_id"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": false,
+     "ref": null
+    },
+    {
+     "name": "opening_id",
+     "path": [
+      "openingId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "name",
+     "path": [
+      "name"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "email",
+     "path": [
+      "email"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "phone",
+     "path": [
+      "phone"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "college",
+     "path": [
+      "college"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "links",
+     "path": [
+      "links"
+     ],
+     "mode": "json",
+     "type": "JSON",
+     "nullable": true,
+     "isList": true,
+     "listOf": "String"
+    },
+    {
+     "name": "resume_file_id",
+     "path": [
+      "resumeFileId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "stage",
+     "path": [
+      "stage"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "applied",
+      "screening",
+      "task",
+      "interview",
+      "offer",
+      "joined",
+      "rejected"
+     ]
+    },
+    {
+     "name": "rating",
+     "path": [
+      "rating"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "task_link",
+     "path": [
+      "taskLink"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "interview_at",
+     "path": [
+      "interviewAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "interview_link",
+     "path": [
+      "interviewLink"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "interviewer_ids",
+     "path": [
+      "interviewerIds"
+     ],
+     "mode": "json",
+     "type": "JSON",
+     "nullable": true,
+     "isList": true,
+     "listOf": "ObjectId"
+    },
+    {
+     "name": "rejected_reason",
+     "path": [
+      "rejectedReason"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "offer_letter_id",
+     "path": [
+      "offerLetterId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "offer_token",
+     "path": [
+      "offerToken"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "offer_status",
+     "path": [
+      "offerStatus"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(64)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "",
+      "sent",
+      "accepted",
+      "declined"
+     ]
+    },
+    {
+     "name": "offer_answered_at",
+     "path": [
+      "offerAnsweredAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "offer_terms",
+     "path": [
+      "offerTerms"
+     ],
+     "mode": "json",
+     "type": "JSON",
+     "nullable": true
+    },
+    {
+     "name": "admin_id",
+     "path": [
+      "adminId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "ip",
+     "path": [
+      "ip"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_at",
+     "path": [
+      "createdAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "updated_at",
+     "path": [
+      "updatedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "doc_version",
+     "path": [
+      "__v"
+     ],
+     "mode": "Number",
+     "type": "INT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "_extra",
+     "mode": "extra",
+     "type": "JSON",
+     "nullable": true
+    }
+   ],
+   "children": [
+    {
+     "name": "erpcandidates__answers",
+     "kind": "child",
+     "parent": "erpcandidates",
+     "columns": [
+      {
+       "name": "id",
+       "mode": "childId",
+       "type": "VARCHAR(255)",
+       "nullable": false
+      },
+      {
+       "name": "parent_id",
+       "mode": "parentId",
+       "type": "VARCHAR(24)",
+       "nullable": false
+      },
+      {
+       "name": "position",
+       "mode": "position",
+       "type": "INT",
+       "nullable": false
+      },
+      {
+       "name": "question",
+       "path": [
+        "question"
+       ],
+       "mode": "String",
+       "type": "MEDIUMTEXT",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "answer",
+       "path": [
+        "answer"
+       ],
+       "mode": "String",
+       "type": "MEDIUMTEXT",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "_extra",
+       "mode": "extra",
+       "type": "JSON",
+       "nullable": true
+      }
+     ],
+     "children": [],
+     "indexes": [],
+     "sourcePath": [
+      "answers"
+     ],
+     "parentKeyType": "VARCHAR(24)"
+    },
+    {
+     "name": "erpcandidates__notes",
+     "kind": "child",
+     "parent": "erpcandidates",
+     "columns": [
+      {
+       "name": "id",
+       "mode": "childId",
+       "type": "VARCHAR(255)",
+       "nullable": false
+      },
+      {
+       "name": "parent_id",
+       "mode": "parentId",
+       "type": "VARCHAR(24)",
+       "nullable": false
+      },
+      {
+       "name": "position",
+       "mode": "position",
+       "type": "INT",
+       "nullable": false
+      },
+      {
+       "name": "by_name",
+       "path": [
+        "byName"
+       ],
+       "mode": "String",
+       "type": "VARCHAR(255)",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "text",
+       "path": [
+        "text"
+       ],
+       "mode": "String",
+       "type": "MEDIUMTEXT",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "rating",
+       "path": [
+        "rating"
+       ],
+       "mode": "Number",
+       "type": "DOUBLE",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "at",
+       "path": [
+        "at"
+       ],
+       "mode": "Date",
+       "type": "DATETIME(3)",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "_extra",
+       "mode": "extra",
+       "type": "JSON",
+       "nullable": true
+      }
+     ],
+     "children": [],
+     "indexes": [],
+     "sourcePath": [
+      "notes"
+     ],
+     "parentKeyType": "VARCHAR(24)"
+    },
+    {
+     "name": "erpcandidates__events",
+     "kind": "child",
+     "parent": "erpcandidates",
+     "columns": [
+      {
+       "name": "id",
+       "mode": "childId",
+       "type": "VARCHAR(255)",
+       "nullable": false
+      },
+      {
+       "name": "parent_id",
+       "mode": "parentId",
+       "type": "VARCHAR(24)",
+       "nullable": false
+      },
+      {
+       "name": "position",
+       "mode": "position",
+       "type": "INT",
+       "nullable": false
+      },
+      {
+       "name": "at",
+       "path": [
+        "at"
+       ],
+       "mode": "Date",
+       "type": "DATETIME(3)",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "text",
+       "path": [
+        "text"
+       ],
+       "mode": "String",
+       "type": "MEDIUMTEXT",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "by_name",
+       "path": [
+        "byName"
+       ],
+       "mode": "String",
+       "type": "VARCHAR(255)",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "_extra",
+       "mode": "extra",
+       "type": "JSON",
+       "nullable": true
+      }
+     ],
+     "children": [],
+     "indexes": [],
+     "sourcePath": [
+      "events"
+     ],
+     "parentKeyType": "VARCHAR(24)"
+    }
+   ],
+   "indexes": [
+    {
+     "name": "uq_opening_id_email",
+     "unique": true,
+     "parts": [
+      "`opening_id`",
+      "`email`"
+     ]
+    },
+    {
+     "name": "ix_email",
+     "unique": false,
+     "parts": [
+      "`email`"
+     ]
+    },
+    {
+     "name": "ix_stage_created_at",
+     "unique": false,
+     "parts": [
+      "`stage`",
+      "`created_at`"
+     ]
+    },
+    {
+     "name": "ix_offer_token",
+     "unique": false,
+     "parts": [
+      "`offer_token`"
+     ]
+    }
+   ],
+   "collection": "erpcandidates",
+   "models": [
+    "ErpCandidate"
+   ],
+   "docs": 0,
+   "gridfs": false
+  },
+  {
    "name": "erpexpenses",
    "kind": "root",
    "parent": null,
@@ -6772,6 +7292,249 @@
    "collection": "erplettertemplates",
    "models": [
     "ErpLetterTemplate"
+   ],
+   "docs": 0,
+   "gridfs": false
+  },
+  {
+   "name": "erpopenings",
+   "kind": "root",
+   "parent": null,
+   "columns": [
+    {
+     "name": "id",
+     "path": [
+      "_id"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": false,
+     "ref": null
+    },
+    {
+     "name": "title",
+     "path": [
+      "title"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "slug",
+     "path": [
+      "slug"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "employment_type",
+     "path": [
+      "employmentType"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(64)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "intern",
+      "full_time",
+      "part_time",
+      "contractor"
+     ]
+    },
+    {
+     "name": "department",
+     "path": [
+      "department"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "location",
+     "path": [
+      "location"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "pay_type",
+     "path": [
+      "payType"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(64)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "stipend",
+      "salary",
+      "unpaid"
+     ]
+    },
+    {
+     "name": "pay_min",
+     "path": [
+      "payMin"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "pay_max",
+     "path": [
+      "payMax"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "duration",
+     "path": [
+      "duration"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "description",
+     "path": [
+      "description"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "questions",
+     "path": [
+      "questions"
+     ],
+     "mode": "json",
+     "type": "JSON",
+     "nullable": true,
+     "isList": true,
+     "listOf": "String"
+    },
+    {
+     "name": "status",
+     "path": [
+      "status"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "open",
+      "closed"
+     ]
+    },
+    {
+     "name": "owner_id",
+     "path": [
+      "ownerId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "closed_at",
+     "path": [
+      "closedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_by_name",
+     "path": [
+      "createdByName"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_at",
+     "path": [
+      "createdAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "updated_at",
+     "path": [
+      "updatedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "doc_version",
+     "path": [
+      "__v"
+     ],
+     "mode": "Number",
+     "type": "INT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "_extra",
+     "mode": "extra",
+     "type": "JSON",
+     "nullable": true
+    }
+   ],
+   "children": [],
+   "indexes": [
+    {
+     "name": "uq_slug",
+     "unique": true,
+     "parts": [
+      "`slug`"
+     ]
+    },
+    {
+     "name": "ix_status_created_at",
+     "unique": false,
+     "parts": [
+      "`status`",
+      "`created_at`"
+     ]
+    }
+   ],
+   "collection": "erpopenings",
+   "models": [
+    "ErpOpening"
    ],
    "docs": 0,
    "gridfs": false

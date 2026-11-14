@@ -1,6 +1,6 @@
 import {
   Activity, Bell, Briefcase, Building2, ClipboardList, CreditCard, Crown, FileDown, FileText, KeyRound, LayoutDashboard, LifeBuoy,
-  FileSignature, GraduationCap, LineChart, Receipt, IdCard, MessagesSquare, Settings2, Wallet, PanelsTopLeft, ReceiptText, ScrollText, ShieldAlert, SlidersHorizontal, Sparkles, TicketPercent, UserCheck, UserCog, Users
+  FileSignature, GraduationCap, LineChart, Receipt, UserSearch, IdCard, MessagesSquare, Settings2, Wallet, PanelsTopLeft, ReceiptText, ScrollText, ShieldAlert, SlidersHorizontal, Sparkles, TicketPercent, UserCheck, UserCog, Users
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -54,6 +54,7 @@ export const NAV: NavGroup[] = [
       { id: 'erp-payroll', label: 'Payroll', icon: Wallet, permission: 'hr.view' },
       { id: 'erp-letters', label: 'Letters', icon: FileSignature, permission: 'hr.view' },
       { id: 'erp-expenses', label: 'Expenses', icon: Receipt, permission: 'hr.view' },
+      { id: 'erp-hiring', label: 'Hiring', icon: UserSearch, permission: 'hr.view' },
       { id: 'erp-finance', label: 'Profit & loss', icon: LineChart, permission: 'finance.view' },
       { id: 'erp-settings', label: 'ERP settings', icon: Settings2, permission: 'hr.view' }
     ]

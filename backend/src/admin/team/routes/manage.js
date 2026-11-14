@@ -132,18 +132,25 @@ router.get('/invitations', manage, handle(async (req, res) => {
   });
 }));
 
-router.post('/invitations', manage, inviteLimiter, handle(async (req, res) => {
-  const role = clean(req.body?.role, 20) || 'support';
+// Creates the account and emails the sign-in details. Also used by ERP → Hiring when a candidate accepts.
+// body: { name, username, email, role, password? } (a password is generated when the key is left out)
+export async function sendTeamInvite(req, body = {}) {
+  const role = clean(body.role, 20) || 'support';
   if (NOT_INVITABLE.includes(role)) throw httpError(400, 'Pick a leadership, staff or team role.');
   if (!canInviteRole(req.admin, role)) throw httpError(403, 'Only someone with full access can invite a manager or a leadership role.');
-  const password = String(req.body?.password || '');
-  const member = await createAdminMember({ ...req.body, role, password }, { requireEmail: true, extra: { chatAccess: true, mustChangePassword: true } });
+  const password = body.password === undefined ? generatePassword() : String(body.password || '');
+  const member = await createAdminMember({ ...body, role, password }, { requireEmail: true, extra: { chatAccess: true, mustChangePassword: true } });
   const invitation = new TeamInvitation({
     adminId: member._id, email: member.email, name: member.name, username: member.username, role,
     invitedBy: req.admin.id, invitedByName: req.admin.name || req.admin.username
   });
   await deliver(invitation, password, invitation.invitedByName);
   await audit(req, 'teamchat.invite_sent', { targetType: 'admin', targetId: member._id, targetLabel: member.username, details: { email: member.email, role, emailed: invitation.status === 'sent' } });
+  return { member, invitation };
+}
+
+router.post('/invitations', manage, inviteLimiter, handle(async (req, res) => {
+  const { invitation } = await sendTeamInvite(req, { ...req.body, password: String(req.body?.password || '') });
   res.json({ success: true, data: publicInvitation(invitation) });
 }));
 

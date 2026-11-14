@@ -13,6 +13,7 @@ const TOC = [
   { id: 'leo', label: 'Leo, your Career Profile and background work' },
   { id: 'share', label: 'Who we share it with' },
   { id: 'placements', label: 'Colleges and the Placements Portal' },
+  { id: 'careers', label: 'Job applicants and the CVMind team' },
   { id: 'cookies', label: 'Advertising and cookies' },
   { id: 'security', label: 'Security' },
   { id: 'retention', label: 'Keeping and deleting your data' },
@@ -29,7 +30,7 @@ export default function Privacy({ setCurrentPage }: PrivacyProps) {
   );
 
   return (
-    <LegalLayout page="privacy" title="Privacy Policy" updated="November 10, 2026" setCurrentPage={setCurrentPage} toc={TOC}>
+    <LegalLayout page="privacy" title="Privacy Policy" updated="November 15, 2026" setCurrentPage={setCurrentPage} toc={TOC}>
       <h2>Introduction</h2>
       <p>This Privacy Policy explains how CV Mind ("<strong>we</strong>", "<strong>us</strong>" or "<strong>our</strong>") collects, uses, stores and shares your information when you use our website at <a href="https://www.cvmind.in" target="_blank" rel="noopener noreferrer">https://www.cvmind.in</a>, the CV Mind app and our other services ("<strong>Services</strong>").</p>
       <p><strong>Questions or concerns?</strong> Reading this policy will help you understand your privacy rights and choices. If you do not agree with how we handle your information, please do not use the Services. If you still have questions, email us at <strong>{SUPPORT_EMAIL}</strong>.</p>
@@ -149,6 +150,10 @@ export default function Privacy({ setCurrentPage }: PrivacyProps) {
       <h3>Access records and college staff</h3>
       <p>We record each time college staff open a student's profile, resume or report, download resumes or export the student list, along with the staff member's name and IP address. Your college can see this record for its own portal, and we use it to keep access accountable.</p>
       <p>For college staff accounts, we store the staff member's name, work email, a hashed password, sign-in times and the record above.</p>
+
+      <h2 id="careers">Job applicants and the CVMind team</h2>
+      <p>When you apply for a role on <a href="/careers">cvmind.in/careers</a>, we keep your name, email, phone number, college, links, answers and resume, and our hiring team's notes about your application. We use them only to consider you for CVMind roles. If you don't join, we delete them 6 months after the opening closes. If you join, they become part of your HR record.</p>
+      <p>For people who work at CVMind, we keep an HR record: job details, dates, pay, personal and emergency contact details, bank details and the documents you upload. Bank account numbers and PAN are stored encrypted and shown in full only to people who run payroll, and every time they are viewed is logged. Only HR, leadership and you can see your record. Letters we issue can be checked by anyone with their verify link, which shows only the letter's number, your name, the letter type, its date and whether it is still valid.</p>
 
       <h2 id="cookies">Advertising and cookies</h2>
       <p>CV Mind uses Google AdSense, a third-party advertising service, to show ads on some pages. Google and its partners use cookies (including the DoubleClick cookie) to serve ads based on your visits to this and other websites and to measure ad performance. Google's use of advertising cookies lets it and its partners show you personalised ads.</p>

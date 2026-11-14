@@ -61,6 +61,8 @@ const CareerRoadmap = lazy(() => import('./pages/career-path-ai/CareerRoadmap'))
 const Portfolio = lazy(() => import('./pages/Portfolio'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const VerifyLetter = lazy(() => import('./pages/VerifyLetter'));
+const Careers = lazy(() => import('./pages/Careers'));
+const OfferPage = lazy(() => import('./pages/OfferPage'));
 const FAQ = lazy(() => import('./pages/FAQ'));
 const Blog = lazy(() => import('./pages/Blog'));
 const LinkedInPost = lazy(() => import('./pages/linkedin/LinkedInPost'));
@@ -109,6 +111,8 @@ function pageFromPath(pathname: string): string | null {
   if (pathname.startsWith('/portfolio/') || pathname.startsWith('/r/')) return 'portfolio';
   if (pathname === '/college-invite' || pathname.startsWith('/college-invite/')) return 'college-invite';
   if (pathname.startsWith('/verify/')) return 'verify-letter';
+  if (pathname.startsWith('/offer/')) return 'offer-letter';
+  if (pathname.startsWith('/careers/')) return 'careers';
   if (AUTH_PATHS.includes(pathname)) return 'home';
   const page = pathname.replace(/^\/+|\/+$/g, '');
   if (!page || page === 'index.html') return null;
@@ -651,6 +655,10 @@ export default function App() {
         return <InvitePage setCurrentPage={setCurrentPage} />;
       case 'verify-letter':
         return <VerifyLetter />;
+      case 'offer-letter':
+        return <OfferPage />;
+      case 'careers':
+        return <Careers />;
       case 'resume-builder':
         return <ResumeBuilderLanding setCurrentPage={setCurrentPage} />;
       case 'resume-editor':
@@ -756,7 +764,7 @@ export default function App() {
   const showBackBar = isProductPage && currentPage !== 'account' && currentPage !== 'my-documents' && currentPage !== 'job-finder' && currentPage !== 'learn-with-leo' && !isFocusFlow && !isPortfolioStudio;
   // The Leo chat is a full-screen app with its own sidebar and top bar
   const isChatPage = currentPage === 'chat';
-  const isMinimalPage = currentPage === 'dashboard' || currentPage === 'admin' || currentPage === 'portfolio' || currentPage === 'verify-email' || currentPage === 'college-invite' || currentPage === 'verify-letter' || isCodePage || isFocusFlow || isAppPage || isPortfolioStudio || isChatPage;
+  const isMinimalPage = currentPage === 'dashboard' || currentPage === 'admin' || currentPage === 'portfolio' || currentPage === 'verify-email' || currentPage === 'college-invite' || currentPage === 'verify-letter' || currentPage === 'offer-letter' || isCodePage || isFocusFlow || isAppPage || isPortfolioStudio || isChatPage;
   // The resume report has its own top bar instead of the site header and footer
   const isReportPage = currentPage === 'dashboard';
   // The Help Center (and its Contact form) is full-width with its own top bar and footer instead of the site ones

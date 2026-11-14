@@ -126,6 +126,11 @@ const PAGE_SEO: Record<string, PageSEO> = {
     description: 'Timed mock tests in quantitative aptitude, logical reasoning and verbal ability for placements. Every answer worked out step by step, and Leo explains the ones you got wrong. Coming soon.',
     keywords: 'Aptitude Test, Placement Aptitude Mock Test, Quantitative Aptitude, Logical Reasoning, Verbal Ability, Aptitude Questions with Answers',
   },
+  careers: {
+    title: 'Careers at CVMind - Internships and Jobs | CV Mind',
+    description: 'Open internships and roles at CVMind. Help build AI tools that get students and job seekers hired. Apply with your resume in two minutes.',
+    keywords: 'CVMind Careers, CVMind Internship, Startup Internship India, Remote Internship',
+  },
   'aptitude-practice': {
     title: 'Aptitude Practice | CV Mind',
     description: 'Take a timed aptitude mock test and see every answer worked out.',
