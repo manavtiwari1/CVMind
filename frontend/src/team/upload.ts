@@ -35,7 +35,7 @@ export function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export type UploadScope = { scope: 'channel' | 'task' | 'announcement' | 'avatar' | 'meeting'; scopeId?: string | null };
+export type UploadScope = { scope: 'channel' | 'task' | 'announcement' | 'avatar' | 'meeting' | 'hr'; scopeId?: string | null };
 
 // Meeting recordings only (never offered for chat or task attachments)
 const RECORDING_TYPES: Record<string, string> = { webm: 'video/webm', mp4: 'video/mp4' };

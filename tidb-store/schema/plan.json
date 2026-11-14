@@ -5775,6 +5775,618 @@
    "gridfs": false
   },
   {
+   "name": "erppayhistories",
+   "kind": "root",
+   "parent": null,
+   "columns": [
+    {
+     "name": "id",
+     "path": [
+      "_id"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": false,
+     "ref": null
+    },
+    {
+     "name": "admin_id",
+     "path": [
+      "adminId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "pay_type",
+     "path": [
+      "payType"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(64)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "stipend",
+      "salary",
+      "unpaid"
+     ]
+    },
+    {
+     "name": "amount",
+     "path": [
+      "amount"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "effective_from",
+     "path": [
+      "effectiveFrom"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "note",
+     "path": [
+      "note"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_by",
+     "path": [
+      "createdBy"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_by_name",
+     "path": [
+      "createdByName"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_at",
+     "path": [
+      "createdAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "updated_at",
+     "path": [
+      "updatedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "doc_version",
+     "path": [
+      "__v"
+     ],
+     "mode": "Number",
+     "type": "INT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "_extra",
+     "mode": "extra",
+     "type": "JSON",
+     "nullable": true
+    }
+   ],
+   "children": [],
+   "indexes": [
+    {
+     "name": "ix_admin_id_effective_from",
+     "unique": false,
+     "parts": [
+      "`admin_id`",
+      "`effective_from`"
+     ]
+    }
+   ],
+   "collection": "erppayhistories",
+   "models": [
+    "ErpPayHistory"
+   ],
+   "docs": 0,
+   "gridfs": false
+  },
+  {
+   "name": "erpprofiles",
+   "kind": "root",
+   "parent": null,
+   "columns": [
+    {
+     "name": "id",
+     "path": [
+      "_id"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": false,
+     "ref": null
+    },
+    {
+     "name": "admin_id",
+     "path": [
+      "adminId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "employment_type",
+     "path": [
+      "employmentType"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(64)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "intern",
+      "full_time",
+      "part_time",
+      "contractor"
+     ]
+    },
+    {
+     "name": "designation",
+     "path": [
+      "designation"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "manager_id",
+     "path": [
+      "managerId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "joining_date",
+     "path": [
+      "joiningDate"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "end_date",
+     "path": [
+      "endDate"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "probation_end_date",
+     "path": [
+      "probationEndDate"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "last_working_day",
+     "path": [
+      "lastWorkingDay"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "pay_type",
+     "path": [
+      "payType"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(64)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "stipend",
+      "salary",
+      "unpaid"
+     ]
+    },
+    {
+     "name": "pay_amount",
+     "path": [
+      "payAmount"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "legal_name",
+     "path": [
+      "legalName"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "date_of_birth",
+     "path": [
+      "dateOfBirth"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "personal_email",
+     "path": [
+      "personalEmail"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "address",
+     "path": [
+      "address"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "emergency_name",
+     "path": [
+      "emergencyName"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "emergency_relation",
+     "path": [
+      "emergencyRelation"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "emergency_phone",
+     "path": [
+      "emergencyPhone"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "bank_holder",
+     "path": [
+      "bankHolder"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "bank_account_enc",
+     "path": [
+      "bankAccountEnc"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "bank_account_last4",
+     "path": [
+      "bankAccountLast4"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "bank_ifsc",
+     "path": [
+      "bankIfsc"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "upi_id",
+     "path": [
+      "upiId"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "pan_enc",
+     "path": [
+      "panEnc"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "pan_last4",
+     "path": [
+      "panLast4"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "reminders_sent",
+     "path": [
+      "remindersSent"
+     ],
+     "mode": "json",
+     "type": "JSON",
+     "nullable": true,
+     "isList": true,
+     "listOf": "String"
+    },
+    {
+     "name": "notes",
+     "path": [
+      "notes"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "updated_by",
+     "path": [
+      "updatedBy"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_at",
+     "path": [
+      "createdAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "updated_at",
+     "path": [
+      "updatedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "doc_version",
+     "path": [
+      "__v"
+     ],
+     "mode": "Number",
+     "type": "INT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "_extra",
+     "mode": "extra",
+     "type": "JSON",
+     "nullable": true
+    }
+   ],
+   "children": [
+    {
+     "name": "erpprofiles__documents",
+     "kind": "child",
+     "parent": "erpprofiles",
+     "columns": [
+      {
+       "name": "id",
+       "mode": "childId",
+       "type": "VARCHAR(255)",
+       "nullable": false
+      },
+      {
+       "name": "parent_id",
+       "mode": "parentId",
+       "type": "VARCHAR(24)",
+       "nullable": false
+      },
+      {
+       "name": "position",
+       "mode": "position",
+       "type": "INT",
+       "nullable": false
+      },
+      {
+       "name": "mongo_id",
+       "path": [
+        "_id"
+       ],
+       "mode": "ObjectId",
+       "type": "VARCHAR(24)",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "file_id",
+       "path": [
+        "fileId"
+       ],
+       "mode": "ObjectId",
+       "type": "VARCHAR(24)",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "kind",
+       "path": [
+        "kind"
+       ],
+       "mode": "String",
+       "type": "VARCHAR(64)",
+       "nullable": true,
+       "ref": null,
+       "enum": [
+        "id_proof",
+        "pan_card",
+        "college_letter",
+        "signed_offer",
+        "other"
+       ]
+      },
+      {
+       "name": "verified_at",
+       "path": [
+        "verifiedAt"
+       ],
+       "mode": "Date",
+       "type": "DATETIME(3)",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "verified_by",
+       "path": [
+        "verifiedBy"
+       ],
+       "mode": "ObjectId",
+       "type": "VARCHAR(24)",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "_extra",
+       "mode": "extra",
+       "type": "JSON",
+       "nullable": true
+      }
+     ],
+     "children": [],
+     "indexes": [],
+     "sourcePath": [
+      "documents"
+     ],
+     "parentKeyType": "VARCHAR(24)"
+    }
+   ],
+   "indexes": [
+    {
+     "name": "uq_admin_id",
+     "unique": true,
+     "parts": [
+      "`admin_id`"
+     ]
+    },
+    {
+     "name": "ix_manager_id",
+     "unique": false,
+     "parts": [
+      "`manager_id`"
+     ]
+    },
+    {
+     "name": "ix_end_date",
+     "unique": false,
+     "parts": [
+      "`end_date`"
+     ]
+    },
+    {
+     "name": "ix_probation_end_date",
+     "unique": false,
+     "parts": [
+      "`probation_end_date`"
+     ]
+    }
+   ],
+   "collection": "erpprofiles",
+   "models": [
+    "ErpProfile"
+   ],
+   "docs": 0,
+   "gridfs": false
+  },
+  {
    "name": "extensiondevices",
    "kind": "root",
    "parent": null,

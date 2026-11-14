@@ -40,6 +40,9 @@ export async function checkUploadScope(admin, scope, scopeId) {
     // Recordings: the host's browser (or a manager's) uploads them
     const meeting = await meetingFor(admin, scopeId);
     if (!sameId(meeting.hostId, admin.id) && !isManager(admin)) throw httpError(403, 'Only the host can save a recording.');
+  } else if (scope === 'hr') {
+    // Only into your own HR file
+    if (!sameId(scopeId, admin.id)) throw httpError(403, 'You can only add documents to your own HR file.');
   } else if (scope !== 'avatar') {
     throw httpError(400, 'Pick where the file is going.');
   }
@@ -78,6 +81,8 @@ export async function canOpenFile(admin, file) {
     return !!task && canSeeTask(admin, task);
   }
   if (file.scope === 'meeting') return canJoinMeeting(admin, await TeamMeeting.findById(file.scopeId).lean());
+  // HR documents: only their owner here; HR opens them from the admin panel
+  if (file.scope === 'hr') return sameId(file.scopeId, admin.id);
   return false;
 }
 

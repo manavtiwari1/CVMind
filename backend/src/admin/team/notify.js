@@ -15,6 +15,8 @@ const DUE_SOON_MS = 2 * 60 * 60 * 1000;
 const REMINDER_UTC_MINUTES = 3 * 60 + 30;
 // 10:30 IST is 05:00 UTC
 const STANDUP_UTC_MINUTES = 5 * 60;
+// 10:00 IST: HR reminders (internship, contract and probation ends)
+const HR_REMINDER_UTC_MINUTES = 4 * 60 + 30;
 
 // People who can use the team app right now
 export const teamPeopleFilter = { active: true, chatAccess: { $ne: false } };
@@ -67,6 +69,7 @@ export function notificationPath(n) {
   if (n.type === 'leave_requested') return '#/checkin?tab=requests';
   if (n.refType === 'leave') return '#/checkin?tab=leave';
   if (n.refType === 'announcement' && n.refId) return `#/announcements/${n.refId}`;
+  if (n.refType === 'hr') return '#/people';
   if (n.channelId && n.refType === 'message' && n.refId) return `#/chat/${n.channelId}?m=${n.refId}`;
   if (n.channelId) return `#/chat/${n.channelId}`;
   return '#/home';
@@ -117,7 +120,9 @@ const LABELS = {
   meeting_cancelled: 'cancelled a meeting',
   meeting_soon: 'Meeting starts in 10 minutes',
   meeting_notes: "Leo's meeting notes are ready",
-  meeting_recording: 'saved a meeting recording'
+  meeting_recording: 'saved a meeting recording',
+  hr_end_soon: 'Internship or contract ends in 7 days',
+  hr_probation_soon: 'Probation ends in 7 days'
 };
 export const notificationLabel = (type) => LABELS[type] || 'New activity';
 
@@ -300,6 +305,8 @@ export function startTeamJobs() {
       await sendNotificationDigests();
       await onceADay('team.dailyReminderDay', REMINDER_UTC_MINUTES, sendDailyTaskReminders);
       await onceADay('team.standupReminderDay', STANDUP_UTC_MINUTES, sendStandupReminders);
+      const { sendHrReminders } = await import('../../erp/jobs.js');
+      await onceADay('erp.hrReminderDay', HR_REMINDER_UTC_MINUTES, sendHrReminders);
       const { sweepPendingFiles } = await import('./files.js');
       await sweepPendingFiles();
     } catch (err) {

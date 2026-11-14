@@ -21,7 +21,10 @@ export const PERMISSIONS = [
   // Manage CVMind Team (team.cvmind.in): invitations, channels, announcements, task review
   'teamchat.manage',
   // Placements portal (placements.cvmind.in): colleges, their logins and resume formats
-  'colleges.view', 'colleges.manage'
+  'colleges.view', 'colleges.manage',
+  // ERP: HR files, payroll, letters, expenses, hiring and assets (hr.*); the profit & loss page (finance.view)
+  'hr.view', 'hr.manage',
+  'finance.view'
 ];
 
 const ALL = [...PERMISSIONS];
@@ -34,8 +37,8 @@ export const ROLES = {
   cto: { label: 'Chief Technical Officer', description: 'Full access, including the team and roles.', permissions: ALL, leadership: true },
   admin: {
     label: 'Admin',
-    description: 'Everything except managing the team.',
-    permissions: ALL.filter((p) => p !== 'team.manage')
+    description: 'Everything except managing the team and the profit & loss page.',
+    permissions: ALL.filter((p) => p !== 'team.manage' && p !== 'finance.view')
   },
   support: {
     label: 'Support',

@@ -8,6 +8,7 @@ import standupRoutes from './routes/standup.js';
 import leoRoutes from './routes/leo.js';
 import meetingRoutes from './routes/meetings.js';
 import pastMemberRoutes from './routes/pastMembers.js';
+import erpMeRoutes from '../../erp/routes/me.js';
 
 // Everything under /api/admin/team: the CVMind Team app (team.cvmind.in) and its management
 const router = express.Router();
@@ -21,5 +22,6 @@ router.use('/', standupRoutes);
 router.use('/', leoRoutes);
 router.use('/', meetingRoutes);
 router.use('/', pastMemberRoutes);
+router.use('/', erpMeRoutes);
 
 export default router;

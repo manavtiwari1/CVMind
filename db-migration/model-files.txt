@@ -33,6 +33,7 @@ backend/src/college/routes/dashboard.js
 backend/src/college/routes/vetting.js
 backend/src/college/stats.js
 backend/src/db.js
+backend/src/erp/models.js
 backend/src/growth/alerts.js
 backend/src/growth/models.js
 backend/src/growth/progress.js

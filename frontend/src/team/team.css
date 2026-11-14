@@ -757,3 +757,20 @@ p.pad { padding: 0 16px 14px; }
 .tm-idcard-edit { max-width: 380px; margin: 16px auto 0; }
 .tm-idcard-edit .tm-inline { display: flex; gap: 8px; }
 .tm-idcard-edit .tm-input { flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+/* ── Profile → My HR file ─────────────────────────────────────────────── */
+.tm-h3 { font-size: 14px; font-weight: 600; color: var(--tm-text); margin: 8px 0 0; }
+.tm-kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; font-size: 13px; }
+.tm-kv dt { color: var(--tm-text-3); }
+.tm-kv dd { margin: 0; color: var(--tm-text); min-width: 0; overflow-wrap: anywhere; }
+.tm-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.tm-pill.green { background: var(--tm-green-soft); color: var(--tm-green-dark); }
+.tm-pill.amber { background: var(--tm-amber-soft); color: var(--tm-amber); }
+.tm-pill.gray { background: var(--tm-hover); color: var(--tm-text-3); }
+.tm-doc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.tm-doc-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 1px solid var(--tm-border); border-radius: var(--tm-radius-sm); min-width: 0; }
+.tm-doc-list li > button:first-child { min-width: 0; text-align: left; flex-wrap: wrap; }
+@media (max-width: 640px) {
+  .tm-kv { grid-template-columns: 1fr; gap: 2px; }
+  .tm-kv dd { margin-bottom: 6px; }
+}

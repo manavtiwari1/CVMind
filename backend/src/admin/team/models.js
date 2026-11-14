@@ -159,10 +159,11 @@ const fileSchema = new Schema({
   mime: { type: String, required: true },
   size: { type: Number, required: true },
   uploadedBy: { type: Id, required: true },
-  scope: { type: String, enum: ['channel', 'task', 'announcement', 'avatar', 'meeting'], required: true },
+  // 'hr': a document for the uploader's own HR file (erp/routes/me.js), never shown in the media library
+  scope: { type: String, enum: ['channel', 'task', 'announcement', 'avatar', 'meeting', 'hr'], required: true },
   scopeId: { type: Id, default: null },
   attachedTo: {
-    type: { type: String, enum: ['message', 'task', 'comment', 'submission', 'announcement', 'avatar', 'recording', null], default: null },
+    type: { type: String, enum: ['message', 'task', 'comment', 'submission', 'announcement', 'avatar', 'recording', 'hr_document', null], default: null },
     id: { type: Id, default: null }
   },
   status: { type: String, enum: ['pending', 'ready', 'deleted'], default: 'pending' },

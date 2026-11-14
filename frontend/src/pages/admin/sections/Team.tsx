@@ -24,7 +24,9 @@ const PERMISSION_LABELS: Record<string, string> = {
   'partners.view': 'View companies', 'partners.manage': 'Verify and suspend companies', 'settings.view': 'View app config', 'settings.manage': 'Change feature switches and versions',
   'system.view': 'View system health', 'audit.view': 'View the audit log', 'team.manage': 'Manage the team and roles',
   'teamchat.manage': 'Manage CVMind Team (invitations, channels, announcements, task review)',
-  'colleges.view': 'View colleges on the placements portal', 'colleges.manage': 'Add colleges, their logins and resume formats'
+  'colleges.view': 'View colleges on the placements portal', 'colleges.manage': 'Add colleges, their logins and resume formats',
+  'hr.view': 'View HR files, payroll, letters, expenses, hiring and assets', 'hr.manage': 'Edit HR files, run payroll, issue letters, approve expenses',
+  'finance.view': 'See the profit & loss page'
 };
 
 type View = 'members' | 'roles' | 'me';
