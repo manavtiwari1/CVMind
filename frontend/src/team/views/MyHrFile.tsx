@@ -44,6 +44,7 @@ export function MyHrFile({ myId }: { myId: string }) {
   const [pan, setPan] = useState('');
   const [docKind, setDocKind] = useState('id_proof');
   const input = useRef<HTMLInputElement>(null);
+  const [assets, setAssets] = useState<Array<{ id: string; name: string; assignedToMe: boolean; loginHolder: boolean }>>([]);
 
   const apply = useCallback((f: HrFile) => {
     setFile(f);
@@ -56,6 +57,7 @@ export function MyHrFile({ myId }: { myId: string }) {
 
   useEffect(() => {
     api<{ data: HrFile }>('/me/hr').then((r) => apply(r.data)).catch((e: Error) => setError(e.message));
+    api<{ data: Array<{ id: string; name: string; assignedToMe: boolean; loginHolder: boolean }> }>('/me/assets').then((r) => setAssets(r.data)).catch(() => {});
   }, [apply]);
 
   const set = (k: string) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -137,6 +139,10 @@ export function MyHrFile({ myId }: { myId: string }) {
         {file.probationEndDate && <><dt>Probation ends</dt><dd>{day(file.probationEndDate)}</dd></>}
         <dt>Pay</dt><dd>{file.payType === 'unpaid' ? 'Unpaid' : `${inr.format(file.payAmount)} a month (${file.payType})`}</dd>
       </dl>
+
+      {assets.length > 0 && (
+        <p className="tm-muted">Company things with you: {assets.map((a) => `${a.name}${a.assignedToMe ? '' : ' (login)'}`).join(', ')}. Return or hand them over before your last day.</p>
+      )}
 
       <h3 className="tm-h3">Personal details</h3>
       <div className="tm-form-row">

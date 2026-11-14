@@ -136,7 +136,8 @@ const LABELS = {
   candidate_applied: 'New job application',
   interview_scheduled: 'You are interviewing a candidate',
   offer_accepted: 'A candidate accepted their offer',
-  offer_declined: 'A candidate declined their offer'
+  offer_declined: 'A candidate declined their offer',
+  asset_renewal_soon: 'A subscription renews soon'
 };
 export const notificationLabel = (type) => LABELS[type] || 'New activity';
 

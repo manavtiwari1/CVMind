@@ -11,6 +11,8 @@ export async function runDailyErpJobs(now = new Date()) {
   await spawnRecurringExpenses(now);
   const { deleteOldCandidates } = await import('./hiring.js');
   await deleteOldCandidates(now);
+  const { runAssetRenewals } = await import('./assets.js');
+  await runAssetRenewals(now);
 }
 
 const addDays = (day, n) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);

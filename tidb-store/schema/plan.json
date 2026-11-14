@@ -5775,6 +5775,360 @@
    "gridfs": false
   },
   {
+   "name": "erpassets",
+   "kind": "root",
+   "parent": null,
+   "columns": [
+    {
+     "name": "id",
+     "path": [
+      "_id"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": false,
+     "ref": null
+    },
+    {
+     "name": "kind",
+     "path": [
+      "kind"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "physical",
+      "digital"
+     ]
+    },
+    {
+     "name": "name",
+     "path": [
+      "name"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "category",
+     "path": [
+      "category"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "serial_number",
+     "path": [
+      "serialNumber"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "condition",
+     "path": [
+      "condition"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "assigned_to",
+     "path": [
+      "assignedTo"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "provider",
+     "path": [
+      "provider"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "plan",
+     "path": [
+      "plan"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "billing_card",
+     "path": [
+      "billingCard"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "login_holder_ids",
+     "path": [
+      "loginHolderIds"
+     ],
+     "mode": "json",
+     "type": "JSON",
+     "nullable": true,
+     "isList": true,
+     "listOf": "ObjectId"
+    },
+    {
+     "name": "cost",
+     "path": [
+      "cost"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "billing",
+     "path": [
+      "billing"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(64)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "once",
+      "monthly",
+      "yearly"
+     ]
+    },
+    {
+     "name": "purchase_date",
+     "path": [
+      "purchaseDate"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "renewal_date",
+     "path": [
+      "renewalDate"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "owner_id",
+     "path": [
+      "ownerId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "status",
+     "path": [
+      "status"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "active",
+      "retired"
+     ]
+    },
+    {
+     "name": "notes",
+     "path": [
+      "notes"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "reminders_sent",
+     "path": [
+      "remindersSent"
+     ],
+     "mode": "json",
+     "type": "JSON",
+     "nullable": true,
+     "isList": true,
+     "listOf": "String"
+    },
+    {
+     "name": "created_at",
+     "path": [
+      "createdAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "updated_at",
+     "path": [
+      "updatedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "doc_version",
+     "path": [
+      "__v"
+     ],
+     "mode": "Number",
+     "type": "INT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "_extra",
+     "mode": "extra",
+     "type": "JSON",
+     "nullable": true
+    }
+   ],
+   "children": [
+    {
+     "name": "erpassets__history",
+     "kind": "child",
+     "parent": "erpassets",
+     "columns": [
+      {
+       "name": "id",
+       "mode": "childId",
+       "type": "VARCHAR(255)",
+       "nullable": false
+      },
+      {
+       "name": "parent_id",
+       "mode": "parentId",
+       "type": "VARCHAR(24)",
+       "nullable": false
+      },
+      {
+       "name": "position",
+       "mode": "position",
+       "type": "INT",
+       "nullable": false
+      },
+      {
+       "name": "at",
+       "path": [
+        "at"
+       ],
+       "mode": "Date",
+       "type": "DATETIME(3)",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "text",
+       "path": [
+        "text"
+       ],
+       "mode": "String",
+       "type": "MEDIUMTEXT",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "by_name",
+       "path": [
+        "byName"
+       ],
+       "mode": "String",
+       "type": "VARCHAR(255)",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "_extra",
+       "mode": "extra",
+       "type": "JSON",
+       "nullable": true
+      }
+     ],
+     "children": [],
+     "indexes": [],
+     "sourcePath": [
+      "history"
+     ],
+     "parentKeyType": "VARCHAR(24)"
+    }
+   ],
+   "indexes": [
+    {
+     "name": "ix_kind_status",
+     "unique": false,
+     "parts": [
+      "`kind`",
+      "`status`"
+     ]
+    },
+    {
+     "name": "ix_assigned_to",
+     "unique": false,
+     "parts": [
+      "`assigned_to`"
+     ]
+    },
+    {
+     "name": "ix_login_holder_ids",
+     "unique": false,
+     "parts": [
+      "(CAST(`login_holder_ids` AS CHAR(255) ARRAY))"
+     ]
+    },
+    {
+     "name": "ix_renewal_date",
+     "unique": false,
+     "parts": [
+      "`renewal_date`"
+     ]
+    }
+   ],
+   "collection": "erpassets",
+   "models": [
+    "ErpAsset"
+   ],
+   "docs": 0,
+   "gridfs": false
+  },
+  {
    "name": "erpcandidates",
    "kind": "root",
    "parent": null,

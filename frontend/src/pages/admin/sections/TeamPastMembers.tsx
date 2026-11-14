@@ -117,7 +117,7 @@ export function PastMembersTab() {
 }
 
 function PastMemberForm({ editing, recorded, onClose, onDone }: { editing: Editing; recorded: string[]; onClose: () => void; onDone: () => void }) {
-  const { admin } = useAdmin();
+  const { admin, can } = useAdmin();
   const { busy, run } = useAction();
   const people = useApi<{ data: Member[] }>(editing.mode === 'member' ? '/team/members' : null);
   const candidates = (people.data?.data || []).filter((p) => p.active && p.id !== admin.id && !recorded.includes(p.id)).sort((a, b) => a.name.localeCompare(b.name));
@@ -131,6 +131,8 @@ function PastMemberForm({ editing, recorded, onClose, onDone }: { editing: Editi
   const [removeAccess, setRemoveAccess] = useState(true);
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const member = candidates.find((p) => p.id === memberId);
+  // Offboarding: company devices and logins they still hold (ERP → Assets)
+  const held = useApi<{ data: Array<{ id: string; name: string; kind: string }> }>(editing.mode === 'member' && memberId && can('hr.view') ? `/erp/assets/held-by/${memberId}` : null);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -212,6 +214,11 @@ function PastMemberForm({ editing, recorded, onClose, onDone }: { editing: Editi
           <label htmlFor="pm-notes">Notes</label>
           <textarea id="pm-notes" className="ad-textarea" value={form.notes} onChange={set('notes')} maxLength={1000} placeholder="Anything worth remembering about their work" />
         </div>
+        {editing.mode === 'member' && (held.data?.data.length || 0) > 0 && (
+          <p className="ad-small" style={{ color: '#b45309', marginBottom: 10 }}>
+            Still with them: {held.data!.data.map((a) => a.name).join(', ')}. Get devices back and hand over these logins in ERP → Assets.
+          </p>
+        )}
         {editing.mode === 'member' && (
           <label className="ad-check"><input type="checkbox" checked={removeAccess} onChange={(e) => setRemoveAccess(e.target.checked)} /> Turn off their CVMind Team access now (signs them out of team.cvmind.in)</label>
         )}

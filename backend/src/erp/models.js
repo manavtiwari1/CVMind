@@ -276,3 +276,40 @@ candidateSchema.index({ email: 1 });
 candidateSchema.index({ stage: 1, createdAt: -1 });
 candidateSchema.index({ offerToken: 1 });
 export const ErpCandidate = mongoose.models.ErpCandidate || mongoose.model('ErpCandidate', candidateSchema);
+
+// ── Assets & subscriptions ─────────────────────────────────────────────────
+// Physical things (laptops, phones) given to people, and digital things paid for on repeat
+// (domains, hosting, SaaS). Passwords and keys are never stored here: only who holds the login.
+export const ASSET_CATEGORIES = {
+  physical: ['laptop', 'phone', 'monitor', 'accessory', 'other'],
+  digital: ['domain', 'hosting', 'database', 'ai_api', 'email', 'software', 'other']
+};
+const assetSchema = new Schema({
+  kind: { type: String, enum: ['physical', 'digital'], required: true },
+  name: { type: String, required: true },
+  category: { type: String, default: 'other' },
+  // Physical
+  serialNumber: { type: String, default: '' },
+  condition: { type: String, default: '' },
+  assignedTo: { type: Id, default: null },
+  // Digital
+  provider: { type: String, default: '' },
+  plan: { type: String, default: '' },
+  billingCard: { type: String, default: '' },
+  loginHolderIds: { type: [Id], default: [] },
+  // Money and dates
+  cost: { type: Number, default: 0 },
+  billing: { type: String, enum: ['once', 'monthly', 'yearly'], default: 'once' },
+  purchaseDate: { type: String, default: '' },
+  renewalDate: { type: String, default: '' },
+  ownerId: { type: Id, default: null },
+  status: { type: String, enum: ['active', 'retired'], default: 'active' },
+  notes: { type: String, default: '' },
+  history: { type: [{ _id: false, at: Date, text: String, byName: String }], default: [] },
+  remindersSent: { type: [String], default: [] }
+}, { timestamps: true });
+assetSchema.index({ kind: 1, status: 1 });
+assetSchema.index({ assignedTo: 1 });
+assetSchema.index({ loginHolderIds: 1 });
+assetSchema.index({ renewalDate: 1 });
+export const ErpAsset = mongoose.models.ErpAsset || mongoose.model('ErpAsset', assetSchema);

@@ -9,6 +9,7 @@ import { TeamFile } from '../../admin/team/models.js';
 import { notify } from '../../admin/team/notify.js';
 import { presignDownload } from '../../admin/team/storage.js';
 import { ErpExpense, ErpLetter, ErpLetterRequest, ErpPayHistory, ErpPayLine, ErpProfile, EXPENSE_CATEGORIES, LETTER_TYPES } from '../models.js';
+import { heldBy } from '../assets.js';
 import { approveStep, attachReceipt, canDecide, CATEGORY_LABELS, declineStep, firstStage, publicExpenses, readExpense } from '../expenses.js';
 import { hrManagerIds } from '../jobs.js';
 import { LETTER_LABELS, publicLetter, renderLetterPdf } from '../letters.js';
@@ -126,6 +127,12 @@ router.post('/me/letter-requests', team, handle(async (req, res) => {
   const row = await ErpLetterRequest.create({ adminId: req.admin.id, type, note: clean(req.body?.note, 500) });
   await notify(await hrManagerIds(), { type: 'letter_requested', actorId: req.admin.id, refType: 'letter_request', refId: row._id, preview: LETTER_LABELS[type] });
   res.json({ success: true });
+}));
+
+// Profile → My HR file: company things I have (a laptop) and logins I hold
+router.get('/me/assets', team, handle(async (req, res) => {
+  const rows = await heldBy(req.admin.id);
+  res.json({ success: true, data: rows.map((a) => ({ id: a.id, kind: a.kind, name: a.name, category: a.category, serialNumber: a.serialNumber, provider: a.provider, assignedToMe: a.assignedTo?.id === String(req.admin.id), loginHolder: a.loginHolders.some((h) => h.id === String(req.admin.id)) })) });
 }));
 
 // Profile → Expense claims: money a member paid for CVMind, and claims waiting for my approval as a manager
