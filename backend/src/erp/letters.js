@@ -4,7 +4,7 @@ import { ROLES } from '../admin/permissions.js';
 import { httpError } from '../admin/util.js';
 import { istDay } from '../admin/team/notify.js';
 import { ErpLetterTemplate, ErpPayLine, ErpProfile, LETTER_TYPES } from './models.js';
-import { COLORS, footer, letterhead, longDate, MARGIN, startDocument } from './pdf.js';
+import { COLORS, footer, hasImage, letterhead, longDate, MARGIN, PAGE, startDocument, STAMP } from './pdf.js';
 import { monthLabel } from './payroll.js';
 import { getSettings } from './settings.js';
 
@@ -159,27 +159,49 @@ export const newVerifyCode = () => crypto.randomBytes(8).toString('base64url').r
 export const SITE_URL = (process.env.PUBLIC_SITE_URL || 'https://www.cvmind.in').replace(/\/$/, '');
 export const verifyUrl = (code) => `${SITE_URL}/verify/${code}`;
 
-/** @returns {Promise<Buffer>} the letter on the CVMind letterhead */
+/** @returns {Promise<Buffer>} the letter on the official CVMind letterhead */
 export async function renderLetterPdf(letter, settings = {}) {
   const { doc, done } = startDocument(`${letter.title} · ${letter.number}`);
-  letterhead(doc, { lines: [`Ref: ${letter.number}`, `Date: ${longDate(letter.issuedOn)}`], address: settings.companyAddress });
-  const width = 595.28 - 2 * MARGIN;
-  doc.moveDown(1);
-  doc.font('bold').fontSize(16).fillColor(COLORS.navy).text(letter.title, MARGIN, doc.y, { width, align: 'center' });
-  doc.moveDown(1.2);
-  doc.font('regular').fontSize(10.5).fillColor(COLORS.ink).text(letter.body, MARGIN, doc.y, { width, align: 'justify', lineGap: 3, paragraphGap: 6 });
-  doc.moveDown(2);
-  doc.font('regular').fontSize(10.5).fillColor(COLORS.ink).text('For CVMind,', MARGIN);
-  doc.moveDown(2.5);
-  if (letter.signatoryName) doc.font('semibold').fontSize(10.5).text(letter.signatoryName, MARGIN);
-  if (letter.signatoryTitle) doc.font('regular').fontSize(9.5).fillColor(COLORS.soft).text(letter.signatoryTitle, MARGIN);
-  // Verify box near the bottom
-  const y = 841.89 - 120;
-  doc.roundedRect(MARGIN, y, width, 40, 6).fillAndStroke(COLORS.tint, COLORS.line);
-  doc.font('semibold').fontSize(8.5).fillColor(COLORS.navy).text('VERIFY THIS LETTER', MARGIN + 14, y + 9, { lineBreak: false, characterSpacing: 0.4 });
-  doc.font('regular').fontSize(9).fillColor(COLORS.ink).text(verifyUrl(letter.code), MARGIN + 14, y + 22, { lineBreak: false, link: verifyUrl(letter.code), underline: false });
-  doc.font('regular').fontSize(8.5).fillColor(COLORS.soft).text(`Code ${letter.code}`, MARGIN + 14, y + 22, { width: width - 28, align: 'right', lineBreak: false });
-  footer(doc, letter.status === 'revoked' ? 'This letter has been revoked by CVMind.' : 'Issued by CVMind. Check it at the link above.');
+  const [W, H] = PAGE;
+  const width = W - 2 * MARGIN;
+  const ink = '#111827';
+  const page = () => { letterhead(doc); footer(doc); };
+  page();
+
+  // To / date
+  doc.font('bold').fontSize(10).fillColor(ink).text('TO:', MARGIN, 150);
+  doc.font('bold').fontSize(10.5).text(letter.recipientName, MARGIN, 166, { width: 300 });
+  doc.font('bold').fontSize(10).text(`Date: ${longDate(letter.issuedOn)}`, W - MARGIN - 220, 166, { width: 220, align: 'right' });
+  doc.font('regular').fontSize(8).fillColor(COLORS.soft).text(`Ref: ${letter.number}`, W - MARGIN - 220, 181, { width: 220, align: 'right' });
+
+  // Title and body
+  doc.font('bold').fontSize(12).fillColor(ink).text(letter.title.toUpperCase(), MARGIN, 214, { width, align: 'center', characterSpacing: 0.3 });
+  doc.font('regular').fontSize(10.5).fillColor(ink);
+  doc.y = 246;
+  const bottom = H - 210;
+  for (const para of letter.body.split(/\n{2,}/)) {
+    const h = doc.heightOfString(para, { width, lineGap: 3 });
+    if (doc.y + h > bottom) {
+      doc.addPage();
+      page();
+      doc.font('regular').fontSize(10.5).fillColor(ink);
+      doc.y = 140;
+    }
+    doc.text(para, MARGIN, doc.y, { width, align: 'justify', lineGap: 3 });
+    doc.moveDown(0.8);
+  }
+
+  // Stamp and signatory, at the foot of the last page
+  const sy = H - 190;
+  if (hasImage(STAMP)) doc.image(STAMP, MARGIN, sy, { width: 74 });
+  const ly = sy + 82;
+  if (letter.signatoryName) doc.font('semibold').fontSize(10).fillColor(ink).text(letter.signatoryName + (letter.signatoryTitle ? `, ${letter.signatoryTitle}` : ''), MARGIN, ly - 14, { lineBreak: false });
+  doc.font('regular').fontSize(10).fillColor(ink).text('Authorized Signatory', MARGIN, ly, { lineBreak: false });
+  doc.text('CVMind', MARGIN, ly + 14, { lineBreak: false });
+  doc.text(`Date of Issue: ${longDate(letter.issuedOn)}`, MARGIN, ly + 28, { lineBreak: false });
+  // Verify line on the right
+  doc.font('regular').fontSize(7.5).fillColor(COLORS.soft).text(letter.status === 'revoked' ? 'This letter has been revoked by CVMind.' : 'Check this letter is genuine at', W - MARGIN - 220, ly + 14, { width: 220, align: 'right' });
+  if (letter.status !== 'revoked') doc.font('semibold').fontSize(7.5).fillColor('#1e3a8a').text(verifyUrl(letter.code).replace(/^https?:\/\//, ''), W - MARGIN - 220, ly + 26, { width: 220, align: 'right', link: verifyUrl(letter.code) });
   doc.end();
   return done;
 }

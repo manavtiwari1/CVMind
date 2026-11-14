@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import PDFDocument from 'pdfkit';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,6 +22,7 @@ export const COMPANY = { name: 'CVMind', site: 'www.cvmind.in', email: 'support@
 
 const A4 = [595.28, 841.89];
 export const MARGIN = 48;
+export const PAGE = A4;
 
 export const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 export const longDate = (d) => {
@@ -42,27 +44,58 @@ export function startDocument(title) {
   return { doc, done };
 }
 
-// Logo and wordmark on the left, a title block on the right, a gold rule under both
-export function letterhead(doc, { title, lines = [], address = '' } = {}) {
-  const { navy, soft, gold } = COLORS;
-  doc.image(LOGO, MARGIN, 36, { height: 46 });
-  doc.font('extrabold').fontSize(26).fillColor('#0b1437').text('CV', MARGIN + 54, 40, { continued: true, lineBreak: false }).fillColor('#3b38d6').text('Mind', { lineBreak: false });
-  doc.font('semibold').fontSize(7.5).fillColor('#1e2a5a').text('AI POWERED  •  CAREER EMPOWERED', MARGIN + 56, 72, { lineBreak: false, characterSpacing: 0.6 });
-  if (address) doc.font('regular').fontSize(7.5).fillColor(soft).text(address, MARGIN + 56, 84, { width: 240 });
-  if (title) doc.font('extrabold').fontSize(20).fillColor(navy).text(title, 300, 38, { width: A4[0] - 300 - MARGIN, align: 'right' });
-  lines.forEach((l, i) => doc.font('regular').fontSize(9).fillColor(soft).text(l, 300, 66 + i * 13, { width: A4[0] - 300 - MARGIN, align: 'right' }));
-  doc.rect(MARGIN, 108, A4[0] - 2 * MARGIN, 2).fill(gold);
+// The official CVMind letterhead: logo, wordmark, website and Udyam number on the left; the MSME mark
+// and the office address on the right with a dark rule under it; a "contact us" strip at the foot.
+// assets/letterhead/msme.png and assets/letterhead/stamp.png are drawn when present.
+export const LETTERHEAD = {
+  site: 'WWW.CVMIND.IN',
+  udyam: 'UDYAM-DL-10-0123703',
+  address: 'D-122, K-1 Mohan Garden, Uttam Nagar, New Delhi - 110059',
+  phone: '+91 8700683798',
+  email: 'cvmindofficial@gmail.com'
+};
+const MSME = path.join(ASSETS, 'letterhead/msme.png');
+export const STAMP = path.join(ASSETS, 'letterhead/stamp.png');
+const RULE = '#1f2a37';
+const PIN = 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z';
+const PHONE = 'M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z';
+const MAIL = 'M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z';
+const icon = (doc, d, x, y, size, color) => doc.save().translate(x, y).scale(size / 24).path(d).fill(color).restore();
+export const hasImage = (file) => { try { return fs.statSync(file).isFile(); } catch { return false; } };
+
+export function letterhead(doc) {
+  const ink = '#111827';
+  // Left: logo, wordmark with a green dot, website and Udyam number
+  const logo = doc.openImage(LOGO);
+  const lw = (logo.width * 44) / logo.height;
+  doc.image(logo, MARGIN, 52, { height: 44 });
+  const tx = MARGIN + lw + 8;
+  doc.font('extrabold').fontSize(22).fillColor('#0b1437').text('CVMind', tx, 54, { lineBreak: false });
+  const w = doc.widthOfString('CVMind');
+  doc.circle(tx + w + 5, 72, 3.2).fill('#16a34a');
+  doc.font('regular').fontSize(6.5).fillColor('#1e3a8a').text(LETTERHEAD.site, tx + 1, 82, { lineBreak: false, characterSpacing: 0.3 });
+  doc.font('bold').fontSize(6.5).fillColor(ink).text(LETTERHEAD.udyam, tx + 1, 91, { lineBreak: false });
+  // Right: MSME mark, address with a pin, and the rule under it
+  if (hasImage(MSME)) doc.image(MSME, A4[0] - MARGIN - 112, 16, { width: 112 });
+  icon(doc, PIN, 320, 68, 10, ink);
+  doc.font('regular').fontSize(8).fillColor(ink).text(LETTERHEAD.address, 334, 67, { width: A4[0] - MARGIN - 334, lineGap: 1 });
+  doc.moveTo(316, 106).lineTo(A4[0] - MARGIN, 106).lineWidth(2.5).strokeColor(RULE).stroke();
   doc.x = MARGIN;
-  doc.y = 128;
+  doc.y = 140;
 }
 
-export function footer(doc, note) {
-  const { soft, band, gold } = COLORS;
-  const y = A4[1] - 58;
-  doc.font('italic').fontSize(8).fillColor(soft).text(note, MARGIN, y, { width: A4[0] - 2 * MARGIN, align: 'center', lineBreak: false });
-  doc.font('regular').fontSize(8).fillColor(soft).text(`${COMPANY.name} · ${COMPANY.site} · ${COMPANY.email}`, MARGIN, y + 13, { width: A4[0] - 2 * MARGIN, align: 'center', lineBreak: false });
-  doc.rect(0, A4[1] - 18, A4[0], 18).fill(band);
-  doc.polygon([A4[0] - 170, A4[1]], [A4[0] - 155, A4[1] - 18], [A4[0], A4[1] - 18], [A4[0], A4[1]]).fill(gold);
+export function footer(doc) {
+  const ink = '#111827';
+  const y = A4[1] - 52;
+  doc.moveTo(108, y).lineTo(A4[0] - MARGIN, y).lineWidth(2).strokeColor(RULE).stroke();
+  const ty = y + 10;
+  doc.font('bold').fontSize(8.5).fillColor(ink).text('contact us', 118, ty, { lineBreak: false });
+  doc.moveTo(170, y + 6).lineTo(170, y + 26).lineWidth(0.8).strokeColor(RULE).stroke();
+  icon(doc, PHONE, 182, ty, 10, ink);
+  doc.font('regular').fontSize(8).fillColor(ink).text(`Phone: ${LETTERHEAD.phone}`, 198, ty + 1, { lineBreak: false });
+  doc.moveTo(318, y + 6).lineTo(318, y + 26).lineWidth(0.8).strokeColor(RULE).stroke();
+  icon(doc, MAIL, 330, ty, 10, ink);
+  doc.font('regular').fontSize(8).fillColor(ink).text(`Email: ${LETTERHEAD.email}`, 346, ty + 1, { lineBreak: false });
 }
 
 // A two-column grid of label/value pairs inside a tinted box
@@ -112,7 +145,10 @@ const PAY_MODE = { bank: 'Bank transfer', upi: 'UPI', cash: 'Cash', other: 'Othe
 export async function renderPayslipPdf(line, settings = {}) {
   const label = line.payType === 'salary' ? 'Salary' : 'Stipend';
   const { doc, done } = startDocument(`Payslip ${line.payslipNumber || line.month}`);
-  letterhead(doc, { title: 'PAYSLIP', lines: [monthLabel(line.month), line.payslipNumber ? `No. ${line.payslipNumber}` : 'Not paid yet'], address: settings.companyAddress });
+  letterhead(doc);
+  doc.font('bold').fontSize(14).fillColor(COLORS.navy).text(`PAYSLIP · ${monthLabel(line.month).toUpperCase()}`, MARGIN, 124, { width: A4[0] - 2 * MARGIN, align: 'center' });
+  doc.font('regular').fontSize(8.5).fillColor(COLORS.soft).text(line.payslipNumber ? `No. ${line.payslipNumber}` : 'Not paid yet', MARGIN, 142, { width: A4[0] - 2 * MARGIN, align: 'center' });
+  doc.y = 162;
 
   let y = detailsBox(doc, [
     ['Name', line.name], ['Employee ID', line.idNumber],
@@ -146,7 +182,8 @@ export async function renderPayslipPdf(line, settings = {}) {
   y += 62;
   if (line.note) doc.font('regular').fontSize(9).fillColor(COLORS.soft).text(`Note: ${line.note}`, MARGIN, y, { width: w });
 
-  footer(doc, 'This is a computer-generated payslip and needs no signature.');
+  doc.font('italic').fontSize(8).fillColor(COLORS.soft).text('This is a computer-generated payslip and needs no signature.', MARGIN, A4[1] - 72, { width: A4[0] - 2 * MARGIN, align: 'center', lineBreak: false });
+  footer(doc);
   doc.end();
   return done;
 }
