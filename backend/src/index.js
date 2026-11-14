@@ -44,6 +44,7 @@ import { buildPortfolioSite, savePortfolio } from './portfolio/generate.js';
 import billingRouter, { startOrderSweep } from './billing/routes.js';
 import { aiBudgetGate, requireFreeUse, interviewFeature } from './billing/gate.js';
 import { startLeoWorker } from './leo/missions/worker.js';
+import { startBlackFriday } from './services/blackFriday.js';
 import { chargeAiUsage, keepAiContext } from './billing/aiContext.js';
 import { issueVerification, verifyEmailToken, resendCooldown, hashToken, frontendUrl, markEmailVerified, verifyThroughProvider, VERIFY_MESSAGES } from './services/emailVerification.js';
 import { assessSignupRisk, isHighRisk, RISK_HIGH } from './services/emailRisk.js';
@@ -2750,6 +2751,8 @@ if (process.env.NODE_ENV !== 'test') {
     if (!process.env.VERCEL) startOrderSweep();
     // Send job alert emails that are due (on Vercel, Vercel Cron calls /api/cron/job-alerts instead)
     if (!process.env.VERCEL) startJobAlerts();
+    // Black Friday week (19–30 Nov 2026): creates the BLACKFRIDAY coupon and emails users every 48 hours
+    if (!process.env.VERCEL) startBlackFriday();
     // Leo: picks up missions left running by a restart and sends reminders that are due
     if (!process.env.VERCEL) startLeoWorker();
     if (process.env.INLINE_WORKERS === 'true' && !process.env.VERCEL) {

@@ -17,11 +17,13 @@ import {
 import type { SavedWork } from '../types/api';
 import { readUser } from '../lib/currentUser';
 import { siteOrigin } from '../lib/hosts';
-import { isBhaiDooj } from '../lib/festive';
+import { BLACK_FRIDAY, isBhaiDooj, isBlackFriday } from '../lib/festive';
 import './Chat.css';
 
 // Bhai Dooj greeting on the welcome screen, until midnight IST on 11 Nov (lib/festive.ts)
 const FESTIVE = isBhaiDooj();
+// Black Friday week dressing on the welcome screen, 19–30 Nov 2026 IST (lib/festive.ts)
+const BLACK_FRIDAY_ON = isBlackFriday();
 
 // The ChatGPT-style home of app.cvmind.in: the user types what they want and Leo does it, showing
 // each tool's result as a card in the thread. Signed-out visitors get a few free messages a day.
@@ -552,8 +554,16 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork
         </header>
 
         {empty ? (
-          <div className="lx-welcome">
+          <div className={`lx-welcome${BLACK_FRIDAY_ON ? ' is-bf' : ''}`}>
+            {BLACK_FRIDAY_ON && (
+              <a className="lx-bf" href={`${siteOrigin()}/pricing`}>
+                <span className="lx-bf-tag">Black Friday</span>
+                <span className="lx-bf-text"><b>{BLACK_FRIDAY.percent}% off</b> Pro with code <code>{BLACK_FRIDAY.code}</code></span>
+                <span className="lx-bf-go" aria-hidden="true">→</span>
+              </a>
+            )}
             <div className="lx-hero-leo">
+              {BLACK_FRIDAY_ON && <span className="lx-bf-badge" aria-hidden="true">50%<small>OFF</small></span>}
               <LeoAvatar mood={sending ? 'thinking' : 'idle'} size={112} />
             </div>
             <h1>{FESTIVE ? 'Happy Bhai Dooj' : greeting()}{firstName ? `, ${firstName}` : ''}</h1>

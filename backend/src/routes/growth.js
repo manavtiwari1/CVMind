@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import express from 'express';
+import { ensureBlackFridayCoupon, runBlackFridayMail } from '../services/blackFriday.js';
 import { requireUser, optionalUser } from '../services/authToken.js';
 import { requireFreeUse } from '../billing/gate.js';
 import { isPro } from '../billing/service.js';
@@ -143,6 +144,15 @@ export function createGrowthRouter({ loadWork = defaultLoadWork, findUser = defa
   });
   router.get('/api/cron/job-alerts', runAlerts);
   router.post('/api/cron/job-alerts', runAlerts);
+
+  // Black Friday emails, for hosts without a long-running server (services/blackFriday.js)
+  const runBlackFriday = asyncRoute(async (req, res) => {
+    if (!cronAllowed(req)) return res.status(401).json({ success: false, error: 'Not allowed.' });
+    await ensureBlackFridayCoupon();
+    res.json({ success: true, ...(await runBlackFridayMail()) });
+  });
+  router.get('/api/cron/black-friday', runBlackFriday);
+  router.post('/api/cron/black-friday', runBlackFriday);
 
   // ── Offer negotiation ────────────────────────────────────────────────────
   router.post('/api/negotiation', requireUser, requireFreeUse('negotiation'), asyncRoute(async (req, res) => {
