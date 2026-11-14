@@ -129,3 +129,56 @@ const payLineSchema = new Schema({
 payLineSchema.index({ runId: 1, adminId: 1 }, { unique: true });
 payLineSchema.index({ adminId: 1, month: -1 });
 export const ErpPayLine = mongoose.models.ErpPayLine || mongoose.model('ErpPayLine', payLineSchema);
+
+// ── Letters & certificates ─────────────────────────────────────────────────
+export const LETTER_TYPES = ['offer', 'appointment', 'completion', 'experience', 'relieving', 'pay_certificate', 'recommendation'];
+const letterSchema = new Schema({
+  // CVM/LTR/2026/0001
+  number: { type: String, required: true, unique: true },
+  // The code in the public verify link (cvmind.in/verify/<code>); random, so links can't be guessed
+  code: { type: String, required: true, unique: true },
+  type: { type: String, enum: LETTER_TYPES, required: true },
+  adminId: { type: Id, default: null },
+  // Hiring: an offer to someone who isn't on the team yet
+  candidateId: { type: Id, default: null },
+  recipientName: { type: String, required: true },
+  recipientEmail: { type: String, default: '' },
+  title: { type: String, required: true },
+  body: { type: String, required: true },
+  issuedOn: { type: String, required: true },
+  issuedBy: { type: Id, default: null },
+  issuedByName: { type: String, default: '' },
+  signatoryName: { type: String, default: '' },
+  signatoryTitle: { type: String, default: '' },
+  status: { type: String, enum: ['valid', 'revoked'], default: 'valid' },
+  revokedAt: { type: Date, default: null },
+  revokedReason: { type: String, default: '' },
+  emailedAt: { type: Date, default: null }
+}, { timestamps: true });
+letterSchema.index({ adminId: 1, createdAt: -1 });
+letterSchema.index({ candidateId: 1 });
+export const ErpLetter = mongoose.models.ErpLetter || mongoose.model('ErpLetter', letterSchema);
+
+// A template edited by leadership; letter types without one use the built-in text (erp/letters.js)
+const letterTemplateSchema = new Schema({
+  type: { type: String, enum: LETTER_TYPES, required: true, unique: true },
+  title: { type: String, required: true },
+  body: { type: String, required: true },
+  updatedByName: { type: String, default: '' }
+}, { timestamps: true });
+export const ErpLetterTemplate = mongoose.models.ErpLetterTemplate || mongoose.model('ErpLetterTemplate', letterTemplateSchema);
+
+// A member asks HR for a letter from CVMind Team
+const letterRequestSchema = new Schema({
+  adminId: { type: Id, required: true },
+  type: { type: String, enum: LETTER_TYPES, required: true },
+  note: { type: String, default: '' },
+  status: { type: String, enum: ['pending', 'issued', 'declined'], default: 'pending' },
+  letterId: { type: Id, default: null },
+  reply: { type: String, default: '' },
+  decidedByName: { type: String, default: '' },
+  decidedAt: { type: Date, default: null }
+}, { timestamps: true });
+letterRequestSchema.index({ status: 1, createdAt: -1 });
+letterRequestSchema.index({ adminId: 1, createdAt: -1 });
+export const ErpLetterRequest = mongoose.models.ErpLetterRequest || mongoose.model('ErpLetterRequest', letterRequestSchema);

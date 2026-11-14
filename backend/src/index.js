@@ -29,6 +29,7 @@ import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, gene
 import { getPublicStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, updateUserFields, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, saveLinkedinPostLog, getWorkById, saveProofreadLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, hasAutoApplyAccess } from './db.js';
 import adminRouter from './admin/router.js';
 import adminPublicRoutes from './admin/publicRoutes.js';
+import erpPublicRoutes from './erp/publicRoutes.js';
 import { featureGate, signupsEnabled, getSettings } from './admin/settings.js';
 import { metricsMiddleware } from './admin/metrics.js';
 import { installSessionValidator, newSessionId, recordSession, revokeAllSessions, invalidateSessionCache } from './admin/sessions.js';
@@ -2687,6 +2688,8 @@ app.use('/api/admin', adminRouter);
 app.use('/_/backend/api/admin', adminRouter);
 app.use('/_/backend', adminPublicRoutes);
 app.use('/', adminPublicRoutes);
+app.use('/_/backend', erpPublicRoutes);
+app.use('/', erpPublicRoutes);
 app.use('/_/backend', billingRouter);
 app.use('/', billingRouter);
 app.use('/_/backend', growthRouter);

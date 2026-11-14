@@ -4,7 +4,10 @@ import { clean, handle, httpError, isId } from '../../admin/util.js';
 import { requireTeam, sameId } from '../../admin/team/access.js';
 import { softDeleteFiles } from '../../admin/team/files.js';
 import { TeamFile } from '../../admin/team/models.js';
-import { ErpPayHistory, ErpPayLine, ErpProfile } from '../models.js';
+import { ErpLetter, ErpLetterRequest, ErpPayHistory, ErpPayLine, ErpProfile, LETTER_TYPES } from '../models.js';
+import { LETTER_LABELS, publicLetter, renderLetterPdf } from '../letters.js';
+import { hrManagerIds } from '../jobs.js';
+import { notify } from '../../admin/team/notify.js';
 import { publicLine } from '../payroll.js';
 import { renderPayslipPdf } from '../pdf.js';
 import { getSettings } from '../settings.js';
@@ -86,6 +89,39 @@ router.get('/me/payslips/:id/pdf', team, handle(async (req, res) => {
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="payslip-${line.month}.pdf"`);
   res.send(pdf);
+}));
+
+// Profile → Documents: letters CVMind has issued to me, and my requests
+router.get('/me/letters', team, handle(async (req, res) => {
+  const [letters, requests] = await Promise.all([
+    ErpLetter.find({ adminId: req.admin.id }).sort({ createdAt: -1 }).lean(),
+    ErpLetterRequest.find({ adminId: req.admin.id }).sort({ createdAt: -1 }).limit(20).lean()
+  ]);
+  res.json({
+    success: true,
+    data: letters.map((l) => { const p = publicLetter(l); delete p.body; return p; }),
+    requests: requests.map((r) => ({ id: String(r._id), type: r.type, typeLabel: LETTER_LABELS[r.type], note: r.note, status: r.status, reply: r.reply, createdAt: r.createdAt })),
+    types: LETTER_TYPES.filter((t) => t !== 'offer').map((t) => ({ value: t, label: LETTER_LABELS[t] }))
+  });
+}));
+
+router.get('/me/letters/:id/pdf', team, handle(async (req, res) => {
+  if (!isId(req.params.id)) throw httpError(404, 'Letter not found.');
+  const letter = await ErpLetter.findOne({ _id: req.params.id, adminId: req.admin.id }).lean();
+  if (!letter) throw httpError(404, 'Letter not found.');
+  const pdf = await renderLetterPdf(letter, await getSettings());
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${letter.number.replace(/\//g, '-')}.pdf"`);
+  res.send(pdf);
+}));
+
+router.post('/me/letter-requests', team, handle(async (req, res) => {
+  const type = req.body?.type;
+  if (!LETTER_TYPES.includes(type) || type === 'offer') throw httpError(400, 'Pick the letter you need.');
+  if (await ErpLetterRequest.exists({ adminId: req.admin.id, type, status: 'pending' })) throw httpError(409, 'You already asked for this letter. HR will get to it soon.');
+  const row = await ErpLetterRequest.create({ adminId: req.admin.id, type, note: clean(req.body?.note, 500) });
+  await notify(await hrManagerIds(), { type: 'letter_requested', actorId: req.admin.id, refType: 'letter_request', refId: row._id, preview: LETTER_LABELS[type] });
+  res.json({ success: true });
 }));
 
 export default router;

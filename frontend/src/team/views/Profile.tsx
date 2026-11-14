@@ -12,6 +12,7 @@ import { Spinner } from '../ui';
 import { fileUrl, uploadFile } from '../upload';
 import { MyHrFile } from './MyHrFile';
 import { MyPayslips } from './MyPayslips';
+import { MyLetters } from './MyLetters';
 
 // Grey circle with initials, shown in the photo dialog when there is no photo yet
 const placeholder = (name: string) => {
@@ -142,6 +143,7 @@ export default function Profile() {
         <div><button type="submit" className="tm-btn primary" disabled={busy === 'profile'}>{busy === 'profile' && <Spinner size={14} />} Save</button></div>
       </form>
       <MyPayslips />
+      <MyLetters />
       <MyHrFile myId={me.id} />
       <PushCard onAccount={apply} />
       <PasswordCard />

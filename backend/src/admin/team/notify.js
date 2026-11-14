@@ -70,7 +70,7 @@ export function notificationPath(n) {
   if (n.refType === 'leave') return '#/checkin?tab=leave';
   if (n.refType === 'announcement' && n.refId) return `#/announcements/${n.refId}`;
   if (n.refType === 'hr') return '#/people';
-  if (n.refType === 'payslip') return '#/profile';
+  if (n.refType === 'payslip' || n.refType === 'letter') return '#/profile';
   if (n.channelId && n.refType === 'message' && n.refId) return `#/chat/${n.channelId}?m=${n.refId}`;
   if (n.channelId) return `#/chat/${n.channelId}`;
   return '#/home';
@@ -124,7 +124,10 @@ const LABELS = {
   meeting_recording: 'saved a meeting recording',
   hr_end_soon: 'Internship or contract ends in 7 days',
   hr_probation_soon: 'Probation ends in 7 days',
-  payslip_ready: 'paid you. Your payslip is ready'
+  payslip_ready: 'paid you. Your payslip is ready',
+  letter_issued: 'issued you a letter',
+  letter_declined: 'declined your letter request',
+  letter_requested: 'asked HR for a letter'
 };
 export const notificationLabel = (type) => LABELS[type] || 'New activity';
 

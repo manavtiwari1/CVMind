@@ -5775,6 +5775,580 @@
    "gridfs": false
   },
   {
+   "name": "erpletterrequests",
+   "kind": "root",
+   "parent": null,
+   "columns": [
+    {
+     "name": "id",
+     "path": [
+      "_id"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": false,
+     "ref": null
+    },
+    {
+     "name": "admin_id",
+     "path": [
+      "adminId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "type",
+     "path": [
+      "type"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(64)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "offer",
+      "appointment",
+      "completion",
+      "experience",
+      "relieving",
+      "pay_certificate",
+      "recommendation"
+     ]
+    },
+    {
+     "name": "note",
+     "path": [
+      "note"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "status",
+     "path": [
+      "status"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "pending",
+      "issued",
+      "declined"
+     ]
+    },
+    {
+     "name": "letter_id",
+     "path": [
+      "letterId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "reply",
+     "path": [
+      "reply"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "decided_by_name",
+     "path": [
+      "decidedByName"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "decided_at",
+     "path": [
+      "decidedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_at",
+     "path": [
+      "createdAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "updated_at",
+     "path": [
+      "updatedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "doc_version",
+     "path": [
+      "__v"
+     ],
+     "mode": "Number",
+     "type": "INT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "_extra",
+     "mode": "extra",
+     "type": "JSON",
+     "nullable": true
+    }
+   ],
+   "children": [],
+   "indexes": [
+    {
+     "name": "ix_status_created_at",
+     "unique": false,
+     "parts": [
+      "`status`",
+      "`created_at`"
+     ]
+    },
+    {
+     "name": "ix_admin_id_created_at",
+     "unique": false,
+     "parts": [
+      "`admin_id`",
+      "`created_at`"
+     ]
+    }
+   ],
+   "collection": "erpletterrequests",
+   "models": [
+    "ErpLetterRequest"
+   ],
+   "docs": 0,
+   "gridfs": false
+  },
+  {
+   "name": "erpletters",
+   "kind": "root",
+   "parent": null,
+   "columns": [
+    {
+     "name": "id",
+     "path": [
+      "_id"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": false,
+     "ref": null
+    },
+    {
+     "name": "number",
+     "path": [
+      "number"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "code",
+     "path": [
+      "code"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "type",
+     "path": [
+      "type"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(64)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "offer",
+      "appointment",
+      "completion",
+      "experience",
+      "relieving",
+      "pay_certificate",
+      "recommendation"
+     ]
+    },
+    {
+     "name": "admin_id",
+     "path": [
+      "adminId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "candidate_id",
+     "path": [
+      "candidateId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "recipient_name",
+     "path": [
+      "recipientName"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "recipient_email",
+     "path": [
+      "recipientEmail"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "title",
+     "path": [
+      "title"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "body",
+     "path": [
+      "body"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "issued_on",
+     "path": [
+      "issuedOn"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "issued_by",
+     "path": [
+      "issuedBy"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "issued_by_name",
+     "path": [
+      "issuedByName"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "signatory_name",
+     "path": [
+      "signatoryName"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "signatory_title",
+     "path": [
+      "signatoryTitle"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "status",
+     "path": [
+      "status"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(64)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "valid",
+      "revoked"
+     ]
+    },
+    {
+     "name": "revoked_at",
+     "path": [
+      "revokedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "revoked_reason",
+     "path": [
+      "revokedReason"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "emailed_at",
+     "path": [
+      "emailedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_at",
+     "path": [
+      "createdAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "updated_at",
+     "path": [
+      "updatedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "doc_version",
+     "path": [
+      "__v"
+     ],
+     "mode": "Number",
+     "type": "INT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "_extra",
+     "mode": "extra",
+     "type": "JSON",
+     "nullable": true
+    }
+   ],
+   "children": [],
+   "indexes": [
+    {
+     "name": "uq_number",
+     "unique": true,
+     "parts": [
+      "`number`"
+     ]
+    },
+    {
+     "name": "uq_code",
+     "unique": true,
+     "parts": [
+      "`code`"
+     ]
+    },
+    {
+     "name": "ix_admin_id_created_at",
+     "unique": false,
+     "parts": [
+      "`admin_id`",
+      "`created_at`"
+     ]
+    },
+    {
+     "name": "ix_candidate_id",
+     "unique": false,
+     "parts": [
+      "`candidate_id`"
+     ]
+    }
+   ],
+   "collection": "erpletters",
+   "models": [
+    "ErpLetter"
+   ],
+   "docs": 0,
+   "gridfs": false
+  },
+  {
+   "name": "erplettertemplates",
+   "kind": "root",
+   "parent": null,
+   "columns": [
+    {
+     "name": "id",
+     "path": [
+      "_id"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": false,
+     "ref": null
+    },
+    {
+     "name": "type",
+     "path": [
+      "type"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "offer",
+      "appointment",
+      "completion",
+      "experience",
+      "relieving",
+      "pay_certificate",
+      "recommendation"
+     ]
+    },
+    {
+     "name": "title",
+     "path": [
+      "title"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "body",
+     "path": [
+      "body"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "updated_by_name",
+     "path": [
+      "updatedByName"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_at",
+     "path": [
+      "createdAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "updated_at",
+     "path": [
+      "updatedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "doc_version",
+     "path": [
+      "__v"
+     ],
+     "mode": "Number",
+     "type": "INT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "_extra",
+     "mode": "extra",
+     "type": "JSON",
+     "nullable": true
+    }
+   ],
+   "children": [],
+   "indexes": [
+    {
+     "name": "uq_type",
+     "unique": true,
+     "parts": [
+      "`type`"
+     ]
+    }
+   ],
+   "collection": "erplettertemplates",
+   "models": [
+    "ErpLetterTemplate"
+   ],
+   "docs": 0,
+   "gridfs": false
+  },
+  {
    "name": "erppayhistories",
    "kind": "root",
    "parent": null,
