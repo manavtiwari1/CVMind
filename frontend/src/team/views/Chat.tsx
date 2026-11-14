@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent } from 'react';
-import { ArrowDown, BellOff, Bell, CheckSquare, Hash, Lock, LogOut, MessageSquare, MoreHorizontal, Pencil, Pin, Send, Sparkles, Trash2, UserPlus, Users, Video, X } from 'lucide-react';
+import { ArrowDown, BellOff, Bell, Bookmark, BookmarkCheck, CheckSquare, Hash, Lock, LogOut, MessageSquare, MoreHorizontal, Pencil, Pin, Send, Sparkles, Trash2, UserPlus, Users, Video, X } from 'lucide-react';
 import { api } from '../api';
 import { confirmDialog } from '../confirm';
 import type { Channel, Message } from '../api';
@@ -12,10 +12,12 @@ import { useAttachments } from '../attachments';
 import { ago, clock, dayLabel } from '../format';
 import { AttachButton, Avatar, Empty, EmojiPicker, FileList, MentionInput, Modal, PeoplePicker, PendingFiles, RichText, Spinner } from '../ui';
 import TaskForm from './TaskForm';
+import { loadSaved, toggleSaved, useSaved } from '../saved';
 import { draftTask, LeoSummaryPanel } from './Leo';
 import type { TaskDraft } from './Leo';
 
 export default function Chat({ channelId, params }: { channelId: string; params: Record<string, string> }) {
+  loadSaved();
   if (!channelId || params.browse) return <Browse />;
   return <ChannelView key={channelId} channelId={channelId} params={params} />;
 }
@@ -348,6 +350,8 @@ function MessageItem({ message: m, grouped, channel, highlight, inThread, onCrea
       toast(err instanceof Error ? err.message : 'Could not save.', 'error');
     }
   };
+  const saved = useSaved(m.id);
+  const save = () => toggleSaved(m.id, !saved).then(() => toast(saved ? 'Removed from saved' : 'Saved for later')).catch((err: Error) => toast(err.message, 'error'));
   const pin = () => api(`/messages/${m.id}/pin`, { method: 'POST', body: { pinned: !m.pinnedAt } }).then(() => toast(m.pinnedAt ? 'Unpinned' : 'Pinned')).catch((err: Error) => toast(err.message, 'error'));
 
   if (m.kind === 'system' && m.meetingId) {
@@ -416,6 +420,7 @@ function MessageItem({ message: m, grouped, channel, highlight, inThread, onCrea
               <div className="tm-menu" role="menu" onMouseLeave={() => setMenu(false)}>
                 {onCreateTask && !me.teamOnly && <button type="button" role="menuitem" onClick={() => { setMenu(false); onCreateTask(); }}><CheckSquare size={14} /> Create task</button>}
                 {onDraftTask && !me.teamOnly && m.body && <button type="button" role="menuitem" onClick={() => { setMenu(false); onDraftTask(); }}><Sparkles size={14} /> Draft task with Leo</button>}
+                <button type="button" role="menuitem" onClick={() => { setMenu(false); save(); }}>{saved ? <BookmarkCheck size={14} /> : <Bookmark size={14} />} {saved ? 'Remove from saved' : 'Save for later'}</button>
                 {!inThread && <button type="button" role="menuitem" onClick={() => { setMenu(false); pin(); }}><Pin size={14} /> {m.pinnedAt ? 'Unpin' : 'Pin to channel'}</button>}
                 {mine && <button type="button" role="menuitem" onClick={() => { setMenu(false); setEditing(true); }}><Pencil size={14} /> Edit</button>}
                 {(mine || manager) && <button type="button" role="menuitem" className="danger" onClick={() => { setMenu(false); remove(); }}><Trash2 size={14} /> Delete</button>}

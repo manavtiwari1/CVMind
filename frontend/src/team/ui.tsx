@@ -52,6 +52,9 @@ export function Avatar({ person, size = 32, presence = false }: { person?: Perso
 export function PresenceLabel({ person }: { person: Person }) {
   if (person.presence === 'online') return <span className="tm-muted">Online</span>;
   if (person.presence === 'away') return <span className="tm-muted">Away</span>;
+  if (person.presence === 'busy') return <span className="tm-muted">Busy</span>;
+  if (person.presence === 'dnd') return <span className="tm-muted">Do not disturb</span>;
+  if (person.presence === 'in_meeting') return <span className="tm-muted">In a meeting</span>;
   return <span className="tm-muted">{person.lastSeenAt ? `Last seen ${ago(person.lastSeenAt)}` : 'Offline'}</span>;
 }
 

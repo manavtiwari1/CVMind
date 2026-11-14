@@ -50,6 +50,8 @@ export function toPublicAdmin(admin) {
     notifyEmail: admin.notifyEmail !== false,
     notifyPush: admin.notifyPush !== false,
     statusText: admin.statusText || '',
+    availability: admin.availability || 'auto',
+    availabilityUntil: admin.availabilityUntil || null,
     avatarFileId: admin.avatarFileId ? String(admin.avatarFileId) : null,
     idNumber: admin.idNumber || '',
     phone: admin.phone || '',

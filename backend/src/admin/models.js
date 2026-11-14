@@ -22,6 +22,9 @@ const adminUserSchema = new Schema({
   notifyEmail: { type: Boolean, default: true },
   notifyPush: { type: Boolean, default: true },
   statusText: { type: String, default: '' },
+  // Status set by hand in CVMind Team: auto (online/away), busy, dnd (do not disturb) or away, optionally until a time
+  availability: { type: String, default: 'auto' },
+  availabilityUntil: { type: Date, default: null },
   avatarFileId: { type: Schema.Types.ObjectId, default: null },
   // ID card: CVM/EMP/0001 or CVM/INTERNS/0001, given by team/idcard.js
   idNumber: { type: String, default: '' },

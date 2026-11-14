@@ -5,7 +5,7 @@ import { audit } from '../../audit.js';
 import { clean, handle, httpError, isId } from '../../util.js';
 import { channelFor, isManager, oid, readableChannelIds, requireTeam, sameId } from '../access.js';
 import { attachFiles, softDeleteFiles } from '../files.js';
-import { TeamChannel, TeamChannelMember, TeamMessage } from '../models.js';
+import { TeamChannel, TeamChannelMember, TeamMessage, TeamSavedMessage } from '../models.js';
 import { channelLabel, notify, parseMentions, teamPeopleFilter } from '../notify.js';
 import { emitToChannel, emitToTeam, joinChannelRoom, leaveChannelRoom } from '../realtime.js';
 import { filesFor, publicMessage } from '../serialize.js';
@@ -409,6 +409,38 @@ router.post('/messages/:id/reactions', team, handle(async (req, res) => {
   await message.save();
   emitToChannel(String(channel._id), 'message.updated', { channelId: String(channel._id), messageId: String(message._id), parentId: message.parentId ? String(message.parentId) : null });
   res.json({ success: true, reacted: !has });
+}));
+
+// ── Saved for later ──────────────────────────────────────────────────────────
+router.post('/messages/:id/save', team, handle(async (req, res) => {
+  const { message, channel } = await messageFor(req.admin, req.params.id);
+  if (message.deletedAt) throw httpError(400, 'This message was deleted.');
+  const save = req.body?.saved !== false;
+  if (save) {
+    if (await TeamSavedMessage.countDocuments({ adminId: req.admin.id }) >= 500) throw httpError(400, 'You can save up to 500 messages. Remove some first.');
+    await TeamSavedMessage.updateOne({ adminId: req.admin.id, messageId: message._id }, { $setOnInsert: { channelId: channel._id } }, { upsert: true });
+  } else {
+    await TeamSavedMessage.deleteOne({ adminId: req.admin.id, messageId: message._id });
+  }
+  res.json({ success: true, saved: save });
+}));
+
+// My saved messages, newest saved first, from channels I can still read
+router.get('/saved', team, handle(async (req, res) => {
+  const saved = await TeamSavedMessage.find({ adminId: req.admin.id }).sort({ createdAt: -1 }).limit(200).lean();
+  const readable = new Set((await readableChannelIds(req.admin)).map(String));
+  const ids = saved.filter((s) => readable.has(String(s.channelId))).map((s) => s.messageId);
+  const rows = await TeamMessage.find({ _id: { $in: ids }, deletedAt: null }).lean();
+  const order = new Map(ids.map((id, i) => [String(id), i]));
+  rows.sort((a, b) => order.get(String(a._id)) - order.get(String(b._id)));
+  const files = await filesFor(rows);
+  res.json({ success: true, data: rows.map((m) => ({ ...publicMessage(m, files), saved: true })) });
+}));
+
+// Ids of my saved messages, so the chat can show which ones are saved
+router.get('/saved/ids', team, handle(async (req, res) => {
+  const rows = await TeamSavedMessage.find({ adminId: req.admin.id }, { messageId: 1 }).lean();
+  res.json({ success: true, data: rows.map((r) => String(r.messageId)) });
 }));
 
 router.post('/messages/:id/pin', team, handle(async (req, res) => {

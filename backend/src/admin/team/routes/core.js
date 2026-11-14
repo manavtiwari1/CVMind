@@ -11,7 +11,7 @@ import { attachFiles, canOpenFile, checkUploadScope, newFileKey, publicFile, sof
 import { TeamAnnouncement, TeamChannel, TeamChannelMember, TeamFile, TeamInvitation, TeamMessage, TeamNotification, TeamPushSubscription, TeamSubmission, TeamTask } from '../models.js';
 import { pushPublicKey } from '../push.js';
 import { teamPeopleFilter } from '../notify.js';
-import { presenceOf } from '../realtime.js';
+import { availabilityOf, AVAILABILITY, presenceOf, setAvailability } from '../realtime.js';
 import { filesFor, publicNotification, publicTask } from '../serialize.js';
 import { FILE_TYPES, IMAGE_TYPES, MAX_AVATAR_BYTES, MAX_FILE_BYTES, MAX_RECORDING_BYTES, RECORDING_TYPES, fileTypeError, headObject, presignDownload, presignUpload, removeObject } from '../storage.js';
 import { ensureGeneral } from './chat.js';
@@ -52,6 +52,7 @@ function publicPerson(a) {
     phone: a.phone || '',
     department: a.department || '',
     presence: presenceOf(a._id),
+    availability: availabilityOf(a._id),
     lastSeenAt: a.lastSeenAt || null
   };
 }
@@ -97,6 +98,15 @@ router.patch('/me', profile, handle(async (req, res) => {
   if (typeof req.body?.notifyEmail === 'boolean') update.notifyEmail = req.body.notifyEmail;
   if (typeof req.body?.notifyPush === 'boolean') update.notifyPush = req.body.notifyPush;
   if (req.body?.statusText !== undefined) update.statusText = clean(req.body.statusText, 80);
+  let availabilityChanged = false;
+  if (req.body?.availability !== undefined) {
+    if (!AVAILABILITY.includes(req.body.availability)) throw httpError(400, 'Pick a status.');
+    const minutes = Number(req.body.forMinutes) || 0;
+    if (minutes < 0 || minutes > 7 * 24 * 60) throw httpError(400, 'Pick how long, up to a week.');
+    update.availability = req.body.availability;
+    update.availabilityUntil = req.body.availability !== 'auto' && minutes ? new Date(Date.now() + minutes * 60 * 1000) : null;
+    availabilityChanged = true;
+  }
   if (req.body?.phone !== undefined) {
     const phone = clean(req.body.phone, 20);
     if (phone && !/^\+?[0-9][0-9 -]{6,18}$/.test(phone)) throw httpError(400, 'Enter a valid phone number.');
@@ -115,6 +125,7 @@ router.patch('/me', profile, handle(async (req, res) => {
   }
   const admin = await AdminUser.findByIdAndUpdate(req.admin.id, update, { new: true }).lean();
   invalidateAdminCache(req.admin.id);
+  if (availabilityChanged) setAvailability(req.admin.id, update.availability, update.availabilityUntil);
   res.json({ success: true, admin: toPublicAdmin(admin) });
 }));
 

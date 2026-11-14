@@ -317,6 +317,16 @@ const meetingCaptionSchema = new Schema({
 meetingCaptionSchema.index({ meetingId: 1, at: 1 });
 export const TeamMeetingCaption = mongoose.models.TeamMeetingCaption || mongoose.model('TeamMeetingCaption', meetingCaptionSchema);
 
+// Messages someone saved for later ("Saved" in CVMind Team). Private to that person.
+const savedMessageSchema = new Schema({
+  adminId: { type: Id, required: true },
+  messageId: { type: Id, required: true },
+  channelId: { type: Id, required: true }
+}, { timestamps: true });
+savedMessageSchema.index({ adminId: 1, messageId: 1 }, { unique: true });
+savedMessageSchema.index({ adminId: 1, createdAt: -1 });
+export const TeamSavedMessage = mongoose.models.TeamSavedMessage || mongoose.model('TeamSavedMessage', savedMessageSchema);
+
 // Past members: people whose time at CVMind ended (internship completed, resigned, …). Either made
 // from a current account ("mark as left", which keeps adminId) or typed in by hand for older records.
 export const PAST_REASONS = ['internship_completed', 'resigned', 'contract_ended', 'terminated', 'other'];
