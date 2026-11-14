@@ -71,3 +71,61 @@ const payHistorySchema = new Schema({
 }, { timestamps: true });
 payHistorySchema.index({ adminId: 1, effectiveFrom: -1 });
 export const ErpPayHistory = mongoose.models.ErpPayHistory || mongoose.model('ErpPayHistory', payHistorySchema);
+
+// ── Payroll ────────────────────────────────────────────────────────────────
+// One run per month ("2026-11"). Draft → approved (numbers locked) → each line marked paid.
+export const RUN_STATUSES = ['draft', 'approved', 'paid'];
+const payRunSchema = new Schema({
+  month: { type: String, required: true, unique: true },
+  status: { type: String, enum: RUN_STATUSES, default: 'draft' },
+  createdBy: { type: Id, default: null },
+  createdByName: { type: String, default: '' },
+  approvedBy: { type: Id, default: null },
+  approvedByName: { type: String, default: '' },
+  approvedAt: { type: Date, default: null },
+  calculatedAt: { type: Date, default: null }
+}, { timestamps: true });
+export const ErpPayRun = mongoose.models.ErpPayRun || mongoose.model('ErpPayRun', payRunSchema);
+
+export const PAYMENT_MODES = ['bank', 'upi', 'cash', 'other'];
+const payLineSchema = new Schema({
+  runId: { type: Id, required: true },
+  month: { type: String, required: true },
+  adminId: { type: Id, required: true },
+  // A copy of who they were this month, so the payslip never changes later
+  name: { type: String, default: '' },
+  idNumber: { type: String, default: '' },
+  designation: { type: String, default: '' },
+  department: { type: String, default: '' },
+  employmentType: { type: String, default: '' },
+  payType: { type: String, default: 'stipend' },
+  monthlyAmount: { type: Number, default: 0 },
+  // Days (working days only: Mon–Sat by default, minus company holidays)
+  monthWorkingDays: { type: Number, default: 0 },
+  workingDays: { type: Number, default: 0 },
+  presentDays: { type: Number, default: 0 },
+  wfhDays: { type: Number, default: 0 },
+  paidLeaveDays: { type: Number, default: 0 },
+  unpaidLeaveDays: { type: Number, default: 0 },
+  absentDays: { type: Number, default: 0 },
+  unpaidDays: { type: Number, default: 0 },
+  // Money (INR)
+  basePay: { type: Number, default: 0 },
+  bonus: { type: Number, default: 0 },
+  deductions: { type: Number, default: 0 },
+  reimbursements: { type: Number, default: 0 },
+  netPay: { type: Number, default: 0 },
+  note: { type: String, default: '' },
+  // Payment
+  paidAt: { type: Date, default: null },
+  paidOn: { type: String, default: '' },
+  paidMode: { type: String, default: '' },
+  paidRef: { type: String, default: '' },
+  paidByName: { type: String, default: '' },
+  payslipNumber: { type: String, default: '' },
+  bankAccountLast4: { type: String, default: '' },
+  upiId: { type: String, default: '' }
+}, { timestamps: true });
+payLineSchema.index({ runId: 1, adminId: 1 }, { unique: true });
+payLineSchema.index({ adminId: 1, month: -1 });
+export const ErpPayLine = mongoose.models.ErpPayLine || mongoose.model('ErpPayLine', payLineSchema);

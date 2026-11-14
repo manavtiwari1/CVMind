@@ -34,7 +34,9 @@ const SECTIONS: Record<string, LazyExoticComponent<ComponentType>> = {
   settings: lazy(() => import('./sections/AppConfig')),
   team: lazy(() => import('./sections/Team')),
   'team-workspace': lazy(() => import('./sections/TeamWorkspace')),
-  'erp-people': lazy(() => import('./sections/ErpPeople'))
+  'erp-people': lazy(() => import('./sections/ErpPeople')),
+  'erp-payroll': lazy(() => import('./sections/ErpPayroll')),
+  'erp-settings': lazy(() => import('./sections/ErpSettings'))
 };
 
 // #users/abc?tab=x → { section: 'users', params: { id: 'abc', tab: 'x' } }

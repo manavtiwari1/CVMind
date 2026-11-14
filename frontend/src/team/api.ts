@@ -315,3 +315,29 @@ export async function api<T = Record<string, unknown>>(path: string, options: { 
   }
   return data as T;
 }
+
+// Saves a file the server sends (a payslip or letter PDF) under the name it picks
+export async function downloadFile(path: string, fallbackName: string) {
+  const token = currentToken();
+  let res: Response;
+  try {
+    res = await fetch(`${TEAM_API}/api/admin/team${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  } catch {
+    throw new ApiError('Could not reach CVMind Team. Check your connection and try again.', 0);
+  }
+  if (!res.ok) {
+    let message = `Download failed (${res.status}).`;
+    try { message = (await res.json()).error || message; } catch { /* not JSON */ }
+    throw new ApiError(message, res.status);
+  }
+  const blob = await res.blob();
+  const name = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') || '')?.[1] || fallbackName;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

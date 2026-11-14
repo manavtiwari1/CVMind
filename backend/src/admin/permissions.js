@@ -50,6 +50,11 @@ export const ROLES = {
     description: 'Payments, refunds, coupons and exports.',
     permissions: ['dashboard.view', 'users.view', 'payments.view', 'payments.manage', 'coupons.manage', 'reports.export']
   },
+  hr: {
+    label: 'HR',
+    description: 'HR files, payroll, letters, expenses, hiring and assets. Pay runs are approved by leadership.',
+    permissions: ['dashboard.view', 'hr.view', 'hr.manage']
+  },
   content: {
     label: 'Content',
     description: 'Site content, announcements and moderation.',

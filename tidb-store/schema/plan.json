@@ -5920,6 +5920,558 @@
    "gridfs": false
   },
   {
+   "name": "erppaylines",
+   "kind": "root",
+   "parent": null,
+   "columns": [
+    {
+     "name": "id",
+     "path": [
+      "_id"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": false,
+     "ref": null
+    },
+    {
+     "name": "run_id",
+     "path": [
+      "runId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "month",
+     "path": [
+      "month"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "admin_id",
+     "path": [
+      "adminId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "name",
+     "path": [
+      "name"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "id_number",
+     "path": [
+      "idNumber"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "designation",
+     "path": [
+      "designation"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "department",
+     "path": [
+      "department"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "employment_type",
+     "path": [
+      "employmentType"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "pay_type",
+     "path": [
+      "payType"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "monthly_amount",
+     "path": [
+      "monthlyAmount"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "month_working_days",
+     "path": [
+      "monthWorkingDays"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "working_days",
+     "path": [
+      "workingDays"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "present_days",
+     "path": [
+      "presentDays"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "wfh_days",
+     "path": [
+      "wfhDays"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "paid_leave_days",
+     "path": [
+      "paidLeaveDays"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "unpaid_leave_days",
+     "path": [
+      "unpaidLeaveDays"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "absent_days",
+     "path": [
+      "absentDays"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "unpaid_days",
+     "path": [
+      "unpaidDays"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "base_pay",
+     "path": [
+      "basePay"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "bonus",
+     "path": [
+      "bonus"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "deductions",
+     "path": [
+      "deductions"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "reimbursements",
+     "path": [
+      "reimbursements"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "net_pay",
+     "path": [
+      "netPay"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "note",
+     "path": [
+      "note"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "paid_at",
+     "path": [
+      "paidAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "paid_on",
+     "path": [
+      "paidOn"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "paid_mode",
+     "path": [
+      "paidMode"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "paid_ref",
+     "path": [
+      "paidRef"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "paid_by_name",
+     "path": [
+      "paidByName"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "payslip_number",
+     "path": [
+      "payslipNumber"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "bank_account_last4",
+     "path": [
+      "bankAccountLast4"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "upi_id",
+     "path": [
+      "upiId"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_at",
+     "path": [
+      "createdAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "updated_at",
+     "path": [
+      "updatedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "doc_version",
+     "path": [
+      "__v"
+     ],
+     "mode": "Number",
+     "type": "INT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "_extra",
+     "mode": "extra",
+     "type": "JSON",
+     "nullable": true
+    }
+   ],
+   "children": [],
+   "indexes": [
+    {
+     "name": "uq_run_id_admin_id",
+     "unique": true,
+     "parts": [
+      "`run_id`",
+      "`admin_id`"
+     ]
+    },
+    {
+     "name": "ix_admin_id_month",
+     "unique": false,
+     "parts": [
+      "`admin_id`",
+      "`month`"
+     ]
+    }
+   ],
+   "collection": "erppaylines",
+   "models": [
+    "ErpPayLine"
+   ],
+   "docs": 0,
+   "gridfs": false
+  },
+  {
+   "name": "erppayruns",
+   "kind": "root",
+   "parent": null,
+   "columns": [
+    {
+     "name": "id",
+     "path": [
+      "_id"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": false,
+     "ref": null
+    },
+    {
+     "name": "month",
+     "path": [
+      "month"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "status",
+     "path": [
+      "status"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(64)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "draft",
+      "approved",
+      "paid"
+     ]
+    },
+    {
+     "name": "created_by",
+     "path": [
+      "createdBy"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_by_name",
+     "path": [
+      "createdByName"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "approved_by",
+     "path": [
+      "approvedBy"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "approved_by_name",
+     "path": [
+      "approvedByName"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "approved_at",
+     "path": [
+      "approvedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "calculated_at",
+     "path": [
+      "calculatedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_at",
+     "path": [
+      "createdAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "updated_at",
+     "path": [
+      "updatedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "doc_version",
+     "path": [
+      "__v"
+     ],
+     "mode": "Number",
+     "type": "INT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "_extra",
+     "mode": "extra",
+     "type": "JSON",
+     "nullable": true
+    }
+   ],
+   "children": [],
+   "indexes": [
+    {
+     "name": "uq_month",
+     "unique": true,
+     "parts": [
+      "`month`"
+     ]
+    }
+   ],
+   "collection": "erppayruns",
+   "models": [
+    "ErpPayRun"
+   ],
+   "docs": 0,
+   "gridfs": false
+  },
+  {
    "name": "erpprofiles",
    "kind": "root",
    "parent": null,

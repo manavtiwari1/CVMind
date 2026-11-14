@@ -11,6 +11,7 @@ import { IdCard } from '../IdCard';
 import { Spinner } from '../ui';
 import { fileUrl, uploadFile } from '../upload';
 import { MyHrFile } from './MyHrFile';
+import { MyPayslips } from './MyPayslips';
 
 // Grey circle with initials, shown in the photo dialog when there is no photo yet
 const placeholder = (name: string) => {
@@ -140,6 +141,7 @@ export default function Profile() {
         <label className="tm-check"><input type="checkbox" checked={notifyEmail} onChange={(e) => setNotifyEmail(e.target.checked)} /> <span><strong>Email me</strong> about mentions, messages and tasks I haven't seen for 30 minutes</span></label>
         <div><button type="submit" className="tm-btn primary" disabled={busy === 'profile'}>{busy === 'profile' && <Spinner size={14} />} Save</button></div>
       </form>
+      <MyPayslips />
       <MyHrFile myId={me.id} />
       <PushCard onAccount={apply} />
       <PasswordCard />
