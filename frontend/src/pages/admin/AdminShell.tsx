@@ -38,6 +38,7 @@ const SECTIONS: Record<string, LazyExoticComponent<ComponentType>> = {
   'erp-payroll': lazy(() => import('./sections/ErpPayroll')),
   'erp-letters': lazy(() => import('./sections/ErpLetters')),
   'erp-expenses': lazy(() => import('./sections/ErpExpenses')),
+  'erp-finance': lazy(() => import('./sections/ErpFinance')),
   'erp-settings': lazy(() => import('./sections/ErpSettings'))
 };
 
