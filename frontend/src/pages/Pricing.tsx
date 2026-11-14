@@ -9,7 +9,7 @@ import { withSampleData } from '../data/samplePreview';
 import { LETTER_DESIGNS } from '../lib/coverLetter';
 import { FALLBACK_LAUNCH, PRO_LETTER_IDS, PRO_TEMPLATE_IDS, formatInr, launchTimeText, launchTimes, loadPlans, startCheckout, userIsPro, verifyOrder, type LaunchTimes, type Plan } from '../lib/billing';
 import { readUser, USER_CHANGE_EVENT } from '../lib/currentUser';
-import { DIWALI_OFFER, diwaliPrice, isBhaiDooj, isOfferLive } from '../lib/festive';
+import { BLACK_FRIDAY, isBlackFriday, offerPrice, timeLeft } from '../lib/festive';
 import { setContactSubject } from '../data/support';
 import './Pricing.css';
 
@@ -127,27 +127,39 @@ const savingFor = (p: Plan, monthly?: Plan) => (monthly && p.days > monthly.days
 
 type ReturnState = { status: 'checking' | 'paid' | 'pending' | 'failed' | 'error'; message?: string; expiresAt?: string | null } | null;
 
-// The LEODIWALI offer, until the coupon expires (lib/festive.ts). The Bhai Dooj wording ends a day earlier.
-const FESTIVE = isOfferLive();
-const OFFER_NAME = isBhaiDooj() ? 'Bhai Dooj offer' : 'Festive offer, last day';
+// Black Friday week, 19–30 Nov 2026 IST (lib/festive.ts). The BLACKFRIDAY coupon has the same dates.
+const FESTIVE = isBlackFriday();
 
-function DiwaliBanner() {
+function BlackFridayBanner() {
   const [copied, setCopied] = useState(false);
+  const [left, setLeft] = useState(() => timeLeft());
+  useEffect(() => {
+    const id = window.setInterval(() => setLeft(timeLeft()), 30000);
+    return () => window.clearInterval(id);
+  }, []);
   const copy = () => {
-    navigator.clipboard?.writeText(DIWALI_OFFER.code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600); }).catch(() => {});
+    navigator.clipboard?.writeText(BLACK_FRIDAY.code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600); }).catch(() => {});
   };
   return (
-    <section className="pr-dw" aria-label={OFFER_NAME}>
-      <div className="pr-dw-inner">
-        <span className="pr-dw-kicker">{isBhaiDooj() ? 'Happy Bhai Dooj from CVMind' : 'Festive offer: last day'}</span>
-        <p className="pr-dw-title"><b>{DIWALI_OFFER.percent}% off</b> every Pro plan</p>
-        <div className="pr-dw-code">
+    <section className="pr-bf" aria-label="Black Friday sale">
+      <span className="pr-bf-tape" aria-hidden="true">
+        <span>{Array.from({ length: 12 }, () => 'BLACK FRIDAY · 50% OFF · ').join('')}</span>
+      </span>
+      <div className="pr-bf-inner">
+        <span className="pr-bf-kicker">Black Friday week · 19–30 Nov</span>
+        <p className="pr-bf-title"><b>{BLACK_FRIDAY.percent}% off</b> every Pro plan</p>
+        <div className="pr-bf-code">
           <span>Use code</span>
-          <button type="button" onClick={copy} aria-label={`Copy coupon code ${DIWALI_OFFER.code}`}>
-            {DIWALI_OFFER.code} {copied ? <Check size={15} /> : <Copy size={15} />}
+          <button type="button" onClick={copy} aria-label={`Copy coupon code ${BLACK_FRIDAY.code}`}>
+            {BLACK_FRIDAY.code} {copied ? <Check size={15} /> : <Copy size={15} />}
           </button>
         </div>
-        <p className="pr-dw-fine">Ends {DIWALI_OFFER.ends} · one use per account</p>
+        <div className="pr-bf-clock" aria-label={`Sale ends in ${left.days} days ${left.hours} hours ${left.minutes} minutes`}>
+          {[['days', left.days], ['hrs', left.hours], ['min', left.minutes]].map(([label, n]) => (
+            <span key={label}><strong>{String(n).padStart(2, '0')}</strong><small>{label}</small></span>
+          ))}
+        </div>
+        <p className="pr-bf-fine">Ends {BLACK_FRIDAY.ends} IST · one use per account</p>
       </div>
     </section>
   );
@@ -231,9 +243,9 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
   const opensText = `Payments open ${launchTimeText(launch.paymentsOpenAt)}`;
 
   return (
-    <div className="pr">
+    <div className={`pr${FESTIVE ? ' pr--bf' : ''}`}>
       <SlotBanner slot="promo" setCurrentPage={setCurrentPage} />
-      {FESTIVE && <DiwaliBanner />}
+      {FESTIVE && <BlackFridayBanner />}
 
       {returned && <ReturnBanner state={returned} onClose={() => setReturned(null)} onRetry={() => { setReturned(null); setCheckoutOpen(true); }} />}
 
@@ -242,7 +254,7 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
         <Waves />
 
         <header className="pr-hero">
-          <span className="pr-eyebrow"><Crown size={14} /> {FESTIVE ? `CVMind Pro · ${OFFER_NAME}, ${DIWALI_OFFER.percent}% off` : 'CVMind Pro'}</span>
+          <span className="pr-eyebrow"><Crown size={14} /> {FESTIVE ? `CVMind Pro · Black Friday, ${BLACK_FRIDAY.percent}% off` : 'CVMind Pro'}</span>
           <h1 className="pr-title">Pay for the weeks you're job hunting. <em>Not a month more.</em></h1>
           <p className="pr-lede">Pick a pass for a sprint or a plan for the long run. Every plan is a one-time payment and ends on its own; nothing renews behind your back.</p>
         </header>
@@ -276,11 +288,11 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
                 )}
               </div>
               <p className="pr-amount" aria-live="polite">
-                {FESTIVE && <s className="pr-dw-was">{formatInr(plan.price)}</s>}
-                <span className="pr-amount-num">{formatInr(FESTIVE ? diwaliPrice(plan.price) : plan.price)}</span>
+                {FESTIVE && <s className="pr-bf-was">{formatInr(plan.price)}</s>}
+                <span className="pr-amount-num">{formatInr(FESTIVE ? offerPrice(plan.price) : plan.price)}</span>
                 <span className="pr-amount-sup">/{plan.days} days</span>
               </p>
-              {FESTIVE && <p className="pr-dw-with">with code <b>{DIWALI_OFFER.code}</b> at checkout</p>}
+              {FESTIVE && <p className="pr-bf-with">with code <b>{BLACK_FRIDAY.code}</b> at checkout</p>}
               <p className="pr-amount-sub">{perDayText(plan)} · {PLAN_NOTES[plan.key] || `${plan.days} days of Pro`} · no auto-renew</p>
               <div className="pr-tabs" role="group" aria-label="How long you need Pro">
                 {plans.map((p) => {
@@ -307,7 +319,7 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
                 </button>
               ) : (
                 <button type="button" className="pr-btn pr-btn--green" onClick={getPro}>
-                  Get Pro for {formatInr(FESTIVE ? diwaliPrice(plan.price) : plan.price)} <ArrowRight size={17} />
+                  Get Pro for {formatInr(FESTIVE ? offerPrice(plan.price) : plan.price)} <ArrowRight size={17} />
                 </button>
               )}
               <p className="pr-pass-fine"><ShieldCheck size={13} /> Secure payment by Cashfree</p>
@@ -488,8 +500,8 @@ function Checkout({ plans, selected, onSelect, paymentsOn, onClose, onPaid, setC
   setCurrentPage: (page: string) => void;
 }) {
   const [phone, setPhone] = useState('');
-  // During Diwali the offer code is filled in for the buyer
-  const [coupon, setCoupon] = useState(FESTIVE ? DIWALI_OFFER.code : '');
+  // During the sale the offer code is filled in for the buyer
+  const [coupon, setCoupon] = useState(FESTIVE ? BLACK_FRIDAY.code : '');
   const [showCoupon, setShowCoupon] = useState(FESTIVE);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -586,8 +598,8 @@ function Checkout({ plans, selected, onSelect, paymentsOn, onClose, onPaid, setC
               {error && <p className="pr-co-error" role="alert">{error}</p>}
 
               <button type="submit" className="pr-btn pr-btn--dark" disabled={!phoneOk || busy}>
-                {busy ? <Loader2 size={17} className="pr-spin" /> : <Lock size={15} />} {coupon.trim().toUpperCase() === DIWALI_OFFER.code
-                  ? <>Pay {formatInr(diwaliPrice(plan.price))} <s className="pr-dw-pay-was">{formatInr(plan.price)}</s></>
+                {busy ? <Loader2 size={17} className="pr-spin" /> : <Lock size={15} />} {FESTIVE && coupon.trim().toUpperCase() === BLACK_FRIDAY.code
+                  ? <>Pay {formatInr(offerPrice(plan.price))} <s className="pr-bf-pay-was">{formatInr(plan.price)}</s></>
                   : <>Pay {formatInr(plan.price)}{coupon.trim() ? ' (before coupon)' : ''}</>}
               </button>
               <p className="pr-co-fine">You'll finish on Cashfree's secure page (UPI, cards, netbanking) and come back here. Pro starts as soon as the payment is confirmed.</p>

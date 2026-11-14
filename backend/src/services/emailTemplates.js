@@ -132,6 +132,68 @@ export function diwaliEmail({ name, unsubscribeUrl = '' }) {
   };
 }
 
+// Black Friday week 2026 (19–30 Nov IST): BLACKFRIDAY for 50% off Pro. Sent every 48 hours during the sale
+// by services/blackFriday.js; `round` (0 = the first email) changes the subject and opening so the
+// reminders don't read like the same email again.
+export const BLACK_FRIDAY_EMAIL = {
+  code: 'BLACKFRIDAY',
+  ends: '30 November, 11:59 pm IST',
+  pricingUrl: 'https://www.cvmind.in/pricing',
+  chatUrl: 'https://app.cvmind.in/chat'
+};
+
+const BLACK_FRIDAY_ROUNDS = [
+  { subject: 'Black Friday is here: 50% off CVMind Pro', title: 'Black Friday week is on', intro: 'Our biggest sale of the year starts today. Every CVMind Pro plan is half price until 30 November.' },
+  { subject: 'Still on: 50% off Pro for Black Friday week', title: 'Half price, all week', intro: 'In case you missed it: every CVMind Pro plan is 50% off for Black Friday week.' },
+  { subject: 'Black Friday: your 50% off code is waiting', title: 'Your code is still waiting', intro: 'Your Black Friday code still works. Every CVMind Pro plan is half price until 30 November.' },
+  { subject: 'Halfway through Black Friday week: 50% off Pro', title: 'The sale is halfway done', intro: 'Black Friday week is halfway through. Pro is still 50% off with your code.' },
+  { subject: 'A few days left: 50% off CVMind Pro', title: 'A few days left', intro: 'Only a few days of Black Friday week are left. Pro is half price until 30 November.' },
+  { subject: 'Last chance: 50% off Pro ends 30 November', title: 'Last chance', intro: 'Black Friday week ends on 30 November at 11:59 pm. After that, Pro goes back to the full price.' }
+];
+
+// Gmail's Promotions tab reads this and can show a deal badge (code + end date) on the email in the list,
+// so people see the code without opening it. Gmail decides when to show it; it's ignored everywhere else.
+const BLACK_FRIDAY_GMAIL_DEAL = `<script type="application/ld+json">${JSON.stringify([
+  { '@context': 'http://schema.org/', '@type': 'Organization', name: 'CVMind', logo: 'https://www.cvmind.in/apple-touch-icon.png' },
+  {
+    '@context': 'http://schema.org/',
+    '@type': 'DiscountOffer',
+    description: '50% off CVMind Pro',
+    discountCode: 'BLACKFRIDAY',
+    availabilityStarts: '2026-11-19T00:00:00+05:30',
+    availabilityEnds: '2026-11-30T23:59:00+05:30'
+  }
+])}</script>`;
+
+export function blackFridayEmail({ name, round = 0, unsubscribeUrl = '' }) {
+  const { code, ends, pricingUrl } = BLACK_FRIDAY_EMAIL;
+  const copy = BLACK_FRIDAY_ROUNDS[Math.min(Math.max(0, round), BLACK_FRIDAY_ROUNDS.length - 1)];
+  const codeBox = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:6px 0 22px"><tr>
+<td align="center" bgcolor="#0a0a0a" style="padding:20px 16px;background:#0a0a0a;border-radius:12px">
+<p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#facc15">Black Friday: 50% off CVMind Pro</p>
+<p style="margin:0 0 8px"><span style="display:inline-block;padding:8px 16px;border:2px dashed #facc15;border-radius:10px;font-family:'Courier New',monospace;font-size:26px;font-weight:800;letter-spacing:0.12em;color:#facc15">${code}</span></p>
+<p style="margin:0;font-size:13px;line-height:1.5;color:#d4d4d8">Valid on any plan until ${ends}. One use per account.</p>
+</td></tr></table>`;
+  const html = renderEmail({
+    preheader: `Use code ${code} at checkout for 50% off any Pro plan, until 30 November.`,
+    eyebrow: 'Black Friday week',
+    title: copy.title,
+    greetingName: name,
+    body: [
+      copy.intro,
+      'Pro unlocks every resume template and cover letter design, unlimited Resume Tailor and AI cover letters, unlimited interview and voice practice, and unlimited Job Finder applications. Plans are one-time payments that never renew on their own.',
+      'Use this code at checkout:'
+    ].join('\n\n'),
+    htmlBlock: codeBox,
+    ctaLabel: 'Get Pro at 50% off',
+    ctaUrl: pricingUrl,
+    afterword: 'If you have any question, just reply to this email.',
+    unsubscribeUrl,
+    footerReason: 'You received this email because you have a CVMind account.'
+  });
+  return { subject: copy.subject, html: html.replace('</head>', `${BLACK_FRIDAY_GMAIL_DEAL}</head>`) };
+}
+
 // Leo going live. Like the Diwali banner, the image is served from the site, so it has to be
 // deployed before this email goes out.
 export const LEO_LIVE_EMAIL = {

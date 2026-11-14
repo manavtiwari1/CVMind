@@ -778,3 +778,46 @@
   .lk-panel { max-width: none; max-height: 92dvh; border-radius: 20px 20px 0 0; padding: 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
   .lk-foot .lc-btn { flex: 1 1 auto; }
 }
+
+/* ── Black Friday week (welcome screen only, 19–30 Nov 2026 IST) ─── */
+.lx-bf {
+  display: inline-flex; align-items: center; gap: 10px; max-width: 100%;
+  margin-bottom: 34px; padding: 6px 14px 6px 6px; border-radius: 999px;
+  background: #0a0a0a; color: #fafafa !important; text-decoration: none; font-size: 14px;
+  box-shadow: 0 0 0 1px rgba(250, 204, 21, .45), 0 10px 30px rgba(10, 10, 10, .18);
+  transition: transform .15s, box-shadow .15s;
+}
+.lx-bf:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px #facc15, 0 14px 34px rgba(10, 10, 10, .24); }
+.lx-bf-tag {
+  flex: none; padding: 5px 10px; border-radius: 999px; background: #facc15; color: #0a0a0a;
+  font: 800 11px var(--font-mono); letter-spacing: .12em; text-transform: uppercase;
+}
+.lx-bf-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lx-bf-text b { color: #facc15; }
+.lx-bf-text code { padding: 1px 6px; border-radius: 5px; background: rgba(255, 255, 255, .12); font: 700 12.5px var(--font-mono); letter-spacing: .06em; }
+.lx-bf-go { color: #facc15; font-weight: 700; transition: transform .15s; }
+.lx-bf:hover .lx-bf-go { transform: translateX(3px); }
+:root[data-theme='dark'] .lx-bf { background: #18181b; }
+
+/* A "50% OFF" sticker on Leo, and a yellow/black ring instead of the usual glow */
+.lx-bf-badge {
+  position: absolute; z-index: 2; top: -6px; right: -26px;
+  display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%;
+  background: #e11d48; color: #fff; font: 800 15px/1 var(--font-mono); text-align: center;
+  box-shadow: 0 0 0 3px var(--bg-primary), 0 8px 18px rgba(225, 29, 72, .4);
+  transform: rotate(12deg); animation: lx-bf-wobble 3.2s ease-in-out infinite;
+}
+.lx-bf-badge small { display: block; font-size: 9px; letter-spacing: .1em; margin-top: -8px; }
+@keyframes lx-bf-wobble { 0%, 100% { transform: rotate(12deg); } 50% { transform: rotate(-4deg) scale(1.06); } }
+.lx-welcome.is-bf .lx-hero-leo .lx-leo-pfp { box-shadow: 0 0 0 6px var(--bg-primary), 0 0 0 9px #facc15, 0 0 0 12px #0a0a0a, 0 14px 44px rgba(250, 204, 21, .3); }
+.lx-welcome.is-bf .lx-composer { box-shadow: 0 0 0 1px rgba(250, 204, 21, .55), 0 12px 36px rgba(250, 204, 21, .14); }
+
+@media (max-width: 480px) {
+  .lx-bf { font-size: 13px; margin-bottom: 28px; }
+  .lx-bf-text code { display: none; }
+  .lx-bf-badge { width: 44px; height: 44px; font-size: 13px; right: -18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lx-bf-badge { animation: none; }
+  .lx-bf, .lx-bf-go { transition: none; }
+}

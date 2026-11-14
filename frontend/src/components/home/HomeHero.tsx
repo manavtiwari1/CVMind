@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Check, FileSearch, Sparkles, Target, Upload } from 'lucide-react';
 import { HOME_HERO } from '../../data/homeCopy';
 import { urlForPage } from '../../lib/hosts';
-import { isBhaiDooj } from '../../lib/festive';
+import { BLACK_FRIDAY, isBhaiDooj, isBlackFriday } from '../../lib/festive';
 import './diwali.css'; // styles the festive tag
+import './blackfriday.css';
 
 interface HomeHeroProps {
   setCurrentPage: (page: string) => void;
@@ -24,6 +25,8 @@ const MODES: { id: Mode; label: string; short: string; icon: typeof Sparkles }[]
 // Typed one after another in the empty Ask box
 // "Happy Bhai Dooj" tag beside the modes, until midnight IST on 11 Nov (lib/festive.ts)
 const FESTIVE = isBhaiDooj();
+// Black Friday week, 19–30 Nov 2026 IST (lib/festive.ts): sale tag on the box and a link to the offer
+const BLACK_FRIDAY_ON = isBlackFriday();
 const EXAMPLES = [
   'Interview questions for a data analyst fresher role',
   'Write a cover letter for a frontend internship at Zomato',
@@ -115,7 +118,8 @@ export default function HomeHero({ setCurrentPage, onAnalyzeClick }: HomeHeroPro
         </h1>
         <p className="hx-lead hx-rise">{HOME_HERO.lead}</p>
 
-        <div className="hx-box-wrap hx-rise">
+        <div className={`hx-box-wrap hx-rise${BLACK_FRIDAY_ON ? ' is-bf' : ''}`}>
+        {BLACK_FRIDAY_ON && <span className="bf-sticker" aria-hidden="true">50%<small>OFF</small></span>}
         <form className="hx-box" onSubmit={(e) => { e.preventDefault(); submit(); }}>
           <div className="hx-modes" role="tablist" aria-label="What do you want to do?">
             {MODES.map((m) => (
@@ -133,6 +137,11 @@ export default function HomeHero({ setCurrentPage, onAnalyzeClick }: HomeHeroPro
               </button>
             ))}
             {FESTIVE && <span className="dw-tag"><i aria-hidden="true" /> Happy Bhai Dooj</span>}
+            {BLACK_FRIDAY_ON && (
+              <button type="button" className="bf-tag" onClick={() => setCurrentPage('pricing')}>
+                <i aria-hidden="true" /> Black Friday · {BLACK_FRIDAY.percent}% off Pro
+              </button>
+            )}
           </div>
 
           {mode === 'check' ? (
@@ -173,6 +182,14 @@ export default function HomeHero({ setCurrentPage, onAnalyzeClick }: HomeHeroPro
           </div>
         </form>
         </div>
+
+        {BLACK_FRIDAY_ON && (
+          <button type="button" className="bf-strip hx-rise" onClick={() => setCurrentPage('pricing')}>
+            <span className="bf-strip-tag">Black Friday</span>
+            <span><b>{BLACK_FRIDAY.percent}% off</b> every Pro plan with code <code>{BLACK_FRIDAY.code}</code> · till {BLACK_FRIDAY.ends}</span>
+            <ArrowRight size={15} />
+          </button>
+        )}
 
         <ul className="hx-proof hx-rise">
           <li><Check size={15} /> Free ATS check without an account</li>
