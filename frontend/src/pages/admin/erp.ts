@@ -22,3 +22,16 @@ export const todayIso = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
+
+// Uploads a receipt from the admin panel: presign → PUT to storage → confirm. Returns the file id.
+const RECEIPT_TYPES: Record<string, string> = { pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' };
+export async function uploadReceipt(file: File): Promise<string> {
+  const { api } = await import('./api');
+  const mime = RECEIPT_TYPES[file.name.split('.').pop()?.toLowerCase() || ''];
+  if (!mime) throw new Error('Receipts must be a PDF or a photo (PNG, JPG).');
+  const { file: record, uploadUrl, headers } = await api<{ file: { id: string }; uploadUrl: string; headers: Record<string, string> }>('/erp/files/upload-url', { method: 'POST', body: { name: file.name, mime, size: file.size } });
+  const put = await fetch(uploadUrl, { method: 'PUT', headers, body: file });
+  if (!put.ok) throw new Error('The upload failed. Try again.');
+  await api(`/erp/files/${record.id}/complete`, { method: 'POST' });
+  return record.id;
+}

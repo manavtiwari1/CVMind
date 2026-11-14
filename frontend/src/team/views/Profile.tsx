@@ -13,6 +13,7 @@ import { fileUrl, uploadFile } from '../upload';
 import { MyHrFile } from './MyHrFile';
 import { MyPayslips } from './MyPayslips';
 import { MyLetters } from './MyLetters';
+import { MyClaims } from './MyClaims';
 
 // Grey circle with initials, shown in the photo dialog when there is no photo yet
 const placeholder = (name: string) => {
@@ -144,6 +145,7 @@ export default function Profile() {
       </form>
       <MyPayslips />
       <MyLetters />
+      <MyClaims myId={me.id} />
       <MyHrFile myId={me.id} />
       <PushCard onAccount={apply} />
       <PasswordCard />

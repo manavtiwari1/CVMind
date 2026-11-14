@@ -1,17 +1,21 @@
 import express from 'express';
+import { AdminUser } from '../../admin/models.js';
 import { audit } from '../../admin/audit.js';
+import { ROLES } from '../../admin/permissions.js';
 import { clean, handle, httpError, isId } from '../../admin/util.js';
 import { requireTeam, sameId } from '../../admin/team/access.js';
 import { softDeleteFiles } from '../../admin/team/files.js';
 import { TeamFile } from '../../admin/team/models.js';
-import { ErpLetter, ErpLetterRequest, ErpPayHistory, ErpPayLine, ErpProfile, LETTER_TYPES } from '../models.js';
-import { LETTER_LABELS, publicLetter, renderLetterPdf } from '../letters.js';
-import { hrManagerIds } from '../jobs.js';
 import { notify } from '../../admin/team/notify.js';
+import { presignDownload } from '../../admin/team/storage.js';
+import { ErpExpense, ErpLetter, ErpLetterRequest, ErpPayHistory, ErpPayLine, ErpProfile, EXPENSE_CATEGORIES, LETTER_TYPES } from '../models.js';
+import { approveStep, attachReceipt, canDecide, CATEGORY_LABELS, declineStep, firstStage, publicExpenses, readExpense } from '../expenses.js';
+import { hrManagerIds } from '../jobs.js';
+import { LETTER_LABELS, publicLetter, renderLetterPdf } from '../letters.js';
 import { publicLine } from '../payroll.js';
 import { renderPayslipPdf } from '../pdf.js';
-import { getSettings } from '../settings.js';
 import { isDocumentKind, loadProfile, publicProfile, readProfileFields, SELF_EDITABLE } from '../people.js';
+import { getSettings } from '../settings.js';
 
 // CVMind Team → Profile → My HR file (mounted under /api/admin/team). A member reads their own file and fills in their
 // personal and bank details and documents. Job, dates and pay are set by HR.
@@ -122,6 +126,58 @@ router.post('/me/letter-requests', team, handle(async (req, res) => {
   const row = await ErpLetterRequest.create({ adminId: req.admin.id, type, note: clean(req.body?.note, 500) });
   await notify(await hrManagerIds(), { type: 'letter_requested', actorId: req.admin.id, refType: 'letter_request', refId: row._id, preview: LETTER_LABELS[type] });
   res.json({ success: true });
+}));
+
+// Profile → Expense claims: money a member paid for CVMind, and claims waiting for my approval as a manager
+router.get('/me/claims', team, handle(async (req, res) => {
+  const [mine, toApprove] = await Promise.all([
+    ErpExpense.find({ kind: 'claim', submittedBy: req.admin.id }).sort({ createdAt: -1 }).limit(50).lean(),
+    ErpExpense.find({ kind: 'claim', status: 'pending_manager', managerId: req.admin.id }).sort({ createdAt: 1 }).lean()
+  ]);
+  res.json({
+    success: true,
+    data: await publicExpenses(mine),
+    toApprove: await publicExpenses(toApprove),
+    categories: EXPENSE_CATEGORIES.filter((c) => c !== 'salaries').map((c) => ({ value: c, label: CATEGORY_LABELS[c] }))
+  });
+}));
+
+router.post('/me/claims', team, handle(async (req, res) => {
+  const fields = readExpense(req.body, { claim: true });
+  if (await ErpExpense.countDocuments({ kind: 'claim', submittedBy: req.admin.id, status: { $in: ['pending_manager', 'pending_hr', 'pending_leadership'] } }) >= 20) throw httpError(400, 'You have 20 claims waiting. Wait for some to be decided first.');
+  const stage = await firstStage(req.admin.id, fields.amount);
+  const row = new ErpExpense({ ...fields, kind: 'claim', submittedBy: req.admin.id, ...stage, createdBy: req.admin.id, createdByName: req.admin.name || req.admin.username });
+  row.receiptFileId = await attachReceipt(req.body?.receiptFileId, req.admin.id, row._id);
+  if (!row.receiptFileId) throw httpError(400, 'Add a photo or PDF of the receipt.');
+  await row.save();
+  const leaders = stage.status === 'pending_leadership'
+    ? (await AdminUser.find({ active: true, role: { $in: ['owner', ...Object.keys(ROLES).filter((k) => ROLES[k].leadership)] } }, { _id: 1 }).lean()).map((a) => String(a._id))
+    : [];
+  const to = stage.status === 'pending_manager' ? [String(stage.managerId)] : stage.status === 'pending_hr' ? await hrManagerIds() : leaders;
+  await notify(to, { type: 'claim_submitted', actorId: req.admin.id, refType: 'claim', refId: row._id, preview: `₹${row.amount.toLocaleString('en-IN')} · ${row.description}` });
+  await audit(req, 'hr.claim_submitted', { targetType: 'expense', targetId: row._id, targetLabel: `₹${row.amount}` });
+  res.json({ success: true, data: (await publicExpenses([row.toObject()]))[0] });
+}));
+
+// A reporting manager approves or declines a claim from CVMind Team
+router.post('/claims/:id/decide', team, handle(async (req, res) => {
+  if (!isId(req.params.id)) throw httpError(404, 'Claim not found.');
+  const row = await ErpExpense.findById(req.params.id);
+  if (!row || row.kind !== 'claim' || !canDecide(req.admin, row, { fromPanel: false })) throw httpError(404, 'Claim not found.');
+  if (req.body?.approve === true) await approveStep(req.admin, row);
+  else await declineStep(req.admin, row, req.body?.reason);
+  await audit(req, req.body?.approve === true ? 'hr.claim_approved' : 'hr.claim_declined', { targetType: 'expense', targetId: row._id, targetLabel: `₹${row.amount}`, details: { stage: 'manager' } });
+  res.json({ success: true });
+}));
+
+// The receipt of my own claim, or one I'm approving
+router.get('/claims/:id/receipt', team, handle(async (req, res) => {
+  if (!isId(req.params.id)) throw httpError(404, 'Claim not found.');
+  const row = await ErpExpense.findById(req.params.id).lean();
+  if (!row || row.kind !== 'claim' || !(sameId(row.submittedBy, req.admin.id) || sameId(row.managerId, req.admin.id))) throw httpError(404, 'Claim not found.');
+  const file = row.receiptFileId ? await TeamFile.findById(row.receiptFileId).lean() : null;
+  if (!file || file.status !== 'ready') throw httpError(404, 'No receipt.');
+  res.json({ success: true, url: await presignDownload(file) });
 }));
 
 export default router;

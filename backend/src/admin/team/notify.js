@@ -70,7 +70,7 @@ export function notificationPath(n) {
   if (n.refType === 'leave') return '#/checkin?tab=leave';
   if (n.refType === 'announcement' && n.refId) return `#/announcements/${n.refId}`;
   if (n.refType === 'hr') return '#/people';
-  if (n.refType === 'payslip' || n.refType === 'letter') return '#/profile';
+  if (n.refType === 'payslip' || n.refType === 'letter' || n.refType === 'claim') return '#/profile';
   if (n.channelId && n.refType === 'message' && n.refId) return `#/chat/${n.channelId}?m=${n.refId}`;
   if (n.channelId) return `#/chat/${n.channelId}`;
   return '#/home';
@@ -127,7 +127,12 @@ const LABELS = {
   payslip_ready: 'paid you. Your payslip is ready',
   letter_issued: 'issued you a letter',
   letter_declined: 'declined your letter request',
-  letter_requested: 'asked HR for a letter'
+  letter_requested: 'asked HR for a letter',
+  claim_submitted: 'sent an expense claim',
+  claim_approved: 'Your expense claim was approved',
+  claim_declined: 'declined your expense claim',
+  claim_reimbursed: 'Your expense claim was paid back',
+  claim_to_reimburse: 'An approved claim is waiting to be paid back'
 };
 export const notificationLabel = (type) => LABELS[type] || 'New activity';
 
@@ -310,8 +315,8 @@ export function startTeamJobs() {
       await sendNotificationDigests();
       await onceADay('team.dailyReminderDay', REMINDER_UTC_MINUTES, sendDailyTaskReminders);
       await onceADay('team.standupReminderDay', STANDUP_UTC_MINUTES, sendStandupReminders);
-      const { sendHrReminders } = await import('../../erp/jobs.js');
-      await onceADay('erp.hrReminderDay', HR_REMINDER_UTC_MINUTES, sendHrReminders);
+      const { runDailyErpJobs } = await import('../../erp/jobs.js');
+      await onceADay('erp.hrReminderDay', HR_REMINDER_UTC_MINUTES, runDailyErpJobs);
       const { sweepPendingFiles } = await import('./files.js');
       await sweepPendingFiles();
     } catch (err) {

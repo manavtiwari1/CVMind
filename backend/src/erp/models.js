@@ -182,3 +182,42 @@ const letterRequestSchema = new Schema({
 letterRequestSchema.index({ status: 1, createdAt: -1 });
 letterRequestSchema.index({ adminId: 1, createdAt: -1 });
 export const ErpLetterRequest = mongoose.models.ErpLetterRequest || mongoose.model('ErpLetterRequest', letterRequestSchema);
+
+// ── Expenses ───────────────────────────────────────────────────────────────
+// Company spending entered by HR, and claims members raise for money they paid themselves.
+export const EXPENSE_CATEGORIES = ['servers', 'ai_apis', 'marketing', 'software', 'domains', 'office_travel', 'salaries', 'other'];
+// Claims: pending_manager → (pending_leadership when above the limit) → approved → reimbursed. No manager: pending_hr.
+export const EXPENSE_STATUSES = ['draft', 'recorded', 'pending_manager', 'pending_hr', 'pending_leadership', 'approved', 'reimbursed', 'declined'];
+const expenseSchema = new Schema({
+  kind: { type: String, enum: ['company', 'claim'], required: true },
+  date: { type: String, required: true },
+  amount: { type: Number, required: true },
+  paidTo: { type: String, default: '' },
+  category: { type: String, enum: EXPENSE_CATEGORIES, default: 'other' },
+  description: { type: String, default: '' },
+  paymentMode: { type: String, default: '' },
+  reference: { type: String, default: '' },
+  receiptFileId: { type: Id, default: null },
+  status: { type: String, enum: EXPENSE_STATUSES, default: 'recorded' },
+  // Claims
+  submittedBy: { type: Id, default: null },
+  managerId: { type: Id, default: null },
+  approvals: { type: [{ _id: false, stage: String, byId: Id, byName: String, at: Date }], default: [] },
+  declinedReason: { type: String, default: '' },
+  declinedByName: { type: String, default: '' },
+  reimbursedVia: { type: String, default: '' },
+  reimbursedOn: { type: String, default: '' },
+  payLineId: { type: Id, default: null },
+  // Repeats: the next one is created as a draft on nextDueOn
+  recurring: { type: String, enum: ['none', 'monthly', 'yearly'], default: 'none' },
+  nextDueOn: { type: String, default: '' },
+  assetId: { type: Id, default: null },
+  createdBy: { type: Id, default: null },
+  createdByName: { type: String, default: '' }
+}, { timestamps: true });
+expenseSchema.index({ date: -1 });
+expenseSchema.index({ status: 1, date: -1 });
+expenseSchema.index({ submittedBy: 1, createdAt: -1 });
+expenseSchema.index({ managerId: 1, status: 1 });
+expenseSchema.index({ recurring: 1, nextDueOn: 1 });
+export const ErpExpense = mongoose.models.ErpExpense || mongoose.model('ErpExpense', expenseSchema);

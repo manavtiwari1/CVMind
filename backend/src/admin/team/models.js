@@ -163,7 +163,7 @@ const fileSchema = new Schema({
   scope: { type: String, enum: ['channel', 'task', 'announcement', 'avatar', 'meeting', 'hr'], required: true },
   scopeId: { type: Id, default: null },
   attachedTo: {
-    type: { type: String, enum: ['message', 'task', 'comment', 'submission', 'announcement', 'avatar', 'recording', 'hr_document', null], default: null },
+    type: { type: String, enum: ['message', 'task', 'comment', 'submission', 'announcement', 'avatar', 'recording', 'hr_document', 'expense_receipt', null], default: null },
     id: { type: Id, default: null }
   },
   status: { type: String, enum: ['pending', 'ready', 'deleted'], default: 'pending' },

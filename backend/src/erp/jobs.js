@@ -3,7 +3,13 @@ import { ROLES } from '../admin/permissions.js';
 import { istDay, notify, teamPeopleFilter } from '../admin/team/notify.js';
 import { ErpProfile } from './models.js';
 
-// Daily ERP reminders, run from the Team background worker (admin/team/notify.js → startTeamJobs).
+// Daily ERP jobs, run from the Team background worker (admin/team/notify.js → startTeamJobs).
+
+export async function runDailyErpJobs(now = new Date()) {
+  await sendHrReminders(now);
+  const { spawnRecurringExpenses } = await import('./expenses.js');
+  await spawnRecurringExpenses(now);
+}
 
 const addDays = (day, n) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
 

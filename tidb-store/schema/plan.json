@@ -5775,6 +5775,434 @@
    "gridfs": false
   },
   {
+   "name": "erpexpenses",
+   "kind": "root",
+   "parent": null,
+   "columns": [
+    {
+     "name": "id",
+     "path": [
+      "_id"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": false,
+     "ref": null
+    },
+    {
+     "name": "kind",
+     "path": [
+      "kind"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(64)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "company",
+      "claim"
+     ]
+    },
+    {
+     "name": "date",
+     "path": [
+      "date"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "amount",
+     "path": [
+      "amount"
+     ],
+     "mode": "Number",
+     "type": "DOUBLE",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "paid_to",
+     "path": [
+      "paidTo"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "category",
+     "path": [
+      "category"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(64)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "servers",
+      "ai_apis",
+      "marketing",
+      "software",
+      "domains",
+      "office_travel",
+      "salaries",
+      "other"
+     ]
+    },
+    {
+     "name": "description",
+     "path": [
+      "description"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "payment_mode",
+     "path": [
+      "paymentMode"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "reference",
+     "path": [
+      "reference"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "receipt_file_id",
+     "path": [
+      "receiptFileId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "status",
+     "path": [
+      "status"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "draft",
+      "recorded",
+      "pending_manager",
+      "pending_hr",
+      "pending_leadership",
+      "approved",
+      "reimbursed",
+      "declined"
+     ]
+    },
+    {
+     "name": "submitted_by",
+     "path": [
+      "submittedBy"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "manager_id",
+     "path": [
+      "managerId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "declined_reason",
+     "path": [
+      "declinedReason"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "declined_by_name",
+     "path": [
+      "declinedByName"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "reimbursed_via",
+     "path": [
+      "reimbursedVia"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "reimbursed_on",
+     "path": [
+      "reimbursedOn"
+     ],
+     "mode": "String",
+     "type": "MEDIUMTEXT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "pay_line_id",
+     "path": [
+      "payLineId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "recurring",
+     "path": [
+      "recurring"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null,
+     "enum": [
+      "none",
+      "monthly",
+      "yearly"
+     ]
+    },
+    {
+     "name": "next_due_on",
+     "path": [
+      "nextDueOn"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "asset_id",
+     "path": [
+      "assetId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_by",
+     "path": [
+      "createdBy"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_by_name",
+     "path": [
+      "createdByName"
+     ],
+     "mode": "String",
+     "type": "VARCHAR(255)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_at",
+     "path": [
+      "createdAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "updated_at",
+     "path": [
+      "updatedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "doc_version",
+     "path": [
+      "__v"
+     ],
+     "mode": "Number",
+     "type": "INT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "_extra",
+     "mode": "extra",
+     "type": "JSON",
+     "nullable": true
+    }
+   ],
+   "children": [
+    {
+     "name": "erpexpenses__approvals",
+     "kind": "child",
+     "parent": "erpexpenses",
+     "columns": [
+      {
+       "name": "id",
+       "mode": "childId",
+       "type": "VARCHAR(255)",
+       "nullable": false
+      },
+      {
+       "name": "parent_id",
+       "mode": "parentId",
+       "type": "VARCHAR(24)",
+       "nullable": false
+      },
+      {
+       "name": "position",
+       "mode": "position",
+       "type": "INT",
+       "nullable": false
+      },
+      {
+       "name": "stage",
+       "path": [
+        "stage"
+       ],
+       "mode": "String",
+       "type": "VARCHAR(255)",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "by_id",
+       "path": [
+        "byId"
+       ],
+       "mode": "ObjectId",
+       "type": "VARCHAR(24)",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "by_name",
+       "path": [
+        "byName"
+       ],
+       "mode": "String",
+       "type": "VARCHAR(255)",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "at",
+       "path": [
+        "at"
+       ],
+       "mode": "Date",
+       "type": "DATETIME(3)",
+       "nullable": true,
+       "ref": null
+      },
+      {
+       "name": "_extra",
+       "mode": "extra",
+       "type": "JSON",
+       "nullable": true
+      }
+     ],
+     "children": [],
+     "indexes": [],
+     "sourcePath": [
+      "approvals"
+     ],
+     "parentKeyType": "VARCHAR(24)"
+    }
+   ],
+   "indexes": [
+    {
+     "name": "ix_date",
+     "unique": false,
+     "parts": [
+      "`date`"
+     ]
+    },
+    {
+     "name": "ix_status_date",
+     "unique": false,
+     "parts": [
+      "`status`",
+      "`date`"
+     ]
+    },
+    {
+     "name": "ix_submitted_by_created_at",
+     "unique": false,
+     "parts": [
+      "`submitted_by`",
+      "`created_at`"
+     ]
+    },
+    {
+     "name": "ix_manager_id_status",
+     "unique": false,
+     "parts": [
+      "`manager_id`",
+      "`status`"
+     ]
+    },
+    {
+     "name": "ix_recurring_next_due_on",
+     "unique": false,
+     "parts": [
+      "`recurring`",
+      "`next_due_on`"
+     ]
+    }
+   ],
+   "collection": "erpexpenses",
+   "models": [
+    "ErpExpense"
+   ],
+   "docs": 0,
+   "gridfs": false
+  },
+  {
    "name": "erpletterrequests",
    "kind": "root",
    "parent": null,
