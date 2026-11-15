@@ -14,7 +14,7 @@ const OPTIONS: Array<{ value: TeamAccount['availability']; label: string; hint: 
 ];
 const DURATIONS = [{ minutes: 60, label: '1 hour' }, { minutes: 240, label: '4 hours' }, { minutes: 0, label: 'Until I change it' }];
 
-export function StatusMenu() {
+export function StatusMenu({ placement = 'up' }: { placement?: 'up' | 'down' }) {
   const { me, setMe, toast } = useTeam();
   const [open, setOpen] = useState(false);
   const [minutes, setMinutes] = useState(60);
@@ -39,9 +39,9 @@ export function StatusMenu() {
   const until = me.availabilityUntil && me.availability !== 'auto' ? new Date(me.availabilityUntil).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '';
 
   return (
-    <div className="tm-status" ref={box}>
+    <div className={`tm-status ${placement}`} ref={box}>
       <button type="button" className="tm-status-btn" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-haspopup="menu">
-        <span className={`tm-status-dot ${current.value}`} /> {current.label}{until && ` until ${until}`} <ChevronUp size={13} />
+        <span className={`tm-status-dot ${current.value}`} /> <span className="tm-status-label">{current.label}{until && ` until ${until}`}</span> <ChevronUp size={13} className="tm-status-chev" />
       </button>
       {open && (
         <div className="tm-status-menu" role="menu">

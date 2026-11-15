@@ -1,13 +1,13 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
-import { Bell, Bookmark, CheckSquare, ClipboardCheck, FolderOpen, Video, Hash, Home, Lock, LogOut, Megaphone, Menu, MessageSquarePlus, Plus, Search, Settings, Users, WifiOff, X } from 'lucide-react';
+import { Bell, Bookmark, CheckSquare, ClipboardCheck, FolderOpen, Video, Hash, Home, Lock, LogOut, Megaphone, Menu, MessageSquarePlus, MessagesSquare, Plus, Search, Settings, Users, WifiOff, X } from 'lucide-react';
 import cvmindIcon from '../assets/cvmind_icon.png';
 import { api } from './api';
 import type { Channel } from './api';
 import { go, hrefFor, useDmName, useRoute, useTeam } from './store';
 import { Avatar, Modal, PeoplePicker, Spinner } from './ui';
 import Notifications from './views/Notifications';
-import SearchDialog from './views/SearchDialog';
+import { TopSearch } from './TopSearch';
 import { IncomingCall } from './IncomingCall';
 import { StatusMenu } from './StatusMenu';
 
@@ -28,7 +28,6 @@ export default function Shell() {
   const route = useRoute();
   const [navOpen, setNavOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [newChannel, setNewChannel] = useState(false);
   const [newDm, setNewDm] = useState(false);
   const dmName = useDmName();
@@ -40,39 +39,33 @@ export default function Shell() {
     return () => window.removeEventListener('hashchange', close);
   }, []);
 
-  // Ctrl/Cmd + K opens search
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setSearchOpen(true);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
-
   const rooms = useMemo(() => channels.filter((c) => c.kind !== 'dm' && (c.joined || c.kind === 'private')), [channels]);
   const otherPublic = channels.filter((c) => c.kind === 'public' && !c.joined).length;
   const dms = useMemo(() => channels.filter((c) => c.kind === 'dm').sort((a, b) => +new Date(b.lastMessageAt || 0) - +new Date(a.lastMessageAt || 0)), [channels]);
 
+  // The app rail, like Teams: one icon per area, label underneath
   const nav = [
     { view: 'home', label: 'Home', icon: Home },
-    { view: 'announcements', label: 'Announcements', icon: Megaphone },
+    { view: 'chat', label: 'Chat', icon: MessagesSquare },
+    { view: 'announcements', label: 'Updates', icon: Megaphone },
     { view: 'tasks', label: 'Tasks', icon: CheckSquare },
-    { view: 'checkin', label: 'Check-in', icon: ClipboardCheck },
     { view: 'meetings', label: 'Meetings', icon: Video },
-    { view: 'media', label: 'Media', icon: FolderOpen },
+    { view: 'checkin', label: 'Check-in', icon: ClipboardCheck },
+    { view: 'media', label: 'Files', icon: FolderOpen },
     { view: 'people', label: 'People', icon: Users },
     { view: 'saved', label: 'Saved', icon: Bookmark }
   ];
+  const chatUnread = channels.reduce((n, c) => n + (c.muted ? 0 : c.unread || 0), 0);
+  // The chat list sits next to the conversation (and on Home), like Teams' second column
+  const showList = route.view === 'chat' || route.view === 'home' || !route.view;
+  const railActive = (view: string) => route.view === view || (view === 'home' && !route.view);
 
-  const roomLink = (c: Channel, label: string, icon: ReactNode) => {
+  const roomLink = (c: Channel, label: string, icon: ReactNode, sub?: string) => {
     const active = route.view === 'chat' && route.id === c.id;
     return (
-      <a key={c.id} href={hrefFor('chat', c.id)} className={`tm-nav-item ${active ? 'active' : ''} ${c.unread && !c.muted ? 'unread' : ''} ${c.muted ? 'muted' : ''}`}>
-        {icon}
-        <span className="tm-nav-label">{label}</span>
+      <a key={c.id} href={hrefFor('chat', c.id)} className={`tm-list-item ${active ? 'active' : ''} ${c.unread && !c.muted ? 'unread' : ''} ${c.muted ? 'muted' : ''}`}>
+        <span className="tm-list-icon">{icon}</span>
+        <span className="tm-list-text"><span className="tm-list-name">{label}</span>{sub && <span className="tm-list-sub">{sub}</span>}</span>
         {!!c.unread && !active && <span className="tm-count">{c.unread > 99 ? '99+' : c.unread}</span>}
       </a>
     );
@@ -94,54 +87,13 @@ export default function Shell() {
   }
 
   return (
-    <div className={`tm-shell ${navOpen ? 'nav-open' : ''}`}>
+    <div className={`tm-teams ${navOpen ? 'nav-open' : ''} ${showList ? 'has-list' : ''} ${route.view === 'chat' && route.id ? 'in-chat' : ''}`}>
       <IncomingCall />
-      <aside className="tm-sidebar" aria-label="Workspace">
-        <div className="tm-side-head">
-          <a href={hrefFor('home')} className="tm-brand sm"><img src={cvmindIcon} alt="" width={28} height={28} /><span>CV<b>Mind</b> Team</span></a>
-          <button type="button" className="tm-icon-btn tm-only-mobile" onClick={() => setNavOpen(false)} aria-label="Close menu"><X size={18} /></button>
-        </div>
-        <nav className="tm-side-scroll">
-          {nav.map(({ view, label, icon: Icon }) => (
-            <a key={view} href={hrefFor(view)} className={`tm-nav-item ${route.view === view || (view === 'home' && !route.view) ? 'active' : ''}`}><Icon size={17} /> <span className="tm-nav-label">{label}</span></a>
-          ))}
-
-          <div className="tm-side-section">
-            <span>Channels</span>
-            {manager && <button type="button" className="tm-icon-btn sm" onClick={() => setNewChannel(true)} aria-label="New channel" title="New channel"><Plus size={15} /></button>}
-          </div>
-          {rooms.map((c) => roomLink(c, c.name, c.kind === 'private' ? <Lock size={15} /> : <Hash size={15} />))}
-          {otherPublic > 0 && <a href={hrefFor('chat', '', { browse: '1' })} className="tm-nav-item subtle"><Search size={15} /> <span className="tm-nav-label">Browse {otherPublic} more</span></a>}
-
-          <div className="tm-side-section">
-            <span>Direct messages</span>
-            <button type="button" className="tm-icon-btn sm" onClick={() => setNewDm(true)} aria-label="New message" title="New message"><MessageSquarePlus size={15} /></button>
-          </div>
-          {dms.map((c) => {
-            const others = (c.memberIds || []).filter((id) => id !== me.id);
-            const icon = others.length === 1 ? <Avatar person={person(others[0])} size={18} presence /> : <Users size={15} />;
-            return roomLink(c, dmName(c), icon);
-          })}
-          {!dms.length && <p className="tm-side-hint">Message a teammate from People or the + button.</p>}
-        </nav>
-        <div className="tm-side-foot">
-          <a href={hrefFor('profile')} className="tm-me">
-            <Avatar person={person(me.id)} size={30} presence />
-            <span><strong>{me.name}</strong><small>{me.statusText || me.roleLabel}</small></span>
-          </a>
-          <StatusMenu />
-          <a href={hrefFor('profile')} className="tm-icon-btn" aria-label="Profile and settings"><Settings size={17} /></a>
-          <button type="button" className="tm-icon-btn" onClick={signOut} aria-label="Sign out" title="Sign out"><LogOut size={17} /></button>
-        </div>
-      </aside>
-      <div className="tm-scrim" onClick={() => setNavOpen(false)} aria-hidden />
-
-      <div className="tm-main">
-        <header className="tm-topbar">
-          <button type="button" className="tm-icon-btn tm-only-mobile" onClick={() => setNavOpen(true)} aria-label="Open menu"><Menu size={20} /></button>
-          <button type="button" className="tm-search-btn" onClick={() => setSearchOpen(true)}>
-            <Search size={16} /> <span>Search messages, tasks, files…</span> <kbd>Ctrl K</kbd>
-          </button>
+      <header className="tm-appbar">
+        {showList && <button type="button" className="tm-icon-btn tm-only-mobile" onClick={() => setNavOpen(true)} aria-label="Open chats"><Menu size={20} /></button>}
+        <a href={hrefFor('home')} className="tm-appbar-brand"><img src={cvmindIcon} alt="" width={26} height={26} /><span>CV<b>Mind</b> <em>Team</em></span></a>
+        <TopSearch />
+        <div className="tm-appbar-right">
           <div className="tm-bell">
             <button type="button" className="tm-icon-btn" onClick={() => setBellOpen((v) => !v)} aria-label={`Notifications${unreadNotifications ? `, ${unreadNotifications} unread` : ''}`} aria-expanded={bellOpen}>
               <Bell size={19} />
@@ -149,14 +101,59 @@ export default function Shell() {
             </button>
             {bellOpen && <Notifications onClose={() => setBellOpen(false)} />}
           </div>
-        </header>
-        {!live && <div className="tm-offline"><WifiOff size={14} /> Live updates are reconnecting. The page refreshes every 15 seconds meanwhile.</div>}
-        <main className="tm-content">
-          <Suspense fallback={<div className="tm-center"><Spinner size={20} /></div>}>{content}</Suspense>
-        </main>
-      </div>
+          <StatusMenu placement="down" />
+          <a href={hrefFor('profile')} className="tm-appbar-me" aria-label="Profile and settings" title={me.name}><Avatar person={person(me.id)} size={32} presence /></a>
+        </div>
+      </header>
 
-      {searchOpen && <SearchDialog onClose={() => setSearchOpen(false)} />}
+      <nav className="tm-rail" aria-label="Apps">
+        {nav.map(({ view, label, icon: Icon }) => (
+          <a key={view} href={hrefFor(view)} className={`tm-rail-item ${railActive(view) ? 'active' : ''}`} aria-current={railActive(view) ? 'page' : undefined}>
+            <span className="tm-rail-icon"><Icon size={20} />{view === 'chat' && chatUnread > 0 && <span className="tm-rail-badge">{chatUnread > 99 ? '99+' : chatUnread}</span>}</span>
+            <span className="tm-rail-label">{label}</span>
+          </a>
+        ))}
+        <span className="tm-rail-spacer" />
+        <a href={hrefFor('profile')} className={`tm-rail-item tm-rail-desktop ${route.view === 'profile' ? 'active' : ''}`}><span className="tm-rail-icon"><Settings size={20} /></span><span className="tm-rail-label">Settings</span></a>
+        <button type="button" className="tm-rail-item tm-rail-desktop" onClick={signOut}><span className="tm-rail-icon"><LogOut size={19} /></span><span className="tm-rail-label">Sign out</span></button>
+      </nav>
+
+      {showList && (
+        <aside className="tm-listpane" aria-label="Chats and channels">
+          <div className="tm-list-head">
+            <h2>Chat</h2>
+            <span>
+              <button type="button" className="tm-icon-btn" onClick={() => setNewDm(true)} aria-label="New message" title="New message"><MessageSquarePlus size={18} /></button>
+              <button type="button" className="tm-icon-btn tm-only-mobile" onClick={() => setNavOpen(false)} aria-label="Close"><X size={18} /></button>
+            </span>
+          </div>
+          <div className="tm-list-scroll">
+            <div className="tm-list-section">
+              <span>Channels</span>
+              {manager && <button type="button" className="tm-icon-btn sm" onClick={() => setNewChannel(true)} aria-label="New channel" title="New channel"><Plus size={15} /></button>}
+            </div>
+            {rooms.map((c) => roomLink(c, c.name, c.kind === 'private' ? <Lock size={15} /> : <Hash size={15} />))}
+            {otherPublic > 0 && <a href={hrefFor('chat', '', { browse: '1' })} className="tm-list-item subtle"><span className="tm-list-icon"><Search size={15} /></span><span className="tm-list-text"><span className="tm-list-name">Browse {otherPublic} more</span></span></a>}
+
+            <div className="tm-list-section"><span>Direct messages</span></div>
+            {dms.map((c) => {
+              const others = (c.memberIds || []).filter((id) => id !== me.id);
+              const icon = others.length === 1 ? <Avatar person={person(others[0])} size={28} presence /> : <span className="tm-group-icon"><Users size={14} /></span>;
+              return roomLink(c, dmName(c), icon, others.length > 1 ? `${others.length + 1} people` : undefined);
+            })}
+            {!dms.length && <p className="tm-list-hint">Message a teammate from People or the new message button.</p>}
+          </div>
+        </aside>
+      )}
+      <div className="tm-scrim" onClick={() => setNavOpen(false)} aria-hidden />
+
+      <main className="tm-stage">
+        {!live && <div className="tm-offline"><WifiOff size={14} /> Live updates are reconnecting. The page refreshes every 15 seconds meanwhile.</div>}
+        <div className="tm-content">
+          <Suspense fallback={<div className="tm-center"><Spinner size={20} /></div>}>{content}</Suspense>
+        </div>
+      </main>
+
       {newChannel && <NewChannel onClose={() => setNewChannel(false)} />}
       {newDm && <NewDm onClose={() => setNewDm(false)} />}
     </div>
