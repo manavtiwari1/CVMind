@@ -5,7 +5,7 @@ import { clean, handle, httpError, isId, paging } from '../../util.js';
 import { channelFor, isManager, MANAGE, oid, requireTeam, sameId, taskFor, visibleTaskFilter } from '../access.js';
 import { attachFiles, softDeleteFiles } from '../files.js';
 import { TASK_PRIORITIES, TASK_REPEATS, TeamChannel, TeamFile, TeamMessage, TeamSubmission, TeamTask, TeamTaskActivity, TeamTaskComment } from '../models.js';
-import { emailTaskAssigned, managerIds, notify, parseMentions, teamPeopleFilter } from '../notify.js';
+import { emailTaskAssigned, emailTaskSubmitted, managerIds, notify, parseMentions, teamPeopleFilter } from '../notify.js';
 import { emitToChannel, emitToUser } from '../realtime.js';
 import { filesFor, publicComment, publicSubmission, publicTask } from '../serialize.js';
 import { ROLES } from '../../permissions.js';
@@ -452,7 +452,8 @@ router.post('/tasks/:id/submissions', team, handle(async (req, res) => {
   const creator = await AdminUser.findById(task.createdBy, { role: 1 }).lean();
   const creatorManages = !!ROLES[creator?.role]?.permissions.includes(MANAGE);
   const reviewers = creatorManages ? [String(task.createdBy)] : await managerIds();
-  await notify(reviewers, { type: 'submission', actorId: req.admin.id, refType: 'task', refId: task._id, taskId: task._id, preview: `${task.title} (v${submission.version}${submission.late ? ', late' : ''})` });
+  const submittedNotes = await notify(reviewers, { type: 'submission', actorId: req.admin.id, refType: 'task', refId: task._id, taskId: task._id, preview: `${task.title} (v${submission.version}${submission.late ? ', late' : ''})` });
+  await emailTaskSubmitted(task, submission, reviewers, req.admin.id, submittedNotes);
   emitTask(task);
   const files = await filesFor([submission]);
   res.json({ success: true, data: publicSubmission(submission.toObject(), files) });

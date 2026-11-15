@@ -109,6 +109,57 @@ export async function emailTaskAssigned(task, recipientIds, actorId, notificatio
   return { sent };
 }
 
+// Emails the reviewers right away when someone submits work on a task, so they can review it.
+// Same rules as above: email-off people are skipped and the digest won't repeat it.
+export async function emailTaskSubmitted(task, submission, recipientIds, actorId, notifications = []) {
+  const ids = [...new Set((recipientIds || []).map(String))].filter((id) => !actorId || !sameId(id, actorId));
+  if (!emailConfigured() || !ids.length) return { sent: 0 };
+  const [people, actor] = await Promise.all([
+    AdminUser.find({ _id: { $in: ids }, ...teamPeopleFilter, notifyEmail: { $ne: false }, email: { $gt: '' } }).lean(),
+    actorId ? AdminUser.findById(actorId, { name: 1, username: 1 }).lean() : null
+  ]);
+  const who = actor?.name || actor?.username || 'A team member';
+  const fileCount = (submission.fileIds || []).length;
+  const details = [
+    ['Version', `v${submission.version}`],
+    ['Files', `${fileCount} file${fileCount === 1 ? '' : 's'}`],
+    task.dueAt ? ['Due', `${fmtDue(task.dueAt)} IST${submission.late ? ' (submitted late)' : ''}`] : null
+  ].filter(Boolean).map(([k, v]) => `<tr><td style="padding:6px 0;border-bottom:1px solid #eef0f3;font-size:13px;color:#6b7280;width:90px">${k}</td><td style="padding:6px 0;border-bottom:1px solid #eef0f3;font-size:14px;color:#111827">${escapeHtml(v)}</td></tr>`).join('');
+  const note = String(submission.note || '').trim();
+  const noteBlock = note
+    ? `<p style="margin:16px 0 0;font-size:14px;line-height:1.6;color:#374151;white-space:pre-line">${escapeHtml(note.length > 600 ? `${note.slice(0, 600)}…` : note)}</p>`
+    : '';
+
+  let sent = 0;
+  const emailed = [];
+  for (const p of people) {
+    try {
+      await sendEmail({
+        to: p.email,
+        subject: `Submitted for review: ${task.title}`,
+        html: renderEmail({
+          preheader: `${who} submitted work for you to review on CVMind Team.`,
+          eyebrow: 'Work submitted',
+          title: task.title,
+          greetingName: p.name || p.username,
+          body: `${escapeHtml(who)} submitted work on this task. Approve it or ask for changes.`,
+          htmlBlock: `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px">${details}</table>${noteBlock}`,
+          ctaLabel: 'Review the work',
+          ctaUrl: `${TEAM_APP_URL}/#/tasks/${task._id}`,
+          footerReason: 'You get this because email notifications are on in your CVMind Team profile.'
+        })
+      });
+      sent += 1;
+      emailed.push(String(p._id));
+    } catch (err) {
+      console.error('[team] submission email failed:', err.message);
+    }
+  }
+  const noteIds = (notifications || []).filter((n) => emailed.includes(String(n.adminId))).map((n) => n._id);
+  if (noteIds.length) await TeamNotification.updateMany({ _id: { $in: noteIds } }, { emailedAt: new Date() });
+  return { sent };
+}
+
 // The latest background push, so tests can wait for it
 let lastPush = Promise.resolve();
 export const pushSettled = () => lastPush;

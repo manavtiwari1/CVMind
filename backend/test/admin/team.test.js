@@ -624,6 +624,23 @@ test('a new assignee gets an email straight away, not again in the digest', asyn
   assert.ok(!emails.slice(digestStart).some((m) => m.html.includes('Write the FAQ')));
 });
 
+test('submitting work emails the reviewer straight away, not again in the digest', async () => {
+  const made = await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'Pricing copy', assigneeIds: [priya.id] } });
+  const file = await upload(priya.token, { name: 'pricing.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', scope: 'task', scopeId: made.body.data.id });
+  const before = emails.length;
+  const sub = await call(`/team/tasks/${made.body.data.id}/submissions`, { method: 'POST', token: priya.token, body: { note: 'Final <i>draft</i>', fileIds: [file.id] } });
+  assert.equal(sub.status, 200, JSON.stringify(sub.body));
+  const mails = emails.slice(before).filter((m) => m.subject === 'Submitted for review: Pricing copy');
+  assert.deepEqual(mails.map((m) => m.to[0]), ['riya@cvmind.test'], 'only the person who assigned it is emailed');
+  assert.match(mails[0].html, new RegExp(`/#/tasks/${made.body.data.id}`));
+  assert.match(mails[0].html, /&lt;i&gt;draft&lt;\/i&gt;/, 'the note is escaped');
+
+  const { sendNotificationDigests } = await import('../../src/admin/team/notify.js');
+  const digestStart = emails.length;
+  await sendNotificationDigests(new Date(Date.now() + 60 * 60 * 1000));
+  assert.ok(!emails.slice(digestStart).some((m) => m.to[0] === 'riya@cvmind.test' && m.html.includes('Pricing copy')));
+});
+
 test('daily check-in: one per day, blockers reach managers, managers see everyone', async () => {
   const first = await call('/team/checkin', { method: 'PUT', token: priya.token, body: { done: 'Replied to tickets', doing: 'Refund emails' } });
   assert.equal(first.status, 200);
