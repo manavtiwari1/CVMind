@@ -3,13 +3,13 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } fro
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
-const captchaPage = (svg: string) =>
-  `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;background:#fff}body{display:flex;align-items:center;justify-content:center}svg{width:100%;height:100%}</style></head><body>${svg}</body></html>`;
-
 import { api } from '@/lib/api';
 import { colors, radius } from '@/theme';
 
 import { Input, Pressy, Txt } from './ui';
+
+const captchaPage = (svg: string) =>
+  `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;background:#fff}body{display:flex;align-items:center;justify-content:center}svg{width:100%;height:100%}</style></head><body>${svg}</body></html>`;
 
 export type CaptchaHandle = { refresh: () => void; value: () => { captchaId?: string; captchaAnswer: string } };
 
