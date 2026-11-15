@@ -54,6 +54,59 @@ export async function notify(recipientIds, { type, actorId = null, refType = '',
   for (const n of created) emitToUser(String(n.adminId), 'notification.new', { id: String(n._id), type: n.type });
   // Push runs in the background so it never slows down the request that caused it
   lastPush = pushNotifications(created).catch((err) => console.error('[team] push failed:', err.message));
+  return created;
+}
+
+const PRIORITY_LABEL = { urgent: 'Urgent', high: 'High', normal: 'Normal', low: 'Low' };
+
+// Emails each new assignee right away when they're given a task. People who turned email off in
+// their profile are skipped. The notification is marked as emailed so the unread digest doesn't
+// send the same task again 30 minutes later.
+export async function emailTaskAssigned(task, recipientIds, actorId, notifications = []) {
+  const ids = [...new Set((recipientIds || []).map(String))].filter((id) => !actorId || !sameId(id, actorId));
+  if (!emailConfigured() || !ids.length) return { sent: 0 };
+  const [people, actor] = await Promise.all([
+    AdminUser.find({ _id: { $in: ids }, ...teamPeopleFilter, notifyEmail: { $ne: false }, email: { $gt: '' } }).lean(),
+    actorId ? AdminUser.findById(actorId, { name: 1, username: 1 }).lean() : null
+  ]);
+  const who = actor?.name || actor?.username || 'Your manager';
+  const details = [
+    task.dueAt ? ['Due', `${fmtDue(task.dueAt)} IST`] : null,
+    ['Priority', PRIORITY_LABEL[task.priority] || 'Normal']
+  ].filter(Boolean).map(([k, v]) => `<tr><td style="padding:6px 0;border-bottom:1px solid #eef0f3;font-size:13px;color:#6b7280;width:90px">${k}</td><td style="padding:6px 0;border-bottom:1px solid #eef0f3;font-size:14px;color:#111827">${escapeHtml(v)}</td></tr>`).join('');
+  const description = String(task.description || '').trim();
+  const descBlock = description
+    ? `<p style="margin:16px 0 0;font-size:14px;line-height:1.6;color:#374151;white-space:pre-line">${escapeHtml(description.length > 600 ? `${description.slice(0, 600)}…` : description)}</p>`
+    : '';
+
+  let sent = 0;
+  const emailed = [];
+  for (const p of people) {
+    try {
+      await sendEmail({
+        to: p.email,
+        subject: `New task: ${task.title}`,
+        html: renderEmail({
+          preheader: `${who} assigned you a task on CVMind Team.`,
+          eyebrow: 'New task',
+          title: task.title,
+          greetingName: p.name || p.username,
+          body: `${escapeHtml(who)} assigned you a task on CVMind Team.`,
+          htmlBlock: `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px">${details}</table>${descBlock}`,
+          ctaLabel: 'Open the task',
+          ctaUrl: `${TEAM_APP_URL}/#/tasks/${task._id}`,
+          footerReason: 'You get this because email notifications are on in your CVMind Team profile.'
+        })
+      });
+      sent += 1;
+      emailed.push(String(p._id));
+    } catch (err) {
+      console.error('[team] task email failed:', err.message);
+    }
+  }
+  const noteIds = (notifications || []).filter((n) => emailed.includes(String(n.adminId))).map((n) => n._id);
+  if (noteIds.length) await TeamNotification.updateMany({ _id: { $in: noteIds } }, { emailedAt: new Date() });
+  return { sent };
 }
 
 // The latest background push, so tests can wait for it

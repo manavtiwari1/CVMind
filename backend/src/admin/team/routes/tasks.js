@@ -5,7 +5,7 @@ import { clean, handle, httpError, isId, paging } from '../../util.js';
 import { channelFor, isManager, MANAGE, oid, requireTeam, sameId, taskFor, visibleTaskFilter } from '../access.js';
 import { attachFiles, softDeleteFiles } from '../files.js';
 import { TASK_PRIORITIES, TASK_REPEATS, TeamChannel, TeamFile, TeamMessage, TeamSubmission, TeamTask, TeamTaskActivity, TeamTaskComment } from '../models.js';
-import { managerIds, notify, parseMentions, teamPeopleFilter } from '../notify.js';
+import { emailTaskAssigned, managerIds, notify, parseMentions, teamPeopleFilter } from '../notify.js';
 import { emitToChannel, emitToUser } from '../realtime.js';
 import { filesFor, publicComment, publicSubmission, publicTask } from '../serialize.js';
 import { ROLES } from '../../permissions.js';
@@ -163,7 +163,8 @@ router.post('/tasks', team, handle(async (req, res) => {
   await task.save();
   await log(task._id, req.admin.id, 'created', null, { title, assigneeIds });
 
-  await notify(assigneeIds, { type: 'task_assigned', actorId: req.admin.id, refType: 'task', refId: task._id, taskId: task._id, preview: title });
+  const assignedNotes = await notify(assigneeIds, { type: 'task_assigned', actorId: req.admin.id, refType: 'task', refId: task._id, taskId: task._id, preview: title });
+  await emailTaskAssigned(task, assigneeIds, req.admin.id, assignedNotes);
   const mentioned = onTask(task, await parseMentions(description)).filter((id) => !assigneeIds.includes(id));
   await notify(mentioned, { type: 'mention', actorId: req.admin.id, refType: 'task', refId: task._id, taskId: task._id, preview: title });
 
@@ -307,7 +308,8 @@ router.patch('/tasks/:id', team, handle(async (req, res) => {
   }
 
   const base = { actorId: actor, refType: 'task', refId: task._id, taskId: task._id, preview: task.title };
-  await notify(added, { ...base, type: 'task_assigned' });
+  const assignedNotes = await notify(added, { ...base, type: 'task_assigned' });
+  await emailTaskAssigned(task, added, actor, assignedNotes);
   await notify(removed, { ...base, type: 'task_unassigned' });
   const stayed = task.assigneeIds.map(String).filter((id) => !added.includes(id));
   if (changes.some(([t]) => t === 'due' || t === 'title' || t === 'priority')) await notify(stayed, { ...base, type: 'task_updated' });

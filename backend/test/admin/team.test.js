@@ -595,6 +595,35 @@ test('the calendar loads tasks due in a date range', async () => {
   assert.equal(june.body.data.length, 0);
 });
 
+test('a new assignee gets an email straight away, not again in the digest', async () => {
+  // An earlier test turned Priya's email off; with it off she gets nothing
+  const off = emails.length;
+  await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'Quiet task', assigneeIds: [priya.id] } });
+  assert.ok(!emails.slice(off).some((m) => m.subject === 'New task: Quiet task'), 'email off means no email');
+  await call('/team/me', { method: 'PATCH', token: priya.token, body: { notifyEmail: true } });
+
+  const before = emails.length;
+  const made = await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'Write the FAQ', description: 'Cover refunds <b>and</b> plans', priority: 'high', assigneeIds: [priya.id] } });
+  assert.equal(made.status, 200);
+  const mail = emails.slice(before).find((m) => m.subject === 'New task: Write the FAQ');
+  assert.ok(mail, 'the assignee is emailed');
+  assert.deepEqual(mail.to, ['priya.nair@cvmind.test']);
+  assert.match(mail.html, new RegExp(`/#/tasks/${made.body.data.id}`));
+  assert.match(mail.html, /&lt;b&gt;and&lt;\/b&gt;/, 'the description is escaped');
+
+  // Adding someone later emails only the new person
+  const mid = emails.length;
+  const moved = await call(`/team/tasks/${made.body.data.id}`, { method: 'PATCH', token: riya.token, body: { assigneeIds: [priya.id, kabir.id] } });
+  assert.equal(moved.status, 200, JSON.stringify(moved.body));
+  assert.deepEqual(emails.slice(mid).filter((m) => m.subject === 'New task: Write the FAQ').map((m) => m.to[0]), ['kabir@cvmind.test']);
+
+  // The digest doesn't repeat an assignment that was already emailed
+  const { sendNotificationDigests } = await import('../../src/admin/team/notify.js');
+  const digestStart = emails.length;
+  await sendNotificationDigests(new Date(Date.now() + 60 * 60 * 1000));
+  assert.ok(!emails.slice(digestStart).some((m) => m.html.includes('Write the FAQ')));
+});
+
 test('daily check-in: one per day, blockers reach managers, managers see everyone', async () => {
   const first = await call('/team/checkin', { method: 'PUT', token: priya.token, body: { done: 'Replied to tickets', doing: 'Refund emails' } });
   assert.equal(first.status, 200);
