@@ -1,7 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { SvgXml } from 'react-native-svg';
+import { WebView } from 'react-native-webview';
+
+const captchaPage = (svg: string) =>
+  `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;background:#fff}body{display:flex;align-items:center;justify-content:center}svg{width:100%;height:100%}</style></head><body>${svg}</body></html>`;
 
 import { api } from '@/lib/api';
 import { colors, radius } from '@/theme';
@@ -46,7 +49,17 @@ export const Captcha = forwardRef<CaptchaHandle, { onSubmit?: () => void }>(func
           {loading ? (
             <ActivityIndicator color={colors.brand} />
           ) : challenge ? (
-            <SvgXml xml={challenge.svg} width="100%" height="100%" />
+            // A WebView draws the SVG like the website does. react-native-svg drops its <text>
+            // letters on Android (font-family="Georgia, serif" isn't a font it can resolve).
+            <WebView
+              originWhitelist={['*']}
+              source={{ html: captchaPage(challenge.svg) }}
+              style={styles.web}
+              scrollEnabled={false}
+              javaScriptEnabled={false}
+              pointerEvents="none"
+              accessibilityLabel="Captcha code picture"
+            />
           ) : (
             <Txt variant="small">{failed ? "Couldn't load" : ''}</Txt>
           )}
@@ -83,5 +96,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
+  web: { width: '100%', height: '100%', backgroundColor: 'transparent' },
   reload: { width: 48, height: 48, borderRadius: radius.md, backgroundColor: colors.brandSoft, alignItems: 'center', justifyContent: 'center' },
 });
