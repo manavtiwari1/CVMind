@@ -221,6 +221,30 @@ export async function sendMeetingReminders(now = new Date()) {
 }
 
 // People told when someone starts a meeting on the spot: the others in a DM (a channel only gets the live banner)
+// Direct calls ring like a phone: the people called get an incoming-call screen for RING_MS. If no one
+// else has joined by MISSED_MS, they get a "missed call" notification instead.
+export const RING_MS = 30 * 1000;
+const MISSED_MS = 45 * 1000;
+export function ringCallees(meeting, caller, calleeIds) {
+  if (!calleeIds.length) return;
+  const payload = { meetingId: String(meeting._id), channelId: String(meeting.channelId), from: { id: String(caller.id), name: caller.name || caller.username }, ringMs: RING_MS };
+  for (const id of calleeIds) emitToUser(id, 'call.ringing', payload);
+  const timer = setTimeout(async () => {
+    try {
+      const { livePeers } = await import('./meetRealtime.js');
+      const joined = new Set(livePeers(meeting._id).map((p) => String(p.adminId)));
+      const missed = calleeIds.filter((id) => !joined.has(String(id)));
+      for (const id of missed) emitToUser(id, 'call.stopped', { meetingId: String(meeting._id) });
+      if (missed.length && ![...joined].some((id) => calleeIds.includes(id))) {
+        await notify(missed, { type: 'call_missed', actorId: caller.id, refType: 'meeting', refId: meeting._id, channelId: meeting.channelId, preview: `Missed call from ${payload.from.name}` });
+      }
+    } catch (err) {
+      console.error('[team] missed call check failed:', err.message);
+    }
+  }, MISSED_MS);
+  timer.unref?.();
+}
+
 export async function dmMemberIds(channelId) {
   return (await TeamChannelMember.find({ channelId }, { adminId: 1 }).lean()).map((m) => String(m.adminId));
 }

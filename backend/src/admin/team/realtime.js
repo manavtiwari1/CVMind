@@ -1,9 +1,9 @@
 import { Server } from 'socket.io';
 import { adminFromToken } from '../auth.js';
 import { AdminUser } from '../models.js';
-import { channelFor } from './access.js';
+import { channelFor, meetingFor } from './access.js';
 import { TeamChannel, TeamChannelMember } from './models.js';
-import { registerMeetingHandlers } from './meetRealtime.js';
+import { isInCall, registerMeetingHandlers, setCallListener } from './meetRealtime.js';
 
 // Socket.IO for the team app. Events carry ids and small hints; the client loads the record over
 // REST, where the access checks live. Rooms: u:<adminId> (one person), c:<channelId>, m:<meetingId>
@@ -18,15 +18,45 @@ export const TEAM_SOCKET_PATH = '/team-socket';
 
 const ALLOWED_ORIGINS = [/^https:\/\/team\.cvmind\.in$/, /^https?:\/\/team\.lvh\.me(:\d+)?$/, /^http:\/\/localhost(:\d+)?$/, /^http:\/\/127\.0\.0\.1(:\d+)?$/];
 
+// Status a person sets themselves: busy, dnd (do not disturb) or away, until a time or until changed.
+// adminId → { state, until }
+const availability = new Map();
+export const AVAILABILITY = ['auto', 'busy', 'dnd', 'away'];
+
+export function availabilityOf(adminId) {
+  const a = availability.get(String(adminId));
+  if (!a || a.state === 'auto') return 'auto';
+  if (a.until && a.until <= Date.now()) {
+    availability.delete(String(adminId));
+    return 'auto';
+  }
+  return a.state;
+}
+
+// offline · dnd · busy · in_meeting · away · online
 export function presenceOf(adminId) {
   const p = presence.get(String(adminId));
   if (!p || p.sockets === 0) return 'offline';
+  const set = availabilityOf(adminId);
+  if (set === 'dnd' || set === 'busy') return set;
+  if (isInCall(adminId)) return 'in_meeting';
+  if (set === 'away') return 'away';
   return p.away ? 'away' : 'online';
 }
 
-function broadcastPresence(adminId) {
-  io?.to('team').emit('presence', { adminId, state: presenceOf(adminId) });
+// Do not disturb: no push notifications (in-app notifications still arrive)
+export const isDoNotDisturb = (adminId) => availabilityOf(adminId) === 'dnd';
+
+export function broadcastPresence(adminId) {
+  io?.to('team').emit('presence', { adminId: String(adminId), state: presenceOf(adminId) });
 }
+
+export function setAvailability(adminId, state, until = null) {
+  if (state === 'auto') availability.delete(String(adminId));
+  else availability.set(String(adminId), { state, until: until ? +new Date(until) : null });
+  broadcastPresence(adminId);
+}
+setCallListener(broadcastPresence);
 
 // Every channel room this person should receive live messages for
 async function memberChannelIds(adminId) {
@@ -59,6 +89,11 @@ export function attachTeamRealtime(httpServer, { origins = ALLOWED_ORIGINS } = {
     p.sockets += 1;
     p.away = false;
     presence.set(id, p);
+    // A status set earlier (busy, do not disturb) survives restarts through the account record
+    if (!availability.has(id) && admin.availability && admin.availability !== 'auto') {
+      const until = admin.availabilityUntil ? +new Date(admin.availabilityUntil) : null;
+      if (!until || until > Date.now()) availability.set(id, { state: admin.availability, until });
+    }
     broadcastPresence(id);
 
     // A revoked session, removed access or deactivated account closes the socket within RECHECK_MS
@@ -90,6 +125,19 @@ export function attachTeamRealtime(httpServer, { origins = ALLOWED_ORIGINS } = {
       broadcastPresence(id);
     });
 
+    // Declining an incoming direct call tells the caller
+    socket.on('call:decline', async ({ meetingId } = {}) => {
+      try {
+        const meeting = await meetingFor(admin, meetingId);
+        if (meeting.status !== 'live') return;
+        io.to(`u:${meeting.hostId}`).emit('call.declined', { meetingId: String(meeting._id), by: { id, name: admin.name } });
+        // Stop it ringing on this person's other devices
+        io.to(`u:${id}`).emit('call.stopped', { meetingId: String(meeting._id) });
+      } catch {
+        /* not their call */
+      }
+    });
+
     registerMeetingHandlers(io, socket);
 
     // Handlers are registered before this await, so nothing the client sends right away is lost
@@ -114,6 +162,7 @@ export function closeTeamRealtime() {
   io?.close();
   io = null;
   presence.clear();
+  availability.clear();
 }
 
 // No-ops without a socket server (Vercel, tests that don't attach one)

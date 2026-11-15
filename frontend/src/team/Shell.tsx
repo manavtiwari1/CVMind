@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
-import { Bell, CheckSquare, ClipboardCheck, FolderOpen, Video, Hash, Home, Lock, LogOut, Megaphone, Menu, MessageSquarePlus, Plus, Search, Settings, Users, WifiOff, X } from 'lucide-react';
+import { Bell, Bookmark, CheckSquare, ClipboardCheck, FolderOpen, Video, Hash, Home, Lock, LogOut, Megaphone, Menu, MessageSquarePlus, Plus, Search, Settings, Users, WifiOff, X } from 'lucide-react';
 import cvmindIcon from '../assets/cvmind_icon.png';
 import { api } from './api';
 import type { Channel } from './api';
@@ -8,6 +8,8 @@ import { go, hrefFor, useDmName, useRoute, useTeam } from './store';
 import { Avatar, Modal, PeoplePicker, Spinner } from './ui';
 import Notifications from './views/Notifications';
 import SearchDialog from './views/SearchDialog';
+import { IncomingCall } from './IncomingCall';
+import { StatusMenu } from './StatusMenu';
 
 const HomeView = lazy(() => import('./views/Home'));
 const Announcements = lazy(() => import('./views/Announcements'));
@@ -19,6 +21,7 @@ const CheckIn = lazy(() => import('./views/CheckIn'));
 const Meetings = lazy(() => import('./views/Meetings'));
 const Meet = lazy(() => import('./views/Meet'));
 const Profile = lazy(() => import('./views/Profile'));
+const Saved = lazy(() => import('./views/Saved'));
 
 export default function Shell() {
   const { me, manager, channels, person, unreadNotifications, live, signOut } = useTeam();
@@ -60,7 +63,8 @@ export default function Shell() {
     { view: 'checkin', label: 'Check-in', icon: ClipboardCheck },
     { view: 'meetings', label: 'Meetings', icon: Video },
     { view: 'media', label: 'Media', icon: FolderOpen },
-    { view: 'people', label: 'People', icon: Users }
+    { view: 'people', label: 'People', icon: Users },
+    { view: 'saved', label: 'Saved', icon: Bookmark }
   ];
 
   const roomLink = (c: Channel, label: string, icon: ReactNode) => {
@@ -85,11 +89,13 @@ export default function Shell() {
     case 'meetings': content = <Meetings />; break;
     case 'meet': content = <Meet key={route.id} id={route.id} />; break;
     case 'profile': content = <Profile />; break;
+    case 'saved': content = <Saved />; break;
     default: content = <HomeView />;
   }
 
   return (
     <div className={`tm-shell ${navOpen ? 'nav-open' : ''}`}>
+      <IncomingCall />
       <aside className="tm-sidebar" aria-label="Workspace">
         <div className="tm-side-head">
           <a href={hrefFor('home')} className="tm-brand sm"><img src={cvmindIcon} alt="" width={28} height={28} /><span>CV<b>Mind</b> Team</span></a>
@@ -123,6 +129,7 @@ export default function Shell() {
             <Avatar person={person(me.id)} size={30} presence />
             <span><strong>{me.name}</strong><small>{me.statusText || me.roleLabel}</small></span>
           </a>
+          <StatusMenu />
           <a href={hrefFor('profile')} className="tm-icon-btn" aria-label="Profile and settings"><Settings size={17} /></a>
           <button type="button" className="tm-icon-btn" onClick={signOut} aria-label="Sign out" title="Sign out"><LogOut size={17} /></button>
         </div>

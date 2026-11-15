@@ -3,7 +3,7 @@ import { emailConfigured, escapeHtml, renderEmail, sendEmail } from '../mailer.j
 import { ROLES } from '../permissions.js';
 import { MANAGE, sameId } from './access.js';
 import { pushConfigured, sendPush } from './push.js';
-import { emitToUser } from './realtime.js';
+import { emitToUser, isDoNotDisturb } from './realtime.js';
 import { TeamChannel, TeamChannelMember, TeamLeave, TeamNotification, TeamStandup, TeamTask } from './models.js';
 
 export const TEAM_APP_URL = (process.env.TEAM_APP_URL || 'https://team.cvmind.in').replace(/\/$/, '');
@@ -63,6 +63,7 @@ export const pushSettled = () => lastPush;
 // The app link a notification opens (hash routes, relative to the app)
 export function notificationPath(n) {
   if (n.taskId) return `#/tasks/${n.taskId}`;
+  if (n.type === 'call_missed' && n.channelId) return `#/chat/${n.channelId}`;
   if (n.refType === 'meeting' && n.refId) return `#/meet/${n.refId}`;
   if (n.type === 'standup_blocker') return '#/checkin?tab=team';
   if (n.refType === 'standup') return '#/checkin';
@@ -76,8 +77,11 @@ export function notificationPath(n) {
   return '#/home';
 }
 
-async function pushNotifications(created) {
+async function pushNotifications(all) {
   if (!pushConfigured()) return;
+  // Do not disturb: the notification is still in the app, just no push
+  const created = all.filter((n) => !isDoNotDisturb(n.adminId));
+  if (!created.length) return;
   const actorIds = [...new Set(created.map((n) => String(n.actorId || '')).filter(Boolean))];
   const actors = new Map((await AdminUser.find({ _id: { $in: actorIds } }, { name: 1, username: 1 }).lean()).map((a) => [String(a._id), a.name || a.username]));
   await sendPush(created.map((n) => {
@@ -137,7 +141,8 @@ const LABELS = {
   interview_scheduled: 'You are interviewing a candidate',
   offer_accepted: 'A candidate accepted their offer',
   offer_declined: 'A candidate declined their offer',
-  asset_renewal_soon: 'A subscription renews soon'
+  asset_renewal_soon: 'A subscription renews soon',
+  call_missed: 'called you'
 };
 export const notificationLabel = (type) => LABELS[type] || 'New activity';
 

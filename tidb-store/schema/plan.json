@@ -22284,6 +22284,114 @@
    "gridfs": false
   },
   {
+   "name": "teamsavedmessages",
+   "kind": "root",
+   "parent": null,
+   "columns": [
+    {
+     "name": "id",
+     "path": [
+      "_id"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": false,
+     "ref": null
+    },
+    {
+     "name": "admin_id",
+     "path": [
+      "adminId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "message_id",
+     "path": [
+      "messageId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "channel_id",
+     "path": [
+      "channelId"
+     ],
+     "mode": "ObjectId",
+     "type": "VARCHAR(24)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "created_at",
+     "path": [
+      "createdAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "updated_at",
+     "path": [
+      "updatedAt"
+     ],
+     "mode": "Date",
+     "type": "DATETIME(3)",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "doc_version",
+     "path": [
+      "__v"
+     ],
+     "mode": "Number",
+     "type": "INT",
+     "nullable": true,
+     "ref": null
+    },
+    {
+     "name": "_extra",
+     "mode": "extra",
+     "type": "JSON",
+     "nullable": true
+    }
+   ],
+   "children": [],
+   "indexes": [
+    {
+     "name": "uq_admin_id_message_id",
+     "unique": true,
+     "parts": [
+      "`admin_id`",
+      "`message_id`"
+     ]
+    },
+    {
+     "name": "ix_admin_id_created_at",
+     "unique": false,
+     "parts": [
+      "`admin_id`",
+      "`created_at`"
+     ]
+    }
+   ],
+   "collection": "teamsavedmessages",
+   "models": [
+    "TeamSavedMessage"
+   ],
+   "docs": 0,
+   "gridfs": false
+  },
+  {
    "name": "teamstandups",
    "kind": "root",
    "parent": null,

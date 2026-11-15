@@ -24,6 +24,9 @@ export interface TeamAccount {
   idNumber: string;
   phone: string;
   department: string;
+  // Status set by hand: auto (online/away by activity), busy, dnd (do not disturb) or away
+  availability: 'auto' | 'busy' | 'dnd' | 'away';
+  availabilityUntil: string | null;
 }
 
 export interface Session {
@@ -45,7 +48,7 @@ export interface Person {
   idNumber: string;
   phone: string;
   department: string;
-  presence: 'online' | 'away' | 'offline';
+  presence: 'online' | 'away' | 'offline' | 'busy' | 'dnd' | 'in_meeting';
   lastSeenAt: string | null;
 }
 

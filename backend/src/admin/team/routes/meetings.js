@@ -5,7 +5,7 @@ import { clean, handle, httpError, isId } from '../../util.js';
 import { channelFor, isManager, meetingFor, oid, requireTeam, sameId, visibleMeetingFilter } from '../access.js';
 import { attachFiles } from '../files.js';
 import { TeamMeeting, TeamMeetingMessage } from '../models.js';
-import { dmMemberIds, emailInvites, emitMeetingUpdate, endMeeting, meetingTime, notesSettled, postMeetingMessage, publicMeeting, scheduleEmptyEnd, writeNotes } from '../meetings.js';
+import { dmMemberIds, ringCallees, emailInvites, emitMeetingUpdate, endMeeting, meetingTime, notesSettled, postMeetingMessage, publicMeeting, scheduleEmptyEnd, writeNotes } from '../meetings.js';
 import { notify, teamPeopleFilter } from '../notify.js';
 
 const router = express.Router();
@@ -110,7 +110,11 @@ router.post('/meetings', panel, handle(async (req, res) => {
     channelId: channel._id, createdBy: req.admin.id, hostId: req.admin.id, status: 'live', startedAt: new Date()
   });
   await postMeetingMessage(meeting, req.admin.id, 'Meeting started');
-  if (channel.kind === 'dm') await notify(await dmMemberIds(channel._id), { type: 'meeting_started', actorId: req.admin.id, refType: 'meeting', refId: meeting._id, channelId: channel._id, preview: 'Tap to join the call' });
+  if (channel.kind === 'dm') {
+    const callees = (await dmMemberIds(channel._id)).filter((id) => !sameId(id, req.admin.id));
+    await notify(callees, { type: 'meeting_started', actorId: req.admin.id, refType: 'meeting', refId: meeting._id, channelId: channel._id, preview: 'Tap to join the call' });
+    ringCallees(meeting, req.admin, callees);
+  }
   scheduleEmptyEnd(meeting._id, UNJOINED_END_MS);
   emitMeetingUpdate(meeting);
   res.json({ success: true, data: publicMeeting(meeting.toObject()) });

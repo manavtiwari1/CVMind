@@ -11,6 +11,14 @@ const rooms = new Map();
 
 export const livePeers = (meetingId) => [...(rooms.get(String(meetingId))?.peers.values() || [])];
 
+// Is this person in any live call right now? Shown as "In a meeting" in presence.
+export function isInCall(adminId) {
+  for (const room of rooms.values()) for (const p of room.peers.values()) if (String(p.adminId) === String(adminId)) return true;
+  return false;
+}
+let onCallChange = () => {};
+export const setCallListener = (fn) => { onCallChange = fn; };
+
 export const REACTIONS = ['👍', '❤️', '😂', '🎉', '👏', '😮'];
 const MAX_SIGNAL_CHARS = 30000;
 const MAX_CHAT = 1000;
@@ -49,6 +57,7 @@ export function registerMeetingHandlers(io, socket) {
     if (!at) return;
     const { room, meetingId } = at;
     room.peers.delete(socket.id);
+    onCallChange(me);
     socket.leave(roomName(meetingId));
     io.to(roomName(meetingId)).emit('meet:peer-left', { socketId: socket.id });
     if (room.recording?.socketId === socket.id) {
@@ -82,6 +91,9 @@ export function registerMeetingHandlers(io, socket) {
       rooms.set(id, room);
       const peer = { socketId: socket.id, adminId: me, name: admin.name, manager: isManager(admin), mic: !!mic, cam: !!cam, screen: false, hand: false, joinedAt: Date.now() };
       room.peers.set(socket.id, peer);
+      onCallChange(me);
+      // Answered: stop the incoming-call screen on their other devices
+      io.to(`u:${me}`).emit('call.stopped', { meetingId: id });
       current = id;
       socket.join(roomName(id));
       cancelEmptyEnd(id);
