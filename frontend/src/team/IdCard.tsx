@@ -3,49 +3,47 @@ import { UserRound } from 'lucide-react';
 import type { Person } from './api';
 import { useFileUrl, Wordmark } from './ui';
 
-// Official CVMind ID card, drawn like a printed PVC badge. Interns are numbered CVM/INTERNS/0001,
+// Official CVMind ID card, drawn like a printed badge. Interns are numbered CVM/INTERNS/0001,
 // everyone else CVM/EMP/0001. The photo is the member's profile photo; only the member can change
-// it (from Profile).
+// it (from Profile), with the buttons passed in as photoAction (shown under the card).
 export function IdCard({ person, photoAction }: { person: Person; photoAction?: ReactNode }) {
   const src = useFileUrl(person.avatarFileId);
   const intern = person.idNumber.startsWith('CVM/INTERNS/');
-  const rows: [string, string][] = [
-    ['Department', person.department || 'NA'],
-    ['Phone', person.phone || 'NA'],
-    ['E-mail', person.email || 'NA'],
-    // No one has an official @cvmind.in mailbox yet
-    ['Official mail', 'NA']
-  ];
   return (
-    <article className={`tm-idcard ${intern ? 'intern' : ''}`} aria-label={`ID card of ${person.name}`}>
-      <header className="tm-idcard-head">
-        <span className="tm-idcard-slot" aria-hidden />
-        <div className="tm-idcard-brandrow">
-          <span className="tm-idcard-brand"><Wordmark /><small>Identity card</small></span>
+    <div className="tm-idcard-wrap">
+      <article className={`tm-idcard ${intern ? 'intern' : ''}`} aria-label={`ID card of ${person.name}`}>
+        <header className="tm-idcard-head">
+          <span className="tm-idcard-slot" aria-hidden />
+          <Wordmark />
           <span className="tm-idcard-kind">{intern ? 'Intern' : 'Employee'}</span>
+        </header>
+
+        <div className="tm-idcard-main">
+          <div className="tm-idcard-photo">
+            {src ? <img src={src} alt={`Photo of ${person.name}`} /> : <UserRound size={40} aria-hidden />}
+          </div>
+          <div className="tm-idcard-who">
+            <h3>{person.name}</h3>
+            <p>{person.roleLabel}</p>
+            <span className="tm-idcard-no">{person.idNumber || 'Number pending'}</span>
+          </div>
         </div>
-      </header>
-      <div className="tm-idcard-photo">
-        {src ? <img src={src} alt={`Photo of ${person.name}`} /> : <UserRound size={48} aria-hidden />}
-      </div>
-      <div className="tm-idcard-who">
-        <h3>{person.name}</h3>
-        <p>{person.roleLabel}</p>
-        <span className="tm-idcard-no"><span>ID</span>{person.idNumber || 'Number pending'}</span>
-      </div>
-      <dl className="tm-idcard-rows">
-        {rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
-      </dl>
-      {person.idNumber && (
-        <div className="tm-idcard-code">
-          <Barcode value={person.idNumber} />
-          <span>{person.idNumber}</span>
-        </div>
-      )}
-      <p className="tm-idcard-note">This card belongs to CVMind. If found, please return it to CVMind · cvmind.in</p>
-      {photoAction && <footer className="tm-idcard-foot">{photoAction}</footer>}
-      <div className="tm-idcard-band" aria-hidden />
-    </article>
+
+        <dl className="tm-idcard-rows">
+          <div><dt>Department</dt><dd>{person.department || 'NA'}</dd></div>
+          <div><dt>Phone</dt><dd>{person.phone || 'NA'}</dd></div>
+          <div className="wide"><dt>E-mail</dt><dd>{person.email || 'NA'}</dd></div>
+          {/* No one has an official @cvmind.in mailbox yet */}
+          <div className="wide"><dt>Official mail</dt><dd>NA</dd></div>
+        </dl>
+
+        <footer className="tm-idcard-foot">
+          {person.idNumber && <Barcode value={person.idNumber} />}
+          <p>Property of CVMind. If found, please return to CVMind · cvmind.in</p>
+        </footer>
+      </article>
+      {photoAction && <div className="tm-idcard-actions">{photoAction}</div>}
+    </div>
   );
 }
 
@@ -74,7 +72,7 @@ function Barcode({ value }: { value: string }) {
     x += NARROW; // gap between characters
   }
   return (
-    <svg viewBox={`0 0 ${x} 30`} preserveAspectRatio="none" role="img" aria-label={`Barcode ${value}`}>
+    <svg className="tm-idcard-barcode" viewBox={`0 0 ${x} 30`} preserveAspectRatio="none" role="img" aria-label={`Barcode ${value}`}>
       {bars.map((b, i) => <rect key={i} x={b.x} y={0} width={b.w} height={30} fill="#0f1424" />)}
     </svg>
   );
