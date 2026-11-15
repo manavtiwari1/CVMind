@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
-import { Bell, Bookmark, CheckSquare, ClipboardCheck, FolderOpen, Video, Hash, Home, Lock, LogOut, Megaphone, Menu, MessageSquarePlus, MessagesSquare, Plus, Search, Settings, Users, WifiOff, X } from 'lucide-react';
+import { Bell, Bookmark, CheckSquare, ClipboardCheck, FolderOpen, Video, Hash, Home, Lock, LogOut, Mail, Megaphone, Menu, MessageSquarePlus, MessagesSquare, Plus, Search, Settings, Users, WifiOff, X } from 'lucide-react';
 import cvmindIcon from '../assets/cvmind_icon.png';
 import { api } from './api';
 import type { Channel } from './api';
@@ -22,6 +22,7 @@ const Meetings = lazy(() => import('./views/Meetings'));
 const Meet = lazy(() => import('./views/Meet'));
 const Profile = lazy(() => import('./views/Profile'));
 const Saved = lazy(() => import('./views/Saved'));
+const Email = lazy(() => import('./views/Email'));
 
 export default function Shell() {
   const { me, manager, channels, person, unreadNotifications, live, signOut } = useTeam();
@@ -53,7 +54,9 @@ export default function Shell() {
     { view: 'checkin', label: 'Check-in', icon: ClipboardCheck },
     { view: 'media', label: 'Files', icon: FolderOpen },
     { view: 'people', label: 'People', icon: Users },
-    { view: 'saved', label: 'Saved', icon: Bookmark }
+    { view: 'saved', label: 'Saved', icon: Bookmark },
+    // Managers email one person, a group or everyone
+    ...(manager ? [{ view: 'email', label: 'Email', icon: Mail }] : [])
   ];
   const chatUnread = channels.reduce((n, c) => n + (c.muted ? 0 : c.unread || 0), 0);
   // The chat list sits next to the conversation (and on Home), like Teams' second column
@@ -83,6 +86,7 @@ export default function Shell() {
     case 'meet': content = <Meet key={route.id} id={route.id} />; break;
     case 'profile': content = <Profile />; break;
     case 'saved': content = <Saved />; break;
+    case 'email': content = manager ? <Email /> : <HomeView />; break;
     default: content = <HomeView />;
   }
 

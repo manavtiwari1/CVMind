@@ -5,7 +5,7 @@ import { rateLimit } from 'express-rate-limit';
 import { AdminUser } from '../../models.js';
 import { invalidateAdminCache } from '../../auth.js';
 import { audit } from '../../audit.js';
-import { emailConfigured, escapeHtml, renderEmail, sendEmail } from '../../mailer.js';
+import { emailConfigured, escapeHtml, renderEmail, sendEmail, sendEmailBatch } from '../../mailer.js';
 import { createAdminMember } from '../../members.js';
 import { FULL_ACCESS_ROLES, ROLES, isFullAccess } from '../../permissions.js';
 import { clean, escapeRegex, handle, httpError, isId, paging } from '../../util.js';
@@ -247,59 +247,60 @@ router.patch('/members/:adminId/id-number', manage, handle(async (req, res) => {
   res.json({ success: true, idNumber: saved.idNumber });
 }));
 
-// A manager writes an email to one person on the team. It goes out from CVMind with the manager's
-// name on it. Replies go to the CVMind support inbox (SUPPORT_EMAIL), not the manager's own address.
+// A manager writes one email to several people on the team (or everyone) at once. Each person gets
+// their own copy from CVMind with the manager's name on it. Replies go to the CVMind support inbox
+// (SUPPORT_EMAIL), not the manager's own address.
 const MAX_EMAIL_SUBJECT = 150;
 const MAX_EMAIL_MESSAGE = 5000;
+const MAX_EMAIL_RECIPIENTS = 200;
 const directEmailLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  limit: 30,
+  limit: 20,
   keyGenerator: (req) => `team-direct-email:${req.admin?.id}`,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   handler: (req, res) => res.status(429).json({ success: false, error: 'You have sent a lot of emails. Try again in an hour.' })
 });
 
-router.post('/members/:adminId/email', manage, directEmailLimiter, handle(async (req, res) => {
+router.post('/email', manage, directEmailLimiter, handle(async (req, res) => {
   if (!emailConfigured()) throw httpError(503, 'Email is not set up on this server.');
-  if (!isId(req.params.adminId)) throw httpError(404, 'Person not found.');
-  if (req.params.adminId === req.admin.id) throw httpError(400, "You can't email yourself from here.");
   const subject = clean(req.body?.subject, MAX_EMAIL_SUBJECT);
   const message = String(req.body?.message ?? '').trim();
   if (!subject) throw httpError(400, 'Write a subject.');
   if (!message) throw httpError(400, 'Write the message.');
   if (message.length > MAX_EMAIL_MESSAGE) throw httpError(400, `The message can be up to ${MAX_EMAIL_MESSAGE} characters.`);
+  const ids = [...new Set((Array.isArray(req.body?.adminIds) ? req.body.adminIds : []).map(String))].filter((id) => isId(id) && id !== req.admin.id);
+  if (!ids.length) throw httpError(400, 'Pick at least one person.');
+  if (ids.length > MAX_EMAIL_RECIPIENTS) throw httpError(400, `You can email up to ${MAX_EMAIL_RECIPIENTS} people at once.`);
 
-  const [member, sender] = await Promise.all([
-    AdminUser.findById(req.params.adminId, { name: 1, username: 1, email: 1, active: 1 }).lean(),
-    AdminUser.findById(req.admin.id, { name: 1, username: 1, email: 1, role: 1 }).lean()
+  const [people, sender] = await Promise.all([
+    AdminUser.find({ _id: { $in: ids }, active: { $ne: false } }, { name: 1, username: 1, email: 1 }).lean(),
+    AdminUser.findById(req.admin.id, { name: 1, username: 1, role: 1 }).lean()
   ]);
-  if (!member || member.active === false) throw httpError(404, 'Person not found.');
-  if (!member.email) throw httpError(400, `${member.name || member.username} has no email address on their profile.`);
+  const withEmail = people.filter((p) => p.email);
+  const noEmail = people.filter((p) => !p.email).map((p) => p.name || p.username);
+  if (!withEmail.length) throw httpError(400, 'None of the people you picked has an email address on their profile.');
   const from = sender?.name || sender?.username || req.admin.username || 'Your manager';
   const roleLabel = ROLES[sender?.role]?.label || '';
 
-  try {
-    await sendEmail({
-      to: member.email,
-      subject,
-      html: renderEmail({
-        preheader: `A message from ${from} at CVMind.`,
-        eyebrow: `Message from ${from}`,
-        title: subject,
-        greetingName: member.name || member.username,
-        body: message,
-        afterword: `${from}${roleLabel ? `, ${roleLabel}` : ''}`,
-        ctaLabel: 'Open CVMind Team',
-        ctaUrl: TEAM_APP_URL,
-        footerReason: `${from} sent you this from CVMind Team.`
-      })
-    });
-  } catch (err) {
-    throw httpError(502, `The email could not be sent: ${err.message}`);
-  }
-  await audit(req, 'teamchat.direct_email', { targetType: 'admin', targetId: member._id, targetLabel: member.username, details: { subject } });
-  res.json({ success: true, to: member.email });
+  const result = await sendEmailBatch(withEmail.map((p) => ({
+    to: p.email,
+    subject,
+    html: renderEmail({
+      preheader: `A message from ${from} at CVMind.`,
+      eyebrow: `Message from ${from}`,
+      title: subject,
+      greetingName: p.name || p.username,
+      body: message,
+      afterword: `${from}${roleLabel ? `, ${roleLabel}` : ''}`,
+      ctaLabel: 'Open CVMind Team',
+      ctaUrl: TEAM_APP_URL,
+      footerReason: `${from} sent you this from CVMind Team.`
+    })
+  })));
+  if (!result.sent) throw httpError(502, `The email could not be sent: ${result.errors?.[0]?.message || 'email provider error'}`);
+  await audit(req, 'teamchat.direct_email', { targetType: 'admin', targetLabel: `${result.sent} people`, details: { subject, recipients: withEmail.map((p) => p.username), failed: result.failed } });
+  res.json({ success: true, sent: result.sent, failed: result.failed, noEmail });
 }));
 
 // ── Overview ─────────────────────────────────────────────────────────────────

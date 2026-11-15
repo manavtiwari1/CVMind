@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { IdCard as IdCardIcon, Mail, MessageSquare, Search, Sparkles } from 'lucide-react';
+import { IdCard as IdCardIcon, MessageSquare, Search, Sparkles } from 'lucide-react';
 import { IdCard } from '../IdCard';
 import { ProgressReport } from './Leo';
 import { api } from '../api';
@@ -13,7 +13,6 @@ export default function People() {
   const [q, setQ] = useState('');
   const [report, setReport] = useState<string | null>(null);
   const [card, setCard] = useState<Person | null>(null);
-  const [mailTo, setMailTo] = useState<Person | null>(null);
   const query = q.trim().toLowerCase();
   const list = [...people.values()]
     .filter((p) => p.active)
@@ -43,7 +42,6 @@ export default function People() {
       <span className="tm-dir-action">
         <button type="button" className="tm-btn sm ghost" onClick={() => setCard(p)} aria-label={`ID card of ${p.name}`} title="ID card"><IdCardIcon size={14} /> <span>ID card</span></button>
         {manager && p.id !== me.id && <button type="button" className="tm-btn sm ghost" onClick={() => setReport(p.id)} aria-label={`Progress report for ${p.name}`} title="Progress report by Leo"><Sparkles size={14} /> <span>Report</span></button>}
-        {manager && p.id !== me.id && <button type="button" className="tm-btn sm ghost" onClick={() => setMailTo(p)} aria-label={`Email ${p.name}`} title="Send an email"><Mail size={14} /> <span>Email</span></button>}
         {p.id !== me.id && <button type="button" className="tm-btn sm" onClick={() => message(p.id)} aria-label={`Message ${p.name}`}><MessageSquare size={14} /> <span>Message</span></button>}
       </span>
     </li>
@@ -76,7 +74,6 @@ export default function People() {
         </Modal>
       )}
       {report && <ProgressReport adminId={report} onClose={() => setReport(null)} />}
-      {mailTo && <EmailForm person={mailTo} onClose={() => setMailTo(null)} />}
     </div>
   );
 }
@@ -115,41 +112,3 @@ function IdNumberForm({ person, onSaved }: { person: Person; onSaved: (idNumber:
   );
 }
 
-// Managers write an email to one person; it arrives from CVMind with the manager's name, and replies come back to them
-function EmailForm({ person, onClose }: { person: Person; onClose: () => void }) {
-  const { toast } = useTeam();
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
-  const [busy, setBusy] = useState(false);
-  const send = async (e: FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      await api(`/members/${person.id}/email`, { method: 'POST', body: { subject, message } });
-      toast(`Email sent to ${person.name}`);
-      onClose();
-    } catch (err) {
-      toast(err instanceof Error ? err.message : 'Could not send the email.', 'error');
-      setBusy(false);
-    }
-  };
-  return (
-    <Modal title={`Email ${person.name}`} onClose={onClose}>
-      <form className="tm-form" onSubmit={send}>
-        <div className="tm-field">
-          <label htmlFor="em-subject">Subject</label>
-          <input id="em-subject" className="tm-input" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={150} autoFocus required />
-        </div>
-        <div className="tm-field">
-          <label htmlFor="em-message">Message</label>
-          <textarea id="em-message" className="tm-input tm-textarea" rows={8} value={message} onChange={(e) => setMessage(e.target.value)} maxLength={5000} required />
-          <span className="tm-hint">Goes to their email inbox with your name on it. Replies go to cvmindofficial@gmail.com.</span>
-        </div>
-        <div className="tm-inline" style={{ justifyContent: 'flex-end' }}>
-          <button type="button" className="tm-btn ghost" onClick={onClose} disabled={busy}>Cancel</button>
-          <button type="submit" className="tm-btn primary" disabled={busy || !subject.trim() || !message.trim()}>{busy && <Spinner size={14} />} Send email</button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
