@@ -247,6 +247,62 @@ router.patch('/members/:adminId/id-number', manage, handle(async (req, res) => {
   res.json({ success: true, idNumber: saved.idNumber });
 }));
 
+// A manager writes an email to one person on the team. It goes out from CVMind with the manager's
+// name on it, and replies go to the manager's own email address.
+const MAX_EMAIL_SUBJECT = 150;
+const MAX_EMAIL_MESSAGE = 5000;
+const directEmailLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 30,
+  keyGenerator: (req) => `team-direct-email:${req.admin?.id}`,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler: (req, res) => res.status(429).json({ success: false, error: 'You have sent a lot of emails. Try again in an hour.' })
+});
+
+router.post('/members/:adminId/email', manage, directEmailLimiter, handle(async (req, res) => {
+  if (!emailConfigured()) throw httpError(503, 'Email is not set up on this server.');
+  if (!isId(req.params.adminId)) throw httpError(404, 'Person not found.');
+  if (req.params.adminId === req.admin.id) throw httpError(400, "You can't email yourself from here.");
+  const subject = clean(req.body?.subject, MAX_EMAIL_SUBJECT);
+  const message = String(req.body?.message ?? '').trim();
+  if (!subject) throw httpError(400, 'Write a subject.');
+  if (!message) throw httpError(400, 'Write the message.');
+  if (message.length > MAX_EMAIL_MESSAGE) throw httpError(400, `The message can be up to ${MAX_EMAIL_MESSAGE} characters.`);
+
+  const [member, sender] = await Promise.all([
+    AdminUser.findById(req.params.adminId, { name: 1, username: 1, email: 1, active: 1 }).lean(),
+    AdminUser.findById(req.admin.id, { name: 1, username: 1, email: 1, role: 1 }).lean()
+  ]);
+  if (!member || member.active === false) throw httpError(404, 'Person not found.');
+  if (!member.email) throw httpError(400, `${member.name || member.username} has no email address on their profile.`);
+  const from = sender?.name || sender?.username || req.admin.username || 'Your manager';
+  const roleLabel = ROLES[sender?.role]?.label || '';
+
+  try {
+    await sendEmail({
+      to: member.email,
+      subject,
+      replyTo: sender?.email || undefined,
+      html: renderEmail({
+        preheader: `A message from ${from} at CVMind.`,
+        eyebrow: `Message from ${from}`,
+        title: subject,
+        greetingName: member.name || member.username,
+        body: message,
+        afterword: `${from}${roleLabel ? `, ${roleLabel}` : ''}`,
+        ctaLabel: 'Open CVMind Team',
+        ctaUrl: TEAM_APP_URL,
+        footerReason: `${from} sent you this from CVMind Team.${sender?.email ? ' Reply to this email to answer them.' : ''}`
+      })
+    });
+  } catch (err) {
+    throw httpError(502, `The email could not be sent: ${err.message}`);
+  }
+  await audit(req, 'teamchat.direct_email', { targetType: 'admin', targetId: member._id, targetLabel: member.username, details: { subject } });
+  res.json({ success: true, to: member.email });
+}));
+
 // ── Overview ─────────────────────────────────────────────────────────────────
 router.get('/overview', manage, handle(async (req, res) => {
   const now = new Date();
