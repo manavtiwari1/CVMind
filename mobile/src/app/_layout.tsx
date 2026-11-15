@@ -54,6 +54,7 @@ function Navigator() {
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
         <Stack.Screen name="verify-email" />
         <Stack.Screen name="settings" />
+        <Stack.Screen name="doc/[id]" />
       </Stack.Protected>
     </Stack>
   );

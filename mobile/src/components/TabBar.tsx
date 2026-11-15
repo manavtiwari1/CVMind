@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import type { ComponentProps } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useState, type ComponentProps } from 'react';
+import { Keyboard, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -46,6 +46,17 @@ function TabButton({ route, focused, onPress }: { route: Route; focused: boolean
 // The bottom tab bar: icons with a soft pill behind the active one
 export function TabBar({ state, navigateToTab }: Props) {
   const insets = useSafeAreaInsets();
+  // Out of the way while typing, so the Leo composer sits right above the keyboard
+  const [keyboard, setKeyboard] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboard(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboard(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  if (keyboard) return null;
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
       {state.routes.map((route, i) => (

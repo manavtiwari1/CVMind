@@ -8,6 +8,7 @@ let sessionToken: string | null = null;
 export const setApiToken = (token: string | null) => {
   sessionToken = token;
 };
+export const getApiToken = () => sessionToken;
 
 export class ApiError extends Error {
   status: number;
