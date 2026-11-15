@@ -1,7 +1,7 @@
 import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { dbReady } from '../admin/auth.js';
-import { emailConfigured, escapeHtml, renderEmail, sendEmail } from '../admin/mailer.js';
+import { emailConfigured, renderEmail, sendEmail } from '../admin/mailer.js';
 import { clean, handle, httpError, isId } from '../admin/util.js';
 import { TeamFile } from '../admin/team/models.js';
 import { notify } from '../admin/team/notify.js';
@@ -94,7 +94,7 @@ router.post('/api/careers/:slug/apply', applyLimiter, handle(async (req, res) =>
     sendEmail({
       to: candidate.email,
       subject: `We got your application: ${opening.title}`,
-      html: renderEmail({ preheader: 'Thanks for applying to CVMind', title: 'Application received', greetingName: candidate.name.split(/\s+/)[0], body: `Thanks for applying for <strong>${escapeHtml(opening.title)}</strong> at CVMind. Our team reads every application and will email you about the next step.` })
+      html: renderEmail({ preheader: 'Thanks for applying to CVMind', title: 'Application received', greetingName: candidate.name.split(/\s+/)[0], body: `Thanks for applying for ${opening.title} at CVMind. Our team reads every application and will email you about the next step.` })
     }).catch((err) => console.error('[erp] application email failed:', err.message));
   }
   res.json({ success: true });

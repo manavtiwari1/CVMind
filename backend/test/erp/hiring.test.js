@@ -181,3 +181,9 @@ test('rejections email the candidate; old candidates are deleted 180 days after 
   const left = await call(`/erp/hiring/candidates?openingId=${opening.id}`, { token: owner });
   assert.deepEqual(left.body.data.map((c) => c.name), ['Isha Rao']);
 });
+
+test('candidate emails are plain paragraphs, with no HTML tags shown as text', async () => {
+  const mails = emails.filter((m) => /application|Your application to CVMind/i.test(m.subject));
+  assert.ok(mails.length >= 2);
+  for (const m of mails) assert.doesNotMatch(m.html, /&lt;(strong|br)/);
+});

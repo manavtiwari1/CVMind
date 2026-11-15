@@ -1,7 +1,6 @@
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { AdminUser } from '../admin/models.js';
-import { escapeHtml } from '../admin/mailer.js';
 import { clean, httpError, isEmail } from '../admin/util.js';
 import { TeamFile } from '../admin/team/models.js';
 import { EMPLOYMENT_TYPES, ErpCandidate, ErpOpening, PAY_TYPES } from './models.js';
@@ -158,7 +157,9 @@ export const rejectionEmail = (candidate, openingTitle) => ({
   preheader: `About your application for ${openingTitle}`,
   title: 'About your application',
   greetingName: candidate.name.split(/\s+/)[0],
-  body: `Thank you for applying for <strong>${escapeHtml(openingTitle)}</strong> at CVMind and for the time you put into it. After careful thought, we won't be moving ahead with your application this time.<br><br>We'd be glad to see you apply again for future openings.`
+  body: `Thank you for applying for ${openingTitle} at CVMind and for the time you put into it. After careful thought, we won't be moving ahead with your application this time.
+
+We'd be glad to see you apply again for future openings.`
 });
 
 // Daily: candidates who didn't join are deleted 180 days after their opening closed

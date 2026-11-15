@@ -2,7 +2,7 @@ import express from 'express';
 import { AdminUser } from '../../admin/models.js';
 import { audit } from '../../admin/audit.js';
 import { requireAdmin } from '../../admin/auth.js';
-import { emailConfigured, escapeHtml, renderEmail, sendEmail } from '../../admin/mailer.js';
+import { emailConfigured, renderEmail, sendEmail } from '../../admin/mailer.js';
 import { clean, handle, httpError, isId } from '../../admin/util.js';
 import { TeamPastMember } from '../../admin/team/models.js';
 import { istDay, notify } from '../../admin/team/notify.js';
@@ -47,7 +47,7 @@ export async function issueLetter(req, { type, adminId = null, candidateId = nul
           preheader: `${letter.title} · ${letter.number}`,
           title: letter.title,
           greetingName: recipientName.split(/\s+/)[0],
-          body: `CVMind has issued your ${escapeHtml(LETTER_LABELS[type].toLowerCase())}. The PDF is attached. Anyone can check that it's genuine with its verify link.`,
+          body: `CVMind has issued your ${LETTER_LABELS[type].toLowerCase()}. The PDF is attached. Anyone can check that it's genuine with its verify link.`,
           ctaLabel: 'Verify this letter',
           ctaUrl: `${(process.env.PUBLIC_SITE_URL || 'https://www.cvmind.in').replace(/\/$/, '')}/verify/${letter.code}`
         }),
