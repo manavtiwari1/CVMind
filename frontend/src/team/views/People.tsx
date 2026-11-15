@@ -143,7 +143,7 @@ function EmailForm({ person, onClose }: { person: Person; onClose: () => void })
         <div className="tm-field">
           <label htmlFor="em-message">Message</label>
           <textarea id="em-message" className="tm-input tm-textarea" rows={8} value={message} onChange={(e) => setMessage(e.target.value)} maxLength={5000} required />
-          <span className="tm-hint">Goes to their email inbox with your name on it. When they reply, it comes to your email.</span>
+          <span className="tm-hint">Goes to their email inbox with your name on it. Replies go to cvmindofficial@gmail.com.</span>
         </div>
         <div className="tm-inline" style={{ justifyContent: 'flex-end' }}>
           <button type="button" className="tm-btn ghost" onClick={onClose} disabled={busy}>Cancel</button>

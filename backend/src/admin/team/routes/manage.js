@@ -248,7 +248,7 @@ router.patch('/members/:adminId/id-number', manage, handle(async (req, res) => {
 }));
 
 // A manager writes an email to one person on the team. It goes out from CVMind with the manager's
-// name on it, and replies go to the manager's own email address.
+// name on it. Replies go to the CVMind support inbox (SUPPORT_EMAIL), not the manager's own address.
 const MAX_EMAIL_SUBJECT = 150;
 const MAX_EMAIL_MESSAGE = 5000;
 const directEmailLimiter = rateLimit({
@@ -283,7 +283,6 @@ router.post('/members/:adminId/email', manage, directEmailLimiter, handle(async 
     await sendEmail({
       to: member.email,
       subject,
-      replyTo: sender?.email || undefined,
       html: renderEmail({
         preheader: `A message from ${from} at CVMind.`,
         eyebrow: `Message from ${from}`,
@@ -293,7 +292,7 @@ router.post('/members/:adminId/email', manage, directEmailLimiter, handle(async 
         afterword: `${from}${roleLabel ? `, ${roleLabel}` : ''}`,
         ctaLabel: 'Open CVMind Team',
         ctaUrl: TEAM_APP_URL,
-        footerReason: `${from} sent you this from CVMind Team.${sender?.email ? ' Reply to this email to answer them.' : ''}`
+        footerReason: `${from} sent you this from CVMind Team.`
       })
     });
   } catch (err) {

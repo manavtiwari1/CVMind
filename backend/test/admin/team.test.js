@@ -641,13 +641,13 @@ test('submitting work emails the reviewer straight away, not again in the digest
   assert.ok(!emails.slice(digestStart).some((m) => m.to[0] === 'riya@cvmind.test' && m.html.includes('Pricing copy')));
 });
 
-test('a manager can email one person; others cannot, and replies go to the manager', async () => {
+test('a manager can email one person; others cannot, and replies go to the support inbox', async () => {
   const before = emails.length;
   const sent = await call(`/team/members/${priya.id}/email`, { method: 'POST', token: riya.token, body: { subject: 'Monday plan', message: 'Please share the <b>report</b> by 5.\n\nThanks' } });
   assert.equal(sent.status, 200, JSON.stringify(sent.body));
   const mail = emails.slice(before).find((m) => m.subject === 'Monday plan');
   assert.deepEqual(mail.to, ['priya.nair@cvmind.test']);
-  assert.deepEqual([mail.reply_to].flat(), ['riya@cvmind.test']);
+  assert.deepEqual([mail.reply_to].flat(), ['cvmindofficial@gmail.com']);
   assert.match(mail.html, /&lt;b&gt;report&lt;\/b&gt;/, 'the message is escaped');
 
   assert.equal((await call(`/team/members/${riya.id}/email`, { method: 'POST', token: priya.token, body: { subject: 'Hi', message: 'Hi' } })).status, 403, 'members cannot');
