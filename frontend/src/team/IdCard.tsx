@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react';
 import { UserRound } from 'lucide-react';
-import cvmindIcon from '../assets/cvmind_icon.png';
 import type { Person } from './api';
-import { useFileUrl } from './ui';
+import { useFileUrl, Wordmark } from './ui';
 
 // Official CVMind ID card, drawn like a printed PVC badge. Interns are numbered CVM/INTERNS/0001,
 // everyone else CVM/EMP/0001. The photo is the member's profile photo; only the member can change
@@ -22,8 +21,7 @@ export function IdCard({ person, photoAction }: { person: Person; photoAction?: 
       <header className="tm-idcard-head">
         <span className="tm-idcard-slot" aria-hidden />
         <div className="tm-idcard-brandrow">
-          <img src={cvmindIcon} alt="" width={32} height={32} />
-          <span className="tm-idcard-brand"><strong>CV<b>Mind</b></strong><small>Identity card</small></span>
+          <span className="tm-idcard-brand"><Wordmark /><small>Identity card</small></span>
           <span className="tm-idcard-kind">{intern ? 'Intern' : 'Employee'}</span>
         </div>
       </header>

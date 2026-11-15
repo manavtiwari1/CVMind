@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import cvmindIcon from '../assets/cvmind_icon.png';
 import './team.css';
 import { api, clearSession, loadSession, saveSession, setAuthErrorHandler } from './api';
 import type { Session, TeamAccount } from './api';
@@ -10,7 +9,7 @@ import { disablePush, registerTeamWorker } from './push';
 import { isSplitHost } from '../lib/hosts';
 import TeamProvider from './TeamProvider';
 import Shell from './Shell';
-import { ConfirmHost, Spinner } from './ui';
+import { ConfirmHost, Spinner, Wordmark } from './ui';
 
 type Phase = 'checking' | 'signed-out' | 'set-password' | 'signed-in';
 
@@ -111,8 +110,7 @@ export default function TeamApp() {
 function Brand() {
   return (
     <div className="tm-brand">
-      <img src={cvmindIcon} alt="" width={34} height={34} />
-      <span>CV<b>Mind</b> Team</span>
+      <Wordmark product="Team" size="lg" />
     </div>
   );
 }

@@ -12,6 +12,18 @@ import { ACCEPT, fileUrl, formatBytes, isImage, openFile } from './upload';
 // ── Small pieces ─────────────────────────────────────────────────────────────
 export const Spinner = ({ size = 16 }: { size?: number }) => <Loader2 size={size} className="tm-spin" aria-hidden />;
 
+// The CVMind wordmark, as on cvmind.in: handwritten "CV", bold "Mind", green dot
+export function Wordmark({ product, size = 'md' }: { product?: string; size?: 'md' | 'lg' }) {
+  return (
+    <span className={`tm-wordmark ${size}`} aria-label={`CVMind${product ? ` ${product}` : ''}`}>
+      <span className="tm-wm-cv" aria-hidden>CV</span>
+      <span className="tm-wm-mind" aria-hidden>Mind</span>
+      <i className="tm-wm-dot" aria-hidden />
+      {product && <span className="tm-wm-product" aria-hidden>{product}</span>}
+    </span>
+  );
+}
+
 export function Empty({ icon, title, text, action }: { icon?: ReactNode; title: string; text?: ReactNode; action?: ReactNode }) {
   return (
     <div className="tm-empty">

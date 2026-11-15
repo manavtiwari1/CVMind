@@ -1,11 +1,10 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { Bell, Bookmark, CheckSquare, ClipboardCheck, FolderOpen, Video, Hash, Home, Lock, LogOut, Megaphone, ShieldCheck, Menu, MessageSquarePlus, MessagesSquare, Plus, Search, Settings, Users, WifiOff, X } from 'lucide-react';
-import cvmindIcon from '../assets/cvmind_icon.png';
 import { api } from './api';
 import type { Channel } from './api';
 import { go, hrefFor, useDmName, useRoute, useTeam } from './store';
-import { Avatar, Modal, PeoplePicker, Spinner } from './ui';
+import { Avatar, Modal, PeoplePicker, Spinner, Wordmark } from './ui';
 import Notifications from './views/Notifications';
 import { TopSearch } from './TopSearch';
 import { IncomingCall } from './IncomingCall';
@@ -97,7 +96,7 @@ export default function Shell() {
       <IncomingCall />
       <header className="tm-appbar">
         {showList && <button type="button" className="tm-icon-btn tm-only-mobile" onClick={() => setNavOpen(true)} aria-label="Open chats"><Menu size={20} /></button>}
-        <a href={hrefFor('home')} className="tm-appbar-brand"><img src={cvmindIcon} alt="" width={26} height={26} /><span>CV<b>Mind</b> <em>Team</em></span></a>
+        <a href={hrefFor('home')} className="tm-appbar-brand"><Wordmark product="Team" /></a>
         <TopSearch />
         <div className="tm-appbar-right">
           <div className="tm-bell">

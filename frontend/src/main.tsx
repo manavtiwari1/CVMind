@@ -1,11 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { GoogleOAuthProvider } from '@react-oauth/google'
 import './index.css'
-import App from './App.tsx'
 import { syncSessionFromCookie } from './lib/session'
 import { hostRedirectTarget, isPlacementsHost, isTeamHost } from './lib/hosts'
-import { pickTemplate } from './lib/templatePick'
 
 // Pick up a sign-in from the other cvmind.in host, then make sure this address is on the right one
 syncSessionFromCookie()
@@ -32,21 +29,24 @@ if (isTeamHost()) {
 } else if (redirectTo) {
   window.location.replace(redirectTo)
 } else {
-  // A template picked on www arrives as ?template= (see setCurrentPage in App)
-  const params = new URLSearchParams(window.location.search)
-  const template = params.get('template')
-  if (template) {
-    pickTemplate(template)
-    params.delete('template')
-    const qs = params.toString()
-    window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash)
-  }
+  // The main site loads on its own, so team.cvmind.in and placements.cvmind.in never download it
+  Promise.all([import('./App.tsx'), import('@react-oauth/google'), import('./lib/templatePick')]).then(([{ default: App }, { GoogleOAuthProvider }, { pickTemplate }]) => {
+    // A template picked on www arrives as ?template= (see setCurrentPage in App)
+    const params = new URLSearchParams(window.location.search)
+    const template = params.get('template')
+    if (template) {
+      pickTemplate(template)
+      params.delete('template')
+      const qs = params.toString()
+      window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash)
+    }
 
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <GoogleOAuthProvider clientId="1036904236561-m92usq7j7pso47r9k02n9dtdmm563162.apps.googleusercontent.com">
-        <App />
-      </GoogleOAuthProvider>
-    </StrictMode>,
-  )
+    createRoot(document.getElementById('root')!).render(
+      <StrictMode>
+        <GoogleOAuthProvider clientId="1036904236561-m92usq7j7pso47r9k02n9dtdmm563162.apps.googleusercontent.com">
+          <App />
+        </GoogleOAuthProvider>
+      </StrictMode>,
+    )
+  })
 }
