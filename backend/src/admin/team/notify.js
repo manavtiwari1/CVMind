@@ -1,7 +1,6 @@
 import { AdminUser, AppSetting } from '../models.js';
 import { emailConfigured, escapeHtml, renderEmail, sendEmail } from '../mailer.js';
-import { ROLES } from '../permissions.js';
-import { MANAGE, sameId } from './access.js';
+import { sameId } from './access.js';
 import { pushConfigured, sendPush } from './push.js';
 import { emitToUser, isDoNotDisturb } from './realtime.js';
 import { TeamChannel, TeamChannelMember, TeamLeave, TeamNotification, TeamStandup, TeamTask } from './models.js';
@@ -169,9 +168,9 @@ export function notificationPath(n) {
   if (n.taskId) return `#/tasks/${n.taskId}`;
   if (n.type === 'call_missed' && n.channelId) return `#/chat/${n.channelId}`;
   if (n.refType === 'meeting' && n.refId) return `#/meet/${n.refId}`;
-  if (n.type === 'standup_blocker') return '#/checkin?tab=team';
+  if (n.type === 'standup_blocker') return '#/manage/checkins';
   if (n.refType === 'standup') return '#/checkin';
-  if (n.type === 'leave_requested') return '#/checkin?tab=requests';
+  if (n.type === 'leave_requested') return '#/manage/leave';
   if (n.refType === 'leave') return '#/checkin?tab=leave';
   if (n.refType === 'announcement' && n.refId) return `#/announcements/${n.refId}`;
   if (n.refType === 'hr') return '#/people';
@@ -398,8 +397,7 @@ export const isWorkingDay = (day) => new Date(`${day}T00:00:00Z`).getUTCDay() !=
 export const teamPeople = () => AdminUser.find(teamPeopleFilter, { _id: 1, name: 1, username: 1, role: 1, createdAt: 1 }).sort({ name: 1, username: 1 }).lean();
 
 export const managerIds = async () => {
-  const roles = Object.entries(ROLES).filter(([, r]) => r.permissions.includes(MANAGE)).map(([k]) => k);
-  return (await AdminUser.find({ role: { $in: roles }, ...teamPeopleFilter }, { _id: 1 }).lean()).map((a) => String(a._id));
+  return (await AdminUser.find({ teamManager: true, ...teamPeopleFilter }, { _id: 1 }).lean()).map((a) => String(a._id));
 };
 
 // 10:30 IST on working days: an in-app nudge for everyone who hasn't checked in and isn't on leave
@@ -418,11 +416,25 @@ export async function sendStandupReminders(now = new Date()) {
   return { reminded: ids.length };
 }
 
+// One time only: the leadership accounts that exist when manager access became a per-person switch
+// (owner, CEO, CMO, CTO) start as managers. After that, managers are added and removed only from
+// the admin panel.
+const LEADERSHIP_ROLES = ['owner', 'ceo', 'cmo', 'cto'];
+export async function seedTeamManagers() {
+  const key = 'team.managersSeeded';
+  if (await AppSetting.exists({ key })) return { seeded: 0 };
+  const result = await AdminUser.updateMany({ role: { $in: LEADERSHIP_ROLES }, active: { $ne: false } }, { $set: { teamManager: true } });
+  await AppSetting.create({ key, value: new Date().toISOString(), updatedBy: 'team-worker' }).catch(() => {});
+  return { seeded: result.modifiedCount || 0 };
+}
+
 let timer = null;
 export function startTeamJobs() {
   if (timer) return;
+  seedTeamManagers().catch((err) => console.error('[team] seeding managers failed:', err.message));
   const tick = async () => {
     try {
+      await seedTeamManagers();
       await sendDueSoonReminders();
       const { spawnRecurringTasks } = await import('./recurring.js');
       await spawnRecurringTasks();

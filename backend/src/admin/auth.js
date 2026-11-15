@@ -32,6 +32,14 @@ function envCredentials() {
   return username && password ? { username, password } : null;
 }
 
+// Being a manager on CVMind Team is a per-person switch (teamManager), not part of any role: the
+// role's own permissions, minus teamchat.manage, plus teamchat.manage for managers.
+const TEAM_MANAGE = 'teamchat.manage';
+function teamPermissions(admin) {
+  const perms = permissionsFor(admin.role).filter((p) => p !== TEAM_MANAGE);
+  return admin.teamManager ? [...perms, TEAM_MANAGE] : perms;
+}
+
 export function toPublicAdmin(admin) {
   return {
     id: String(admin._id || admin.id),
@@ -44,7 +52,8 @@ export function toPublicAdmin(admin) {
     active: admin.active !== false,
     lastLoginAt: admin.lastLoginAt || null,
     createdAt: admin.createdAt || null,
-    permissions: permissionsFor(admin.role),
+    permissions: teamPermissions(admin),
+    teamManager: !!admin.teamManager,
     chatAccess: admin.chatAccess !== false,
     mustChangePassword: !!admin.mustChangePassword,
     notifyEmail: admin.notifyEmail !== false,
@@ -142,7 +151,18 @@ async function loadAdmin(id) {
 
 async function resolveAdmin(req) {
   const header = req.headers.authorization || '';
-  return adminFromToken(header.startsWith('Bearer ') ? header.slice(7).trim() : '');
+  const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+  const admin = await adminFromToken(token);
+  if (admin || !req.acceptTeamManagerToken) return admin;
+  // The Manager portal in the team app uses its team token; only managers get through
+  const member = await adminFromToken(token, 'team');
+  return member?.teamManager && member.chatAccess && !member.mustChangePassword ? member : null;
+}
+
+// Lets the routes after it accept a manager's team-app token as well as an admin panel token
+export function acceptTeamManagerToken(req, res, next) {
+  req.acceptTeamManagerToken = true;
+  next();
 }
 
 // The signed-in admin for a raw token, or null. The team app passes kind 'team' (REST and socket).

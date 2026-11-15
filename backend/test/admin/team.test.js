@@ -1,3 +1,4 @@
+import { makeLeadershipManagers } from '../helpers/teamManagers.js';
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -77,7 +78,11 @@ async function call(path, { method = 'GET', token, body } = {}) {
   return { status: res.status, body: json };
 }
 
-const adminLogin = async (username, password) => (await call('/login', { method: 'POST', body: { username, password } })).body.token;
+const adminLogin = async (username, password) => {
+  const token = (await call('/login', { method: 'POST', body: { username, password } })).body.token;
+  await makeLeadershipManagers();
+  return token;
+};
 const teamLogin = (username, password) => call('/team/login', { method: 'POST', body: { username, password } });
 
 const passwordFrom = (email) => /Temporary password<\/td><td[^>]*>([^<]+)</.exec(email.html)?.[1];
@@ -87,6 +92,7 @@ async function onboard(panelToken, { username, role = 'support' }) {
   const temp = `temp-${username}-12345`;
   const invite = await call('/team/invitations', { method: 'POST', token: panelToken, body: { name: username, username, email: `${username}@cvmind.test`, role, password: temp } });
   assert.equal(invite.status, 200, JSON.stringify(invite.body));
+  await makeLeadershipManagers();
   const login = await teamLogin(username, temp);
   const token = login.body.token;
   const set = await call('/team/me/password', { method: 'POST', token, body: { currentPassword: temp, newPassword: `real-${username}-password` } });
@@ -116,6 +122,7 @@ test('an invitation creates the account, emails the sign-in details, and forces 
 
   const invite = await call('/team/invitations', { method: 'POST', token: ownerPanel, body: { name: 'Riya', username: 'riya', email: 'riya@cvmind.test', role: 'cmo', password: 'riya-temp-pass-1' } });
   assert.equal(invite.status, 200);
+  await makeLeadershipManagers();
   assert.equal(invite.body.data.status, 'sent');
 
   const mail = emails.at(-1);
@@ -168,9 +175,22 @@ test('owner and admin are no longer offered for invites; only full-access people
   assert.equal(roles.admin, undefined);
   assert.equal((await call('/team/invitations', { method: 'POST', token: ownerPanel, body: { name: 'O', username: 'new-owner', email: 'o@cvmind.test', role: 'owner', password: 'owner-pass-12345' } })).status, 400);
 
-  // An Admin (made in Team & roles) manages the workspace but can't create leadership
-  await call('/team', { method: 'POST', token: ownerPanel, body: { name: 'Sam', username: 'sam', email: 'sam@cvmind.test', role: 'admin', password: 'sam-password-123' } });
+  // An Admin (made in Team & roles) is not a manager on CVMind Team until the admin panel adds them
+  const made = await call('/team', { method: 'POST', token: ownerPanel, body: { name: 'Sam', username: 'sam', email: 'sam@cvmind.test', role: 'admin', password: 'sam-password-123' } });
   const sam = (await teamLogin('sam', 'sam-password-123')).body.token;
+  assert.equal((await call('/team/invitations', { token: sam })).status, 403, 'a role alone does not make a manager');
+  assert.equal((await call('/erp/people', { token: sam })).status, 401, 'nor open HR with a team token');
+  const added = await call(`/team/${made.body.data.id}`, { method: 'PATCH', token: ownerPanel, body: { teamManager: true } });
+  assert.equal(added.status, 200, JSON.stringify(added.body));
+  assert.equal(added.body.data.teamManager, true);
+  assert.ok(added.body.data.permissions.includes('teamchat.manage'));
+  // A manager's own access can't be switched off by themselves
+  const ownerId = (await call('/me', { token: ownerPanel })).body.admin.id;
+  assert.equal((await call(`/team/${ownerId}`, { method: 'PATCH', token: ownerPanel, body: { teamManager: false } })).status, 400);
+  // The Manager portal opens HR with the manager's team token
+  assert.equal((await call('/erp/people', { token: sam })).status, 200, 'a manager opens HR from the team app');
+  assert.equal((await call('/users', { token: sam })).status, 401, 'but not the rest of the admin panel');
+  // …and once added, they manage the workspace but still can't create leadership
   const res = await call('/team/invitations', { method: 'POST', token: sam, body: { name: 'X', username: 'sneaky', email: 'x@cvmind.test', role: 'ceo', password: 'sneaky-pass-123' } });
   assert.equal(res.status, 403);
   const samRoles = (await call('/team/invitations', { token: sam })).body.roles;

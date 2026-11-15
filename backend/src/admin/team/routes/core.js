@@ -6,7 +6,7 @@ import { invalidateAdminCache, loginAdmin, toPublicAdmin } from '../../auth.js';
 import { audit } from '../../audit.js';
 import { clean, dateRange, escapeRegex, handle, httpError, isEmail, isId, paging } from '../../util.js';
 import { ROLES } from '../../permissions.js';
-import { isManager, MANAGE, oid, readableChannelIds, requireTeam, visibleTaskFilter } from '../access.js';
+import { isManager, oid, readableChannelIds, requireTeam, visibleTaskFilter } from '../access.js';
 import { attachFiles, canOpenFile, checkUploadScope, newFileKey, publicFile, softDeleteFiles, visibleFileFilter } from '../files.js';
 import { TeamAnnouncement, TeamChannel, TeamChannelMember, TeamFile, TeamInvitation, TeamMessage, TeamNotification, TeamPushSubscription, TeamSubmission, TeamTask } from '../models.js';
 import { pushPublicKey } from '../push.js';
@@ -44,7 +44,7 @@ function publicPerson(a) {
     email: a.email || '',
     role: a.role,
     roleLabel: ROLES[a.role]?.label || a.role,
-    manager: !!ROLES[a.role]?.permissions.includes(MANAGE),
+    manager: !!a.teamManager,
     active: a.active !== false && a.chatAccess !== false,
     statusText: a.statusText || '',
     avatarFileId: a.avatarFileId ? String(a.avatarFileId) : null,

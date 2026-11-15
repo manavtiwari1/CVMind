@@ -1,3 +1,4 @@
+import { makeLeadershipManagers } from '../helpers/teamManagers.js';
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -48,7 +49,11 @@ async function call(path, { method = 'GET', token, body, raw = false } = {}) {
   try { json = await res.json(); } catch { /* empty */ }
   return { status: res.status, body: json };
 }
-const adminLogin = async (username, password) => (await call('/login', { method: 'POST', body: { username, password } })).body.token;
+const adminLogin = async (username, password) => {
+  const token = (await call('/login', { method: 'POST', body: { username, password } })).body.token;
+  await makeLeadershipManagers();
+  return token;
+};
 
 let owner;
 

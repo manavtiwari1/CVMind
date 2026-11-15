@@ -13,6 +13,7 @@ export interface AdminAccount {
   role: string;
   roleLabel: string;
   permissions: string[];
+  teamManager?: boolean;
 }
 
 const SESSION_KEY = 'cvmind_admin_session';
@@ -47,6 +48,12 @@ export function clearSession() {
   }
 }
 
+// The Manager portal on team.cvmind.in runs some admin screens with the manager's team token
+let tokenSource: (() => string | null) | null = null;
+export function setTokenSource(fn: (() => string | null) | null) {
+  tokenSource = fn;
+}
+
 let onUnauthorized: (() => void) | null = null;
 export function setUnauthorizedHandler(fn: (() => void) | null) {
   onUnauthorized = fn;
@@ -75,9 +82,9 @@ export function qs(query?: Query) {
 }
 
 async function request(path: string, init: RequestInit = {}): Promise<Response> {
-  const session = loadSession();
+  const token = tokenSource ? tokenSource() : loadSession()?.token;
   const headers = new Headers(init.headers);
-  if (session?.token) headers.set('Authorization', `Bearer ${session.token}`);
+  if (token) headers.set('Authorization', `Bearer ${token}`);
   if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   let res: Response;
   try {

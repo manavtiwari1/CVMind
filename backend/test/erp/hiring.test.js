@@ -1,3 +1,4 @@
+import { makeLeadershipManagers } from '../helpers/teamManagers.js';
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -62,7 +63,11 @@ async function call(path, { method = 'GET', token, body, root = false } = {}) {
   try { json = await res.json(); } catch { /* empty */ }
   return { status: res.status, body: json };
 }
-const adminLogin = async (username, password) => (await call('/login', { method: 'POST', body: { username, password } })).body.token;
+const adminLogin = async (username, password) => {
+  const token = (await call('/login', { method: 'POST', body: { username, password } })).body.token;
+  await makeLeadershipManagers();
+  return token;
+};
 async function uploadResume() {
   const up = await call('/api/careers/resume-upload', { method: 'POST', root: true, body: { name: 'cv.pdf', mime: 'application/pdf', size: 2000 } });
   assert.equal(up.status, 200, JSON.stringify(up.body));

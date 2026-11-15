@@ -18,6 +18,8 @@ const adminUserSchema = new Schema({
   tokenVersion: { type: Number, default: 0 },
   // CVMind Team (team.cvmind.in)
   chatAccess: { type: Boolean, default: true },
+  // Manager on CVMind Team (the Manager portal and every manager action). Only set from the admin panel.
+  teamManager: { type: Boolean, default: false },
   mustChangePassword: { type: Boolean, default: false },
   notifyEmail: { type: Boolean, default: true },
   notifyPush: { type: Boolean, default: true },

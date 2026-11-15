@@ -1,3 +1,4 @@
+import { makeLeadershipManagers } from '../helpers/teamManagers.js';
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -47,7 +48,11 @@ async function call(path, { method = 'GET', token, body } = {}) {
   try { json = await res.json(); } catch { /* empty */ }
   return { status: res.status, body: json };
 }
-const adminLogin = async (username, password) => (await call('/login', { method: 'POST', body: { username, password } })).body.token;
+const adminLogin = async (username, password) => {
+  const token = (await call('/login', { method: 'POST', body: { username, password } })).body.token;
+  await makeLeadershipManagers();
+  return token;
+};
 async function onboard(panelToken, { username, role }) {
   const temp = `temp-${username}-12345`;
   await call('/team/invitations', { method: 'POST', token: panelToken, body: { name: username, username, email: `${username}@cvmind.test`, role, password: temp } });

@@ -262,6 +262,8 @@ export function clearSession() {
 }
 
 const currentToken = () => (loadSession() || memorySession)?.token;
+// The Manager portal hands this to the admin screens it shows (HR, workspace settings)
+export const teamToken = () => currentToken() || null;
 
 let onAuthError: ((code: string, message: string) => void) | null = null;
 export function setAuthErrorHandler(fn: ((code: string, message: string) => void) | null) {

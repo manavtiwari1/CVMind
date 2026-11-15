@@ -1,3 +1,4 @@
+import { makeLeadershipManagers } from '../helpers/teamManagers.js';
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -52,11 +53,16 @@ async function call(path, { method = 'GET', token, body, raw = false } = {}) {
   try { json = await res.json(); } catch { /* empty */ }
   return { status: res.status, body: json };
 }
-const adminLogin = async (username, password) => (await call('/login', { method: 'POST', body: { username, password } })).body.token;
+const adminLogin = async (username, password) => {
+  const token = (await call('/login', { method: 'POST', body: { username, password } })).body.token;
+  await makeLeadershipManagers();
+  return token;
+};
 async function onboard(panelToken, { username, role }) {
   const temp = `temp-${username}-12345`;
   const invite = await call('/team/invitations', { method: 'POST', token: panelToken, body: { name: username, username, email: `${username}@cvmind.test`, role, password: temp } });
   assert.equal(invite.status, 200, JSON.stringify(invite.body));
+  await makeLeadershipManagers();
   const login = await call('/team/login', { method: 'POST', body: { username, password: temp } });
   const password = `real-${username}-password`;
   await call('/team/me/password', { method: 'POST', token: login.body.token, body: { currentPassword: temp, newPassword: password } });

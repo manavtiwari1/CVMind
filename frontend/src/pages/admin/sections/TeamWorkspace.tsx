@@ -12,7 +12,7 @@ import type { Tone } from '../ui';
 // CVMind Team (team.cvmind.in): attendance, check-ins, leave, meetings, tasks, invitations, access,
 // channels, announcements and moderation
 
-type View = 'overview' | 'attendance' | 'checkins' | 'leave' | 'meetings' | 'tasks' | 'invitations' | 'access' | 'past' | 'channels' | 'announcements' | 'moderation';
+export type View = 'overview' | 'attendance' | 'checkins' | 'leave' | 'meetings' | 'tasks' | 'invitations' | 'access' | 'past' | 'channels' | 'announcements' | 'moderation';
 
 interface Person { id: string; name: string; username: string; roleLabel: string; active: boolean }
 const usePeople = () => {
@@ -66,7 +66,7 @@ export default function TeamWorkspace() {
 }
 
 // ── Overview ─────────────────────────────────────────────────────────────────
-interface Overview {
+export interface Overview {
   members: number; active7: number; overdue: number; pendingInvites: number; storageBytes: number; files: number; appUrl: string;
   today: string; workingDay: boolean; checkedIn: number; pendingLeave: number; onLeave: number; liveMeetings: number; upcomingMeetings: number;
   messagesPerDay: Array<{ day: string; count: number }>;
@@ -77,7 +77,7 @@ const STATUS_LABELS: Record<string, string> = { todo: 'To do', in_progress: 'In 
 const R2_FREE_BYTES = 10 * 1024 * 1024 * 1024;
 const gb = (bytes: number) => `${(bytes / 1024 / 1024 / 1024).toFixed(bytes > 1024 ** 3 ? 1 : 2)} GB`;
 
-function OverviewTab({ data, loading, onOpen }: { data?: Overview; loading: boolean; onOpen: (v: View) => void }) {
+export function OverviewTab({ data, loading, onOpen }: { data?: Overview; loading: boolean; onOpen: (v: View) => void }) {
   return (
     <>
       <div className="ad-grid cols-4">
@@ -120,7 +120,7 @@ interface InvitationsResponse { data: Invitation[]; total: number; page: number;
 const INVITE_TONE: Record<Invitation['status'], Tone> = { sent: 'blue', failed: 'red', accepted: 'green', revoked: 'gray' };
 const INVITE_LABEL: Record<Invitation['status'], string> = { sent: 'Sent', failed: 'Failed', accepted: 'Accepted', revoked: 'Revoked' };
 
-function InvitationsTab({ onChanged }: { onChanged: () => void }) {
+export function InvitationsTab({ onChanged }: { onChanged: () => void }) {
   const { busy, run } = useAction();
   const [status, setStatus] = useState('');
   const [q, setQ] = useState('');
@@ -305,7 +305,7 @@ function InviteForm({ roles, emailConfigured, onClose, onDone }: { roles: Record
 // ── Access ───────────────────────────────────────────────────────────────────
 interface AccessRow { id: string; name: string; username: string; email: string; roleLabel: string; role: string; active: boolean; chatAccess: boolean; mustChangePassword: boolean; lastSeenAt: string | null; lastLoginAt: string | null }
 
-function AccessTab() {
+export function AccessTab() {
   const { admin } = useAdmin();
   const { busy, run } = useAction();
   const { data, error, loading, reload } = useApi<{ data: AccessRow[] }>('/team/access');
@@ -334,7 +334,7 @@ function AccessTab() {
 // ── Channels ─────────────────────────────────────────────────────────────────
 interface ChannelRow { id: string; name: string; description: string; kind: 'public' | 'private'; archivedAt: string | null; lastMessageAt: string | null; createdAt: string; memberIds: string[] }
 
-function ChannelsTab() {
+export function ChannelsTab() {
   const { busy, run } = useAction();
   const people = usePeople();
   const { data, error, loading, reload } = useApi<{ data: ChannelRow[] }>('/team/manage/channels');
@@ -460,7 +460,7 @@ function ChannelMembers({ channel, people, name, onClose, onChanged }: { channel
 // ── Announcements ────────────────────────────────────────────────────────────
 interface AnnouncementRow { id: string; title: string; body: string; important: boolean; pinned: boolean; createdBy: string; ackCount: number; createdAt: string; editedAt: string | null }
 
-function AnnouncementsTab() {
+export function AnnouncementsTab() {
   const { busy, run } = useAction();
   const people = usePeople();
   const { data, error, loading, reload } = useApi<{ data: AnnouncementRow[] }>('/team/announcements', { limit: 50 });
@@ -568,7 +568,7 @@ function AckList({ announcement, name, onClose }: { announcement: AnnouncementRo
 interface ModMessage { id: string; channelId: string; channelName: string; authorId: string; body: string; fileCount: number; createdAt: string }
 interface ModFile { id: string; name: string; size: number; uploadedBy: string; channelName: string; createdAt: string }
 
-function ModerationTab() {
+export function ModerationTab() {
   const { busy, run } = useAction();
   const people = usePeople();
   const [view, setView] = useState<'messages' | 'files'>('messages');

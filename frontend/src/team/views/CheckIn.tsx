@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import type { FormEvent, ReactNode } from 'react';
-import { AlertTriangle, CalendarOff, ChevronLeft, ChevronRight, ClipboardCheck, Download, Plus } from 'lucide-react';
+import type { FormEvent } from 'react';
+import { AlertTriangle, CalendarOff, ClipboardCheck, Plus } from 'lucide-react';
 import { api } from '../api';
 import type { Leave, LeaveKind, Standup } from '../api';
-import { hrefFor, useLoad, useTeam } from '../store';
+import { go, useLoad, useTeam } from '../store';
 import { ago } from '../format';
 import { Avatar, Empty, Modal, Spinner } from '../ui';
 
@@ -23,9 +23,13 @@ export default function CheckIn({ params }: { params: Record<string, string> }) 
   const tabs: Array<{ id: Tab; label: string }> = [
     { id: 'today', label: 'Today' },
     { id: 'history', label: 'My history' },
-    { id: 'leave', label: 'My leave' },
-    ...(manager ? [{ id: 'team' as Tab, label: 'Team check-ins' }, { id: 'requests' as Tab, label: 'Leave requests' }, { id: 'attendance' as Tab, label: 'Attendance' }] : [])
+    { id: 'leave', label: 'My leave' }
   ];
+  // The team's check-ins, leave requests and attendance live in the Manager portal
+  useEffect(() => {
+    const moved: Record<string, string> = { team: 'checkins', requests: 'leave', attendance: 'attendance' };
+    if (manager && moved[params.tab]) go('manage', moved[params.tab]);
+  }, [manager, params.tab]);
   const [tab, setTab] = useState<Tab>(() => (tabs.some((t) => t.id === params.tab) ? params.tab as Tab : 'today'));
   useEffect(() => { if (params.tab && tabs.some((t) => t.id === params.tab)) setTab(params.tab as Tab); }, [params.tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -33,7 +37,7 @@ export default function CheckIn({ params }: { params: Record<string, string> }) 
     <div className="tm-page">
       <header className="tm-page-head">
         <h1>Check-in</h1>
-        <p className="tm-muted">{manager ? 'Daily check-ins, attendance and leave for the whole team.' : 'Post a short update every working day (Mon–Sat) and request leave here.'}</p>
+        <p className="tm-muted">Post a short update every working day (Mon–Sat) and request leave here.</p>
       </header>
       <div className="tm-tabs" role="tablist">
         {tabs.map((t) => <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>{t.label}</button>)}
@@ -41,9 +45,6 @@ export default function CheckIn({ params }: { params: Record<string, string> }) 
       {tab === 'today' && <Today />}
       {tab === 'history' && <History />}
       {tab === 'leave' && <MyLeave />}
-      {tab === 'team' && <TeamDay />}
-      {tab === 'requests' && <LeaveRequests />}
-      {tab === 'attendance' && <Attendance />}
     </div>
   );
 }
@@ -208,151 +209,5 @@ function LeaveForm({ onClose, onDone }: { onClose: () => void; onDone: () => voi
         </div>
       </div>
     </Modal>
-  );
-}
-
-// ── Managers ─────────────────────────────────────────────────────────────────
-function TeamDay() {
-  const { person, nameOf } = useTeam();
-  const [day, setDay] = useState(todayIST());
-  const { data, loading } = useLoad<{ day: string; workingDay: boolean; data: Standup[]; missing: string[]; leave: Leave[] }>('/checkins', { day });
-  const shift = (n: number) => { const d = new Date(`${day}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); setDay(d.toISOString().slice(0, 10)); };
-  return (
-    <>
-      <div className="tm-filters">
-        <button type="button" className="tm-icon-btn" onClick={() => shift(-1)} aria-label="Previous day"><ChevronLeft size={17} /></button>
-        <input type="date" className="tm-input sm" value={day} max={todayIST()} onChange={(e) => e.target.value && setDay(e.target.value)} aria-label="Day" />
-        <button type="button" className="tm-icon-btn" onClick={() => shift(1)} disabled={day >= todayIST()} aria-label="Next day"><ChevronRight size={17} /></button>
-        {data && <span className="tm-muted small">{data.data.length} checked in · {data.missing.length} not yet{data.leave.length ? ` · ${data.leave.length} on leave` : ''}</span>}
-      </div>
-      {loading && !data && <div className="tm-center"><Spinner /></div>}
-      {data && (
-        <div className="tm-home-grid">
-          <div className="tm-standups">
-            {!data.data.length && <Empty icon={<ClipboardCheck size={22} />} title="No check-ins" text={data.workingDay ? 'Nobody has checked in for this day yet.' : 'Sunday is a day off.'} />}
-            {data.data.map((s) => <StandupCard key={s.id} s={s} showName />)}
-          </div>
-          <div className="tm-home-side">
-            <section className="tm-card pad">
-              <h2 className="tm-h2">Not checked in</h2>
-              {!data.missing.length && <p className="tm-muted">Everyone has checked in.</p>}
-              {data.missing.map((id) => <a key={id} className="tm-person tm-mini" href={hrefFor('people')}><Avatar person={person(id)} size={24} presence /> {nameOf(id)}</a>)}
-            </section>
-            {data.leave.length > 0 && (
-              <section className="tm-card pad">
-                <h2 className="tm-h2">On leave</h2>
-                {data.leave.map((l) => <span key={l.id} className="tm-person tm-mini"><Avatar person={person(l.adminId)} size={24} /> {nameOf(l.adminId)} <span className="tm-muted small">{LEAVE_LABELS[l.kind]}</span></span>)}
-              </section>
-            )}
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
-function LeaveRequests() {
-  const { person, nameOf, toast } = useTeam();
-  const { data, loading, reload } = useLoad<{ data: Leave[] }>('/leaves', { scope: 'team' });
-  const [comment, setComment] = useState<Record<string, string>>({});
-  const review = async (l: Leave, decision: 'approve' | 'decline' | 'cancel') => {
-    try {
-      await api(`/leaves/${l.id}/review`, { method: 'POST', body: { decision, comment: comment[l.id] || '' } });
-      toast(decision === 'approve' ? 'Leave approved' : decision === 'decline' ? 'Leave declined' : 'Leave withdrawn');
-      reload();
-    } catch (err) {
-      toast(err instanceof Error ? err.message : 'Could not save.', 'error');
-    }
-  };
-  if (loading && !data) return <div className="tm-center"><Spinner /></div>;
-  const rows = data?.data || [];
-  const pending = rows.filter((l) => l.status === 'pending');
-  const upcoming = rows.filter((l) => l.status === 'approved' && l.to >= todayIST()).sort((a, b) => a.from.localeCompare(b.from));
-  const row = (l: Leave, actions: ReactNode) => (
-    <div key={l.id} className="tm-leave-row">
-      <Avatar person={person(l.adminId)} size={30} />
-      <div>
-        <strong>{nameOf(l.adminId)} · {rangeText(l)}</strong>
-        <span className="tm-muted small">{LEAVE_LABELS[l.kind]}{l.reason ? ` · ${l.reason}` : ''} · asked {ago(l.createdAt)}</span>
-      </div>
-      {actions}
-    </div>
-  );
-  return (
-    <>
-      <section className="tm-card tm-list">
-        <h2 className="tm-h2 pad">Waiting for a decision <span className="tm-muted small">{pending.length}</span></h2>
-        {!pending.length && <p className="tm-muted pad">No pending requests.</p>}
-        {pending.map((l) => row(l, (
-          <div className="tm-leave-actions">
-            <input className="tm-input sm" placeholder="Comment (optional)" value={comment[l.id] || ''} onChange={(e) => setComment({ ...comment, [l.id]: e.target.value })} aria-label="Comment" maxLength={500} />
-            <button type="button" className="tm-btn sm" onClick={() => review(l, 'decline')}>Decline</button>
-            <button type="button" className="tm-btn sm primary" onClick={() => review(l, 'approve')}>Approve</button>
-          </div>
-        )))}
-      </section>
-      <section className="tm-card tm-list">
-        <h2 className="tm-h2 pad">Approved, coming up <span className="tm-muted small">{upcoming.length}</span></h2>
-        {!upcoming.length && <p className="tm-muted pad">Nobody has leave coming up.</p>}
-        {upcoming.map((l) => row(l, <button type="button" className="tm-btn sm ghost" onClick={() => review(l, 'cancel')}>Withdraw</button>))}
-      </section>
-    </>
-  );
-}
-
-interface AttendanceData { month: string; days: Array<{ day: string; working: boolean }>; people: Array<{ id: string; cells: string[]; present: number; missing: number }> }
-const CELL: Record<string, { label: string; short: string }> = {
-  present: { label: 'Present', short: '✓' }, wfh: { label: 'Work from home', short: 'H' }, casual: { label: 'Casual leave', short: 'C' },
-  sick: { label: 'Sick leave', short: 'S' }, missing: { label: 'Missing', short: '✕' }, off: { label: 'Sunday', short: '' }, today: { label: 'Not yet today', short: '·' }, future: { label: '', short: '' }, none: { label: 'Not tracked yet', short: '' }
-};
-
-function Attendance() {
-  const { nameOf } = useTeam();
-  const [month, setMonth] = useState(todayIST().slice(0, 7));
-  const { data, loading } = useLoad<AttendanceData>('/attendance', { month });
-  const shift = (n: number) => { const [y, m] = month.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 + n, 1)); setMonth(d.toISOString().slice(0, 7)); };
-  const csv = () => {
-    if (!data) return;
-    const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
-    const lines = [['Name', ...data.days.map((d) => d.day), 'Present', 'Missing'].map(esc).join(',')];
-    for (const p of data.people) lines.push([nameOf(p.id), ...p.cells.map((c) => CELL[c]?.label || c), p.present, p.missing].map(esc).join(','));
-    const url = URL.createObjectURL(new Blob([`﻿${lines.join('\n')}`], { type: 'text/csv' }));
-    const a = Object.assign(document.createElement('a'), { href: url, download: `attendance-${data.month}.csv` });
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-  return (
-    <>
-      <div className="tm-filters">
-        <button type="button" className="tm-icon-btn" onClick={() => shift(-1)} aria-label="Previous month"><ChevronLeft size={17} /></button>
-        <strong>{new Date(`${month}-01T00:00:00`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</strong>
-        <button type="button" className="tm-icon-btn" onClick={() => shift(1)} disabled={month >= todayIST().slice(0, 7)} aria-label="Next month"><ChevronRight size={17} /></button>
-        <button type="button" className="tm-btn sm" onClick={csv} disabled={!data}><Download size={14} /> Download CSV</button>
-        <span className="tm-att-legend">{['present', 'wfh', 'casual', 'sick', 'missing'].map((k) => <span key={k}><i className={`tm-att-cell ${k}`}>{CELL[k].short}</i> {CELL[k].label}</span>)}</span>
-      </div>
-      {loading && !data && <div className="tm-center"><Spinner /></div>}
-      {data && (
-        <div className="tm-card tm-att-wrap">
-          <table className="tm-att">
-            <thead>
-              <tr>
-                <th scope="col">Person</th>
-                {data.days.map((d) => <th key={d.day} scope="col" className={d.working ? '' : 'off'} title={dayText(d.day)}>{Number(d.day.slice(8))}</th>)}
-                <th scope="col">Present</th><th scope="col">Missing</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.people.map((p) => (
-                <tr key={p.id}>
-                  <th scope="row">{nameOf(p.id)}</th>
-                  {p.cells.map((c, i) => <td key={data.days[i].day}><i className={`tm-att-cell ${c}`} title={`${dayText(data.days[i].day)}: ${CELL[c]?.label || c}`}>{CELL[c]?.short}</i></td>)}
-                  <td className="num">{p.present}</td><td className={`num ${p.missing ? 'tm-red' : ''}`}>{p.missing}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </>
   );
 }

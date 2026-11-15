@@ -980,3 +980,31 @@ body { background: var(--tm-bg); }
 .tm-ts-field input:focus-visible { outline: none; }
 .tm-ts .tm-ts-field:focus-within { outline: none; }
 .tm-ts-field input, .tm-ts-field input:focus, .tm-ts-field input:focus-visible { outline: none !important; box-shadow: none !important; }
+
+/* Manager portal: a plain text menu on the left, the screen on the right. No cards around either. */
+.tm-mgr { display: grid; grid-template-columns: 208px minmax(0, 1fr); min-height: 100%; }
+.tm-mgr-nav { position: sticky; top: 0; align-self: start; max-height: 100%; overflow-y: auto; padding: 24px 12px 32px 20px; border-right: 1px solid var(--tm-border); display: flex; flex-direction: column; gap: 18px; }
+.tm-mgr-title { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.3px; color: var(--tm-text); }
+.tm-mgr-group { display: flex; flex-direction: column; gap: 1px; }
+.tm-mgr-group-title { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tm-text-4, #98a2b3); margin: 0 0 4px; }
+.tm-mgr-group a { position: relative; padding: 5px 10px; margin-left: -10px; border-radius: 6px; font-size: 14px; color: var(--tm-text-2) !important; text-decoration: none; }
+.tm-mgr-group a:hover { color: var(--tm-text) !important; background: var(--tm-hover); }
+.tm-mgr-group a.active { color: var(--tm-green-dark) !important; font-weight: 600; }
+.tm-mgr-group a.active::before { content: ''; position: absolute; left: -2px; top: 7px; bottom: 7px; width: 3px; border-radius: 3px; background: var(--tm-green); }
+.tm-mgr-main { min-width: 0; padding: 24px 28px 48px; }
+.tm-mgr-loading { display: grid; place-items: center; padding: 60px 0; }
+/* The admin screens, inside the team app */
+.tm-mgr .ad-app.ad-embed { display: block; min-height: 0; background: transparent; }
+.tm-mgr .ad-app.ad-embed.is-team .tm-page { padding: 0; max-width: 720px; }
+@media (max-width: 860px) {
+  .tm-mgr { grid-template-columns: 1fr; }
+  .tm-mgr-nav { position: static; flex-direction: row; gap: 14px; padding: 10px 16px; border-right: 0; border-bottom: 1px solid var(--tm-border); overflow-x: auto; scrollbar-width: none; }
+  .tm-mgr-nav::-webkit-scrollbar { display: none; }
+  .tm-mgr-title { display: none; }
+  .tm-mgr-group { flex-direction: row; align-items: center; gap: 2px; flex: none; }
+  .tm-mgr-group-title { margin: 0 4px 0 0; }
+  .tm-mgr-group a { margin-left: 0; white-space: nowrap; }
+  .tm-mgr-group a.active { background: var(--tm-green-soft); }
+  .tm-mgr-group a.active::before { display: none; }
+  .tm-mgr-main { padding: 16px 16px 40px; }
+}

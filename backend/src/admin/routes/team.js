@@ -65,7 +65,7 @@ router.patch('/team/:id', requireAdmin('team.manage'), requireDb, handle(async (
   const member = await AdminUser.findById(req.params.id);
   if (!member) throw httpError(404, 'Team member not found.');
   const changes = {};
-  const { role, active, name, password } = req.body || {};
+  const { role, active, name, password, teamManager } = req.body || {};
 
   const self = String(member._id) === req.admin.id;
   if (role !== undefined && role !== member.role) {
@@ -78,6 +78,12 @@ router.patch('/team/:id', requireAdmin('team.manage'), requireDb, handle(async (
   if (typeof active === 'boolean' && active !== member.active) {
     changes.active = { from: member.active, to: active };
     member.active = active;
+  }
+  // Manager on CVMind Team (the Manager portal). Only set here, in the admin panel.
+  if (typeof teamManager === 'boolean' && teamManager !== !!member.teamManager) {
+    if (self && !teamManager) throw httpError(400, "You can't remove your own manager access.");
+    changes.teamManager = { from: !!member.teamManager, to: teamManager };
+    member.teamManager = teamManager;
   }
   if (name !== undefined) member.name = clean(name, 80);
   if (password) {

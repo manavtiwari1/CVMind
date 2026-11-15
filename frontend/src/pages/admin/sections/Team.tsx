@@ -85,6 +85,8 @@ function Members({ data, error, loading, reload }: { data?: TeamResponse; error?
             ) },
             { key: 'last', header: 'Last sign-in', render: (m) => <span className="muted">{m.lastLoginAt ? ago(m.lastLoginAt) : 'Never'}</span> },
             { key: 'added', header: 'Added', render: (m) => <span className="muted">{date(m.createdAt)}</span> },
+            // Manager on CVMind Team: opens the Manager portal and does every manager action there
+            { key: 'manager', header: 'Team manager', render: (m) => <Switch label={`${m.name} is a CVMind Team manager`} checked={!!m.teamManager} disabled={busy === m.id || (m.id === admin.id && !!m.teamManager)} onChange={(v) => patch(m, { teamManager: v }, v ? `${m.name} is now a Team manager` : `${m.name} is no longer a Team manager`)} /> },
             { key: 'active', header: 'Active', render: (m) => <Switch label={`${m.name} active`} checked={m.active} disabled={busy === m.id || m.id === admin.id} onChange={(v) => patch(m, { active: v }, v ? 'Member turned on' : 'Member turned off and signed out')} /> },
             { key: 'actions', header: '', className: 'actions', render: (m) => m.id !== admin.id && (
               <span style={{ display: 'inline-flex', gap: 6 }}>
