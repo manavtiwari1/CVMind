@@ -1,16 +1,17 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { FormEvent } from 'react';
 import { IdCard as IdCardIcon, MessageSquare, Search } from 'lucide-react';
-import { IdCard } from '../IdCard';
+import { IdCardViewer } from '../IdCard';
 import { api } from '../api';
 import type { Person } from '../api';
 import { go, useTeam } from '../store';
-import { Avatar, Modal, PresenceLabel, Spinner } from '../ui';
+import { Avatar, PresenceLabel, Spinner } from '../ui';
 
 export default function People() {
   const { people, me, manager, toast } = useTeam();
   const [q, setQ] = useState('');
   const [card, setCard] = useState<Person | null>(null);
+  const closeCard = useCallback(() => setCard(null), []);
   const query = q.trim().toLowerCase();
   const list = [...people.values()]
     .filter((p) => p.active)
@@ -64,11 +65,10 @@ export default function People() {
       )}
       {!list.length && <p className="tm-muted">Nobody matches “{q}”.</p>}
       {card && (
-        <Modal title="ID card" onClose={() => setCard(null)}>
-          <IdCard person={card} />
+        <IdCardViewer person={card} onClose={closeCard}>
           {manager && <IdNumberForm person={card} onSaved={(idNumber) => setCard({ ...card, idNumber })} />}
-          {card.id === me.id && <p className="tm-hint" style={{ marginTop: 12 }}>Change your photo, phone number and department from <a href="#" onClick={(e) => { e.preventDefault(); setCard(null); go('profile'); }}>Profile</a>.</p>}
-        </Modal>
+          {card.id === me.id && <p className="tm-cardview-hint">Change your photo, phone number and department from <a href="#" onClick={(e) => { e.preventDefault(); setCard(null); go('profile'); }}>Profile</a>.</p>}
+        </IdCardViewer>
       )}
     </div>
   );

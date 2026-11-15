@@ -1119,3 +1119,32 @@ body { background: #fff; }
 .tm-mgr .ad-embed .ad-stat-card, .tm-mgr .ad-embed .ad-stat { border: 0; box-shadow: none; background: transparent; padding-left: 0; }
 .tm-mgr .ad-embed .ad-btn.primary { background: var(--tm-text); border-color: var(--tm-text); }
 .tm-mgr .ad-embed .ad-stat-icon { display: none; }
+
+/* ID card viewer: the page dims and the card floats in the middle, no dialog box around it */
+.tm-cardview { position: fixed; inset: 0; z-index: 2000; min-height: 0; background: rgba(10, 12, 18, 0.72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); overflow-y: auto; animation: tm-cardview-fade 0.18s ease-out; }
+.tm-cardview-body { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 56px 16px 32px; }
+.tm-cardview .tm-idcard-wrap { width: 100%; max-width: 340px; animation: tm-cardview-pop 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.15); }
+.tm-cardview .tm-idcard { box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.25); border-color: transparent; }
+.tm-cardview-close { position: fixed; top: 16px; right: 16px; z-index: 1; width: 40px; height: 40px; border-radius: 50%; display: inline-grid; place-items: center; color: #fff; background: rgba(255, 255, 255, 0.12) !important; transition: background 0.15s; }
+.tm-cardview-close:hover { background: rgba(255, 255, 255, 0.22) !important; }
+.tm-cardview-extra { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 10px; color: rgba(255, 255, 255, 0.86); animation: tm-cardview-fade 0.3s ease-out; }
+.tm-cardview-hint { margin: 0; font-size: 13px; text-align: center; color: rgba(255, 255, 255, 0.72); }
+.tm-cardview-hint a { color: #fff !important; text-decoration: underline; text-underline-offset: 3px; }
+/* The managers' ID number form, on the dark backdrop */
+.tm-cardview .tm-idcard-edit { margin: 0; max-width: none; }
+.tm-cardview .tm-idcard-edit label { color: #fff; }
+.tm-cardview .tm-idcard-edit label .tm-muted { color: rgba(255, 255, 255, 0.55); }
+.tm-cardview .tm-idcard-edit .tm-hint { color: rgba(255, 255, 255, 0.6); }
+.tm-cardview .tm-idcard-edit .tm-input { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); color: #fff; }
+.tm-cardview .tm-idcard-edit .tm-input:focus { border-color: #fff; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15); }
+.tm-cardview .tm-idcard-edit .tm-btn.primary { background: #fff !important; border-color: #fff !important; color: var(--tm-text); }
+.tm-cardview .tm-idcard-edit .tm-btn.primary:hover:not(:disabled) { background: #e9eaec !important; }
+@keyframes tm-cardview-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tm-cardview-pop { from { opacity: 0; transform: translateY(14px) scale(0.96); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .tm-cardview, .tm-cardview .tm-idcard-wrap, .tm-cardview-extra { animation: none; }
+}
+@media (max-width: 480px) {
+  .tm-cardview-body { justify-content: flex-start; padding-top: 64px; }
+  .tm-cardview-close { top: 12px; right: 12px; }
+}

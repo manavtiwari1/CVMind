@@ -1,5 +1,7 @@
+import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { UserRound } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { UserRound, X } from 'lucide-react';
 import type { Person } from './api';
 import { useFileUrl, Wordmark } from './ui';
 
@@ -44,6 +46,30 @@ export function IdCard({ person, photoAction }: { person: Person; photoAction?: 
       </article>
       {photoAction && <div className="tm-idcard-actions">{photoAction}</div>}
     </div>
+  );
+}
+
+// Opens a card on its own: the page dims and the card sits in the middle, with no dialog box around
+// it. Esc, the close button or a click outside closes it. `children` shows under the card.
+export function IdCardViewer({ person, onClose, children }: { person: Person; onClose: () => void; children?: ReactNode }) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    closeRef.current?.focus();
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = overflow; };
+  }, [onClose]);
+  return createPortal(
+    <div className="tm-app tm-cardview" role="dialog" aria-modal="true" aria-label={`ID card of ${person.name}`} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <button ref={closeRef} type="button" className="tm-cardview-close" onClick={onClose} aria-label="Close"><X size={20} /></button>
+      <div className="tm-cardview-body" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+        <IdCard person={person} />
+        {children && <div className="tm-cardview-extra">{children}</div>}
+      </div>
+    </div>,
+    document.body
   );
 }
 
