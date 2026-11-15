@@ -58,10 +58,12 @@ const RESOURCES: FooterLink[] = [
   { label: 'Blog', page: 'blog' },
   { label: 'FAQs', page: 'faq' },
   { label: 'About Us', page: 'about' },
+  { label: 'Careers', page: 'careers' },
 ];
 
 const COMPANY: FooterLink[] = [
   { label: 'About Us', page: 'about' },
+  { label: 'Careers', page: 'careers' },
   { label: 'Help Desk', page: 'help-center' },
   { label: 'Blog', page: 'blog' },
   { label: 'FAQs', page: 'faq' },
