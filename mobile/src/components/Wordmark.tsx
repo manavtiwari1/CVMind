@@ -20,9 +20,10 @@ export function Wordmark({ size = 24, animate = false, color = colors.ink }: { s
     dot.set(withDelay(380, withSpring(1, { damping: 9, stiffness: 260 })));
   }, [animate, cv, mind, dot]);
 
-  const rise = (v: typeof cv) => ({ opacity: v.get(), transform: [{ translateY: (1 - v.get()) * size * 0.5 }] });
-  const cvStyle = useAnimatedStyle(() => rise(cv));
-  const mindStyle = useAnimatedStyle(() => rise(mind));
+  // Each style reads its own value inline: a plain JS helper called from here would run on the UI thread and crash
+  const lift = size * 0.5;
+  const cvStyle = useAnimatedStyle(() => ({ opacity: cv.get(), transform: [{ translateY: (1 - cv.get()) * lift }] }));
+  const mindStyle = useAnimatedStyle(() => ({ opacity: mind.get(), transform: [{ translateY: (1 - mind.get()) * lift }] }));
   const dotStyle = useAnimatedStyle(() => ({ transform: [{ scale: dot.get() }] }));
 
   const d = Math.max(5, Math.round(size * 0.24));
