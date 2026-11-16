@@ -61,7 +61,16 @@ export function GlobalSheets({ children }: { children: ReactNode }) {
             <>
               <Txt variant="title" center>{"You've hit this week's limit"}</Txt>
               <Txt center color="#6b7280">{sheet.message || UPGRADE_TEXT[sheet.reason]}</Txt>
-              <Button title="Okay" onPress={close} style={styles.full} />
+              <Button
+                title="See CVMind Pro"
+                icon="diamond-outline"
+                onPress={() => {
+                  close();
+                  router.push('/pro' as never);
+                }}
+                style={styles.full}
+              />
+              <Button title="Not now" variant="ghost" onPress={close} style={styles.full} />
             </>
           ) : sheet?.kind === 'verify' ? (
             <>

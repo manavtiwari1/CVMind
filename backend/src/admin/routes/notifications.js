@@ -7,6 +7,7 @@ import { notificationEmail } from '../../services/emailTemplates.js';
 import { FEATURE_LOGS } from './analytics.js';
 import { optOutFields, optedOutEmails, withoutOptedOut } from '../../services/emailOptOut.js';
 import { model, clean, handle, httpError, paging, isEmail } from '../util.js';
+import { sendPush } from '../../services/push.js';
 
 const router = express.Router();
 router.use(requireDb);
@@ -75,7 +76,7 @@ router.post('/', requireAdmin('notifications.send'), handle(async (req, res) => 
 
   const everyone = isEmptySegment(segment);
   const filter = await segmentFilter(segment);
-  const users = await model('User').find(filter).select('name email emailVerified').lean();
+  const users = await model('User').find(filter).select('name email emailVerified pushTokens').lean();
   if (!users.length) throw httpError(400, 'No users match this audience.');
   // People who unsubscribed still get the in-app notification
   const emailUsers = await withoutOptedOut(users.filter((u) => u.emailVerified));
@@ -107,6 +108,17 @@ router.post('/', requireAdmin('notifications.send'), handle(async (req, res) => 
     notification.emailFailed = failed;
     notification.emailSkipped = users.length - emailUsers.length;
     await notification.save();
+  }
+
+  // In-app notifications also reach the phones of people using the CVMind app. Best effort, and it
+  // doesn't hold up the response for big audiences.
+  if (channels.includes('in-app')) {
+    const tokens = users.flatMap((u) => (u.pushTokens || []).map((t) => t?.token).filter(Boolean));
+    if (tokens.length) {
+      sendPush(tokens, { title, body: body.slice(0, 300), data: { link } })
+        .then(({ sent, failed }) => console.log(`[notifications] push sent ${sent}, failed ${failed}`))
+        .catch((err) => console.error('[notifications] push failed:', err.message));
+    }
   }
 
   await audit(req, 'notification.sent', {

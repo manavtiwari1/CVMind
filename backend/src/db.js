@@ -420,6 +420,8 @@ const userSchema = new mongoose.Schema({
   riskFlags: { type: [String], default: [] },
   // Tokens issued before this moment are rejected ("sign out everywhere")
   sessionsRevokedAt: { type: Date, default: null },
+  // Expo push tokens of the CVMind app on this person's phones (services/push.js)
+  pushTokens: { type: [{ _id: false, token: String, platform: String, updatedAt: Date }], default: [] },
   createdAt: { type: Date, default: Date.now },
   usageMap: { type: Map, of: Number, default: new Map() }
 });

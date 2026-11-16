@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View, type TextInputInstance } from 'react-native';
@@ -302,7 +303,7 @@ export default function LeoTab() {
       if (tool) openTool(tool, comingSoon);
       else WebBrowser.openBrowserAsync(`${APP_URL}/${page}`).catch(() => {});
     },
-    upgrade: () => comingSoon('CVMind Pro in the app', 'cheer'),
+    upgrade: () => router.push('/pro' as never),
   };
 
   const onFeedback = async (m: ChatMessage, value: 'up' | 'down' | null) => {

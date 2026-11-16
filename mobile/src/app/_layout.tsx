@@ -11,6 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { GlobalSheets } from '@/components/GlobalSheets';
 import { ToastProvider } from '@/components/ui';
+import { PushSetup } from '@/components/PushSetup';
 import { UpdateGate } from '@/components/UpdateGate';
 import { SessionProvider, useSession } from '@/lib/session';
 import { colors } from '@/theme';
@@ -65,6 +66,7 @@ function Navigator() {
         <Stack.Screen name="aptitude" />
         <Stack.Screen name="tool/[id]" />
         <Stack.Screen name="web" />
+        <Stack.Screen name="pro" />
       </Stack.Protected>
     </Stack>
   );
@@ -81,6 +83,7 @@ export default function RootLayout() {
                 <StatusBar style="dark" />
                 <Navigator />
                 <UpdateGate />
+                <PushSetup />
               </GlobalSheets>
             </ToastProvider>
           </SessionProvider>

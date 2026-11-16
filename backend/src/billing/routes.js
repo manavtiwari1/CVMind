@@ -10,6 +10,7 @@ import { PLANS, PLAN_KEYS, pricingOpensAt, paymentsOpenAt, FREE_WEEKLY, TOKEN_LI
 import { PaymentOrder } from './models.js';
 import { sendInvoice } from './invoice.js';
 import { activeSubscription, activatePlan, tokenStatus, weeklyUses } from './service.js';
+import { PLAY_PRODUCTS, PlayError, playAccountId, playConfigured, verifyPlayPurchase } from './play.js';
 import { cashfreeConfigured, cashfreeMode, createCashfreeOrder, getCashfreeOrder, getSuccessfulPayment, verifyCashfreeWebhook } from './cashfree.js';
 import { RefundRequest, REFUND_CATEGORIES, MIN_DETAILS, refundEligibility, formatRupees } from './refunds.js';
 import { sendEmail, emailConfigured, SUPPORT_EMAIL } from '../admin/mailer.js';
@@ -29,6 +30,8 @@ router.get('/api/billing/plans', (req, res) => {
     tokenLimits: TOKEN_LIMITS,
     proTemplates: PRO_TEMPLATES,
     proLetterTemplates: PRO_LETTER_TEMPLATES,
+    // Pro in the Android app (Google Play Billing): which product is which plan, and whether it is on
+    play: { enabled: playConfigured(), products: PLAY_PRODUCTS },
     payments: { enabled: cashfreeConfigured(), mode: cashfreeMode() },
     // The page uses "now" to count down by the server's clock, not the visitor's
     launch: { pricingOpensAt: pricingOpensAt(), paymentsOpenAt: paymentsOpenAt(), now: new Date() }
@@ -44,6 +47,8 @@ router.get('/api/billing/me', requireUser, async (req, res) => {
       success: true,
       pro: !!sub,
       subscription: sub ? { plan: sub.plan, label: PLANS[sub.plan]?.label || sub.plan, expiresAt: sub.expiresAt, source: sub.source } : null,
+      // The app sets this on Play purchases so a token can only be claimed by this account
+      playAccountId: playAccountId(req.auth.sub),
       tokens,
       weekly: Object.fromEntries(Object.entries(FREE_WEEKLY).map(([key, f]) => [key, { label: f.label, limit: f.limit, used: used[key] || 0 }]))
     });
@@ -312,6 +317,24 @@ router.post('/api/billing/webhook', async (req, res) => {
     console.error('[billing] webhook settle failed:', err.message);
     // A 5xx makes Cashfree retry later
     res.status(500).json({ success: false });
+  }
+});
+
+// A Pro pass bought in the Android app: verify the Play purchase and turn Pro on (billing/play.js)
+router.post('/api/billing/play/verify', requireUser, async (req, res) => {
+  if (!(await dbReady(2000))) return res.status(503).json({ success: false, error: 'Payments are not available right now. Please try again.' });
+  try {
+    const { plan, subscription } = await verifyPlayPurchase({
+      userId: req.auth.sub,
+      email: req.auth.email,
+      productId: String(req.body?.productId || ''),
+      purchaseToken: String(req.body?.purchaseToken || '')
+    });
+    res.json({ success: true, pro: true, plan, expiresAt: subscription?.expiresAt || null });
+  } catch (err) {
+    if (err instanceof PlayError) return res.status(err.status).json({ success: false, code: err.code, error: err.message });
+    console.error('[billing] play verify failed:', err);
+    res.status(500).json({ success: false, error: 'Could not confirm your purchase. Please try again.' });
   }
 });
 

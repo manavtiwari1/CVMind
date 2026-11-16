@@ -86,6 +86,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    // While the token still works: stop this phone getting the account's notifications
+    const { unregisterPush } = await import('./push');
+    await unregisterPush();
     await apply(null);
     const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
     GoogleSignin.signOut().catch(() => {});

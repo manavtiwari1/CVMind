@@ -27,6 +27,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { parsePdf, parseDocx, parseTxt, fetchResumeFromUrl } from './services/parser.js';
 import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, generateLinkedinPostsWithAI, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, generateCoverLetterWithAI, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek, callClaude, generateInterviewPlan, evaluateInterviewAnswer, generateInterviewReport } from './services/gemini.js';
 import { getPublicStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, updateUserFields, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, saveLinkedinPostLog, getWorkById, saveProofreadLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, hasAutoApplyAccess } from './db.js';
+import { addToken as addPushToken, isExpoPushToken, removeToken as removePushToken } from './services/push.js';
 import adminRouter from './admin/router.js';
 import adminPublicRoutes from './admin/publicRoutes.js';
 import erpPublicRoutes from './erp/publicRoutes.js';
@@ -2591,6 +2592,34 @@ apiRouter.post('/api/user/password', requireUser, async (req, res) => {
   } catch (error) {
     console.error('Update password error:', error);
     return res.status(500).json({ error: error.message || 'Failed to reset password.' });
+  }
+});
+
+// The CVMind app's push token for this phone (services/push.js). Removing is a POST, because
+// DELETE /api/user/:userId deletes the account.
+apiRouter.post('/api/user/push-token', requireUser, async (req, res) => {
+  const token = String(req.body?.token || '').trim();
+  if (!isExpoPushToken(token)) return res.status(400).json({ error: 'Invalid push token.' });
+  try {
+    const user = await findUserById(req.auth.sub);
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+    await updateUserFields(req.auth.sub, { pushTokens: addPushToken(user.pushTokens, token, req.body?.platform) });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('Save push token error:', error);
+    return res.status(500).json({ error: 'Could not turn on notifications. Please try again.' });
+  }
+});
+
+apiRouter.post('/api/user/push-token/remove', requireUser, async (req, res) => {
+  const token = String(req.body?.token || '').trim();
+  try {
+    const user = await findUserById(req.auth.sub);
+    if (user) await updateUserFields(req.auth.sub, { pushTokens: removePushToken(user.pushTokens, token) });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('Remove push token error:', error);
+    return res.status(500).json({ error: 'Could not turn off notifications. Please try again.' });
   }
 });
 

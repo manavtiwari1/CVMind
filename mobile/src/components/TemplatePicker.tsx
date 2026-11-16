@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
@@ -8,7 +9,6 @@ import { useSession } from '@/lib/session';
 import { previewPage } from '@/lib/works';
 import { colors, radius, space } from '@/theme';
 
-import { useSheets } from './GlobalSheets';
 import { Pressy, Txt } from './ui';
 
 export interface PickerItem {
@@ -33,7 +33,6 @@ export function useProTemplates() {
 // A big live preview of the chosen design, with every design in a row below it
 export function TemplatePicker({ items, selected, onSelect, proIds }: { items: PickerItem[]; selected: string; onSelect: (id: string) => void; proIds: string[] }) {
   const { user } = useSession();
-  const { comingSoon } = useSheets();
   const current = items.find((t) => t.id === selected) ?? items[0];
   const locked = (id: string) => proIds.includes(id) && !user?.isPro;
 
@@ -67,7 +66,7 @@ export function TemplatePicker({ items, selected, onSelect, proIds }: { items: P
           const on = item.id === current?.id;
           return (
             <Pressy
-              onPress={() => (locked(item.id) ? comingSoon(`${item.name} (a Pro design)`, 'cheer') : onSelect(item.id))}
+              onPress={() => (locked(item.id) ? router.push('/pro' as never) : onSelect(item.id))}
               style={[styles.chip, on && { borderColor: item.color, backgroundColor: colors.surface }]}
               accessibilityLabel={item.name}
               accessibilityState={{ selected: on }}>

@@ -7,7 +7,6 @@ import { useState } from 'react';
 import { Alert, StyleSheet, Switch, View } from 'react-native';
 
 import { ListGroup, ListRow } from '@/components/ListRow';
-import { useSheets } from '@/components/GlobalSheets';
 import { Avatar, Button, Card, Pressy, Screen, Sheet, Skeleton, Txt, useToast } from '@/components/ui';
 import { api, errorMessage } from '@/lib/api';
 import { APP_VERSION, LINKS } from '@/lib/config';
@@ -40,7 +39,6 @@ function Meter({ label, used, limit, value }: { label: string; used: number; lim
 }
 
 function PlanCard() {
-  const { comingSoon } = useSheets();
   const [open, setOpen] = useState(false);
   const { data, isLoading } = useQuery({ queryKey: ['billing-me'], queryFn: () => api<BillingMe>('/api/billing/me') });
   if (isLoading || !data) {
@@ -76,7 +74,7 @@ function PlanCard() {
         </Pressy>
       ) : null}
       {!data.pro ? (
-        <Button title="Go Pro" icon="diamond-outline" onPress={() => comingSoon('CVMind Pro in the app', 'cheer')} />
+        <Button title="Go Pro" icon="diamond-outline" onPress={() => router.push('/pro' as never)} />
       ) : null}
       <Sheet visible={open} onClose={() => setOpen(false)}>
         <Txt variant="heading">Free uses this week</Txt>

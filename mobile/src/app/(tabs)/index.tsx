@@ -94,11 +94,10 @@ function PlanCard() {
 }
 
 function SaleBanner() {
-  const { comingSoon } = useSheets();
   if (!isBlackFriday()) return null;
   const left = saleTimeLeft();
   return (
-    <Pressy onPress={() => comingSoon('CVMind Pro in the app', 'cheer')}>
+    <Pressy onPress={() => router.push('/pro' as never)}>
       <LinearGradient colors={gradients.sale} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.sale}>
         <View style={styles.flex}>
           <Txt variant="tiny" color="#c4b5fd">BLACK FRIDAY</Txt>
