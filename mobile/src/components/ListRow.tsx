@@ -44,7 +44,7 @@ export function ListRow({ icon, title, subtitle, onPress, right, tint = colors.b
 export function ListGroup({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <View style={styles.group}>
-      {title ? <Txt variant="tiny" style={styles.groupTitle}>{title.toUpperCase()}</Txt> : null}
+      {title ? <Txt variant="label" style={styles.groupTitle}>{title}</Txt> : null}
       <View style={styles.card}>{children}</View>
     </View>
   );

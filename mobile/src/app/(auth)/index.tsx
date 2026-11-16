@@ -7,6 +7,7 @@ import Animated, { FadeInDown, useAnimatedStyle, withSpring } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GoogleButton } from '@/components/GoogleButton';
+import { Wordmark } from '@/components/Wordmark';
 import { Button, Txt } from '@/components/ui';
 import { LEO, type LeoPose } from '@/lib/leo';
 import { useSession } from '@/lib/session';
@@ -39,8 +40,7 @@ export default function Welcome() {
     <SafeAreaView style={styles.fill} edges={['top', 'bottom']}>
       <LinearGradient colors={gradients.soft} style={StyleSheet.absoluteFill} />
       <View style={styles.brandRow}>
-        <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
-        <Txt variant="heading">CVMind</Txt>
+        <Wordmark size={26} animate />
       </View>
 
       <FlatList
@@ -81,7 +81,6 @@ export default function Welcome() {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: space.xl, paddingTop: space.md },
-  logo: { width: 30, height: 30, borderRadius: 8 },
   slide: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xxxl, gap: space.sm },
   leoRing: {
     width: 220,

@@ -101,7 +101,7 @@ function SaleBanner() {
     <Pressy onPress={() => router.push('/pro' as never)}>
       <LinearGradient colors={gradients.sale} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.sale}>
         <View style={styles.flex}>
-          <Txt variant="tiny" color="#c4b5fd">BLACK FRIDAY</Txt>
+          <Txt variant="tiny" color="#2dc08d">BLACK FRIDAY</Txt>
           <Txt style={styles.saleTitle}>{BLACK_FRIDAY.percent}% off CVMind Pro</Txt>
           <Txt variant="small" color="#d1d5db">Code {BLACK_FRIDAY.code} · {left.days}d {left.hours}h left</Txt>
         </View>

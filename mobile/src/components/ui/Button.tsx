@@ -1,11 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import type { ComponentProps, ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, fonts, gradients, radius } from '@/theme';
+import { colors, fonts, radius } from '@/theme';
 
-import { Pressy } from './Pressy';
+import { FillPress } from './FillPress';
 import { Txt } from './Txt';
 
 type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
@@ -24,57 +23,46 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
-const text: Record<Variant, string> = {
-  primary: colors.onDark,
-  secondary: colors.brand,
-  outline: colors.ink,
-  ghost: colors.brand,
-  danger: colors.danger,
+// Pill buttons as on cvmind.in. Primary is ink and floods green when pressed;
+// the lighter ones flood a shade darker than themselves.
+const look: Record<Variant, { bg: string; fill: string; ink: string; line?: string }> = {
+  primary: { bg: colors.ink, fill: colors.green, ink: colors.onDark },
+  secondary: { bg: colors.brandSoft, fill: '#cdeee0', ink: colors.ink },
+  outline: { bg: colors.surface, fill: colors.surfaceAlt, ink: colors.ink, line: colors.borderStrong },
+  ghost: { bg: 'transparent', fill: colors.surfaceAlt, ink: colors.ink },
+  danger: { bg: colors.dangerSoft, fill: '#f8cfd0', ink: colors.danger },
 };
 
 export function Button({ title, onPress, variant = 'primary', icon, iconRight, leading, loading, disabled, size = 'md', style }: Props) {
-  const color = text[variant];
-  const height = size === 'sm' ? 40 : 52;
-  const content = (
-    <View style={[styles.row, { height }]}>
-      {loading ? (
-        <ActivityIndicator color={color} />
-      ) : (
-        <>
-          {leading}
-          {icon ? <Ionicons name={icon} size={size === 'sm' ? 16 : 19} color={color} /> : null}
-          <Txt style={[styles.label, { color, fontSize: size === 'sm' ? 14 : 16 }]}>{title}</Txt>
-          {iconRight ? <Ionicons name={iconRight} size={size === 'sm' ? 16 : 19} color={color} /> : null}
-        </>
-      )}
-    </View>
-  );
-
+  const v = look[variant];
+  const small = size === 'sm';
+  const iconSize = small ? 16 : 18;
   return (
-    <Pressy
+    <FillPress
       onPress={onPress}
       disabled={disabled || loading}
+      fill={v.fill}
       accessibilityRole="button"
       accessibilityLabel={title}
-      style={[styles.base, variant !== 'primary' && styles[variant], style]}>
-      {variant === 'primary' ? (
-        <LinearGradient colors={gradients.brand} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradient}>
-          {content}
-        </LinearGradient>
-      ) : (
-        content
-      )}
-    </Pressy>
+      style={[styles.base, { backgroundColor: v.bg }, v.line ? { borderWidth: 1, borderColor: v.line } : null, style]}>
+      <View style={[styles.row, { height: small ? 40 : 52, paddingHorizontal: small ? 16 : 22 }]}>
+        {loading ? (
+          <ActivityIndicator color={v.ink} />
+        ) : (
+          <>
+            {leading}
+            {icon ? <Ionicons name={icon} size={iconSize} color={v.ink} /> : null}
+            <Txt style={[styles.label, { color: v.ink, fontSize: small ? 14 : 15.5 }]}>{title}</Txt>
+            {iconRight ? <Ionicons name={iconRight} size={iconSize} color={v.ink} /> : null}
+          </>
+        )}
+      </View>
+    </FillPress>
   );
 }
 
 const styles = StyleSheet.create({
-  base: { borderRadius: radius.md, overflow: 'hidden' },
-  gradient: { borderRadius: radius.md },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 18 },
-  label: { fontFamily: fonts.semibold },
-  secondary: { backgroundColor: colors.brandSoft },
-  outline: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderStrong },
-  ghost: { backgroundColor: 'transparent' },
-  danger: { backgroundColor: colors.dangerSoft },
+  base: { borderRadius: radius.pill },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  label: { fontFamily: fonts.semibold, letterSpacing: -0.1 },
 });

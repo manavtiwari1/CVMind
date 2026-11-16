@@ -1,23 +1,25 @@
-// CVMind design tokens for the app. The colours follow the website (frontend/src/styles/theme.css):
-// CVMind green, blue and the violet → teal gradient of the sign-in button.
+// CVMind design tokens for the app, taken from the website (frontend/src/styles/theme.css):
+// ink #0d0d0d for actions, CVMind green #2dc08d as the accent, white paper, hairline borders.
 
 export const colors = {
-  bg: '#f6f7fb',
+  bg: '#ffffff',
   surface: '#ffffff',
-  surfaceAlt: '#f2f4f8',
-  border: '#e6e8ef',
-  borderStrong: '#d5d9e3',
+  surfaceAlt: '#f3f4f6',
+  border: '#e5e7eb',
+  borderStrong: '#d1d5db',
 
-  ink: '#0d0d12',
-  text: '#2b2f3a',
+  ink: '#0d0d0d',
+  text: '#374151',
   muted: '#6b7280',
-  faint: '#9aa1ad',
+  faint: '#9ca3af',
   onDark: '#ffffff',
 
-  brand: '#6d4ae6', // violet: primary actions
-  brandDark: '#5a38d6',
-  brandSoft: '#efeafe',
-  teal: '#2dc08d', // CVMind green: success, links
+  brand: '#0d0d0d', // ink: primary actions, like the site's pill buttons
+  brandDark: '#000000',
+  brandSoft: '#eaf8f2', // the site's green tint behind selected things
+  green: '#2dc08d', // CVMind green: the fill on press, the wordmark dot
+  greenInk: '#1b7a5a', // green that reads as text on white
+  teal: '#2dc08d',
   tealSoft: '#e5f8f1',
   blue: '#2997ff',
   blueSoft: '#e7f2ff',
@@ -28,22 +30,22 @@ export const colors = {
 
   danger: '#e5484d',
   dangerSoft: '#fdecec',
-  overlay: 'rgba(13, 13, 18, 0.45)',
+  overlay: 'rgba(13, 13, 13, 0.45)',
 } as const;
 
-// The sign-in button gradient on the website
 export const gradients = {
-  brand: ['#7c3aed', '#4f8fc0'] as const,
-  hero: ['#6d4ae6', '#4f8fc0', '#2dc08d'] as const,
-  sale: ['#111827', '#3b1d6e'] as const,
-  soft: ['#f3efff', '#eaf7f3'] as const,
+  brand: ['#1b7a5a', '#2dc08d'] as const,
+  hero: ['#0d0d0d', '#1b7a5a', '#2dc08d'] as const,
+  sale: ['#0d0d0d', '#1f3d33'] as const,
+  soft: ['#f1fbf7', '#f9fafb'] as const,
 };
 
 export const fonts = {
-  regular: 'Inter_400Regular',
-  medium: 'Inter_500Medium',
-  semibold: 'Inter_600SemiBold',
-  bold: 'Inter_700Bold',
+  regular: 'SpaceGrotesk_400Regular',
+  medium: 'SpaceGrotesk_500Medium',
+  semibold: 'SpaceGrotesk_600SemiBold',
+  bold: 'SpaceGrotesk_700Bold',
+  mono: 'SpaceMono_400Regular',
   display: 'InstrumentSans_700Bold',
   displaySemi: 'InstrumentSans_600SemiBold',
   script: 'Caveat_700Bold',
@@ -70,16 +72,18 @@ export const shadow = {
 } as const;
 
 export const type = {
-  hero: { fontFamily: fonts.display, fontSize: 28, lineHeight: 34, color: colors.ink, letterSpacing: -0.4 },
-  title: { fontFamily: fonts.display, fontSize: 22, lineHeight: 28, color: colors.ink, letterSpacing: -0.2 },
-  heading: { fontFamily: fonts.displaySemi, fontSize: 17, lineHeight: 23, color: colors.ink },
+  hero: { fontFamily: fonts.display, fontSize: 30, lineHeight: 34, color: colors.ink, letterSpacing: -1.1 },
+  title: { fontFamily: fonts.display, fontSize: 23, lineHeight: 28, color: colors.ink, letterSpacing: -0.7 },
+  heading: { fontFamily: fonts.displaySemi, fontSize: 17, lineHeight: 23, color: colors.ink, letterSpacing: -0.3 },
   body: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 22, color: colors.text },
   bodyStrong: { fontFamily: fonts.semibold, fontSize: 15, lineHeight: 22, color: colors.ink },
   small: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18, color: colors.muted },
   smallStrong: { fontFamily: fonts.semibold, fontSize: 13, lineHeight: 18, color: colors.text },
   tiny: { fontFamily: fonts.medium, fontSize: 11, lineHeight: 14, color: colors.muted },
+  // The site's mono section label (.cv-label): small caps-spaced, green
+  label: { fontFamily: fonts.mono, fontSize: 10.5, lineHeight: 14, letterSpacing: 1.6, textTransform: 'uppercase', color: colors.greenInk },
   // Extra right padding: Android measures Caveat narrow and would drop the last word
-  script: { fontFamily: fonts.script, fontSize: 24, lineHeight: 30, color: colors.brand, paddingRight: 8 },
+  script: { fontFamily: fonts.script, fontSize: 26, lineHeight: 30, color: colors.ink, paddingRight: 8 },
 } as const;
 
 export type TypeVariant = keyof typeof type;

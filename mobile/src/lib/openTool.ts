@@ -12,7 +12,7 @@ export function openTool(tool: Tool | undefined, comingSoon: (title: string, pos
   if (!tool.route) return comingSoon(tool.title, tool.pose);
   if (tool.route.startsWith('browser:')) {
     // Learn with Leo talks and listens, which needs a real browser (the app's WebView has no speech)
-    WebBrowser.openBrowserAsync(`${APP_URL}/${tool.route.slice('browser:'.length)}`, { controlsColor: '#6d4ae6' }).catch(() => {});
+    WebBrowser.openBrowserAsync(`${APP_URL}/${tool.route.slice('browser:'.length)}`, { controlsColor: '#0d0d0d' }).catch(() => {});
     return;
   }
   router.push(tool.route as never);

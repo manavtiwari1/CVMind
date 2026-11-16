@@ -11,6 +11,7 @@ import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withDel
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppHeader } from '@/components/AppHeader';
+import { FillPress } from '@/components/ui/FillPress';
 import { useSheets } from '@/components/GlobalSheets';
 import { LeoCard, type CardActions } from '@/components/leo/Cards';
 import { Markdown } from '@/components/Markdown';
@@ -431,9 +432,9 @@ export default function LeoScreen() {
                 <Ionicons name="stop" size={16} color="#fff" />
               </Pressy>
             ) : (
-              <Pressy onPress={() => void send(input)} disabled={!canSend} style={[styles.sendBtn, !canSend && styles.sendOff]} accessibilityLabel="Send">
+              <FillPress onPress={() => void send(input)} disabled={!canSend} style={[styles.sendBtn, !canSend && styles.sendOff]} accessibilityLabel="Send">
                 <Ionicons name="arrow-up" size={20} color="#fff" />
-              </Pressy>
+              </FillPress>
             )}
           </View>
           <Txt variant="tiny" center>Leo can make mistakes. Check important details.</Txt>

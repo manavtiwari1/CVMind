@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import type { DrawerContentComponentProps } from 'expo-router/drawer';
 import { type ComponentProps } from 'react';
@@ -12,9 +11,11 @@ import { tap } from '@/lib/haptics';
 import { requestChat, requestNewChat, useOpenChat } from '@/lib/leoChat';
 import { deleteChat, listChats, type ChatSummary } from '@/lib/leoApi';
 import { useSession } from '@/lib/session';
-import { colors, fonts, radius, space } from '@/theme';
+import { colors, radius, space } from '@/theme';
 
 import { Avatar, Pressy, Skeleton, Txt, useToast } from './ui';
+import { FillPress } from './ui/FillPress';
+import { Wordmark } from './Wordmark';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -99,15 +100,14 @@ export function SideMenu({ state, navigation }: DrawerContentComponentProps) {
   return (
     <View style={[styles.wrap, { paddingTop: insets.top + space.sm }]}>
       <View style={styles.brand}>
-        <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
-        <Txt style={styles.brandName}>CVMind</Txt>
+        <Wordmark size={23} animate />
       </View>
 
-      <Pressy onPress={startChat} style={styles.newChat} scaleTo={0.98} accessibilityLabel="New chat with Leo">
-        <Ionicons name="add" size={20} color={colors.brand} />
-        <Txt variant="bodyStrong" color={colors.brand} style={styles.flex}>New chat</Txt>
-        <Ionicons name="sparkles" size={15} color={colors.brand} />
-      </Pressy>
+      <FillPress onPress={startChat} style={styles.newChat} accessibilityLabel="New chat with Leo">
+        <Ionicons name="add" size={20} color="#fff" />
+        <Txt variant="bodyStrong" color="#fff" style={styles.flex}>New chat</Txt>
+        <Ionicons name="arrow-forward" size={16} color="#fff" />
+      </FillPress>
 
       <View style={styles.pages}>
         {PAGES.map((p) => {
@@ -154,7 +154,7 @@ export function SideMenu({ state, navigation }: DrawerContentComponentProps) {
         ) : (
           groups.map((g) => (
             <View key={g.title} style={styles.group}>
-              <Txt variant="tiny" style={styles.groupTitle}>{g.title}</Txt>
+              <Txt variant="label" style={styles.groupTitle}>{g.title}</Txt>
               {g.chats.map((c) => {
                 const on = current === 'index' && c.id === openId;
                 return (
@@ -195,8 +195,6 @@ const styles = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: colors.surface },
   flex: { flex: 1 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: space.lg, height: 48 },
-  logo: { width: 28, height: 28, borderRadius: 8 },
-  brandName: { fontFamily: fonts.display, fontSize: 20, color: colors.ink, letterSpacing: -0.3 },
   newChat: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -205,8 +203,8 @@ const styles = StyleSheet.create({
     marginTop: space.sm,
     paddingHorizontal: space.md,
     height: 46,
-    borderRadius: radius.md,
-    backgroundColor: colors.brandSoft,
+    borderRadius: radius.pill,
+    backgroundColor: colors.ink,
   },
   pages: { paddingHorizontal: space.sm, paddingTop: space.md, gap: 2 },
   page: { flexDirection: 'row', alignItems: 'center', gap: 14, height: 44, paddingHorizontal: space.md, borderRadius: radius.sm },
@@ -214,7 +212,7 @@ const styles = StyleSheet.create({
   rule: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginHorizontal: space.lg, marginTop: space.md },
   chats: { paddingHorizontal: space.sm, paddingBottom: space.lg },
   group: { paddingTop: space.md },
-  groupTitle: { paddingHorizontal: space.md, paddingBottom: 6, color: colors.faint },
+  groupTitle: { paddingHorizontal: space.md, paddingBottom: 6 },
   chat: { height: 40, justifyContent: 'center', paddingHorizontal: space.md, borderRadius: radius.sm },
   note: { padding: space.md },
   profile: {
