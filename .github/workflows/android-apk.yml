@@ -1,0 +1,73 @@
+name: Android APK (mobile)
+
+# Builds the Expo app in mobile/ into an installable APK and publishes it as a GitHub release,
+# so it can be downloaded straight onto a phone. No Expo account needed.
+on:
+  push:
+    branches: [claude/tender-allen-wa9xf2]
+    paths: ['mobile/**', '.github/workflows/android-apk.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - run: npm ci
+
+      - name: Generate the native Android project
+        run: CI=1 npx expo prebuild --platform android --no-install --clean
+
+      - name: Build the release APK
+        working-directory: mobile/android
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+
+      - name: Name the APK
+        id: apk
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          NAME="CVMind-${VERSION}-build${{ github.run_number }}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "$NAME"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="mobile-v${{ steps.apk.outputs.version }}-build${{ github.run_number }}"
+          gh release create "$TAG" "${{ steps.apk.outputs.name }}" \
+            --target "${{ github.sha }}" \
+            --title "CVMind Android ${{ steps.apk.outputs.version }} (build ${{ github.run_number }})" \
+            --prerelease \
+            --notes "Fixes the app closing as soon as it opens.
+
+          - Google sign-in loads only when its button is tapped, so a build without it no longer crashes at start-up
+          - Any start-up error now shows a 'Something went wrong' screen with Try again, instead of closing the app
+
+          Install: download the APK below on the phone and open it. This test build is signed with a different key from any earlier install, so uninstall the old CVMind app first."
