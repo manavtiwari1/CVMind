@@ -19,7 +19,7 @@ function openLink(link: unknown) {
   const page = link.replace(/^\/+/, '').split(/[?#]/)[0];
   const tool = toolById(page);
   if (page === 'my-documents') router.navigate('/docs');
-  else if (page === 'chat') router.navigate('/leo');
+  else if (page === 'chat') router.navigate('/');
   else if (tool?.route && !tool.route.startsWith('browser:')) router.push(tool.route as never);
   else WebBrowser.openBrowserAsync(`${APP_URL}/${page}`).catch(() => {});
 }

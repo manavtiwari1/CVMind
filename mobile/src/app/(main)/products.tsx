@@ -8,8 +8,9 @@ import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppHeader } from '@/components/AppHeader';
 import { useSheets } from '@/components/GlobalSheets';
-import { Avatar, Card, Pressy, Skeleton, Txt } from '@/components/ui';
+import { Card, Pressy, Skeleton, Txt } from '@/components/ui';
 import { PLAN_STEPS, TOOL_GROUPS, toolById, type Tool } from '@/data/tools';
 import { api } from '@/lib/api';
 import { openTool } from '@/lib/openTool';
@@ -110,7 +111,7 @@ function SaleBanner() {
   );
 }
 
-export default function Home() {
+export default function Products() {
   const { user } = useSession();
   const { comingSoon } = useSheets();
   const queryClient = useQueryClient();
@@ -125,25 +126,25 @@ export default function Home() {
 
   let tileIndex = 0;
   return (
-    <SafeAreaView edges={['top']} style={styles.fill}>
+    <SafeAreaView edges={['top', 'bottom']} style={styles.fill}>
+      <AppHeader
+        title="Products"
+        right={
+          <Pressy onPress={() => comingSoon('Notifications', 'support')} style={styles.iconBtn} accessibilityLabel="Notifications">
+            <Ionicons name="notifications-outline" size={22} color={colors.ink} />
+          </Pressy>
+        }
+      />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} colors={[colors.brand]} />}>
-        <View style={styles.header}>
-          <Pressy onPress={() => router.navigate('/me')} accessibilityLabel="Your profile">
-            <Avatar name={user?.name || ''} uri={user?.avatar} size={44} />
-          </Pressy>
-          <View style={styles.flex}>
-            <Txt variant="small">{greeting()}</Txt>
-            <Txt variant="title" numberOfLines={1}>Hi, {firstName} 👋</Txt>
-          </View>
-          <Pressy onPress={() => comingSoon('Notifications', 'support')} style={styles.iconBtn} accessibilityLabel="Notifications">
-            <Ionicons name="notifications-outline" size={22} color={colors.ink} />
-          </Pressy>
+        <View style={styles.greet}>
+          <Txt variant="small">{greeting()}</Txt>
+          <Txt variant="title" numberOfLines={1}>Hi, {firstName} 👋</Txt>
         </View>
 
-        <Pressy onPress={() => router.navigate('/leo')} style={styles.ask} accessibilityRole="search" accessibilityLabel="Ask Leo">
+        <Pressy onPress={() => router.navigate('/')} style={styles.ask} accessibilityRole="search" accessibilityLabel="Ask Leo">
           <Ionicons name="sparkles" size={18} color={colors.brand} />
           <Txt color={colors.faint} style={styles.flex}>Ask Leo anything about your career…</Txt>
           <View style={styles.askGo}>
@@ -176,7 +177,7 @@ export default function Home() {
           </View>
         ))}
 
-        <Pressy onPress={() => router.navigate('/leo')}>
+        <Pressy onPress={() => router.navigate('/')}>
           <LinearGradient colors={gradients.soft} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.leoCard}>
             <View style={styles.flex}>
               <Txt variant="script">Not sure where to start?</Txt>
@@ -193,9 +194,9 @@ export default function Home() {
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: colors.bg },
   flex: { flex: 1 },
-  content: { padding: space.xl, paddingBottom: 40, gap: space.xl },
-  header: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
+  content: { padding: space.xl, paddingTop: space.sm, paddingBottom: 40, gap: space.xl },
+  greet: { gap: 2 },
+  iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   ask: {
     flexDirection: 'row',
     alignItems: 'center',

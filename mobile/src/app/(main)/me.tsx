@@ -6,6 +6,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Alert, StyleSheet, Switch, View } from 'react-native';
 
+import { AppHeader } from '@/components/AppHeader';
 import { ListGroup, ListRow } from '@/components/ListRow';
 import { Avatar, Button, Card, Pressy, Screen, Sheet, Skeleton, Txt, useToast } from '@/components/ui';
 import { api, errorMessage } from '@/lib/api';
@@ -156,6 +157,7 @@ export default function Me() {
 
   return (
     <Screen
+      header={<AppHeader title="Profile" />}
       refreshing={refreshing}
       onRefresh={async () => {
         setRefreshing(true);

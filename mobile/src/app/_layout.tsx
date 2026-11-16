@@ -52,7 +52,7 @@ function Navigator() {
         <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
       </Stack.Protected>
       <Stack.Protected guard={!!user}>
-        <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+        <Stack.Screen name="(main)" options={{ animation: 'fade' }} />
         <Stack.Screen name="verify-email" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="doc/[id]" />

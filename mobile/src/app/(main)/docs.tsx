@@ -6,6 +6,7 @@ import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppHeader } from '@/components/AppHeader';
 import { useSheets } from '@/components/GlobalSheets';
 import { Button, Pressy, Skeleton, Txt } from '@/components/ui';
 import { toolById } from '@/data/tools';
@@ -57,10 +58,9 @@ export default function DocsTab() {
   const builder = toolById('resume-builder');
 
   return (
-    <SafeAreaView edges={['top']} style={styles.fill}>
+    <SafeAreaView edges={['top', 'bottom']} style={styles.fill}>
+      <AppHeader title="Documents" sub="From the app and cvmind.in" />
       <View style={styles.header}>
-        <Txt variant="title">My Documents</Txt>
-        <Txt variant="small">Everything you make on the app and on cvmind.in.</Txt>
         <View style={styles.tabs}>
           {(['documents', 'activity'] as const).map((f) => (
             <Pressy key={f} onPress={() => setFilter(f)} style={[styles.tab, filter === f && styles.tabOn]} accessibilityRole="tab" accessibilityState={{ selected: filter === f }}>
@@ -119,8 +119,8 @@ export default function DocsTab() {
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: colors.bg },
   flex: { flex: 1 },
-  header: { paddingHorizontal: space.xl, paddingTop: space.md, gap: 4 },
-  tabs: { flexDirection: 'row', gap: 8, marginTop: space.md, marginBottom: space.sm },
+  header: { paddingHorizontal: space.xl },
+  tabs: { flexDirection: 'row', gap: 8, marginTop: space.xs, marginBottom: space.sm },
   tab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   tabOn: { backgroundColor: colors.ink, borderColor: colors.ink },
   content: { padding: space.xl, paddingTop: space.sm, gap: space.sm, paddingBottom: 40 },

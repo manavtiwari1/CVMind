@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BackButton } from '@/components/AuthHeader';
@@ -115,13 +115,16 @@ export default function ResumeEditor() {
       </View>
       <Txt variant="small" style={styles.hint}>{workLabel(work.type)} · Tap any text to change it. Pinch to zoom.</Txt>
 
-      <View style={styles.canvas}>
-        <ResumeCanvas ref={canvas} html={work.htmlContent || ''} onDirty={() => setDirty(true)} />
-      </View>
+      {/* Lifts the page above the keyboard so the line being typed stays in view */}
+      <KeyboardAvoidingView behavior="padding" style={styles.fill}>
+        <View style={styles.canvas}>
+          <ResumeCanvas ref={canvas} html={work.htmlContent || ''} onDirty={() => setDirty(true)} />
+        </View>
 
-      <View style={styles.actions}>
-        <Button title="Download PDF" icon="download-outline" loading={busy === 'pdf'} disabled={!!busy} onPress={pdf} style={{ flex: 1 }} />
-      </View>
+        <View style={styles.actions}>
+          <Button title="Download PDF" icon="download-outline" loading={busy === 'pdf'} disabled={!!busy} onPress={pdf} style={{ flex: 1 }} />
+        </View>
+      </KeyboardAvoidingView>
 
       <Sheet visible={renaming} onClose={() => setRenaming(false)}>
         <Txt variant="heading">Rename</Txt>

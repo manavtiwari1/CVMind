@@ -1,27 +1,29 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View, type TextInputInstance } from 'react-native';
+import { ActivityIndicator, FlatList, Keyboard, KeyboardAvoidingView, StyleSheet, TextInput, View, type TextInputInstance } from 'react-native';
 import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AppHeader } from '@/components/AppHeader';
 import { useSheets } from '@/components/GlobalSheets';
 import { LeoCard, type CardActions } from '@/components/leo/Cards';
 import { Markdown } from '@/components/Markdown';
-import { Pressy, Sheet, Skeleton, Txt, useToast } from '@/components/ui';
+import { Pressy, Txt, useToast } from '@/components/ui';
 import { toolById } from '@/data/tools';
 import { ApiError, errorMessage } from '@/lib/api';
 import { APP_URL } from '@/lib/config';
 import { greeting } from '@/lib/festive';
 import { tap as hapticTap } from '@/lib/haptics';
 import { LEO } from '@/lib/leo';
+import { handleChatRequests, setOpenChat } from '@/lib/leoChat';
 import {
-  attachResume, deleteChat, getChat, listChats, sendFeedback, streamAction, streamChat, toMessages,
+  attachResume, getChat, sendFeedback, streamAction, streamChat, toMessages,
   type ChatMessage, type Resume, type StreamHandlers,
 } from '@/lib/leoApi';
 import { openTool } from '@/lib/openTool';
@@ -131,60 +133,7 @@ function LeoBubble({ m, latest, actions, onFeedback }: { m: ChatMessage; latest:
   );
 }
 
-function History({ visible, onClose, onOpen, current }: { visible: boolean; onClose: () => void; onOpen: (id: string) => void; current: string | null }) {
-  const queryClient = useQueryClient();
-  const toast = useToast();
-  const { data, isLoading } = useQuery({ queryKey: ['leo-chats'], queryFn: listChats, enabled: visible });
-  const remove = (id: string, title: string) =>
-    Alert.alert('Delete this chat?', title, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteChat(id);
-            void queryClient.invalidateQueries({ queryKey: ['leo-chats'] });
-          } catch (err) {
-            toast(errorMessage(err), 'error');
-          }
-        },
-      },
-    ]);
-  return (
-    <Sheet visible={visible} onClose={onClose}>
-      <Txt variant="heading">Your chats</Txt>
-      <Txt variant="small">The same chats as on cvmind.in. Hold a chat to delete it.</Txt>
-      <View style={{ maxHeight: 420 }}>
-        {isLoading ? (
-          <View style={{ gap: 10 }}>
-            <Skeleton height={44} />
-            <Skeleton height={44} />
-            <Skeleton height={44} />
-          </View>
-        ) : !data?.length ? (
-          <Txt variant="small">No saved chats yet.</Txt>
-        ) : (
-          <FlatList
-            data={data}
-            keyExtractor={(c) => c.id}
-            renderItem={({ item }) => (
-              <Pressy onPress={() => onOpen(item.id)} onLongPress={() => remove(item.id, item.title)} style={[styles.chatRow, item.id === current && styles.chatRowActive]} scaleTo={0.985}>
-                <Ionicons name="chatbubble-ellipses-outline" size={18} color={item.id === current ? colors.brand : colors.muted} />
-                <View style={{ flex: 1 }}>
-                  <Txt variant="bodyStrong" numberOfLines={1}>{item.title || 'New chat'}</Txt>
-                  <Txt variant="tiny">{new Date(item.updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</Txt>
-                </View>
-              </Pressy>
-            )}
-          />
-        )}
-      </View>
-    </Sheet>
-  );
-}
-
-export default function LeoTab() {
+export default function LeoScreen() {
   const { user } = useSession();
   const { comingSoon } = useSheets();
   const toast = useToast();
@@ -196,13 +145,14 @@ export default function LeoTab() {
   const [resume, setResume] = useState<Resume | null>(null);
   const [attaching, setAttaching] = useState(false);
   const [loadingChat, setLoadingChat] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
   const resumeDirty = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
   const listRef = useRef<FlatList<ChatMessage>>(null);
   const inputRef = useRef<TextInputInstance>(null);
   const retryRef = useRef('');
   const firstName = (user?.name || '').split(' ')[0];
+  const insets = useSafeAreaInsets();
+  const [keyboardUp, setKeyboardUp] = useState(false);
 
   const patch = (id: string, fn: (m: ChatMessage) => ChatMessage) => setMessages((list) => list.map((m) => (m.id === id ? fn(m) : m)));
 
@@ -326,7 +276,6 @@ export default function LeoTab() {
   };
 
   const openChat = async (id: string) => {
-    setHistoryOpen(false);
     if (id === conversationId) return;
     abortRef.current?.abort();
     setLoadingChat(true);
@@ -343,6 +292,33 @@ export default function LeoTab() {
     }
   };
 
+  // With the keyboard down the composer clears the phone's nav bar; with it up it sits on the keyboard
+  useEffect(() => {
+    const up = Keyboard.addListener('keyboardDidShow', () => setKeyboardUp(true));
+    const down = Keyboard.addListener('keyboardDidHide', () => setKeyboardUp(false));
+    return () => {
+      up.remove();
+      down.remove();
+    };
+  }, []);
+
+  // The side menu highlights the open chat and can open another one or start fresh
+  useEffect(() => {
+    setOpenChat(conversationId);
+  }, [conversationId]);
+  const requests = useRef({ newChat, openChat });
+  useEffect(() => {
+    requests.current = { newChat, openChat };
+  });
+  useEffect(
+    () =>
+      handleChatRequests((req) => {
+        if (req.kind === 'new') requests.current.newChat();
+        else void requests.current.openChat(req.id);
+      }),
+    [],
+  );
+
   // Keep the newest message in view while Leo writes
   useEffect(() => {
     if (messages.length) requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
@@ -353,20 +329,23 @@ export default function LeoTab() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.fill}>
-      <View style={styles.header}>
-        <Pressy onPress={() => setHistoryOpen(true)} style={styles.iconBtn} accessibilityLabel="Your chats">
-          <Ionicons name="menu" size={22} color={colors.ink} />
-        </Pressy>
-        <View style={styles.titleRow}>
-          <Txt variant="heading">Leo</Txt>
-          <Txt variant="small">by CVMind</Txt>
-        </View>
-        <Pressy onPress={newChat} style={styles.iconBtn} accessibilityLabel="New chat" disabled={!messages.length}>
-          <Ionicons name="create-outline" size={22} color={colors.ink} />
-        </Pressy>
-      </View>
+      <AppHeader
+        center={
+          <View style={styles.titleRow}>
+            <Image source={LEO.hello} style={styles.titleLeo} contentFit="cover" />
+            <Txt variant="heading">Leo</Txt>
+          </View>
+        }
+        right={
+          messages.length ? (
+            <Pressy onPress={newChat} style={styles.iconBtn} accessibilityLabel="New chat">
+              <Ionicons name="create-outline" size={22} color={colors.ink} />
+            </Pressy>
+          ) : null
+        }
+      />
 
-      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.fill} behavior="padding">
         {loadingChat ? (
           <View style={styles.center}>
             <ActivityIndicator color={colors.brand} />
@@ -417,7 +396,7 @@ export default function LeoTab() {
           />
         )}
 
-        <View style={styles.composerWrap}>
+        <View style={[styles.composerWrap, { paddingBottom: keyboardUp ? space.sm : Math.max(insets.bottom, space.sm) }]}>
           {resume ? (
             <View style={styles.resumeChip}>
               <Ionicons name="document-attach" size={15} color={colors.brand} />
@@ -460,8 +439,6 @@ export default function LeoTab() {
           <Txt variant="tiny" center>Leo can make mistakes. Check important details.</Txt>
         </View>
       </KeyboardAvoidingView>
-
-      <History visible={historyOpen} onClose={() => setHistoryOpen(false)} onOpen={openChat} current={conversationId} />
     </SafeAreaView>
   );
 }
@@ -469,8 +446,8 @@ export default function LeoTab() {
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.lg, paddingVertical: space.sm, gap: space.sm },
-  titleRow: { flex: 1, flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  titleLeo: { width: 26, height: 26, borderRadius: 13, backgroundColor: colors.brandSoft },
   iconBtn: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
   emptyContent: { padding: space.xl, gap: space.sm },
   hero: { alignItems: 'center', gap: 6, marginBottom: space.xl },
@@ -498,6 +475,4 @@ const styles = StyleSheet.create({
   sendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center' },
   sendOff: { backgroundColor: colors.borderStrong },
   stopBtn: { backgroundColor: colors.ink },
-  chatRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: 10, paddingHorizontal: space.sm, borderRadius: radius.md },
-  chatRowActive: { backgroundColor: colors.brandSoft },
 });

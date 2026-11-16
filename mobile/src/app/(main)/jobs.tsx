@@ -7,6 +7,7 @@ import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppHeader } from '@/components/AppHeader';
 import { Button, Card, Input, Pressy, Skeleton, Txt, useToast } from '@/components/ui';
 import { useWorks } from '@/hooks/useWorks';
 import { errorMessage } from '@/lib/api';
@@ -171,10 +172,6 @@ export default function JobsTab() {
 
   const header = (
     <View style={{ gap: space.md }}>
-      <View>
-        <Txt variant="title">Jobs</Txt>
-        <Txt variant="small">Matched to your resume · {profile.data?.preferences.targetTitles?.[0] || 'your role'}</Txt>
-      </View>
       <View style={styles.searchRow}>
         <View style={{ flex: 1 }}>
           <Input
@@ -206,7 +203,8 @@ export default function JobsTab() {
   );
 
   return (
-    <SafeAreaView edges={['top']} style={styles.fill}>
+    <SafeAreaView edges={['top', 'bottom']} style={styles.fill}>
+      <AppHeader title="Jobs" sub={ready ? `Matched to your resume · ${profile.data?.preferences.targetTitles?.[0] || 'your role'}` : undefined} />
       {profile.isLoading ? (
         <View style={styles.pad}>
           <Skeleton height={28} width="40%" />
@@ -257,7 +255,7 @@ export default function JobsTab() {
 
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: colors.bg },
-  pad: { padding: space.xl, paddingBottom: 40, gap: space.sm },
+  pad: { padding: space.xl, paddingTop: space.xs, paddingBottom: 40, gap: space.sm },
   setupHero: { alignItems: 'center', gap: space.sm },
   stepHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   stepNum: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center' },

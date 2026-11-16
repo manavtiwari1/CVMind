@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { KeyboardAvoidingView, RefreshControl, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 import { colors, space } from '@/theme';
@@ -20,7 +20,7 @@ export function Screen({ children, scroll = true, onRefresh, refreshing = false,
   return (
     <SafeAreaView edges={edges} style={[styles.fill, { backgroundColor: background }]}>
       {header}
-      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.fill} behavior="padding">
         {scroll ? (
           <ScrollView
             contentContainerStyle={[styles.content, contentStyle]}
