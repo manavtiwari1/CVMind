@@ -55,6 +55,11 @@ function Navigator() {
         <Stack.Screen name="verify-email" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="doc/[id]" />
+        <Stack.Screen name="ats" />
+        <Stack.Screen name="tailor" />
+        <Stack.Screen name="cover-letter" />
+        <Stack.Screen name="resume/new" />
+        <Stack.Screen name="resume/[id]" />
       </Stack.Protected>
     </Stack>
   );

@@ -2,7 +2,7 @@
   "expo": {
     "name": "CVMind",
     "slug": "cv-mind-ai",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "cvmind",
@@ -17,7 +17,7 @@
     },
     "android": {
       "package": "in.cvmind.app",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

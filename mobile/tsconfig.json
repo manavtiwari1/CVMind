@@ -8,6 +8,9 @@
       ],
       "@/assets/*": [
         "./assets/*"
+      ],
+      "@web/*": [
+        "../frontend/src/*"
       ]
     }
   },

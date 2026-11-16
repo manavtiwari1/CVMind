@@ -8,12 +8,14 @@ import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
+import { AtsReport } from '@/components/AtsReport';
 import { PageHeader } from '@/components/PageHeader';
 import { Button, Pressy, Txt, useToast } from '@/components/ui';
 import { useWorks } from '@/hooks/useWorks';
 import { errorMessage } from '@/lib/api';
 import { APP_URL } from '@/lib/config';
 import { success } from '@/lib/haptics';
+import { finishHtml, type ResumeAnalysis } from '@/lib/resume';
 import { useSession } from '@/lib/session';
 import { deleteWork, downloadPdf, isHtml, PRINTABLE_TYPES, previewPage, workId, workLabel } from '@/lib/works';
 import { colors, radius, space } from '@/theme';
@@ -48,12 +50,24 @@ export default function DocViewer() {
   }
 
   const html = work.htmlContent || '';
-  const printable = PRINTABLE_TYPES.includes(work.type) && isHtml(work);
+  // Tool results are saved as JSON (backend saveFeatureWork): an ATS check has its evaluation, a
+  // tailored resume its filled template
+  let payload: { evaluation?: ResumeAnalysis; fileName?: string; generatedHtml?: string } | null = null;
+  if (!isHtml(work)) {
+    try {
+      payload = JSON.parse(html);
+    } catch {
+      payload = null;
+    }
+  }
+  const pageHtml = isHtml(work) ? html : payload?.generatedHtml ? finishHtml(payload.generatedHtml) : '';
+  const printable = !!pageHtml && (PRINTABLE_TYPES.includes(work.type) || !!payload?.generatedHtml);
+  const editable = isHtml(work) && ['resume', 'cover-letter', 'resume-optimized'].includes(work.type);
 
   const sharePdf = async () => {
     setBusy('pdf');
     try {
-      const file = await downloadPdf(html, work.title);
+      const file = await downloadPdf(pageHtml, work.title);
       success();
       if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(file.uri, { mimeType: 'application/pdf', dialogTitle: file.name, UTI: 'com.adobe.pdf' });
       else toast('PDF saved', 'success');
@@ -99,11 +113,15 @@ export default function DocViewer() {
         <Txt variant="small">{workLabel(work.type)}</Txt>
       </View>
 
-      <View style={styles.preview}>
-        {isHtml(work) ? (
+      <View style={[styles.preview, payload?.evaluation ? styles.reportBox : null]}>
+        {payload?.evaluation ? (
+          <ScrollView contentContainerStyle={styles.report}>
+            <AtsReport report={payload.evaluation} fileName={payload.fileName} />
+          </ScrollView>
+        ) : pageHtml ? (
           <WebView
             originWhitelist={['*']}
-            source={{ html: previewPage(html), baseUrl: APP_URL }}
+            source={{ html: previewPage(pageHtml), baseUrl: APP_URL }}
             style={styles.web}
             setBuiltInZoomControls
             setDisplayZoomControls={false}
@@ -124,21 +142,21 @@ export default function DocViewer() {
             }}
           />
         ) : (
-          <ScrollView contentContainerStyle={styles.pad}>
-            <Txt>{html || 'This result opens on cvmind.in.'}</Txt>
-          </ScrollView>
+          <View style={[styles.center, styles.pad]}>
+            <Ionicons name="desktop-outline" size={32} color={colors.brand} />
+            <Txt variant="heading" center>{workLabel(work.type)}</Txt>
+            <Txt variant="small" center>This result opens on cvmind.in for now. It is saved to the same account.</Txt>
+          </View>
         )}
       </View>
 
       <View style={styles.actions}>
         {printable ? <Button title="Download PDF" icon="download-outline" loading={busy === 'pdf'} disabled={!!busy} onPress={sharePdf} style={styles.flex} /> : null}
-        <Button
-          title={printable ? 'Edit on web' : 'Open on cvmind.in'}
-          icon="open-outline"
-          variant="outline"
-          onPress={() => WebBrowser.openBrowserAsync(`${APP_URL}/my-documents`).catch(() => {})}
-          style={styles.flex}
-        />
+        {editable ? (
+          <Button title="Edit" icon="create-outline" variant="outline" onPress={() => router.push(`/resume/${encodeURIComponent(workId(work))}` as never)} style={styles.flex} />
+        ) : !pageHtml && !payload?.evaluation ? (
+          <Button title="Open on cvmind.in" icon="open-outline" variant="outline" onPress={() => WebBrowser.openBrowserAsync(`${APP_URL}/my-documents`).catch(() => {})} style={styles.flex} />
+        ) : null}
       </View>
     </SafeAreaView>
   );
@@ -152,5 +170,7 @@ const styles = StyleSheet.create({
   iconBtn: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.dangerSoft },
   preview: { flex: 1, margin: space.lg, borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: colors.border, backgroundColor: '#eef0f5' },
   web: { flex: 1, backgroundColor: '#eef0f5' },
+  reportBox: { backgroundColor: colors.bg, borderWidth: 0 },
+  report: { paddingBottom: space.xl },
   actions: { flexDirection: 'row', gap: space.md, paddingHorizontal: space.lg, paddingBottom: space.sm },
 });
