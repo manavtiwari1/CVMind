@@ -87,8 +87,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await apply(null);
-    const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
-    GoogleSignin.signOut().catch(() => {});
+    try {
+      const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
+      GoogleSignin.signOut().catch(() => {});
+    } catch {
+      // Google sign-in isn't in this build; nothing to sign out of
+    }
   }, [apply]);
 
   // Read the saved session, then ask the backend whether it is still good (revoked sessions,

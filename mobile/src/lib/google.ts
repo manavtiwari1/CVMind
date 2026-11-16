@@ -1,5 +1,3 @@
-import { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } from '@react-native-google-signin/google-signin';
-
 import { api } from './api';
 import { GOOGLE_WEB_CLIENT_ID } from './config';
 
@@ -11,6 +9,15 @@ let configured = false;
  * Returns null when the user closes the picker.
  */
 export async function signInWithGoogle(): Promise<Record<string, unknown> | null> {
+  // Loaded only when the button is tapped. Its native module is missing from Expo Go and from builds
+  // made before it was added; importing it at start-up threw and closed the app on launch.
+  let lib: typeof import('@react-native-google-signin/google-signin');
+  try {
+    lib = await import('@react-native-google-signin/google-signin');
+  } catch {
+    throw new Error('Google sign-in is not available in this version of the app. Please use email for now.');
+  }
+  const { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } = lib;
   if (!configured) {
     GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID, scopes: ['email', 'profile'] });
     configured = true;
