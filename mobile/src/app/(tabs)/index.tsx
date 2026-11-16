@@ -12,6 +12,7 @@ import { useSheets } from '@/components/GlobalSheets';
 import { Avatar, Card, Pressy, Skeleton, Txt } from '@/components/ui';
 import { PLAN_STEPS, TOOL_GROUPS, toolById, type Tool } from '@/data/tools';
 import { api } from '@/lib/api';
+import { openTool } from '@/lib/openTool';
 import { BLACK_FRIDAY, greeting, isBlackFriday, saleTimeLeft } from '@/lib/festive';
 import { LEO } from '@/lib/leo';
 import { useSession } from '@/lib/session';
@@ -25,9 +26,7 @@ interface Progress {
 function useOpenTool() {
   const { comingSoon } = useSheets();
   return (tool: Tool | undefined) => {
-    if (!tool) return;
-    if (tool.route) router.push(tool.route as never);
-    else comingSoon(tool.title, tool.pose);
+    openTool(tool, comingSoon);
   };
 }
 

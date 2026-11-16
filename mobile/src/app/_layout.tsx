@@ -60,6 +60,11 @@ function Navigator() {
         <Stack.Screen name="cover-letter" />
         <Stack.Screen name="resume/new" />
         <Stack.Screen name="resume/[id]" />
+        <Stack.Screen name="job/[key]" />
+        <Stack.Screen name="interview" />
+        <Stack.Screen name="aptitude" />
+        <Stack.Screen name="tool/[id]" />
+        <Stack.Screen name="web" />
       </Stack.Protected>
     </Stack>
   );

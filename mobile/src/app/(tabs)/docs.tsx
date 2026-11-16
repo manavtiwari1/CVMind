@@ -12,6 +12,7 @@ import { toolById } from '@/data/tools';
 import { useWorks } from '@/hooks/useWorks';
 import { errorMessage } from '@/lib/api';
 import { LEO } from '@/lib/leo';
+import { openTool } from '@/lib/openTool';
 import { DOCUMENT_TYPES, editedAt, workIcon, workId, workLabel, type Work } from '@/lib/works';
 import { colors, radius, space } from '@/theme';
 
@@ -104,7 +105,7 @@ export default function DocsTab() {
                   title="Build a resume"
                   icon="add"
                   size="sm"
-                  onPress={() => (builder.route ? router.push(builder.route as never) : comingSoon(builder.title, builder.pose))}
+                  onPress={() => openTool(builder, comingSoon)}
                 />
               ) : null}
             </View>

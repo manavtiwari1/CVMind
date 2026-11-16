@@ -2,7 +2,7 @@
   "expo": {
     "name": "CVMind",
     "slug": "cv-mind-ai",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "cvmind",
@@ -17,7 +17,7 @@
     },
     "android": {
       "package": "in.cvmind.app",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -49,14 +49,23 @@
         "expo-image-picker",
         {
           "photosPermission": "CVMind uses your photos to set your profile picture.",
-          "cameraPermission": false,
-          "microphonePermission": false
+          "cameraPermission": false
         }
       ],
       [
         "@react-native-google-signin/google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps.1036904236561-m92usq7j7pso47r9k02n9dtdmm563162"
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "CVMind uses the microphone for voice interview practice.",
+          "speechRecognitionPermission": "CVMind turns your spoken answers into text so Leo can give you feedback.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
         }
       ]
     ],

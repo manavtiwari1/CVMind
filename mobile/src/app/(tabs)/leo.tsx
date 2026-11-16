@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View, type TextInputInstance } from 'react-native';
@@ -24,6 +23,7 @@ import {
   attachResume, deleteChat, getChat, listChats, sendFeedback, streamAction, streamChat, toMessages,
   type ChatMessage, type Resume, type StreamHandlers,
 } from '@/lib/leoApi';
+import { openTool } from '@/lib/openTool';
 import { useSession } from '@/lib/session';
 import { colors, fonts, radius, shadow, space } from '@/theme';
 
@@ -299,8 +299,7 @@ export default function LeoTab() {
     },
     openPage: (page) => {
       const tool = toolById(page) ?? toolById(page.replace(/^resume-editor$/, 'resume-builder'));
-      if (tool?.route) router.push(tool.route as never);
-      else if (tool) comingSoon(tool.title, tool.pose);
+      if (tool) openTool(tool, comingSoon);
       else WebBrowser.openBrowserAsync(`${APP_URL}/${page}`).catch(() => {});
     },
     upgrade: () => comingSoon('CVMind Pro in the app', 'cheer'),
