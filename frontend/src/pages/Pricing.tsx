@@ -9,7 +9,7 @@ import { withSampleData } from '../data/samplePreview';
 import { LETTER_DESIGNS } from '../lib/coverLetter';
 import { FALLBACK_LAUNCH, PRO_LETTER_IDS, PRO_TEMPLATE_IDS, formatInr, launchTimeText, launchTimes, loadPlans, startCheckout, userIsPro, verifyOrder, type LaunchTimes, type Plan } from '../lib/billing';
 import { readUser, USER_CHANGE_EVENT } from '../lib/currentUser';
-import { BLACK_FRIDAY, isBlackFriday, offerPrice, timeLeft } from '../lib/festive';
+import { BLACK_FRIDAY, isBlackFriday, isBlackFridayTeaser, offerPrice, startsIn, timeLeft } from '../lib/festive';
 import { setContactSubject } from '../data/support';
 import './Pricing.css';
 
@@ -165,6 +165,34 @@ function BlackFridayBanner() {
   );
 }
 
+// Countdown to the sale on 18 Nov (lib/festive.ts). Ticks every second and removes itself at
+// 12:00 am IST on 19 Nov. The coupon isn't valid yet, so the code isn't shown here.
+function BlackFridayTeaser() {
+  const [left, setLeft] = useState(() => startsIn());
+  useEffect(() => {
+    const id = window.setInterval(() => setLeft(startsIn()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  if (left.total <= 0) return null;
+  return (
+    <section className="pr-bf pr-bf--soon" aria-label="Black Friday sale starts soon">
+      <span className="pr-bf-tape" aria-hidden="true">
+        <span>{Array.from({ length: 12 }, () => 'BLACK FRIDAY · STARTS TONIGHT · ').join('')}</span>
+      </span>
+      <div className="pr-bf-inner">
+        <span className="pr-bf-kicker">Black Friday week · 19–30 Nov</span>
+        <p className="pr-bf-title"><b>{BLACK_FRIDAY.percent}% off</b> Pro starts in</p>
+        <div className="pr-bf-clock" role="timer" aria-label={`Sale starts in ${left.hours} hours ${left.minutes} minutes`}>
+          {[['hrs', left.hours], ['min', left.minutes], ['sec', left.seconds]].map(([label, n]) => (
+            <span key={label}><strong>{String(n).padStart(2, '0')}</strong><small>{label}</small></span>
+          ))}
+        </div>
+        <p className="pr-bf-fine">Starts 19 Nov, 12:00 am IST · every Pro plan half price</p>
+      </div>
+    </section>
+  );
+}
+
 export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }: PricingProps) {
   const [plans, setPlans] = useState<Plan[]>(FALLBACK_PLANS);
   const [paymentsOn, setPaymentsOn] = useState(true);
@@ -246,6 +274,7 @@ export default function Pricing({ setCurrentPage, isLoggedIn, setShowAuthModal }
     <div className={`pr${FESTIVE ? ' pr--bf' : ''}`}>
       <SlotBanner slot="promo" setCurrentPage={setCurrentPage} />
       {FESTIVE && <BlackFridayBanner />}
+      {!FESTIVE && isBlackFridayTeaser() && <BlackFridayTeaser />}
 
       {returned && <ReturnBanner state={returned} onClose={() => setReturned(null)} onRetry={() => { setReturned(null); setCheckoutOpen(true); }} />}
 
