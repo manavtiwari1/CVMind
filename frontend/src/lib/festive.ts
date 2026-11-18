@@ -22,6 +22,17 @@ const devPreview = () => {
 };
 
 export const isBlackFriday = (now = Date.now()) => devPreview() || (now >= BF_START && now < BF_END);
+
+// "Black Friday starts in" countdown on the Pricing page: only on 18 Nov 2026 (IST), and it hides
+// itself at 12:00 am IST on 19 Nov, when the sale banner takes over.
+const TEASER_START = Date.UTC(2026, 10, 17, 18, 30);
+export const isBlackFridayTeaser = (now = Date.now()) => !devPreview() && now >= TEASER_START && now < BF_START;
+
+// Hours, minutes and seconds until the sale starts
+export function startsIn(now = Date.now()) {
+  const secs = Math.max(0, Math.floor((BF_START - now) / 1000));
+  return { total: secs, hours: Math.floor(secs / 3600), minutes: Math.floor((secs % 3600) / 60), seconds: secs % 60 };
+}
 export const BLACK_FRIDAY = { code: 'BLACKFRIDAY', percent: 50, ends: '30 Nov, 11:59 pm', endsAt: BF_END };
 
 // The price after the offer, rounded exactly like the server (backend/src/admin/coupons.js)
