@@ -50,6 +50,7 @@ import { chargeAiUsage, keepAiContext } from './billing/aiContext.js';
 import { issueVerification, verifyEmailToken, resendCooldown, hashToken, frontendUrl, markEmailVerified, verifyThroughProvider, VERIFY_MESSAGES } from './services/emailVerification.js';
 import { assessSignupRisk, isHighRisk, RISK_HIGH } from './services/emailRisk.js';
 import { hitLimit, checkLimit, clientIp, HOUR_MS, DAY_MS } from './services/limiter.js';
+import { useVisitorIp } from './services/visitorIp.js';
 import { logAuthEvent } from './services/authEvents.js';
 import { CaptchaChallenge, OAuthHandoff } from './admin/models.js';
 import { sendEmail, emailConfigured } from './admin/mailer.js';
@@ -64,6 +65,9 @@ import { searchJobs, getJobDetail, warmJobSearch, JOB_SEARCH_COMPANIES } from '.
 const app = express();
 // Render/Vercel sit behind one proxy; trust it so rate limiting sees the real client IP
 app.set('trust proxy', 1);
+// On Render that proxy hop is Cloudflare's, so take the visitor's address from Cloudflare's header
+// (see services/visitorIp.js). Runs first so every limit and log below sees the visitor's address.
+app.use(useVisitorIp);
 // Don't advertise the framework, and send basic hardening headers on API responses
 // (published portfolio pages set their own headers in createSiteServer)
 app.disable('x-powered-by');
@@ -385,14 +389,17 @@ apiRouter.get('/api/auth/captcha', async (req, res) => {
 
 async function verifyCaptcha(captchaId, answer) {
   if (!captchaId || typeof captchaId !== 'string') return false;
-  let entry = null;
-  if (await dbReady(0)) {
-    // single-use: consumed on any attempt
-    const row = await CaptchaChallenge.findOneAndDelete({ _id: captchaId }).lean().catch(() => null);
+  // Single-use: consumed on any attempt. A code drawn while the database was still connecting (right
+  // after the server wakes up) was kept in this process's memory, and the sign-in that follows usually
+  // arrives once the database is up, so memory is checked first and the database after that.
+  let entry = captchaStore.get(captchaId) || null;
+  captchaStore.delete(captchaId);
+  if (!entry && await dbReady(2000)) {
+    const row = await CaptchaChallenge.findOneAndDelete({ _id: captchaId }).lean().catch((err) => {
+      console.error('[captcha] could not check challenge:', err.message);
+      return null;
+    });
     if (row) entry = { answer: row.answer, expires: new Date(row.expiresAt).getTime() };
-  } else {
-    entry = captchaStore.get(captchaId) || null;
-    captchaStore.delete(captchaId);
   }
   if (!entry || Date.now() > entry.expires) return false;
   return String(answer || '').trim().toUpperCase() === entry.answer;
