@@ -47,7 +47,7 @@ import { aiBudgetGate, requireFreeUse, interviewFeature } from './billing/gate.j
 import { startLeoWorker } from './leo/missions/worker.js';
 import { startBlackFriday } from './services/blackFriday.js';
 import { chargeAiUsage, keepAiContext } from './billing/aiContext.js';
-import { issueVerification, verifyEmailToken, resendCooldown, hashToken, frontendUrl, markEmailVerified, verifyThroughProvider, VERIFY_MESSAGES } from './services/emailVerification.js';
+import { issueVerification, verifyEmailToken, resendCooldown, hashToken, frontendUrl, markEmailVerified, verifyThroughProvider, VERIFY_MESSAGES, sendBlackFridayOnSignup } from './services/emailVerification.js';
 import { assessSignupRisk, isHighRisk, RISK_HIGH } from './services/emailRisk.js';
 import { hitLimit, checkLimit, clientIp, HOUR_MS, DAY_MS } from './services/limiter.js';
 import { useVisitorIp } from './services/visitorIp.js';
@@ -705,6 +705,7 @@ apiRouter.post('/api/auth/google', async (req, res) => {
 
       // Send welcome email asynchronously for Google signup
       sendWelcomeEmail(user.email, user.name);
+      if (googleVerified) sendBlackFridayOnSignup(user);
     }
 
     const blockError = getAccountBlockError(user);
@@ -1012,6 +1013,7 @@ async function completeOAuthLogin(req, res, origin, { email, name, avatar, provi
     });
     logAuthEvent(req, 'USER_REGISTERED', { userId: user.id || user._id, email: user.email, metadata: { provider } });
     sendWelcomeEmail(user.email, user.name);
+    if (providerVerified) sendBlackFridayOnSignup(user);
   }
 
   const blockError = getAccountBlockError(user);

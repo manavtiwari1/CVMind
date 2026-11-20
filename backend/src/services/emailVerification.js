@@ -75,6 +75,14 @@ export async function markEmailVerified(user) {
   import('../growth/referrals.js')
     .then(({ qualifyReferral }) => qualifyReferral(userId(user)))
     .catch((err) => console.error('[referrals] could not check invite reward:', err.message));
+  // During Black Friday week a newly verified user gets the sale email now instead of waiting for the next round
+  sendBlackFridayOnSignup(user);
+}
+
+export function sendBlackFridayOnSignup(user) {
+  import('./blackFriday.js')
+    .then(({ sendBlackFridayToNewUser }) => sendBlackFridayToNewUser(user))
+    .catch((err) => console.error('[black friday] new-user email failed:', err.message));
 }
 
 // A Google, GitHub or LinkedIn sign-in proves the person owns the address. An unverified account may have

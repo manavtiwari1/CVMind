@@ -48,10 +48,12 @@ test('the coupon is made once, gives 50% and only works during the sale', async 
   assert.equal(c.value, 50);
   assert.equal(c.validFrom.getTime(), IST(19));
   assert.equal(c.validTo.getTime(), IST(30, 24));
-  // Before the sale (today) the code is refused
-  const early = await coupons.evaluateCoupon('blackfriday', { email: 'a@b.in', amount: 199 });
-  assert.equal(early.ok, false);
-  assert.match(early.error, /not active yet/);
+  // The code only works between the sale dates (this test runs before, during and after them)
+  const result = await coupons.evaluateCoupon('blackfriday', { email: 'a@b.in', amount: 199 });
+  const now = Date.now();
+  if (now < IST(19)) assert.match(result.error, /not active yet/);
+  else if (now < IST(30, 24)) assert.equal(result.ok, true);
+  else assert.equal(result.ok, false);
 });
 
 test('each round is sent once, to verified non-Pro users who did not opt out', async () => {
@@ -88,6 +90,24 @@ test('each round is sent once, to verified non-Pro users who did not opt out', a
   const late = await bf.runBlackFridayMail({ now: IST(30, 24, 1), send });
   assert.ok(late.skipped);
   assert.equal(batches.length, 2);
+});
+
+test('a user who verifies during the sale gets the current round straight away', async () => {
+  const sent = [];
+  const send = async (msgs) => { sent.push(...msgs); return { sent: msgs.length, failed: 0, errors: [] }; };
+  const fresh = { email: 'new@x.in', name: 'New' };
+  const r = await bf.sendBlackFridayToNewUser(fresh, { now: IST(22, 15), send });
+  assert.equal(r.round, 1);
+  assert.deepEqual(sent.map((m) => m.to), ['new@x.in']);
+  assert.ok(sent[0].html.includes('BLACKFRIDAY'));
+  assert.ok(sent[0].headers['List-Unsubscribe']);
+  // Not before or after the sale, not to Pro users and not to people who opted out
+  assert.ok((await bf.sendBlackFridayToNewUser(fresh, { now: IST(18, 12), send })).skipped);
+  assert.ok((await bf.sendBlackFridayToNewUser(fresh, { now: IST(30, 24, 1), send })).skipped);
+  assert.ok((await bf.sendBlackFridayToNewUser({ email: 'pro@x.in', name: 'Pro' }, { now: IST(22), send })).skipped);
+  assert.ok((await bf.sendBlackFridayToNewUser({ email: 'OUT@x.in', name: 'Out' }, { now: IST(22), send })).skipped);
+  assert.ok((await bf.sendBlackFridayToNewUser({ email: 'b@x.in', status: 'banned' }, { now: IST(22), send })).skipped);
+  assert.equal(sent.length, 1);
 });
 
 test('every link in the email goes to our own https pages and names are escaped', () => {

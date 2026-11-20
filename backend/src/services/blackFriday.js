@@ -89,6 +89,26 @@ export async function runBlackFridayMail({ now = Date.now(), send = sendEmailBat
   return { round, sent: result.sent, failed: result.failed };
 }
 
+// ── New users during the sale ───────────────────────────────────────────────
+// Someone who verifies their address (or signs up with a verified Google/GitHub/LinkedIn account) during
+// the sale missed the rounds already sent, so they get the current round's email straight away. They are
+// in every later round like everyone else. Verification happens once per account, so this sends once.
+export async function sendBlackFridayToNewUser(user, { now = Date.now(), send = sendEmailBatch } = {}) {
+  const round = currentRound(now);
+  if (round < 0 || !user?.email) return { skipped: 'outside the sale' };
+  if (!emailConfigured() && send === sendEmailBatch) return { skipped: 'email is not configured (RESEND_API_KEY)' };
+  if (!(await dbReady(5000))) return { skipped: 'database not ready' };
+  if (['suspended', 'banned'].includes(user.status)) return { skipped: 'account blocked' };
+  const email = String(user.email).toLowerCase();
+  if (!(await withoutOptedOut([user])).length) return { skipped: 'opted out' };
+  if (await Subscription.exists({ email, status: 'active', expiresAt: { $gt: new Date() } })) return { skipped: 'already Pro' };
+
+  const { url, headers } = optOutFields(user.email);
+  const result = await send([{ to: user.email, headers, ...blackFridayEmail({ name: user.name, round, unsubscribeUrl: url }) }]);
+  for (const e of result.errors || []) console.error('[black friday] new-user email failed for', (e.to || []).join(', '), e.message);
+  return { round, sent: result.sent, failed: result.failed };
+}
+
 let timer = null;
 
 // Checks every 10 minutes while the server runs. Serverless hosts call /api/cron/black-friday instead.
