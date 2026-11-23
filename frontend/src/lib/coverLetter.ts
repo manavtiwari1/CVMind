@@ -3,6 +3,7 @@
 //
 // The designs themselves live in data/coverLetterTemplates.ts.
 import { LETTER_TEMPLATES } from '../data/coverLetterTemplates';
+import { downloadDocx } from './wordExport';
 
 export interface LetterData {
   name: string;
@@ -130,17 +131,10 @@ export function letterText(html: string): string {
   return el.innerText || el.textContent || '';
 }
 
-/** Saves the letter as a Word-compatible .doc file. */
+/** Saves the letter as a real Word file (.docx). */
 export function downloadLetterDoc(html: string, fileName: string) {
-  const doc = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-<head><meta charset='utf-8'><title>Cover Letter</title>
-<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
-<style>@page{margin:0.6in;}body{margin:0;}</style>
-</head><body>${html}</body></html>`;
-  const url = URL.createObjectURL(new Blob(['﻿', doc], { type: 'application/msword' }));
-  const a = Object.assign(document.createElement('a'), { href: url, download: `${fileName || 'Cover Letter'}.doc` });
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 30000);
+  return downloadDocx(html, fileName || 'Cover Letter', { title: 'Cover Letter' }).catch((err) => {
+    console.error('Word export failed:', err);
+    window.alert('We could not create the Word file. Please try again, or download the PDF instead.');
+  });
 }

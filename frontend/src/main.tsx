@@ -3,10 +3,13 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import { syncSessionFromCookie } from './lib/session'
 import { hostRedirectTarget, isPlacementsHost, isTeamHost } from './lib/hosts'
+import { wakeServer } from './lib/serverWake'
 
 // Pick up a sign-in from the other cvmind.in host, then make sure this address is on the right one
 syncSessionFromCookie()
 const redirectTo = hostRedirectTarget()
+// Start a sleeping API server now, so the visitor's first upload doesn't wait for it
+if (!redirectTo) wakeServer()
 
 if (isTeamHost()) {
   // CVMind Team (team.cvmind.in) is its own app with its own sign-in, loaded on demand

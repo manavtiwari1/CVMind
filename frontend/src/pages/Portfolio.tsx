@@ -8,6 +8,7 @@ import { getErrorMessage } from '../utils/errors';
 import { API_BASE } from '../lib/apiBase';
 import { authFetch } from '../lib/authFetch';
 import type { SavedWork } from '../types/api';
+import { downloadWord } from '../lib/resumeHandoff';
 import './Portfolio.css';
 
 interface PortfolioProps {
@@ -79,19 +80,7 @@ export default function Portfolio({ workId, slug }: PortfolioProps) {
 
   const handleDownloadDOCX = () => {
     if (!workData) return;
-    const wordDoc = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-<head><meta charset='utf-8'><title>${workData.title}</title>
-<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
-<style>body{font-family:Arial,sans-serif;margin:1in;}@page{margin:1in;}</style>
-</head><body>${workData.htmlContent}</body></html>`;
-    const blob = new Blob(['\ufeff', wordDoc], { type: 'application/msword' });
-    const a = Object.assign(document.createElement('a'), {
-      href: URL.createObjectURL(blob),
-      download: `${workData.title.replace(/\s+/g, '_')}.doc`,
-    });
-    a.click();
-    URL.revokeObjectURL(a.href);
-    a.remove();
+    void downloadWord(workData.htmlContent, workData.title.replace(/\s+/g, '_'));
   };
 
   if (loading) {

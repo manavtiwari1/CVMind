@@ -2,6 +2,7 @@
 // measured; if it runs long, its text and spacing step down until it fits. A letter that can't fit
 // at the smallest readable size is refused rather than cut: no words are ever dropped silently.
 import { designById, renderLetter, type LetterData } from './coverLetter';
+import { downloadDocx } from './wordExport';
 
 const PAGE_WIDTH = 794;
 // The designs' root is this tall (lib: data/coverLetterTemplates.ts page())
@@ -119,12 +120,10 @@ export function fitLetterWord(designId: string, data: LetterData): string | null
   return null;
 }
 
-/** Saves a document from fitLetterWord as a Word-compatible .doc file. */
+/** Saves a document from fitLetterWord as a real Word file (.docx). */
 export function saveWordDoc(doc: string, fileName: string) {
-  const url = URL.createObjectURL(new Blob(['﻿', doc], { type: 'application/msword' }));
-  const a = Object.assign(document.createElement('a'), { href: url, download: `${fileName || 'Cover Letter'}.doc` });
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 30000);
+  return downloadDocx(doc, fileName || 'Cover Letter', { title: 'Cover Letter' }).catch((err) => {
+    console.error('Word export failed:', err);
+    window.alert('We could not create the Word file. Please try again, or download the PDF instead.');
+  });
 }

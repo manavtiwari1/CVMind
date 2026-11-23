@@ -656,6 +656,7 @@
 .upload-zone.is-loading { border-style: solid; border-color: rgba(255,255,255,0.14); }
 
 .file-input-hidden { display: none; }
+.skeleton-step-hint { margin: 6px 0 0; font-size: 12.5px; line-height: 1.4; color: var(--text-secondary, #64748b); }
 
 .upload-prompt-state,
 .file-selected-state,

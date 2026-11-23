@@ -1,5 +1,6 @@
 import express from 'express';
 import multer from 'multer';
+import { resumeFileFilter, normalizeResumeFile } from '../middleware/resumeFile.js';
 import mongoose from 'mongoose';
 import { requireUser } from '../services/authToken.js';
 import { requireMongo, requireAgentAccess } from '../middleware/agentAuth.js';
@@ -104,13 +105,13 @@ import { buildProfileData } from '@cvmind/auto-apply-agent/resume/derive.js';
 import { createApplicationForUser, pickResume } from '@cvmind/auto-apply-agent/applications/create.js';
 import { createExtensionRouter } from './agentExtension.js';
 import { deleteFile, openDownloadStream, BUCKETS } from '@cvmind/auto-apply-agent/storage/gridfs.js';
-import { importUploadedResume, importCvmindWork, enqueueParse, RESUME_MIME_TYPES } from '@cvmind/auto-apply-agent/resume/intake.js';
+import { importUploadedResume, importCvmindWork, enqueueParse } from '@cvmind/auto-apply-agent/resume/intake.js';
 import { workerStatus } from '@cvmind/auto-apply-agent/queue/heartbeat.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => cb(null, RESUME_MIME_TYPES.includes(file.mimetype))
+  fileFilter: resumeFileFilter
 });
 
 // db.js connects to MONGODB_URI on import, so it is loaded lazily (and injectable for tests)
@@ -157,7 +158,7 @@ export function createAgentRouter({ loadWork = defaultLoadWork, loadLatestResume
       if (err) return res.status(400).json({ success: false, error: err.code === 'LIMIT_FILE_SIZE' ? 'Resume file must be 5MB or smaller.' : err.message });
       next();
     });
-  }, asyncRoute(async (req, res) => {
+  }, normalizeResumeFile, asyncRoute(async (req, res) => {
     if (!req.file) return res.status(400).json({ success: false, error: 'Upload a PDF, DOCX or TXT resume file.' });
     const { profile, deduped } = await importUploadedResume({ userId: req.auth.sub, file: req.file, label: req.body?.label });
     if (deduped) return res.json({ success: true, deduped: true, data: toClient(profile) });

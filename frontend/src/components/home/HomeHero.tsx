@@ -12,7 +12,9 @@ interface HomeHeroProps {
 }
 
 // The hero is one prompt box with three modes. Ask and Tailor open the Leo chat on app.cvmind.in
-// with the prompt already sent; Check scrolls to the free ATS checker further down this page.
+// with the prompt already sent; Check opens the phone's or computer's file picker for the free ATS
+// check (onAnalyzeClick). An "Upload resume" button under the box does the same in the other modes,
+// so nobody has to find the checker at the bottom of the page or go through the chat to upload.
 type Mode = 'ask' | 'tailor' | 'check';
 
 // `short` is the label on phones, where all three tabs share one row
@@ -188,6 +190,12 @@ export default function HomeHero({ setCurrentPage, onAnalyzeClick }: HomeHeroPro
             <span className="bf-strip-tag">Black Friday</span>
             <span><b>{BLACK_FRIDAY.percent}% off</b> every Pro plan with code <code>{BLACK_FRIDAY.code}</code> · till {BLACK_FRIDAY.ends}</span>
             <ArrowRight size={15} />
+          </button>
+        )}
+
+        {mode !== 'check' && (
+          <button type="button" className="hx-upload hx-rise" onClick={onAnalyzeClick}>
+            <Upload size={16} /> Upload resume · free ATS score
           </button>
         )}
 
