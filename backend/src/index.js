@@ -25,6 +25,7 @@ import multer from 'multer';
 import bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
 import { parsePdf, parseDocx, parseTxt, fetchResumeFromUrl } from './services/parser.js';
+import { resumeFileFilter, normalizeResumeFile } from './middleware/resumeFile.js';
 import { analyzeResumeWithGemini, chatWithCVMind, optimizeResumeWithGemini, generateLinkedinPostsWithAI, tailorResumeWithGemini, generatePrepQuestionsWithGemini, refineCoverLetterWithGemini, generateCoverLetterWithAI, analyzeLinkedInProfileWithGemini, evaluatePrepAnswerWithGemini, generateLinkedinBioWithGemini, generateLinkedinOutreachWithGemini, generateCareerCoursesWithGemini, generateElevatorPitchWithGemini, generateCareerRoadmapWithGemini, generateResumeWithGemini, extractResumeDataWithAI, generateProofreadingWithDeepSeek, callClaude, generateInterviewPlan, evaluateInterviewAnswer, generateInterviewReport } from './services/gemini.js';
 import { getPublicStats, saveContactMessage, saveScan, saveFix, saveTailorLog, savePrepLog, findUserByEmail, createUser, saveLoginLog, saveWork, getUserWorks, deleteUserWork, deleteAccount, updateUserProfile, updateUserPassword, findUserById, saveUserResetToken, findUserByResetToken, updateUserFields, saveLinkedinLog, saveLinkedinBioLog, saveLinkedinOutreachLog, saveCareerCoursesLog, saveElevatorPitchLog, saveCareerRoadmapLog, saveVoicePrepLog, saveLinkedinPostLog, getWorkById, saveProofreadLog, checkJobFinderAccess, getUserUsageToday, FREE_DAILY_LIMITS, isUserPaid, hasAutoApplyAccess } from './db.js';
 import adminRouter from './admin/router.js';
@@ -210,21 +211,11 @@ const multerUpload = multer({
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
   },
-  fileFilter: (req, file, cb) => {
-    const allowedMimeTypes = [
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain'
-    ];
-    if (allowedMimeTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type. Only PDF, DOCX, and TXT files are supported.'));
-    }
-  }
+  // Phones often send a vague file type; normalizeResumeFile reads the real one from the file
+  fileFilter: resumeFileFilter
 });
 // Multer loses the request's async context; keep it so AI calls after an upload are charged to the account
-const upload = { single: (field) => keepAiContext(multerUpload.single(field)) };
+const upload = { single: (field) => [keepAiContext(multerUpload.single(field)), normalizeResumeFile] };
 
 // Root Health Check Route
 apiRouter.get('/', (req, res) => {
@@ -2739,6 +2730,10 @@ app.use((req, res) => {
 
 // Global Error Handler
 app.use((err, req, res, next) => {
+  // Upload problems (file too big, wrong field) are the user's to fix, not server errors
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'That file is over 5 MB. Please upload a smaller PDF or DOCX.' : err.message });
+  }
   console.error('Unhandled Error:', err);
   res.status(err.status || 500).json({
     error: err.message || 'Internal Server Error.'

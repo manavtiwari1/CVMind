@@ -6,6 +6,7 @@ import { API_BASE } from './apiBase';
 import { readUser } from './currentUser';
 import { splitFooter, withFooter } from './resumeFooter';
 import { sanitizeResumeHtml } from './sanitizeHtml';
+import { downloadDocx } from './wordExport';
 import type { ExtractedResume, SavedWork, WizardFormData } from '../types/api';
 
 export const DEFAULT_TEMPLATE = 'cv-ivy-league';
@@ -78,18 +79,12 @@ export async function parseResumeText(resumeText: string, headers: Record<string
   return body.data;
 }
 
-export function downloadWord(html: string, fileName: string) {
-  const doc = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-<head><meta charset='utf-8'><title>Resume</title>
-<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
-<style>body{font-family:Arial,sans-serif;margin:1in;}@page{margin:1in;}</style>
-</head><body>${html}</body></html>`;
-  const url = URL.createObjectURL(new Blob(['﻿', doc], { type: 'application/msword' }));
-  const a = Object.assign(document.createElement('a'), { href: url, download: `${fileName}.doc` });
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 30000);
+/** Downloads the resume as a real Word file (.docx) that opens in Word, Google Docs and phone apps. */
+export function downloadWord(html: string, fileName: string, paper: 'a4' | 'letter' = 'a4') {
+  return downloadDocx(html, fileName || 'Resume', { paper, title: 'Resume' }).catch((err) => {
+    console.error('Word export failed:', err);
+    window.alert('We could not create the Word file. Please try again, or download the PDF instead.');
+  });
 }
 
 /** The work to open in the resume editor; saved first when signed in so it shows up in My Documents. */

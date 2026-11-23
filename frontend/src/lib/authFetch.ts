@@ -33,12 +33,25 @@ function announceRefusal(res: Response) {
   }).catch(() => { /* not JSON */ });
 }
 
+// While the API wakes up or redeploys, its host (Render, behind Cloudflare) can answer 502/503/504 with
+// its own HTML page before our server ever sees the request, so sending it again is safe. Our server's
+// own errors are JSON and are never retried.
+const WAKE_RETRY_MS = [3000, 6000];
+const hostNotReady = (res: Response) => [502, 503, 504].includes(res.status) && !(res.headers.get('content-type') || '').includes('application/json');
+const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // fetch() that attaches the signed session token as a Bearer header
 export async function authFetch(input: string, init: RequestInit = {}, key: SessionKey = 'cvmind_user') {
   const headers = new Headers(init.headers);
   const token = getSessionToken(key);
   if (token) headers.set('Authorization', `Bearer ${token}`);
-  const res = await fetch(input, { ...init, headers });
+  let res = await fetch(input, { ...init, headers });
+  for (const wait of WAKE_RETRY_MS) {
+    if (!hostNotReady(res) || init.signal?.aborted) break;
+    await pause(wait);
+    if (init.signal?.aborted) break;
+    res = await fetch(input, { ...init, headers });
+  }
   if (key === 'cvmind_user') announceRefusal(res);
   return res;
 }

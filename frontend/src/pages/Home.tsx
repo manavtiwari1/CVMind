@@ -15,6 +15,7 @@ import { AskLeoDemo } from '../components/home/motion/HomeMotion';
 import AskLeoCta from '../components/home/AskLeoCta';
 import '../components/home/home-v2.css';
 import { getErrorMessage } from '../utils/errors';
+import { SLOW_SERVER_HINT, useSlowHint } from '../lib/serverWake';
 import { HOME_CHECKER, HOME_FAQS } from '../data/homeCopy';
 import type { ResumeAnalysis } from '../types/api';
 import './Home.css';
@@ -54,7 +55,11 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
 
   const fileInputRef  = useRef<HTMLInputElement>(null);
   const scoreRef      = useRef<HTMLElement>(null);
-  const scrollToScore = () => scoreRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const uploadBoxRef  = useRef<HTMLDivElement>(null);
+  // Centres the upload box itself (on phones the section's heading would push it off screen)
+  const scrollToScore = () => (uploadBoxRef.current ?? scoreRef.current)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // The first check after a quiet spell waits for the server to start: say so instead of looking stuck
+  const slowCheck = useSlowHint(loading, 10000);
 
   // Steps to display in sequence during analysis to keep the user engaged
   const analysisSteps = [
@@ -82,32 +87,56 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      validateAndSetFile(e.dataTransfer.files[0]);
+      checkFile(e.dataTransfer.files[0]);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
     if (e.target.files && e.target.files[0]) {
-      validateAndSetFile(e.target.files[0]);
+      checkFile(e.target.files[0]);
     }
+    // Picking the same file again (e.g. after an error) must fire onChange again
+    e.target.value = '';
   };
 
   const validateAndSetFile = (file: File) => {
     setErrorMsg(null);
-    const allowedExtensions = ['pdf', 'docx', 'txt'];
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+    setUploadMode('file');
+    // The server reads the real type from the file; the name only screens out what clearly isn't a resume.
+    // Files from some phone apps have no extension at all, so those go through too.
+    const fileExtension = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() : '';
+    if (fileExtension === 'doc') {
+      setErrorMsg('Old Word (.doc) files can\'t be read. Open it in Word or Google Docs, save it as PDF or DOCX, and upload that.');
+      setSelectedFile(null);
+      return false;
+    }
+    if (fileExtension && !['pdf', 'docx', 'txt'].includes(fileExtension)) {
       setErrorMsg('Unsupported file type. Please upload a PDF, DOCX, or TXT file.');
       setSelectedFile(null);
-      return;
+      return false;
     }
     if (file.size > 5 * 1024 * 1024) {
       setErrorMsg('File is too large. Maximum size is 5MB.');
       setSelectedFile(null);
-      return;
+      return false;
     }
     setSelectedFile(file);
+    return true;
+  };
+
+  // A picked file is checked straight away, and the page shows the check's progress
+  const checkFile = (file: File) => {
+    if (validateAndSetFile(file)) void handleAnalyze(file);
+    scrollToScore();
+  };
+
+  // Every "Upload" / "Check my resume" button on the page opens the file picker directly
+  const pickResume = () => {
+    if (loading) { scrollToScore(); return; }
+    setErrorMsg(null);
+    setUploadMode('file');
+    fileInputRef.current?.click();
   };
 
   const onButtonClick = () => {
@@ -122,9 +151,11 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
     }
   };
 
-  const handleAnalyze = async () => {
-    if (uploadMode === 'file' && !selectedFile) return;
-    if (uploadMode === 'link' && !resumeUrl.trim()) {
+  const handleAnalyze = async (picked?: File) => {
+    const file = picked ?? (uploadMode === 'file' ? selectedFile : null);
+    const byLink = !file && uploadMode === 'link';
+    if (!file && !byLink) return;
+    if (byLink && !resumeUrl.trim()) {
       setErrorMsg('Please paste a link to your resume.');
       return;
     }
@@ -140,8 +171,8 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
     }, 1600);
 
     const formData = new FormData();
-    if (uploadMode === 'file' && selectedFile) {
-      formData.append('resume', selectedFile);
+    if (file) {
+      formData.append('resume', file);
     } else {
       formData.append('resumeUrl', resumeUrl.trim());
     }
@@ -159,11 +190,12 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
         body: formData
       });
 
-      const resData = await response.json();
-      if (!response.ok) throw new Error(resData.error || 'Server error during analysis');
+      // A host error page (server still starting) is HTML, not JSON
+      const resData = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(resData.error || 'Our server is busy right now. Please try again in a moment.');
 
       if (resData.success && resData.data) {
-        const resultWithMeta = { ...resData.data, fileName: selectedFile?.name || resumeUrl, scoreChange: resData.scoreChange || null };
+        const resultWithMeta = { ...resData.data, fileName: file?.name || resumeUrl, scoreChange: resData.scoreChange || null };
         setAnalysisResult(resultWithMeta);
         if (resData.resumeText) setResumeText(resData.resumeText);
         setCurrentPage('dashboard');
@@ -183,7 +215,7 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
     <div className="home-container animate-fade-in-up">
 
       {/* ── 1. HERO ──────────────────────────────────────────── */}
-      <HomeHero setCurrentPage={setCurrentPage} onAnalyzeClick={scrollToScore} />
+      <HomeHero setCurrentPage={setCurrentPage} onAnalyzeClick={pickResume} />
       <SlotBanner slot="home-banner" setCurrentPage={setCurrentPage} />
 
       {/* ── 1b. ASK LEO DEMO (steps change as you scroll) ─────── */}
@@ -196,16 +228,16 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
       <AtsBand onBuild={() => setCurrentPage('resume-builder')} />
 
       {/* ── 4. AI ASSISTANT ──────────────────────────────────── */}
-      <AiAssistant onCheck={scrollToScore} />
+      <AiAssistant onCheck={pickResume} />
 
       {/* ── 5. FEATURE ROWS ──────────────────────────────────── */}
-      <FeatureRows setCurrentPage={setCurrentPage} onCheck={scrollToScore} />
+      <FeatureRows setCurrentPage={setCurrentPage} onCheck={pickResume} />
 
       {/* ── 6. TEMPLATES BY FIELD ────────────────────────────── */}
       <FieldTemplates onUse={openTemplate} />
 
       {/* ── 7. JOB SEARCH TABS ───────────────────────────────── */}
-      <JobSearchTabs setCurrentPage={setCurrentPage} onCheck={scrollToScore} />
+      <JobSearchTabs setCurrentPage={setCurrentPage} onCheck={pickResume} />
 
       {/* ── 10. UPLOAD / SCORE SECTION ───────────────────────── */}
       <section ref={scoreRef} className="home-score-section">
@@ -220,9 +252,10 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
               <span className="home-score-badge"><Sparkles size={13} /> AI-powered</span>
             </div>
           </div>
-          <div className="home-score-upload">
+          <div className="home-score-upload" ref={uploadBoxRef}>
             <div className="upload-section">
               <div className="upload-wrapper">
+                <input ref={fileInputRef} type="file" className="file-input-hidden" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" onChange={handleChange} disabled={loading} aria-label="Upload your resume" />
                 {/* Mode toggle */}
                 <div className="upload-mode-toggle">
                   <button
@@ -249,11 +282,11 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
                     onDragLeave={handleDrag}
                     onDrop={handleDrop}
                   >
-                    <input ref={fileInputRef} type="file" className="file-input-hidden" accept=".pdf,.docx,.txt" onChange={handleChange} disabled={loading} />
                     {loading ? (
                       <div className="skeleton-loading-state">
                         <div className="skeleton-header-mini">
                           <p className="skeleton-step-label">{analysisSteps[loadingStep]}</p>
+                          {slowCheck && <p className="skeleton-step-hint" role="status">{SLOW_SERVER_HINT}</p>}
                           <div className="progress-bar-container">
                             <div className="progress-bar-fill" style={{ width: `${((loadingStep + 1) / analysisSteps.length) * 100}%` }} />
                           </div>
@@ -293,7 +326,7 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
                         </div>
                         <div className="file-actions">
                           <button className="btn-secondary" onClick={removeFile}>Remove</button>
-                          <button className="btn-primary" onClick={handleAnalyze}>Analyze Resume <ArrowRight size={18} /></button>
+                          <button className="btn-primary" onClick={() => void handleAnalyze()}>Analyze Resume <ArrowRight size={18} /></button>
                         </div>
                       </div>
                     ) : (
@@ -311,6 +344,7 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
                       <div className="skeleton-loading-state">
                         <div className="skeleton-header-mini">
                           <p className="skeleton-step-label">{analysisSteps[loadingStep]}</p>
+                          {slowCheck && <p className="skeleton-step-hint" role="status">{SLOW_SERVER_HINT}</p>}
                           <div className="progress-bar-container">
                             <div className="progress-bar-fill" style={{ width: `${((loadingStep + 1) / analysisSteps.length) * 100}%` }} />
                           </div>
@@ -356,7 +390,7 @@ export default function Home({ setCurrentPage, setAnalysisResult, setResumeText,
                         <p className="link-input-hint">Supports Google Drive, Dropbox, OneDrive, or any direct link</p>
                         <button
                           className="btn-primary"
-                          onClick={handleAnalyze}
+                          onClick={() => void handleAnalyze()}
                           disabled={!resumeUrl.trim()}
                         >
                           Analyze Resume <ArrowRight size={18} />

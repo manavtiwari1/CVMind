@@ -1,12 +1,13 @@
 import express from 'express';
 import multer from 'multer';
+import { resumeFileFilter, normalizeResumeFile } from '../middleware/resumeFile.js';
 import mongoose from 'mongoose';
 import { requireUser } from '../services/authToken.js';
 import ResumeProfile from '@cvmind/auto-apply-agent/models/ResumeProfile.js';
 import { PreferencesInput } from '@cvmind/auto-apply-agent/preferences/schema.js';
 import { getPreferences, savePreferences } from '@cvmind/auto-apply-agent/preferences/service.js';
 import { pickResume } from '@cvmind/auto-apply-agent/applications/create.js';
-import { importUploadedResume, importCvmindWork, RESUME_MIME_TYPES } from '@cvmind/auto-apply-agent/resume/intake.js';
+import { importUploadedResume, importCvmindWork } from '@cvmind/auto-apply-agent/resume/intake.js';
 import { buildFeed, toClientJob, appliedDates, LEVEL_FILTERS, MAX_SEARCH_SKILLS } from '../jobFinder/feed.js';
 import { candidateFrom, matchJob } from '../jobFinder/match.js';
 import { boardDescription, BOARD_SOURCES } from '../jobFinder/sources/boards.js';
@@ -26,7 +27,7 @@ import { generateLinkedinOutreachWithGemini } from '../services/gemini.js';
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => cb(null, RESUME_MIME_TYPES.includes(file.mimetype))
+  fileFilter: resumeFileFilter
 });
 
 // The preference fields Job Finder edits; the rest belong to Auto Apply
@@ -145,7 +146,7 @@ export function createJobFinderRouter({ loadWork = defaultLoadWork, sources = {}
       if (err) return res.status(400).json({ success: false, error: err.code === 'LIMIT_FILE_SIZE' ? 'Resume file must be 5MB or smaller.' : err.message });
       next();
     });
-  }, asyncRoute(async (req, res) => {
+  }, normalizeResumeFile, asyncRoute(async (req, res) => {
     if (!req.file) return res.status(400).json({ success: false, error: 'Upload a PDF, DOCX or TXT resume file.' });
     const { profile } = await importUploadedResume({ userId: req.auth.sub, file: req.file, label: req.body?.label, via: 'job-finder' });
     await savePreferences(req.auth.sub, { defaultResumeProfileId: String(profile._id) });

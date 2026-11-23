@@ -152,6 +152,9 @@
 .hx-proof svg { color: var(--hp-green); }
 .hx-alt { margin-top: 1.1rem; display: inline-flex; align-items: center; gap: 0.35rem; border: 0; background: none; font: inherit; font-size: 0.95rem; font-weight: 600; color: #5b3fd1; cursor: pointer; }
 .hx-alt:hover { text-decoration: underline; }
+.hx-upload { margin-top: 1.1rem; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; max-width: 100%; padding: 0.7rem 1.25rem; border: 1.5px solid #5b3fd1; border-radius: 999px; background: #fff; font: inherit; font-size: 0.95rem; font-weight: 700; color: #5b3fd1; cursor: pointer; }
+.hx-upload:hover { background: #f4f1ff; }
+.hx-upload:focus-visible { outline: 3px solid rgba(91, 63, 209, 0.35); outline-offset: 2px; }
 
 @media (max-width: 640px) {
   .hx-hero { padding: 5.5rem 0 2.5rem; }

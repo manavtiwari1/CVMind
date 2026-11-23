@@ -18,6 +18,7 @@ import type { SavedWork } from '../types/api';
 import { readUser } from '../lib/currentUser';
 import { siteOrigin } from '../lib/hosts';
 import { BLACK_FRIDAY, isBhaiDooj, isBlackFriday } from '../lib/festive';
+import { SLOW_SERVER_HINT, useSlowHint } from '../lib/serverWake';
 import './Chat.css';
 
 // Bhai Dooj greeting on the welcome screen, until midnight IST on 11 Nov (lib/festive.ts)
@@ -116,6 +117,8 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork
 
   const abortRef = useRef<AbortController | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  // A first upload can meet a sleeping server: say so instead of leaving a silent spinner
+  const slowAttach = useSlowHint(attaching);
   const boxRef = useRef<HTMLTextAreaElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const retryRef = useRef<string>('');
@@ -454,6 +457,7 @@ export default function ChatApp({ setCurrentPage, isLoggedIn, onSignIn, openWork
             {!attaching && <button type="button" onClick={removeResume} aria-label="Remove attached resume"><X size={14} /></button>}
           </div>
         )}
+        {slowAttach && <p className="lx-wait-hint" role="status">{SLOW_SERVER_HINT}</p>}
         <textarea
           ref={boxRef}
           value={input}

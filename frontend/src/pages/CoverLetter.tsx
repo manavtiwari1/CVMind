@@ -35,6 +35,7 @@ import type { ExtractedResume, LoadedWork, WizardFormData } from '../types/api';
 import { siteOrigin, urlForPage } from '../lib/hosts';
 import { isProTemplate, requestUpgrade, userIsPro } from '../lib/billing';
 import { exportHtml } from '../lib/branding';
+import { downloadWord } from '../lib/resumeHandoff';
 
 // ─────────────────────────────────────────────────────────────────
 // Toolbar constants
@@ -708,20 +709,10 @@ export default function CoverLetter({ customApiKey, loadedWork, setLoadedWork, o
     setTimeout(() => { win.print(); win.close(); }, 600);
   };
 
+  // A real .docx (the old HTML-named-.doc file would not open on phones)
   const handleDownloadDOCX = (fileName?: string, html?: string) => {
     const content = html ?? exportHtml(editorRef.current?.innerHTML ?? '');
-    const wordDoc = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-<head><meta charset='utf-8'><title>Resume</title>
-<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
-<style>body{font-family:Arial,sans-serif;margin:1in;}@page{margin:1in;}</style>
-</head><body>${content}</body></html>`;
-    const blob = new Blob(['\ufeff', wordDoc], { type: 'application/msword' });
-    const a = Object.assign(document.createElement('a'), {
-      href: URL.createObjectURL(blob),
-      download: `${fileName || `resume-${selectedTemplate?.id || 'draft'}`}.doc`,
-    });
-    a.click();
-    URL.revokeObjectURL(a.href);
+    void downloadWord(content, fileName || `resume-${selectedTemplate?.id || 'draft'}`, paperSize === 'letter' ? 'letter' : 'a4');
   };
 
   const handleRefine = async () => {

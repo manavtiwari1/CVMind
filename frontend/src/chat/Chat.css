@@ -252,6 +252,7 @@
 .lx-attachment span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lx-attachment button { padding: 2px; border-radius: 6px; color: var(--text-tertiary); display: inline-flex; }
 .lx-attachment button:hover { color: var(--text-primary); }
+.lx-wait-hint { margin: 0; font-size: 12.5px; line-height: 1.4; color: var(--text-tertiary); }
 .lx-send {
   width: 36px; height: 36px;
   display: grid; place-items: center;
