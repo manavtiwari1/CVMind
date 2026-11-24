@@ -19,6 +19,12 @@ if (onTidb) {
   const hook = pathToFileURL(path.resolve('..', 'tidb-store', 'test-support', 'register.mjs')).href;
   env.NODE_OPTIONS = `${env.NODE_OPTIONS || ''} --import=${hook}`.trim();
   extra.push('--test-concurrency=1');
+} else {
+  // The suites use in-memory MongoDB. Set these here (dotenv never overrides a variable that is already set,
+  // even an empty one) so live database settings in backend/.env can't send test data to production.
+  env.DATABASE_DRIVER = 'mongodb';
+  env.TIDB_DATABASE_URL = '';
+  env.MONGODB_URI = '';
 }
 
 const result = spawnSync(process.execPath, ['--test', ...extra, ...process.argv.slice(2), ...files], { stdio: 'inherit', env });

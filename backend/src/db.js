@@ -81,6 +81,11 @@ function connectMongo() {
         console.log(`${driverName} connected successfully!`);
       })
       .catch((err) => {
+        // A test run pointed at a live database: stop the test process instead of falling back quietly
+        if (err.code === 'LIVE_DATABASE_IN_TEST') {
+          console.error(err.message);
+          process.exit(1);
+        }
         connectPromise = null; // allow a retry on the next request
         console.error(`${driverName} connection error. Falling back to Local JSON database. Error:`, err.message);
       });
