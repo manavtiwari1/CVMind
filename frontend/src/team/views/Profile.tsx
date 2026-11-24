@@ -3,7 +3,7 @@ import type { FormEvent } from 'react';
 import { Bell, BellOff, Camera, IdCard as IdCardIcon, Shield, Trash2 } from 'lucide-react';
 import { disablePush, enablePush, isInstalled, isIos, pushState } from '../push';
 import { PhotoDialog } from '../../components/ResumePhoto';
-import { api, saveSession, loadSession } from '../api';
+import { api, saveSession, loadSession, replaceToken } from '../api';
 import { confirmDialog } from '../confirm';
 import type { TeamAccount } from '../api';
 import { useTeam } from '../store';
@@ -230,7 +230,8 @@ function PasswordCard() {
     e.preventDefault();
     setBusy(true);
     try {
-      await api('/me/password', { method: 'POST', body: { currentPassword: current, newPassword: next } });
+      const res = await api<{ token?: string }>('/me/password', { method: 'POST', body: { currentPassword: current, newPassword: next } });
+      replaceToken(res.token);
       setCurrent('');
       setNext('');
       toast('Password changed');

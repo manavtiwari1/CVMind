@@ -2,7 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import { rateLimit } from 'express-rate-limit';
 import { AdminUser } from '../../models.js';
-import { invalidateAdminCache, loginAdmin, toPublicAdmin } from '../../auth.js';
+import { endOtherSessions, invalidateAdminCache, loginAdmin, renewCurrentToken, toPublicAdmin } from '../../auth.js';
 import { audit } from '../../audit.js';
 import { clean, dateRange, escapeRegex, handle, httpError, isEmail, isId, paging } from '../../util.js';
 import { ROLES } from '../../permissions.js';
@@ -137,11 +137,12 @@ router.post('/me/password', profile, handle(async (req, res) => {
   if (!admin || !(await bcrypt.compare(String(currentPassword || ''), admin.passwordHash))) throw httpError(400, 'Your current password is not correct.');
   admin.passwordHash = await bcrypt.hash(String(newPassword), 10);
   admin.mustChangePassword = false;
+  endOtherSessions(admin);
   await admin.save();
   invalidateAdminCache(String(admin._id));
-  await audit(req, 'admin.password_changed', { targetType: 'admin', targetId: admin._id, targetLabel: admin.username, details: { from: 'team' } });
+  await audit(req, 'admin.password_changed', { targetType: 'admin', targetId: admin._id, targetLabel: admin.username, details: { from: 'team', otherSessionsEnded: true } });
   await ensureGeneral(String(admin._id));
-  res.json({ success: true, admin: toPublicAdmin(admin) });
+  res.json({ success: true, admin: toPublicAdmin(admin), token: renewCurrentToken(admin, req) });
 }));
 
 // ── Browser push ─────────────────────────────────────────────────────────────

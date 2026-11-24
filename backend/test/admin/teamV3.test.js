@@ -97,7 +97,8 @@ async function onboard(panelToken, { username, role = 'support' }) {
   const token = login.body.token;
   const set = await call('/team/me/password', { method: 'POST', token, body: { currentPassword: temp, newPassword: `real-${username}-password` } });
   assert.equal(set.status, 200);
-  return { id: login.body.admin.id, token };
+  // Setting a password signs out every other session and renews this one
+  return { id: login.body.admin.id, token: set.body.token };
 }
 
 // Uploads a file through the fake R2 → file id

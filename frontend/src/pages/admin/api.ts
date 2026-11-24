@@ -48,6 +48,21 @@ export function clearSession() {
   }
 }
 
+// A password change signs out every other device and sends this tab a fresh token: keep it where the
+// session already lives ("Keep me signed in" or this tab only)
+export function replaceSessionToken(token?: string) {
+  if (!token || tokenSource) return;
+  const session = loadSession();
+  if (!session) return;
+  let remembered = false;
+  try {
+    remembered = !!localStorage.getItem(SESSION_KEY);
+  } catch {
+    /* storage blocked */
+  }
+  saveSession({ ...session, token }, remembered);
+}
+
 // The Manager portal on team.cvmind.in runs some admin screens with the manager's team token
 let tokenSource: (() => string | null) | null = null;
 export function setTokenSource(fn: (() => string | null) | null) {

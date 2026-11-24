@@ -265,6 +265,12 @@ const currentToken = () => (loadSession() || memorySession)?.token;
 // The Manager portal hands this to the admin screens it shows (HR, workspace settings)
 export const teamToken = () => currentToken() || null;
 
+// A password change signs out every other device and sends this tab a fresh token: keep it, same storage
+export function replaceToken(token?: string) {
+  const session = loadSession() || memorySession;
+  if (token && session) saveSession({ ...session, token });
+}
+
 let onAuthError: ((code: string, message: string) => void) | null = null;
 export function setAuthErrorHandler(fn: ((code: string, message: string) => void) | null) {
   onAuthError = fn;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { api } from './api';
+import { api, replaceSessionToken } from './api';
 import { useAction } from './hooks';
 import { Spinner } from './ui';
 
@@ -13,8 +13,9 @@ export default function MyPasswordForm({ onDone }: { onDone?: () => void }) {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const ok = await run('save', () => api('/me/password', { method: 'POST', body: { currentPassword: current, newPassword: next } }), 'Password changed');
+    const ok = await run('save', () => api<{ token?: string }>('/me/password', { method: 'POST', body: { currentPassword: current, newPassword: next } }), 'Password changed. Every other device is signed out.');
     if (ok !== undefined) {
+      replaceSessionToken(ok?.token);
       setCurrent('');
       setNext('');
       setConfirm('');

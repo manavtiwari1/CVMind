@@ -57,8 +57,9 @@ async function onboard(panelToken, { username, role }) {
   const temp = `temp-${username}-12345`;
   await call('/team/invitations', { method: 'POST', token: panelToken, body: { name: username, username, email: `${username}@cvmind.test`, role, password: temp } });
   const login = await call('/team/login', { method: 'POST', body: { username, password: temp } });
-  await call('/team/me/password', { method: 'POST', token: login.body.token, body: { currentPassword: temp, newPassword: `real-${username}-password` } });
-  return { id: login.body.admin.id, token: login.body.token };
+  const set = await call('/team/me/password', { method: 'POST', token: login.body.token, body: { currentPassword: temp, newPassword: `real-${username}-password` } });
+  // Setting a password signs out every other session and renews this one
+  return { id: login.body.admin.id, token: set.body.token };
 }
 
 let owner;

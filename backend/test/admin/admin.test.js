@@ -109,6 +109,30 @@ test('roles limit what a team member can do', async () => {
   assert.equal(demote.status, 400);
 });
 
+test('changing your password signs out every other device and keeps this one signed in', async () => {
+  const created = await call('/api/admin/team', { method: 'POST', token: ownerToken, body: { username: 'pw-changer', name: 'Pat', role: 'support', password: 'pw-changer-old-1' } });
+  assert.equal(created.status, 200);
+  const laptop = (await login('pw-changer', 'pw-changer-old-1')).body.token;
+  const phone = (await login('pw-changer', 'pw-changer-old-1')).body.token;
+  assert.equal((await call('/api/admin/me', { token: phone })).status, 200);
+
+  const changed = await call('/api/admin/me/password', { method: 'POST', token: laptop, body: { currentPassword: 'pw-changer-old-1', newPassword: 'pw-changer-new-1' } });
+  assert.equal(changed.status, 200);
+  assert.ok(changed.body.token);
+
+  // The other device and the laptop's old token are both signed out; the renewed token works
+  assert.equal((await call('/api/admin/me', { token: phone })).status, 401);
+  assert.equal((await call('/api/admin/me', { token: laptop })).status, 401);
+  assert.equal((await call('/api/admin/me', { token: changed.body.token })).status, 200);
+
+  assert.equal((await login('pw-changer', 'pw-changer-old-1')).status, 401);
+  assert.equal((await login('pw-changer', 'pw-changer-new-1')).status, 200);
+
+  const auditRes = await call('/api/admin/audit?action=admin.password_changed', { token: ownerToken });
+  assert.equal(auditRes.body.data[0].targetLabel, 'pw-changer');
+  assert.equal(auditRes.body.data[0].details.otherSessionsEnded, true);
+});
+
 test('suspending a user is audited and blocks their existing token', async () => {
   const user = await createUser('suspend-me@example.com');
   const userToken = signToken({ sub: String(user._id), kind: 'user', email: user.email });

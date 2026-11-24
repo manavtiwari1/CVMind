@@ -65,8 +65,9 @@ async function onboard(panelToken, { username, role }) {
   await makeLeadershipManagers();
   const login = await call('/team/login', { method: 'POST', body: { username, password: temp } });
   const password = `real-${username}-password`;
-  await call('/team/me/password', { method: 'POST', token: login.body.token, body: { currentPassword: temp, newPassword: password } });
-  return { id: login.body.admin.id, token: login.body.token, password };
+  const set = await call('/team/me/password', { method: 'POST', token: login.body.token, body: { currentPassword: temp, newPassword: password } });
+  // Setting a password signs out every other session and renews this one
+  return { id: login.body.admin.id, token: set.body.token, password };
 }
 
 let owner;

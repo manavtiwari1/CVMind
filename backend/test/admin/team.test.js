@@ -97,7 +97,8 @@ async function onboard(panelToken, { username, role = 'support' }) {
   const token = login.body.token;
   const set = await call('/team/me/password', { method: 'POST', token, body: { currentPassword: temp, newPassword: `real-${username}-password` } });
   assert.equal(set.status, 200);
-  return { id: login.body.admin.id, token };
+  // Setting a password signs out every other session and renews this one
+  return { id: login.body.admin.id, token: set.body.token };
 }
 
 // Uploads a file through the fake R2 → file id
@@ -141,7 +142,10 @@ test('an invitation creates the account, emails the sign-in details, and forces 
 
   const set = await call('/team/me/password', { method: 'POST', token: login.body.token, body: { currentPassword: 'riya-temp-pass-1', newPassword: 'riya-own-password' } });
   assert.equal(set.status, 200);
-  riya = { id: login.body.admin.id, token: login.body.token };
+  // The token from before the change no longer works; the renewed one does
+  assert.equal((await call('/team/channels', { token: login.body.token })).status, 401);
+  assert.ok(set.body.token && set.body.token !== login.body.token);
+  riya = { id: login.body.admin.id, token: set.body.token };
   assert.equal((await call('/team/channels', { token: riya.token })).status, 200);
 
   const list = await call('/team/invitations', { token: ownerPanel });
@@ -162,8 +166,8 @@ test('a failed email keeps the account, and resend rotates the password', async 
   assert.equal((await teamLogin('aman', 'aman-temp-pass-1')).status, 401);
   const login = await teamLogin('aman', newPassword);
   assert.equal(login.status, 200);
-  await call('/team/me/password', { method: 'POST', token: login.body.token, body: { currentPassword: newPassword, newPassword: 'aman-own-password' } });
-  aman = { id: login.body.admin.id, token: login.body.token };
+  const set = await call('/team/me/password', { method: 'POST', token: login.body.token, body: { currentPassword: newPassword, newPassword: 'aman-own-password' } });
+  aman = { id: login.body.admin.id, token: set.body.token };
 
   priya = await onboard(ownerPanel, { username: 'priya', role: 'support' });
 });
