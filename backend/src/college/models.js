@@ -116,11 +116,26 @@ const auditSchema = new Schema({
 });
 auditSchema.index({ collegeId: 1, createdAt: -1 });
 
+const campusLeadSchema = new Schema({
+  collegeName: { type: String, required: true, trim: true },
+  city: { type: String, default: '' },
+  state: { type: String, default: '' },
+  contactName: { type: String, required: true, trim: true },
+  email: { type: String, required: true, lowercase: true, trim: true },
+  phone: { type: String, default: '', trim: true },
+  designation: { type: String, default: 'TPO' },
+  batchSize: { type: Number, default: 500 },
+  message: { type: String, default: '' },
+  status: { type: String, enum: ['new', 'contacted', 'pilot_active', 'converted', 'closed'], default: 'new' }
+}, { timestamps: true });
+campusLeadSchema.index({ email: 1, createdAt: -1 });
+
 export const College = register('College', collegeSchema);
 export const CollegeStaff = register('CollegeStaff', staffSchema);
 export const CollegeStudent = register('CollegeStudent', studentSchema);
 export const ResumeReview = register('ResumeReview', reviewSchema);
 export const CollegeTemplate = register('CollegeTemplate', templateSchema);
 export const CollegeAuditLog = register('CollegeAuditLog', auditSchema);
+export const CampusLead = register('CampusLead', campusLeadSchema);
 
-export const COLLEGE_MODELS = [College, CollegeStaff, CollegeStudent, ResumeReview, CollegeTemplate, CollegeAuditLog];
+export const COLLEGE_MODELS = [College, CollegeStaff, CollegeStudent, ResumeReview, CollegeTemplate, CollegeAuditLog, CampusLead];

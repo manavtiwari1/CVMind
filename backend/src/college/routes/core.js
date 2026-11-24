@@ -5,7 +5,7 @@ import { dbReady } from '../../admin/auth.js';
 import { clean, handle, httpError, isEmail, isId, paging } from '../../admin/util.js';
 import { collegeAudit, collegeAccess, generatePassword, issueCollegeToken, oid, publicCollege, publicStaff, requireCollege, scoped } from '../access.js';
 import { sendStaffCredentials } from '../emails.js';
-import { College, CollegeAuditLog, CollegeStaff, CollegeTemplate } from '../models.js';
+import { College, CollegeAuditLog, CollegeStaff, CollegeTemplate, CampusLead } from '../models.js';
 
 const router = express.Router();
 const profile = requireCollege({ allowPasswordChange: true });
@@ -48,6 +48,40 @@ router.post('/login', loginLimiter, handle(async (req, res) => {
   req.collegeId = college._id;
   await collegeAudit(req, 'staff.login', { targetId: staff._id, targetLabel: staff.email });
   res.json({ success: true, token: issueCollegeToken(staff, req.body?.remember ? REMEMBER_MS : SESSION_MS), staff: publicStaff(staff), college: publicCollege(college) });
+}));
+
+// Public Lead Capture for Institutional Pilot / Audit Requests
+router.post('/lead', handle(async (req, res) => {
+  if (!(await dbReady())) return res.status(503).json({ success: false, error: 'Database connecting, please try again in a few moments.' });
+  const collegeName = clean(req.body?.collegeName, 200);
+  const contactName = clean(req.body?.contactName, 120);
+  const email = clean(req.body?.email, 200).toLowerCase();
+  const phone = clean(req.body?.phone, 30);
+  const designation = clean(req.body?.designation, 80) || 'TPO';
+  const batchSize = Math.max(1, Number(req.body?.batchSize) || 500);
+  const city = clean(req.body?.city, 100);
+  const message = clean(req.body?.message, 1000);
+
+  if (!collegeName) throw httpError(400, 'Please enter your institution/college name.');
+  if (!contactName) throw httpError(400, 'Please enter your name.');
+  if (!isEmail(email)) throw httpError(400, 'Please enter a valid official email address.');
+
+  const lead = await CampusLead.create({
+    collegeName,
+    contactName,
+    email,
+    phone,
+    designation,
+    batchSize,
+    city,
+    message
+  });
+
+  res.json({
+    success: true,
+    message: 'Thank you! Your institutional pilot request has been received. Our campus partnerships team will reach out within 24 hours.',
+    leadId: lead._id
+  });
 }));
 
 router.get('/me', profile, handle(async (req, res) => {

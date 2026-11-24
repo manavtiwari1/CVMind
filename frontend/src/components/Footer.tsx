@@ -37,6 +37,7 @@ const RESUME: FooterLink[] = [
   { label: 'Resume Builder & CV Maker', page: 'resume-builder' },
   { label: 'Resume Templates', page: 'resume-editor' },
   { label: 'Pricing', page: 'pricing' },
+  { label: 'For Colleges & Universities (Coming Soon)', page: 'campus' },
 ];
 
 const COVER_LETTER: FooterLink[] = [

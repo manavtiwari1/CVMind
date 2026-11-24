@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import SiteBanner from './components/SiteBanner';
 import AppUpdateGate from './components/AppUpdateGate';
 import { PRICING_LOCKED } from './lib/pricing';
+import { CAMPUS_LOCKED } from './lib/campus';
 import AuthModal from './components/AuthModal';
 import { captureReferral, claimStoredReferral } from './lib/referralCapture';
 import VerifyEmailGate from './components/VerifyEmailGate';
@@ -83,6 +84,8 @@ const CVmindCode = lazy(() => import('./pages/code/CVmindCode'));
 const CVmindCodeLanding = lazy(() => import('./pages/code/CVmindCodeLanding'));
 const JobFinderApp = lazy(() => import('./pages/jobFinder/JobFinderApp'));
 const OfferNegotiation = lazy(() => import('./pages/growth/OfferNegotiation'));
+const Campus = lazy(() => import('./pages/Campus'));
+const CampusSoon = lazy(() => import('./pages/CampusSoon'));
 const InvitePage = lazy(() => import('./pages/growth/InvitePage'));
 const JobFinderLanding = lazy(() => import('./pages/jobFinder/JobFinderLanding'));
 const NotFound = lazy(() => import('./pages/NotFound'));
@@ -674,6 +677,9 @@ export default function App() {
       case 'pricing':
         if (PRICING_LOCKED) return <PricingSoon setCurrentPage={setCurrentPage} />;
         return <Pricing setCurrentPage={setCurrentPage} isLoggedIn={isLoggedIn} setShowAuthModal={setShowAuthModal} />;
+      case 'campus':
+        if (CAMPUS_LOCKED) return <CampusSoon setCurrentPage={setCurrentPage} />;
+        return <Campus />;
       case 'terms':
         return <Terms setCurrentPage={setCurrentPage} />;
       case 'refund-policy':
@@ -770,7 +776,7 @@ export default function App() {
   // The Help Center (and its Contact form) is full-width with its own top bar and footer instead of the site ones
   const isHelpPage = currentPage === 'help-center' || currentPage === 'contact';
   // Landing pages that run edge to edge under the site navbar
-  const isWidePage = currentPage === 'cover-letter-generator' || currentPage === 'cover-letter-builder' || currentPage === 'resume-builder' || currentPage === 'pricing' || currentPage === 'ai-tutor' || currentPage === 'aptitude';
+  const isWidePage = currentPage === 'cover-letter-generator' || currentPage === 'cover-letter-builder' || currentPage === 'resume-builder' || currentPage === 'pricing' || currentPage === 'ai-tutor' || currentPage === 'aptitude' || currentPage === 'campus';
 
   // Unverified accounts see the verify screen over locked app pages, or when the server refused a request
   const unverified = isLoggedIn && emailVerified === false;
