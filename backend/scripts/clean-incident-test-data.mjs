@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { connectDatabase, databaseDriver } from '@cvmind/tidb-store';
 import { AdminUser } from '../src/admin/models.js';
-import { Announcement } from '../src/admin/team/models.js';
+import { TeamAnnouncement } from '../src/admin/team/models.js';
 import { CollegeTemplate } from '../src/college/models.js';
 
 dotenv.config();
@@ -47,7 +47,7 @@ testTemplates.forEach(t => console.log(`  - ${t.name}`));
 const announcementFilter = {
   title: { $regex: /diwali/i }
 };
-const testAnnouncements = await Announcement.find(announcementFilter).select('_id title createdAt');
+const testAnnouncements = await TeamAnnouncement.find(announcementFilter).select('_id title createdAt');
 console.log(`\n[3] Found ${testAnnouncements.length} test Announcements:`);
 testAnnouncements.forEach(an => console.log(`  - ${an.title}`));
 
@@ -95,7 +95,7 @@ if (testTemplates.length > 0) {
   console.log(`✓ Deleted ${res.deletedCount} fake College templates.`);
 }
 if (testAnnouncements.length > 0) {
-  const res = await Announcement.deleteMany(announcementFilter);
+  const res = await TeamAnnouncement.deleteMany(announcementFilter);
   console.log(`✓ Deleted ${res.deletedCount} fake Announcements.`);
 }
 if (testUsers.length > 0) {
