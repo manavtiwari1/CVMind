@@ -1,17 +1,15 @@
 import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-gsap.registerPlugin(ScrollTrigger);
-
-/* The Ask Leo workspace demo: paste a job → Leo reads both → tailored resume → cover letter →
-   saved. It is driven by scrolling: the section is a tall box (.lsn-scroll) whose demo sticks to
-   the screen, and scroll position moves the timeline forward or back (CSS sticky, not GSAP pin:
-   .main-content has a perspective, which breaks position: fixed).
-   Phones get a portrait canvas with bigger, stacked cards. Returns a cleanup function. */
+/* The Ask Leo workspace video walkthrough:
+   Paste a job → Leo reads both → Tailored resume → Cover letter → Saved & applied.
+   Operates as an interactive video demo with playback controls (Play/Pause, Timeline Scrubber,
+   Speed Toggle 1x/1.5x/2x, Chapter Jumps, and Restart). Autoplays when in viewport.
+*/
 export function runAskLeo(root: HTMLElement): () => void {
   const $ = (id: string) => root.querySelector<HTMLElement>('#' + id)!;
   const stage = $('bStage'), world = $('bWorld');
-  // Phone layout by screen width (the desktop canvas can be narrow on short screens, so not by stage width)
+
+  // Phone layout by screen width
   const M = window.innerWidth < 700, W = M ? 420 : 1100;
   if (M) {
     stage.parentElement!.classList.add('lsn-m');
@@ -135,38 +133,223 @@ export function runAskLeo(root: HTMLElement): () => void {
       .addLabel('end', 's5+=3.3');
 
     const starts = ['s1', 's2', 's3', 's4', 's5', 'end'].map((l) => tl.labels[l]);
+    const totalDuration = tl.duration() || 17.2;
+
     let shown = -1, leoState = '';
     const stepAt = (t: number) => { for (let i = 4; i >= 0; i--) if (t >= starts[i]) return i; return 0; };
+
+    // Video Player Controls Elements
+    const playBtn = $('bVidPlay');
+    const playIcon = $('bVidPlayIcon');
+    const pauseIcon = $('bVidPauseIcon');
+    const timeDisplay = $('bVidTime');
+    const scrubTrack = $('bVidScrub');
+    const fillBar = $('bVidFill');
+    const thumb = $('bVidThumb');
+    const speedBtn = $('bVidSpeed');
+    const restartBtn = $('bVidRestart');
+    const overlay = $('bVidOverlay');
+
+    const fmtTime = (sec: number) => {
+      const s = Math.max(0, Math.floor(sec));
+      const m = Math.floor(s / 60);
+      const rem = s % 60;
+      return `${m}:${rem < 10 ? '0' : ''}${rem}`;
+    };
+
+    let userPaused = false;
+    let restartTimer: number | null = null;
+
+    const updatePlayStateUI = () => {
+      const isPlaying = tl.isActive();
+      if (isPlaying) {
+        playIcon.style.display = 'none';
+        pauseIcon.style.display = 'block';
+        overlay.classList.add('lsn-playing');
+      } else {
+        playIcon.style.display = 'block';
+        pauseIcon.style.display = 'none';
+        overlay.classList.remove('lsn-playing');
+      }
+    };
+
     const render = () => {
       const t = tl.time(), s = stepAt(t);
+
+      // Chapter progress bars at top
       bars.forEach((b, i) => {
         const p = i < s ? 1 : i > s ? 0 : (t - starts[i]) / (starts[i + 1] - starts[i]);
         b.style.transform = 'scaleX(' + Math.max(0, Math.min(1, p)).toFixed(3) + ')';
       });
+
+      // Step text
       if (s !== shown) {
         shown = s;
         gsap.fromTo(['#bK', '#bH', '#bP'], { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .45, stagger: .05, ease: 'power2.out' });
         $('bK').textContent = STEPS[s].k; $('bH').textContent = STEPS[s].h; $('bP').textContent = STEPS[s].p;
       }
+
+      // Leo message state
       const want = t < starts[1] + .9 ? 'think' : t < starts[3] + .9 ? 'one' : 'two';
       if (want !== leoState) {
         leoState = want;
         $('bLeoTx').innerHTML = want === 'think' ? LEO_THINK : want === 'one' ? LEO_1 : LEO_2;
       }
+
+      // Video Controls updates
+      const pct = Math.max(0, Math.min(1, t / totalDuration));
+      fillBar.style.width = (pct * 100) + '%';
+      thumb.style.left = (pct * 100) + '%';
+      scrubTrack.setAttribute('aria-valuenow', Math.round(t).toString());
+      timeDisplay.textContent = `${fmtTime(t)} / ${fmtTime(totalDuration)}`;
+
+      updatePlayStateUI();
     };
+
     tl.eventCallback('onUpdate', render);
     render();
 
-    /* scrolling through the tall section moves the timeline; scrub smooths it a little */
-    const box = root.parentElement!;
-    const st = ScrollTrigger.create({ trigger: box, start: 'top top', end: 'bottom bottom', scrub: 0.6, animation: tl });
+    // Toggle Play / Pause function
+    const togglePlay = () => {
+      if (restartTimer) {
+        window.clearTimeout(restartTimer);
+        restartTimer = null;
+      }
+      if (tl.isActive()) {
+        tl.pause();
+        userPaused = true;
+      } else {
+        if (tl.time() >= totalDuration - 0.2) {
+          tl.restart();
+        } else {
+          tl.play();
+        }
+        userPaused = false;
+      }
+      updatePlayStateUI();
+    };
 
-    /* clicking a bar scrolls to that step */
+    // Stage and overlay click triggers Play/Pause
+    stage.addEventListener('click', (e) => {
+      // Don't toggle if clicking on interactive form simulation elements
+      const target = e.target as HTMLElement;
+      if (target.closest('.lsn-vctrls')) return;
+      togglePlay();
+    }, { signal: ac.signal });
+
+    overlay.addEventListener('click', (e) => {
+      e.stopPropagation();
+      togglePlay();
+    }, { signal: ac.signal });
+
+    playBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      togglePlay();
+    }, { signal: ac.signal });
+
+    // Restart button
+    restartBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (restartTimer) {
+        window.clearTimeout(restartTimer);
+        restartTimer = null;
+      }
+      userPaused = false;
+      tl.restart();
+      updatePlayStateUI();
+    }, { signal: ac.signal });
+
+    // Speed toggle
+    const speeds = [1, 1.5, 2];
+    let speedIdx = 0;
+    speedBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      speedIdx = (speedIdx + 1) % speeds.length;
+      const spd = speeds[speedIdx];
+      tl.timeScale(spd);
+      speedBtn.textContent = spd + 'x';
+    }, { signal: ac.signal });
+
+    // Interactive timeline scrubber
+    let isScrubbing = false;
+    const seekWithClientX = (clientX: number) => {
+      const rect = scrubTrack.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      tl.seek(ratio * totalDuration);
+      render();
+    };
+
+    scrubTrack.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      isScrubbing = true;
+      if (restartTimer) {
+        window.clearTimeout(restartTimer);
+        restartTimer = null;
+      }
+      tl.pause();
+      seekWithClientX(e.clientX);
+
+      const onPointerMove = (ev: PointerEvent) => {
+        if (isScrubbing) seekWithClientX(ev.clientX);
+      };
+      const onPointerUp = () => {
+        if (isScrubbing) {
+          isScrubbing = false;
+          if (!userPaused) tl.play();
+          window.removeEventListener('pointermove', onPointerMove);
+          window.removeEventListener('pointerup', onPointerUp);
+        }
+      };
+
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+    }, { signal: ac.signal });
+
+    // Clicking top chapter bars seeks video directly to that chapter
     root.querySelectorAll<HTMLButtonElement>('#bBars button').forEach((btn, i) => {
       btn.addEventListener('click', () => {
-        const y = st.start + (st.end - st.start) * ((starts[i] + .05) / tl.duration());
-        window.scrollTo({ top: y, behavior: 'smooth' });
+        if (restartTimer) {
+          window.clearTimeout(restartTimer);
+          restartTimer = null;
+        }
+        tl.seek(starts[i] + 0.05);
+        if (!userPaused) tl.play();
+        render();
       }, { signal: ac.signal });
+    });
+
+    // Seamless loop on video completion with brief hold
+    tl.eventCallback('onComplete', () => {
+      updatePlayStateUI();
+      restartTimer = window.setTimeout(() => {
+        if (!userPaused) {
+          tl.restart();
+        }
+      }, 2400);
+    });
+
+    // Autoplay when visible in viewport
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          if (!userPaused && tl.paused()) {
+            tl.play();
+          }
+        } else {
+          tl.pause();
+        }
+        updatePlayStateUI();
+      });
+    }, { threshold: 0.25 });
+
+    observer.observe(root);
+
+    // Initial state setup
+    updatePlayStateUI();
+
+    ac.signal.addEventListener('abort', () => {
+      if (restartTimer) window.clearTimeout(restartTimer);
+      observer.disconnect();
     });
   }, root);
 

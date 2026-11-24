@@ -86,6 +86,11 @@ const PAGE_SEO: Record<string, PageSEO> = {
     description: "Simple, transparent pricing for CV Mind's AI resume and career tools. Start free, upgrade for unlimited AI power.",
     keywords: 'CV Mind pricing, resume checker price, free resume tools, pro plan',
   },
+  campus: {
+    title: 'CVMind Campus | Institutional Placement & ATS Portal for Colleges',
+    description: 'Empower your college placement cell with automated batch ATS scanning, standardized institutional resume branding, and AI mock interview readiness.',
+    keywords: 'college placement software, campus ATS checker, TPO portal, placement automation, university career services',
+  },
   products: {
     title: 'All AI Career Tools | Product Showcase - CV Mind',
     description: 'Explore all AI-powered career tools by CV Mind. From resume checking to interview prep, LinkedIn optimization, career roadmapping, and AI job finding — all in one place.',

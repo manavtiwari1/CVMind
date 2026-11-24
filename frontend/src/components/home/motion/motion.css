@@ -160,31 +160,275 @@
 .lsn-bw.lsn-m .lsn-btoast{right:12px;top:12px}
 .lsn-bclick{position:absolute;left:-6px;top:-6px;width:20px;height:20px;border-radius:50%;border:2px solid var(--accent);opacity:0}
 
-/* ═════════ SCROLL-DRIVEN ═════════
-   The track is several screens tall; the demo sticks to the screen while you scroll through it
-   and askLeo.ts maps scroll position to the five steps. The workspace is sized from the screen
-   height so heading, steps and canvas all fit on one screen. */
-.lsn-scroll{width:100%;position:relative;height:460vh}
-.lsn-scroll>.lsn-wrap{position:sticky;top:0;height:100vh;height:100svh;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box}
-.lsn-scroll .lsn-bsec{padding-block:76px 20px;width:100%}
-.lsn-scroll .lsn-b-head{margin-bottom:18px}
-.lsn-scroll .lsn-b-head h2{font-size:clamp(30px,3.3vw,52px);margin-top:10px}
-.lsn-scroll .lsn-bw{width:min(100%,calc((100svh - 330px) * 1100 / 620));margin-inline:auto}
-@media (max-width:700px){
-  .lsn-scroll{height:520vh}
-  .lsn-scroll .lsn-bsec{padding-block:64px 12px}
-  .lsn-scroll .lsn-b-new{display:none}
-  .lsn-scroll .lsn-b-head{gap:10px;margin-bottom:12px}
-  /* phones: the step text tells the story, so the big heading makes room for the canvas */
-  .lsn-scroll .lsn-b-head h2{display:none}
-  .lsn-scroll .lsn-b-step h3{font-size:19px}
-  .lsn-scroll .lsn-b-step p{font-size:14px;min-height:2.9em}
-  .lsn-scroll .lsn-bw{width:min(100%,calc((100svh - 290px) * 420 / 780))}
-  .lsn-scroll .lsn-bw-bar{height:40px;padding:0 8px 0 12px}
-  .lsn-scroll .lsn-bw-bar .lsn-d{display:none}
-  .lsn-scroll .lsn-bw-dl{height:28px;padding:0 10px;font-size:12px;flex-shrink:0}
+/* ═════════ VIDEO PLAYER CONTROLS & OVERLAYS ═════════ */
+.lsn-bw-stage { cursor: pointer; }
+
+/* Center Play Overlay */
+.lsn-voverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(13, 13, 13, 0.32);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 0;
+  cursor: pointer;
+  z-index: 30;
+  opacity: 1;
+  transition: opacity .25s ease, visibility .25s ease;
 }
-@media (prefers-reduced-motion:reduce){
-  .lsn-scroll{height:auto}
-  .lsn-scroll>.lsn-wrap{position:static;height:auto}
+.lsn-voverlay.lsn-playing {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+.lsn-voverlay-btn {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 12px 30px rgba(45, 192, 141, 0.45);
+  transition: transform .2s var(--ease), box-shadow .2s;
+}
+.lsn-voverlay-btn svg {
+  margin-left: 3px;
+}
+.lsn-voverlay:hover .lsn-voverlay-btn {
+  transform: scale(1.08);
+  box-shadow: 0 16px 36px rgba(45, 192, 141, 0.6);
+}
+.lsn-voverlay-tx {
+  font: 600 14px var(--ui);
+  color: #ffffff;
+  letter-spacing: .02em;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 5px 14px;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+}
+
+/* Docked Bottom Controls Bar */
+.lsn-vctrls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 52px;
+  padding: 0 18px;
+  border-top: 1px solid var(--line);
+  background: #ffffff;
+  position: relative;
+  z-index: 10;
+}
+.lsn-vc-btn {
+  all: unset;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  transition: background .15s ease, transform .1s ease;
+  flex-shrink: 0;
+}
+.lsn-vc-btn:hover {
+  background: #f3f4f6;
+  transform: scale(1.05);
+}
+.lsn-vc-btn:active {
+  transform: scale(0.96);
+}
+.lsn-vc-time {
+  font: 12px var(--mono);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.lsn-vc-scrub {
+  flex: 1;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  padding: 0 4px;
+}
+.lsn-vc-track {
+  width: 100%;
+  height: 6px;
+  background: #f1f2f5;
+  border-radius: 99px;
+  position: relative;
+}
+.lsn-vc-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #10b981, #2dc08d);
+  border-radius: 99px;
+  position: relative;
+  transition: width 0.05s linear;
+}
+.lsn-vc-thumb {
+  position: absolute;
+  top: 50%;
+  left: 0%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #0d0d0d;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 5px rgba(0,0,0,.25);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: transform .15s ease;
+}
+.lsn-vc-scrub:hover .lsn-vc-thumb {
+  transform: translate(-50%, -50%) scale(1.2);
+}
+.lsn-vc-mark {
+  position: absolute;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.3);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.lsn-vc-speed {
+  all: unset;
+  cursor: pointer;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--line-2);
+  background: #f9fafb;
+  font: 600 11.5px var(--mono);
+  color: var(--ink-2);
+  transition: background .15s, border-color .15s;
+  flex-shrink: 0;
+}
+.lsn-vc-speed:hover {
+  background: #f3f4f6;
+  border-color: var(--soft);
+}
+.lsn-vc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 11px var(--mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: #f9fafb;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.lsn-vc-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: lsnLiveDot 1.6s infinite;
+}
+@keyframes lsnLiveDot {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* ═════════ VIDEO SECTION FLOW (NO 460VH SCROLL JACKING) ═════════ */
+.lsn-scroll {
+  width: 100%;
+  position: relative;
+  height: auto;
+  padding-block: 50px 70px;
+}
+.lsn-scroll > .lsn-wrap {
+  position: static;
+  height: auto;
+  display: block;
+}
+.lsn-scroll .lsn-bsec {
+  padding-block: 0;
+  width: 100%;
+}
+.lsn-scroll .lsn-b-head {
+  margin-bottom: 24px;
+}
+.lsn-scroll .lsn-b-head h2 {
+  font-size: clamp(30px, 3.4vw, 54px);
+  margin-top: 12px;
+}
+.lsn-scroll .lsn-bw {
+  width: min(100%, 1100px);
+  margin-inline: auto;
+}
+
+@media (max-width: 700px) {
+  .lsn-scroll {
+    padding-block: 36px 48px;
+  }
+  .lsn-scroll .lsn-b-new {
+    display: inline-flex;
+    margin-bottom: 6px;
+  }
+  .lsn-scroll .lsn-b-head {
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .lsn-scroll .lsn-b-head h2 {
+    display: block;
+    font-size: 26px;
+  }
+  .lsn-scroll .lsn-b-step h3 {
+    font-size: 19px;
+  }
+  .lsn-scroll .lsn-b-step p {
+    font-size: 14px;
+    min-height: 2.8em;
+  }
+  .lsn-scroll .lsn-bw {
+    width: min(100%, 420px);
+  }
+  .lsn-scroll .lsn-bw-bar {
+    height: 40px;
+    padding: 0 8px 0 12px;
+  }
+  .lsn-scroll .lsn-bw-bar .lsn-d {
+    display: none;
+  }
+  .lsn-scroll .lsn-bw-dl {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .lsn-vc-badge {
+    display: none;
+  }
+  .lsn-vc-time {
+    font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lsn-scroll {
+    height: auto;
+  }
+  .lsn-scroll > .lsn-wrap {
+    position: static;
+    height: auto;
+  }
 }
