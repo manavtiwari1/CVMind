@@ -271,6 +271,17 @@ export function replaceToken(token?: string) {
   if (token && session) saveSession({ ...session, token });
 }
 
+// While a password change runs, requests still carrying the old token get 401s: that's expected, not a sign-out
+let renewalsInFlight = 0;
+export async function renewingToken<T>(fn: () => Promise<T>): Promise<T> {
+  renewalsInFlight++;
+  try {
+    return await fn();
+  } finally {
+    renewalsInFlight--;
+  }
+}
+
 let onAuthError: ((code: string, message: string) => void) | null = null;
 export function setAuthErrorHandler(fn: ((code: string, message: string) => void) | null) {
   onAuthError = fn;
@@ -321,7 +332,9 @@ export async function api<T = Record<string, unknown>>(path: string, options: { 
   }
   if (!res.ok) {
     const error = new ApiError(data.error || `Request failed (${res.status}).`, res.status, data.code);
-    if (path !== '/login' && (res.status === 401 || data.code === 'TEAM_NO_ACCESS' || data.code === 'TEAM_SET_PASSWORD')) onAuthError?.(data.code || 'TEAM_AUTH', error.message);
+    // A 401 for a token a password change is replacing (or just replaced) only fails this request
+    const replaced = res.status === 401 && (renewalsInFlight > 0 || currentToken() !== token);
+    if (path !== '/login' && !replaced && (res.status === 401 || data.code === 'TEAM_NO_ACCESS' || data.code === 'TEAM_SET_PASSWORD')) onAuthError?.(data.code || 'TEAM_AUTH', error.message);
     throw error;
   }
   return data as T;

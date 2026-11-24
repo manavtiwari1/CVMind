@@ -127,8 +127,11 @@ export function isDatabaseConfigured() {
 // the live database: the tests point MONGODB_URI at an in-memory server, but the driver setting still came
 // from .env. Inside a test run, TiDB must be a *_test database and MongoDB must be on this machine.
 export function isTestRun() {
-  // node --test marks every test process it starts; --test in execArgv covers --test-isolation=none
-  return !!process.env.NODE_TEST_CONTEXT || process.execArgv.some((a) => a === '--test' || a.startsWith('--test-'));
+  // node --test marks every test process it starts; --test in execArgv covers --test-isolation=none;
+  // a test file run on its own (`node test/x.test.js`, an editor's "run this file") is caught by its name
+  return !!process.env.NODE_TEST_CONTEXT
+    || process.execArgv.some((a) => a === '--test' || a.startsWith('--test-'))
+    || /\.test\.[cm]?js$/.test(process.argv[1] || '');
 }
 
 export class LiveDatabaseInTestError extends Error {

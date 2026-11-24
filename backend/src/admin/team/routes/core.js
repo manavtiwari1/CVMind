@@ -141,7 +141,8 @@ router.post('/me/password', profile, handle(async (req, res) => {
   await admin.save();
   invalidateAdminCache(String(admin._id));
   await audit(req, 'admin.password_changed', { targetType: 'admin', targetId: admin._id, targetLabel: admin.username, details: { from: 'team', otherSessionsEnded: true } });
-  await ensureGeneral(String(admin._id));
+  // The password is already saved and other sessions ended: a #general hiccup must not lose this tab its token
+  await ensureGeneral(String(admin._id)).catch((err) => console.error('[team] ensureGeneral after password change failed:', err.message));
   res.json({ success: true, admin: toPublicAdmin(admin), token: renewCurrentToken(admin, req) });
 }));
 

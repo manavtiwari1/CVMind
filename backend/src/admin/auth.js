@@ -152,7 +152,12 @@ export async function loginAdmin(username, password, tokenOptions) {
 const adminCache = new Map();
 const ADMIN_CACHE_MS = 15 * 1000;
 
+// Bumped on every invalidation: a read that started before a change (say, a password change moving
+// tokenVersion on) must not put the old account back in the cache after the change cleared it
+let cacheGeneration = 0;
+
 export function invalidateAdminCache(id) {
+  cacheGeneration++;
   if (id) adminCache.delete(String(id));
   else adminCache.clear();
 }
@@ -160,8 +165,9 @@ export function invalidateAdminCache(id) {
 async function loadAdmin(id) {
   const hit = adminCache.get(id);
   if (hit && Date.now() - hit.at < ADMIN_CACHE_MS) return hit.admin;
+  const generation = cacheGeneration;
   const admin = mongoose.isValidObjectId(id) ? await AdminUser.findById(id).lean() : null;
-  adminCache.set(id, { admin, at: Date.now() });
+  if (generation === cacheGeneration) adminCache.set(id, { admin, at: Date.now() });
   return admin;
 }
 
