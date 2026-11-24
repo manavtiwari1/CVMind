@@ -48,6 +48,21 @@ export function clearSession() {
   }
 }
 
+// A password change signs out every other device and sends this tab a fresh token: keep it where the
+// session already lives ("Keep me signed in" or this tab only)
+export function replaceSessionToken(token?: string) {
+  if (!token || tokenSource) return;
+  const session = loadSession();
+  if (!session) return;
+  let remembered = false;
+  try {
+    remembered = !!localStorage.getItem(SESSION_KEY);
+  } catch {
+    /* storage blocked */
+  }
+  saveSession({ ...session, token }, remembered);
+}
+
 // The Manager portal on team.cvmind.in runs some admin screens with the manager's team token
 let tokenSource: (() => string | null) | null = null;
 export function setTokenSource(fn: (() => string | null) | null) {
@@ -93,9 +108,22 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
     throw new ApiError('Could not reach the server. Check your connection and try again.', 0);
   }
   if (res.status === 401 && path !== '/login') {
-    onUnauthorized?.();
+    // A 401 for a token a password change is replacing (or just replaced) only fails this request
+    const current = tokenSource ? tokenSource() : loadSession()?.token;
+    if (renewalsInFlight === 0 && current === token) onUnauthorized?.();
   }
   return res;
+}
+
+// While a password change runs, requests still carrying the old token get 401s: that's expected, not a sign-out
+let renewalsInFlight = 0;
+export async function renewingToken<T>(fn: () => Promise<T>): Promise<T> {
+  renewalsInFlight++;
+  try {
+    return await fn();
+  } finally {
+    renewalsInFlight--;
+  }
 }
 
 export async function api<T = unknown>(path: string, options: { method?: string; body?: unknown; query?: Query } = {}): Promise<T> {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { api } from './api';
+import { api, renewingToken, replaceSessionToken } from './api';
 import { useAction } from './hooks';
 import { Spinner } from './ui';
 
@@ -13,7 +13,12 @@ export default function MyPasswordForm({ onDone }: { onDone?: () => void }) {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const ok = await run('save', () => api('/me/password', { method: 'POST', body: { currentPassword: current, newPassword: next } }), 'Password changed');
+    // Every other device is signed out; this tab keeps going on the renewed token
+    const ok = await run('save', () => renewingToken(async () => {
+      const res = await api<{ token?: string }>('/me/password', { method: 'POST', body: { currentPassword: current, newPassword: next } });
+      replaceSessionToken(res.token);
+      return res;
+    }), 'Password changed. Every other device is signed out.');
     if (ok !== undefined) {
       setCurrent('');
       setNext('');

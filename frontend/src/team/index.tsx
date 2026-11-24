@@ -87,7 +87,7 @@ export default function TeamApp() {
   } else if (phase === 'signed-out' || !session) {
     screen = <Login notice={notice} onLogin={(s, remember) => { saveSession(s, remember); setNotice(''); enter(s); }} />;
   } else if (phase === 'set-password') {
-    screen = <SetPassword session={session} onDone={(admin) => { const s = { token: session.token, admin }; saveSession(s); enter(s); }} onSignOut={() => signOut()} />;
+    screen = <SetPassword session={session} onDone={(admin, token) => { const s = { token: token || session.token, admin }; saveSession(s); enter(s); }} onSignOut={() => signOut()} />;
   } else {
     screen = (
       <TeamProvider key={session.token} me={session.admin} token={session.token} toast={toast} signOut={() => signOut()}>
@@ -170,7 +170,7 @@ function Login({ notice, onLogin }: { notice: string; onLogin: (s: Session, reme
   );
 }
 
-function SetPassword({ session, onDone, onSignOut }: { session: Session; onDone: (admin: TeamAccount) => void; onSignOut: () => void }) {
+function SetPassword({ session, onDone, onSignOut }: { session: Session; onDone: (admin: TeamAccount, token?: string) => void; onSignOut: () => void }) {
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -184,8 +184,8 @@ function SetPassword({ session, onDone, onSignOut }: { session: Session; onDone:
     setBusy(true);
     setError('');
     try {
-      const res = await api<{ admin: TeamAccount }>('/me/password', { method: 'POST', body: { currentPassword: current, newPassword: next } });
-      onDone(res.admin);
+      const res = await api<{ admin: TeamAccount; token?: string }>('/me/password', { method: 'POST', body: { currentPassword: current, newPassword: next } });
+      onDone(res.admin, res.token);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save your password.');
     } finally {

@@ -3,7 +3,8 @@ import type { FormEvent } from 'react';
 import { Bell, BellOff, Camera, IdCard as IdCardIcon, Shield, Trash2 } from 'lucide-react';
 import { disablePush, enablePush, isInstalled, isIos, pushState } from '../push';
 import { PhotoDialog } from '../../components/ResumePhoto';
-import { api, saveSession, loadSession } from '../api';
+import { api, saveSession, loadSession, renewingToken, replaceToken } from '../api';
+import { refreshSocketAuth } from '../socket';
 import { confirmDialog } from '../confirm';
 import type { TeamAccount } from '../api';
 import { useTeam } from '../store';
@@ -230,7 +231,12 @@ function PasswordCard() {
     e.preventDefault();
     setBusy(true);
     try {
-      await api('/me/password', { method: 'POST', body: { currentPassword: current, newPassword: next } });
+      // Every other device is signed out; this tab keeps going on the renewed token, chat included
+      await renewingToken(async () => {
+        const res = await api<{ token?: string }>('/me/password', { method: 'POST', body: { currentPassword: current, newPassword: next } });
+        replaceToken(res.token);
+      });
+      refreshSocketAuth();
       setCurrent('');
       setNext('');
       toast('Password changed');

@@ -79,6 +79,22 @@ function issueToken(admin, { kind = 'admin', ttlMs = ADMIN_TOKEN_TTL_MS } = {}) 
   });
 }
 
+// A password change signs the account out on every other device: moving tokenVersion on makes every
+// token issued before it invalid, in the admin panel and the team app alike. Call this before saving.
+export function endOtherSessions(admin) {
+  admin.tokenVersion = (admin.tokenVersion || 0) + 1;
+}
+
+// After endOtherSessions, the session that made the change keeps going with a fresh token of the same
+// kind (admin panel or team app) that ends when its old token would have.
+export function renewCurrentToken(admin, req) {
+  const header = req.headers.authorization || '';
+  const current = header.startsWith('Bearer ') ? verifyToken(header.slice(7).trim()) : null;
+  const kind = current?.kind || 'admin';
+  const ttlMs = current?.exp ? Math.max(current.exp - Date.now(), 60 * 1000) : ADMIN_TOKEN_TTL_MS;
+  return issueToken(admin, { kind, ttlMs });
+}
+
 // The env owner exists in the database once Mongo is up, so it can be audited and managed like anyone else
 async function seedEnvOwner(env) {
   const existing = await AdminUser.findOne({ username: env.username });
@@ -136,7 +152,12 @@ export async function loginAdmin(username, password, tokenOptions) {
 const adminCache = new Map();
 const ADMIN_CACHE_MS = 15 * 1000;
 
+// Bumped on every invalidation: a read that started before a change (say, a password change moving
+// tokenVersion on) must not put the old account back in the cache after the change cleared it
+let cacheGeneration = 0;
+
 export function invalidateAdminCache(id) {
+  cacheGeneration++;
   if (id) adminCache.delete(String(id));
   else adminCache.clear();
 }
@@ -144,8 +165,9 @@ export function invalidateAdminCache(id) {
 async function loadAdmin(id) {
   const hit = adminCache.get(id);
   if (hit && Date.now() - hit.at < ADMIN_CACHE_MS) return hit.admin;
+  const generation = cacheGeneration;
   const admin = mongoose.isValidObjectId(id) ? await AdminUser.findById(id).lean() : null;
-  adminCache.set(id, { admin, at: Date.now() });
+  if (generation === cacheGeneration) adminCache.set(id, { admin, at: Date.now() });
   return admin;
 }
 

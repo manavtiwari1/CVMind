@@ -122,11 +122,59 @@ export function isDatabaseConfigured() {
   return false;
 }
 
+// ─── Tests never touch a live database ──────────────────────────────────────
+// On 24 Nov 2026 `npm test` on a machine whose .env had DATABASE_DRIVER=tidb wrote 196 test accounts into
+// the live database: the tests point MONGODB_URI at an in-memory server, but the driver setting still came
+// from .env. Inside a test run, TiDB must be a *_test database and MongoDB must be on this machine.
+export function isTestRun() {
+  // node --test marks every test process it starts; --test in execArgv covers --test-isolation=none;
+  // a test file run on its own (`node test/x.test.js`, an editor's "run this file") is caught by its name
+  return !!process.env.NODE_TEST_CONTEXT
+    || process.execArgv.some((a) => a === '--test' || a.startsWith('--test-'))
+    || /\.test\.[cm]?js$/.test(process.argv[1] || '');
+}
+
+export class LiveDatabaseInTestError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'LiveDatabaseInTestError';
+    this.code = 'LIVE_DATABASE_IN_TEST';
+  }
+}
+
+const LOOPBACK = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
+
+// True only for mongodb:// URIs whose every host is this machine (mongodb-memory-server uses 127.0.0.1)
+export function isLocalMongoUri(uri) {
+  const m = /^mongodb:\/\/(?:[^@/]*@)?([^/?]+)/i.exec(String(uri || ''));
+  if (!m) return false; // mongodb+srv:// is always a remote cluster
+  return m[1].split(',').every((hostPort) => LOOPBACK.has(hostPort.replace(/:\d+$/, '').toLowerCase()));
+}
+
+export function assertNotLiveInTests(driver, target) {
+  if (!isTestRun()) return;
+  const fix = 'Tests use their own throwaway database. Remove DATABASE_DRIVER / TIDB_DATABASE_URL / MONGODB_URI from the test '
+    + 'environment, or run TiDB tests with TEST_DATABASE=tidb (which uses a *_test database).';
+  if (driver === 'tidb') {
+    const { database, host } = tidbConfigFromUrl(target);
+    if (!/_test$/.test(database)) {
+      throw new LiveDatabaseInTestError(`Refusing to connect a test run to TiDB database "${database}" on ${host}: only *_test databases are allowed in tests. ${fix}`);
+    }
+    return;
+  }
+  if (!isLocalMongoUri(target)) {
+    throw new LiveDatabaseInTestError(`Refusing to connect a test run to a MongoDB that is not on this machine. ${fix}`);
+  }
+}
+
 // Connects the default mongoose connection to whichever database is configured
 export async function connectDatabase(mongoose, mongoOptions = {}) {
   const driver = databaseDriver();
   if (driver === 'tidb') return connectTidb(mongoose);
-  if (driver === 'mongodb') return mongoose.connect(process.env.MONGODB_URI, mongoOptions);
+  if (driver === 'mongodb') {
+    assertNotLiveInTests('mongodb', process.env.MONGODB_URI);
+    return mongoose.connect(process.env.MONGODB_URI, mongoOptions);
+  }
   throw new Error('No database configured: set DATABASE_DRIVER=tidb with TIDB_DATABASE_URL, or MONGODB_URI');
 }
 
@@ -152,6 +200,7 @@ async function openTidb(mongoose, { url, poolSize }) {
 }
 
 async function openPool(mongoose, { url, poolSize }) {
+  assertNotLiveInTests('tidb', url);
   const cfg = tidbConfigFromUrl(url);
   const testMode = process.env.TIDB_TEST_WIPE_ON_CONNECT === '1';
   const connectionLimit = poolSize ?? Number(process.env.TIDB_POOL_SIZE || 4);
