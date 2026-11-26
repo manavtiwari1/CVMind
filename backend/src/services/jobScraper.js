@@ -4,6 +4,7 @@
  */
 
 import { callClaude } from './gemini.js';
+import { safePublicFetch } from './urlSafety.js';
 
 // Basic HTML stripping / cleaning helper
 function cleanText(htmlOrText) {
@@ -28,11 +29,8 @@ function cleanText(htmlOrText) {
  */
 export async function scrapeJobFromUrl(url, customApiKey) {
   try {
-    // Validate URL
-    new URL(url);
-
-    // Fetch the HTML content
-    const response = await fetch(url, {
+    // Fetch the HTML content safely (blocks internal/private IPs and validates redirects)
+    const response = await safePublicFetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',

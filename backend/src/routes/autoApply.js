@@ -1,4 +1,5 @@
 import express from 'express';
+import { rateLimit } from 'express-rate-limit';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -172,8 +173,16 @@ router.get('/live-ats-jobs', requireUser, requireAgentAccess(), async (req, res)
   }
 });
 
+const jobsSearchLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler: (_req, res) => res.status(429).json({ error: 'Too many job search requests. Please try again shortly.' })
+});
+
 // ── POST /api/auto-apply/jobs ──────────────────────────────────────────────────
-router.post('/jobs', async (req, res) => {
+router.post('/jobs', jobsSearchLimiter, async (req, res) => {
   const { skills = [], roles = [], locations = [], remote, minSalary, maxSalary, industry } = req.body || {};
 
   let dbJobs = [];

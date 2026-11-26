@@ -68,9 +68,8 @@ async function checkUserSession(payload) {
   try {
     return await userSessionValidator(payload);
   } catch (err) {
-    // A database hiccup must not sign everyone out
     console.error('[auth] session check failed:', err.message);
-    return { ok: true };
+    return { ok: false, error: 'Unable to verify session. Please try again.' };
   }
 }
 
