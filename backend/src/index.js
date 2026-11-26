@@ -139,9 +139,32 @@ const sendWelcomeEmail = async (email, name) => {
 // Published portfolios are public pages on their own hosts, so they skip the API gates below
 app.use(createSiteServer({ ready: ensureMongoConnection }));
 
-// Enable CORS for all requests, allow credentials and specific headers
+// Security headers for all API & web responses
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
+
+const ALLOWED_CORS_ORIGINS = [
+  /^https:\/\/([a-z0-9-]+\.)?cvmind\.in$/i,
+  /^chrome-extension:\/\/[a-z]{32}$/i,
+  ...(process.env.NODE_ENV !== 'production' ? [/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i, /^https?:\/\/[a-z0-9-]+\.lvh\.me(:\d+)?$/i] : [])
+];
+if (process.env.FRONTEND_URL) {
+  try {
+    ALLOWED_CORS_ORIGINS.push(new URL(process.env.FRONTEND_URL).origin);
+  } catch { /* ignore invalid FRONTEND_URL */ }
+}
+
 app.use(cors({
-  origin: '*', 
+  origin(origin, cb) {
+    if (!origin) return cb(null, true);
+    const ok = ALLOWED_CORS_ORIGINS.some((rule) => (typeof rule === 'string' ? rule === origin : rule.test(origin)));
+    return cb(ok ? null : new Error('Origin not allowed by CORS'), ok);
+  },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'OPTIONS', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-gemini-key']
 }));
@@ -684,7 +707,7 @@ apiRouter.post('/api/auth/google', async (req, res) => {
     if (!user) {
       // Auto-create Google user with dynamic unique mock password hash
       const salt = await bcrypt.genSalt(10);
-      const mockPasswordHash = await bcrypt.hash('oauth-google-' + Math.random().toString(36), salt);
+      const mockPasswordHash = await bcrypt.hash('oauth-google-' + crypto.randomBytes(24).toString('hex'), salt);
       user = await createUser({
         email,
         name: name || email.split('@')[0],
@@ -993,7 +1016,7 @@ async function completeOAuthLogin(req, res, origin, { email, name, avatar, provi
   }
   if (!user) {
     const salt = await bcrypt.genSalt(10);
-    const mockPasswordHash = await bcrypt.hash(`oauth-${provider}-` + Math.random().toString(36), salt);
+    const mockPasswordHash = await bcrypt.hash(`oauth-${provider}-` + crypto.randomBytes(24).toString('hex'), salt);
     user = await createUser({
       email,
       name: name || email.split('@')[0],

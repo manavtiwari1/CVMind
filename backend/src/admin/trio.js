@@ -61,7 +61,13 @@ export function maskEmail(email) {
 }
 
 function encryptionKey() {
-  const secret = process.env.ADMIN_2FA_KEY || process.env.AUTH_SECRET || 'cvmind-dev-only-secret-change-me';
+  const secret = process.env.ADMIN_2FA_KEY || process.env.AUTH_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('ADMIN_2FA_KEY or AUTH_SECRET must be set in production.');
+    }
+    return crypto.createHash('sha256').update('cvmind-dev-only-secret-change-me').digest();
+  }
   return crypto.createHash('sha256').update(secret).digest();
 }
 

@@ -90,11 +90,9 @@ router.post('/register', async (req, res) => {
 });
 
 // ── GET /api/company/profile ──────────────────────────────────────────────
-router.get('/profile', async (req, res) => {
+router.get('/profile', requireCompany, async (req, res) => {
   try {
-    const { email } = req.query;
-    if (!email) return res.status(400).json({ error: 'Email parameter required.' });
-    const company = await findCompanyByEmail(email);
+    const company = await findCompanyByEmail(req.auth.email);
     if (!company) {
       return res.status(404).json({ error: 'Company not found.' });
     }
@@ -188,7 +186,10 @@ router.get('/jobs', async (req, res) => {
 router.get('/jobs/:id/applicants', requireCompany, async (req, res) => {
   try {
     const { id } = req.params;
-    const applicants = await getJobApplications(id);
+    const applicants = await getJobApplications(id, req.auth.sub);
+    if (applicants === null) {
+      return res.status(404).json({ error: 'Job not found.' });
+    }
     return res.json({ applicants });
   } catch (err) {
     return res.status(500).json({ error: 'Failed to fetch applicants.' });
@@ -205,7 +206,7 @@ router.post('/applicants/:id/status', requireCompany, async (req, res) => {
       return res.status(400).json({ error: 'New status is required.' });
     }
 
-    const updatedApp = await updateApplicationStatus(id, status, actorName || 'Recruiter', interviewDetails || null);
+    const updatedApp = await updateApplicationStatus(id, status, actorName || 'Recruiter', interviewDetails || null, req.auth.sub);
     if (!updatedApp) {
       return res.status(404).json({ error: 'Application not found.' });
     }
@@ -235,11 +236,15 @@ router.post('/interviews', requireCompany, async (req, res) => {
     };
 
     const updatedApp = await updateApplicationStatus(
-      applicationId, 
-      'Interview', 
-      recruiterName || 'Hiring Manager', 
-      interviewDetails
+      applicationId,
+      'Interview',
+      recruiterName || 'Hiring Manager',
+      interviewDetails,
+      req.auth.sub
     );
+    if (!updatedApp) {
+      return res.status(404).json({ error: 'Application not found.' });
+    }
 
     return res.json({ success: true, application: updatedApp });
   } catch (err) {

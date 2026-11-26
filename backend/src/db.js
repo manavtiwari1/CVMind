@@ -1994,7 +1994,7 @@ export async function saveCentralApplication(appData) {
   return record;
 }
 
-export async function updateApplicationStatus(applicationId, newStatus, actorName = 'Recruiter', interviewDetails = null) {
+export async function updateApplicationStatus(applicationId, newStatus, actorName = 'Recruiter', interviewDetails = null, companyId = null) {
   await ensureMongoConnection();
   const now = new Date();
   const event = {
@@ -2009,6 +2009,7 @@ export async function updateApplicationStatus(applicationId, newStatus, actorNam
   if (mongoURI && mongoose.connection.readyState === 1) {
     let app = await Application.findOne({ id: applicationId });
     if (!app) return null;
+    if (companyId && String(app.companyId || '') !== String(companyId)) return null;
     app.status = newStatus;
     app.candidateStatus = null; // the recruiter's newer status wins in the candidate's tracker
     app.updatedAt = now;
@@ -2021,6 +2022,7 @@ export async function updateApplicationStatus(applicationId, newStatus, actorNam
   if (!db.centralApplications) db.centralApplications = [];
   const app = db.centralApplications.find(a => a.id === applicationId);
   if (!app) return null;
+  if (companyId && String(app.companyId || '') !== String(companyId)) return null;
   app.status = newStatus;
   app.candidateStatus = null;
   app.updatedAt = now.toISOString();
@@ -2062,12 +2064,20 @@ export async function updateCandidateApplication(applicationId, { candidateId, c
   return app;
 }
 
-export async function getJobApplications(jobId) {
+export async function getJobApplications(jobId, companyId = null) {
   await ensureMongoConnection();
   if (mongoURI && mongoose.connection.readyState === 1) {
+    if (companyId) {
+      const job = await CentralJob.findOne({ id: jobId, companyId: String(companyId) }).select('id').lean();
+      if (!job) return null;
+    }
     return await Application.find({ jobId }).sort({ matchScore: -1, appliedAt: -1 });
   }
   const db = readDb();
+  if (companyId) {
+    const job = (db.centralJobs || []).find(j => j.id === jobId && String(j.companyId || '') === String(companyId));
+    if (!job) return null;
+  }
   return (db.centralApplications || []).filter(a => a.jobId === jobId);
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { sanitizeResumeHtml } from '../lib/sanitizeHtml';
 import {
   ArrowLeft, ArrowUpDown, Bold, Check, ChevronDown, ChevronUp, Plus, Trash2, Type, Clock, Download, Eye, FileText, Globe, Italic, LayoutTemplate,
   Link2, List, Loader2, MessageSquare, Redo2, ShieldCheck, Sparkles, Underline, Undo2, Wand2, X, Eraser, Contrast,
@@ -353,7 +354,7 @@ export function StudioPreview({ html, onClose }: PreviewProps) {
     <div className="rs-preview" role="dialog" aria-modal="true" aria-label="Resume preview" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <button type="button" className="rs-preview-close" onClick={onClose} aria-label="Close preview"><X size={18} /></button>
       {/* The HTML is the user's own editor content. */}
-      <div className="rs-preview-paper" dangerouslySetInnerHTML={{ __html: html }} />
+      <div className="rs-preview-paper" dangerouslySetInnerHTML={{ __html: sanitizeResumeHtml(html) }} />
     </div>,
     document.body,
   );
