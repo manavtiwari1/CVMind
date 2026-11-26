@@ -2,7 +2,7 @@ import express from 'express';
 import { audit } from '../../admin/audit.js';
 import { requireAdmin } from '../../admin/auth.js';
 import { clean, handle, httpError } from '../../admin/util.js';
-import { istDay } from '../../admin/team/notify.js';
+import { istDay } from '../../team/notify.js';
 import { addMonths, cashBalances, fiscalYearOf, monthlyFigures, setCashBalance } from '../finance.js';
 import { isLeadership, MONTH } from '../payroll.js';
 

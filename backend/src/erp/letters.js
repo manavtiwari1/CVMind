@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { AdminUser, AppSetting } from '../admin/models.js';
 import { ROLES } from '../admin/permissions.js';
 import { httpError } from '../admin/util.js';
-import { istDay } from '../admin/team/notify.js';
+import { istDay } from '../team/notify.js';
 import { ErpLetterTemplate, ErpPayLine, ErpProfile, LETTER_TYPES } from './models.js';
 import { COLORS, footer, hasImage, letterhead, longDate, MARGIN, PAGE, startDocument, STAMP } from './pdf.js';
 import { monthLabel } from './payroll.js';

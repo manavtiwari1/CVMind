@@ -1,5 +1,5 @@
-import { AdminUser } from '../models.js';
-import { emailConfigured, escapeHtml, renderEmail, sendEmail } from '../mailer.js';
+import { AdminUser } from '../admin/models.js';
+import { emailConfigured, escapeHtml, renderEmail, sendEmail } from '../admin/mailer.js';
 import { TeamChannelMember, TeamMeeting, TeamMeetingCaption, TeamMeetingMessage, TeamMessage } from './models.js';
 import { notify, TEAM_APP_URL } from './notify.js';
 import { emitToChannel, emitToMeeting, emitToUser } from './realtime.js';

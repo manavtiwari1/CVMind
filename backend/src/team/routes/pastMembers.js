@@ -1,9 +1,9 @@
 import express from 'express';
-import { AdminUser } from '../../models.js';
-import { invalidateAdminCache } from '../../auth.js';
-import { audit } from '../../audit.js';
-import { ROLES } from '../../permissions.js';
-import { clean, escapeRegex, handle, httpError, isEmail, isId } from '../../util.js';
+import { AdminUser } from '../../admin/models.js';
+import { invalidateAdminCache } from '../../admin/auth.js';
+import { audit } from '../../admin/audit.js';
+import { ROLES } from '../../admin/permissions.js';
+import { clean, escapeRegex, handle, httpError, isEmail, isId } from '../../admin/util.js';
 import { requireTeam } from '../access.js';
 import { ID_PATTERN } from '../idcard.js';
 import { PAST_REASONS, TeamPastMember } from '../models.js';

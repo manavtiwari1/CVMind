@@ -14,6 +14,9 @@ export interface AdminAccount {
   roleLabel: string;
   permissions: string[];
   teamManager?: boolean;
+  mustChangePassword?: boolean;
+  twoFactorEnabled?: boolean;
+  twoFactorVerified?: boolean;
 }
 
 const SESSION_KEY = 'cvmind_admin_session';
@@ -107,7 +110,8 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
   } catch {
     throw new ApiError('Could not reach the server. Check your connection and try again.', 0);
   }
-  if (res.status === 401 && path !== '/login') {
+  const isAuthPath = path === '/login' || path.startsWith('/mfa/') || path === '/forgot-password' || path === '/reset-password';
+  if (res.status === 401 && !isAuthPath) {
     // A 401 for a token a password change is replacing (or just replaced) only fails this request
     const current = tokenSource ? tokenSource() : loadSession()?.token;
     if (renewalsInFlight === 0 && current === token) onUnauthorized?.();

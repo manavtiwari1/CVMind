@@ -1,8 +1,8 @@
 import { AdminUser } from '../admin/models.js';
 import { ROLES } from '../admin/permissions.js';
 import { clean, httpError, isEmail, isId } from '../admin/util.js';
-import { TeamFile } from '../admin/team/models.js';
-import { istDay } from '../admin/team/notify.js';
+import { TeamFile } from '../team/models.js';
+import { istDay } from '../team/notify.js';
 import { DOCUMENT_KINDS, EMPLOYMENT_TYPES, ErpPayHistory, ErpProfile, PAY_TYPES } from './models.js';
 import { encrypt, last4 } from './secure.js';
 

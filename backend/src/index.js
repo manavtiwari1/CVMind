@@ -37,8 +37,8 @@ import { installSessionValidator, newSessionId, recordSession, revokeAllSessions
 import { ticketFromContact } from './admin/tickets.js';
 import { startInboxPolling } from './admin/inbox.js';
 import http from 'http';
-import { attachTeamRealtime } from './admin/team/realtime.js';
-import { startTeamJobs } from './admin/team/notify.js';
+import { attachTeamRealtime } from './team/realtime.js';
+import { startTeamJobs } from './team/notify.js';
 import { signToken, verifyToken, assertAuthConfigured, requireUser, requireSelf, optionalUser, userSessionStatus } from './services/authToken.js';
 import { verifiedGate } from './services/verifiedGate.js';
 import { productGate } from './services/productGate.js';

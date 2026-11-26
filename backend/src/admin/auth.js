@@ -4,9 +4,13 @@ import { isDatabaseConfigured } from '@cvmind/tidb-store';
 import { signToken, verifyToken } from '../services/authToken.js';
 import { AdminUser } from './models.js';
 import { isFullAccess, permissionsFor, ROLES } from './permissions.js';
+import { findTrioMemberByIdentifier, isTrioAdmin } from './trio.js';
 
 const ADMIN_TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
-// Used when MongoDB isn't configured: the env owner can still sign in to read stats
+const MFA_TOKEN_TTL_MS = 5 * 60 * 1000;
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCK_DURATION_MS = 15 * 60 * 1000;
+// Used when MongoDB isn't configured: disabled for Admin Panel v3
 const ENV_OWNER_ID = 'env-owner';
 const CONNECTED = 1;
 const CONNECTING = 2;
@@ -64,7 +68,9 @@ export function toPublicAdmin(admin) {
     avatarFileId: admin.avatarFileId ? String(admin.avatarFileId) : null,
     idNumber: admin.idNumber || '',
     phone: admin.phone || '',
-    department: admin.department || ''
+    department: admin.department || '',
+    twoFactorEnabled: admin.twoFactorEnabled !== false,
+    twoFactorVerified: !!admin.twoFactorVerified
   };
 }
 
@@ -117,35 +123,98 @@ async function seedEnvOwner(env) {
   });
 }
 
-// Returns { token, admin } or null for bad credentials. tokenOptions picks the token kind and lifetime.
+// Short-lived pre-auth token (5 min) issued after password check; only valid for 2FA verification
+export function issueMfaToken(admin) {
+  return signToken({
+    sub: String(admin._id || admin.id),
+    kind: 'admin_mfa',
+    email: admin.username,
+    ttlMs: MFA_TOKEN_TTL_MS,
+    jti: `v${admin.tokenVersion || 0}`
+  });
+}
+
+export async function verifyMfaToken(token) {
+  const payload = token ? verifyToken(token) : null;
+  if (!payload || payload.kind !== 'admin_mfa') return null;
+  if (!(await dbReady())) return null;
+  if (!mongoose.isValidObjectId(payload.sub)) return null;
+  const admin = await AdminUser.findById(payload.sub);
+  if (!admin || !admin.active || !isTrioAdmin(admin)) return null;
+  if (payload.jti !== `v${admin.tokenVersion || 0}`) return null;
+  return admin;
+}
+
+export async function issueAdminSession(admin, { ip = '', tokenOptions } = {}) {
+  admin.failedLoginAttempts = 0;
+  admin.lockUntil = null;
+  admin.lastLoginAt = new Date();
+  if (ip) admin.lastLoginIp = String(ip).slice(0, 64);
+  await admin.save();
+  invalidateAdminCache(String(admin._id));
+  return { token: issueToken(admin, tokenOptions), admin: toPublicAdmin(admin) };
+}
+
+// Returns { token, admin } (for team) or { mfaRequired, adminDoc, admin } (for admin) or { locked, lockUntil } or null
 export async function loginAdmin(username, password, tokenOptions) {
   const cleanUser = String(username || '').trim().toLowerCase();
   const cleanPass = String(password || '');
   if (!cleanUser || !cleanPass) return null;
 
-  const env = envCredentials();
-  const isEnvOwner = !!env && cleanUser === env.username && cleanPass === env.password;
+  const isTeamLogin = tokenOptions?.kind === 'team';
 
   if (!(await dbReady())) {
-    if (!isEnvOwner || tokenOptions?.kind === 'team') return null;
-    const admin = { id: ENV_OWNER_ID, username: env.username, name: 'Owner', role: 'owner', tokenVersion: 0 };
-    return { token: issueToken(admin), admin: toPublicAdmin(admin) };
+    return null;
   }
 
   let admin;
-  if (isEnvOwner) {
-    admin = await seedEnvOwner(env);
-  } else {
-    // The team app signs in with username or work email
-    admin = await AdminUser.findOne(cleanUser.includes('@') ? { email: cleanUser } : { username: cleanUser });
-    if (!admin || !admin.active) return null;
-    if (!(await bcrypt.compare(cleanPass, admin.passwordHash))) return null;
+  if (isTeamLogin) {
+    const env = envCredentials();
+    const isEnvOwner = !!env && cleanUser === env.username && cleanPass === env.password;
+    if (isEnvOwner) {
+      admin = await seedEnvOwner(env);
+    } else {
+      admin = await AdminUser.findOne(cleanUser.includes('@') ? { email: cleanUser } : { username: cleanUser });
+      if (!admin || !admin.active) return null;
+      if (!(await bcrypt.compare(cleanPass, admin.passwordHash))) return null;
+    }
+    admin.lastLoginAt = new Date();
+    await admin.save();
+    invalidateAdminCache(String(admin._id));
+    return { token: issueToken(admin, tokenOptions), admin: toPublicAdmin(admin) };
   }
 
-  admin.lastLoginAt = new Date();
+  // Admin Panel v3: Strictly Trio-only (Manav, Abhay, Vanshika) + Mandatory 2FA. No env-owner bypass.
+  const trioMatch = findTrioMemberByIdentifier(cleanUser);
+  if (!trioMatch) return null;
+
+  admin = await AdminUser.findOne({
+    $or: [
+      { email: trioMatch.email.toLowerCase() },
+      { username: cleanUser }
+    ]
+  });
+  if (!admin || !isTrioAdmin(admin)) return null;
+
+  if (admin.lockUntil && admin.lockUntil > new Date()) {
+    return { locked: true, lockUntil: admin.lockUntil };
+  }
+
+  const passwordOk = await bcrypt.compare(cleanPass, admin.passwordHash);
+  if (!passwordOk) {
+    admin.failedLoginAttempts = (admin.failedLoginAttempts || 0) + 1;
+    if (admin.failedLoginAttempts >= MAX_FAILED_ATTEMPTS) {
+      admin.lockUntil = new Date(Date.now() + LOCK_DURATION_MS);
+    }
+    await admin.save();
+    return null;
+  }
+
+  admin.failedLoginAttempts = 0;
+  admin.lockUntil = null;
   await admin.save();
-  invalidateAdminCache(String(admin._id));
-  return { token: issueToken(admin, tokenOptions), admin: toPublicAdmin(admin) };
+
+  return { mfaRequired: true, adminDoc: admin, admin: toPublicAdmin(admin) };
 }
 
 // Short cache so every admin request doesn't hit the database for the same account
@@ -193,16 +262,14 @@ export async function adminFromToken(token, kind = 'admin') {
   if (!payload || payload.kind !== kind) return null;
 
   if (payload.sub === ENV_OWNER_ID) {
-    // Only valid while the database is down; once it's up the seeded account takes over
-    if (await dbReady(0)) return null;
-    const env = envCredentials();
-    if (!env || env.username !== payload.email) return null;
-    return { id: ENV_OWNER_ID, username: env.username, name: 'Owner', role: 'owner', permissions: permissionsFor('owner') };
+    // Disabled for Admin Panel v3
+    return null;
   }
 
   if (!(await dbReady())) return null;
   const admin = await loadAdmin(payload.sub);
   if (!admin || !admin.active) return null;
+  if (kind === 'admin' && !isTrioAdmin(admin)) return null;
   if (payload.jti !== `v${admin.tokenVersion || 0}`) return null;
   return toPublicAdmin(admin);
 }
@@ -214,6 +281,9 @@ export function requireAdmin(permission) {
       const admin = await resolveAdmin(req);
       if (!admin || admin.teamOnly) {
         return res.status(401).json({ success: false, code: 'ADMIN_AUTH', error: 'Your admin session has expired. Please sign in again.' });
+      }
+      if (!req.acceptTeamManagerToken && !isTrioAdmin(admin)) {
+        return res.status(403).json({ success: false, code: 'ADMIN_TRIO_ONLY', error: 'Access restricted to authorized administrators only.' });
       }
       if (permission && !admin.permissions.includes(permission)) {
         return res.status(403).json({ success: false, code: 'ADMIN_FORBIDDEN', error: 'Your role does not allow this action.' });

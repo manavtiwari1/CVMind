@@ -2,7 +2,7 @@ import express from 'express';
 import { audit } from '../../admin/audit.js';
 import { requireAdmin } from '../../admin/auth.js';
 import { clean, handle, httpError, isId } from '../../admin/util.js';
-import { notify } from '../../admin/team/notify.js';
+import { notify } from '../../team/notify.js';
 import { ErpPayLine, ErpPayRun, ErpProfile, PAYMENT_MODES } from '../models.js';
 import { calculateRun, isLeadership, MONTH, monthLabel, netOf, nextPayslipNumber, publicLine, publicRun, rupees, runOr404, runTotals } from '../payroll.js';
 import { renderPayslipPdf } from '../pdf.js';

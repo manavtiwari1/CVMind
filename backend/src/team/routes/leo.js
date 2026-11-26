@@ -1,7 +1,7 @@
 import express from 'express';
-import { AdminUser } from '../../models.js';
-import { handle, httpError, isId } from '../../util.js';
-import { callClaude } from '../../../services/gemini.js';
+import { AdminUser } from '../../admin/models.js';
+import { handle, httpError, isId } from '../../admin/util.js';
+import { callClaude } from '../../services/gemini.js';
 import { channelFor, isManager, oid, requireTeam } from '../access.js';
 import { TASK_PRIORITIES, TeamAiUsage, TeamLeave, TeamMessage, TeamStandup, TeamSubmission, TeamTask } from '../models.js';
 import { istDay, isWorkingDay, teamPeopleFilter } from '../notify.js';

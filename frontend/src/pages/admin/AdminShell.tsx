@@ -8,6 +8,7 @@ import { AdminContext } from './hooks';
 import { ALL_ITEMS, NAV } from './nav';
 import { Avatar, Modal, Spinner, ToastProvider } from './ui';
 import MyPasswordForm from './MyPasswordForm';
+import SecurityModal from './SecurityModal';
 
 const SECTIONS: Record<string, LazyExoticComponent<ComponentType>> = {
   dashboard: lazy(() => import('./sections/Dashboard')),
@@ -77,6 +78,7 @@ export default function AdminShell({ admin, onSignOut, setCurrentPage }: AdminSh
   const [badgeTick, setBadgeTick] = useState(0);
   const [search, setSearch] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
+  const [mustChangePw, setMustChangePw] = useState(!!admin.mustChangePassword);
 
   const current = allowed.find((i) => i.id === route.section) || allowed[0];
 
@@ -168,7 +170,7 @@ export default function AdminShell({ admin, onSignOut, setCurrentPage }: AdminSh
                   <div className="ad-me-role">{admin.roleLabel}</div>
                 </div>
                 {admin.id !== 'env-owner' && (
-                  <button type="button" className="ad-btn ghost icon sm" onClick={() => setChangingPassword(true)} title="Change my password" aria-label="Change my password">
+                  <button type="button" className="ad-btn ghost icon sm" onClick={() => setChangingPassword(true)} title="Security & Password" aria-label="Security & Password">
                     <KeyRound size={15} />
                   </button>
                 )}
@@ -214,8 +216,16 @@ export default function AdminShell({ admin, onSignOut, setCurrentPage }: AdminSh
             </main>
           </div>
           {changingPassword && (
-            <Modal title="Change my password" onClose={() => setChangingPassword(false)}>
-              <MyPasswordForm onDone={() => setChangingPassword(false)} />
+            <Modal title="Security & Password" onClose={() => setChangingPassword(false)}>
+              <SecurityModal onDone={() => setChangingPassword(false)} />
+            </Modal>
+          )}
+          {mustChangePw && (
+            <Modal title="Set your new admin password" onClose={() => {}}>
+              <p className="ad-hint" style={{ marginTop: 0, marginBottom: 14 }}>
+                Please change your temporary password (at least 14 characters) before continuing.
+              </p>
+              <MyPasswordForm onDone={() => setMustChangePw(false)} />
             </Modal>
           )}
         </ToastProvider>

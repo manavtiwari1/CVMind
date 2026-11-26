@@ -1,6 +1,6 @@
 import { Server } from 'socket.io';
-import { adminFromToken } from '../auth.js';
-import { AdminUser } from '../models.js';
+import { adminFromToken } from '../admin/auth.js';
+import { AdminUser } from '../admin/models.js';
 import { channelFor, meetingFor } from './access.js';
 import { TeamChannel, TeamChannelMember } from './models.js';
 import { isInCall, registerMeetingHandlers, setCallListener } from './meetRealtime.js';

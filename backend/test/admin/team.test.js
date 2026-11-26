@@ -36,8 +36,8 @@ before(async () => {
   const http = await import('http');
   mongoose = (await import('mongoose')).default;
   const adminRouter = (await import('../../src/admin/router.js')).default;
-  const { setStorageDriver } = await import('../../src/admin/team/storage.js');
-  const realtime = await import('../../src/admin/team/realtime.js');
+  const { setStorageDriver } = await import('../../src/team/storage.js');
+  const realtime = await import('../../src/team/realtime.js');
   closeTeamRealtime = realtime.closeTeamRealtime;
   ioClient = (await import('socket.io-client')).io;
 
@@ -342,7 +342,7 @@ test('mentions notify, threads count replies, reactions toggle', async () => {
 });
 
 test('history pages never repeat or skip a message', async () => {
-  const { TeamMessage } = await import('../../src/admin/team/models.js');
+  const { TeamMessage } = await import('../../src/team/models.js');
   const channel = await call('/team/channels', { method: 'POST', token: riya.token, body: { name: 'history' } });
   const id = channel.body.data.id;
   await TeamMessage.insertMany(Array.from({ length: 120 }, (_, i) => ({ channelId: id, authorId: riya.id, body: `m${i}` })));
@@ -582,7 +582,7 @@ test('checklists: assignees tick items, interns cannot add them', async () => {
 });
 
 test('a repeating task makes its next copy when the due date passes, and stopping it stops the series', async () => {
-  const { spawnRecurringTasks, nextDue } = await import('../../src/admin/team/recurring.js');
+  const { spawnRecurringTasks, nextDue } = await import('../../src/team/recurring.js');
   assert.equal(nextDue('2026-01-31T12:00:00Z', 'monthly').toISOString(), '2026-02-28T12:00:00.000Z');
 
   assert.equal((await call('/team/tasks', { method: 'POST', token: riya.token, body: { title: 'No date', assigneeIds: [priya.id], recurrence: { freq: 'daily' } } })).status, 400);
@@ -642,7 +642,7 @@ test('a new assignee gets an email straight away, not again in the digest', asyn
   assert.deepEqual(emails.slice(mid).filter((m) => m.subject === 'New task: Write the FAQ').map((m) => m.to[0]), ['kabir@cvmind.test']);
 
   // The digest doesn't repeat an assignment that was already emailed
-  const { sendNotificationDigests } = await import('../../src/admin/team/notify.js');
+  const { sendNotificationDigests } = await import('../../src/team/notify.js');
   const digestStart = emails.length;
   await sendNotificationDigests(new Date(Date.now() + 60 * 60 * 1000));
   assert.ok(!emails.slice(digestStart).some((m) => m.html.includes('Write the FAQ')));
@@ -659,7 +659,7 @@ test('submitting work emails the reviewer straight away, not again in the digest
   assert.match(mails[0].html, new RegExp(`/#/tasks/${made.body.data.id}`));
   assert.match(mails[0].html, /&lt;i&gt;draft&lt;\/i&gt;/, 'the note is escaped');
 
-  const { sendNotificationDigests } = await import('../../src/admin/team/notify.js');
+  const { sendNotificationDigests } = await import('../../src/team/notify.js');
   const digestStart = emails.length;
   await sendNotificationDigests(new Date(Date.now() + 60 * 60 * 1000));
   assert.ok(!emails.slice(digestStart).some((m) => m.to[0] === 'riya@cvmind.test' && m.html.includes('Pricing copy')));
@@ -703,7 +703,7 @@ test('daily check-in: one per day, blockers reach managers, managers see everyon
 });
 
 test('leave: members request, another manager decides, managers\' own leave is approved', async () => {
-  const { istDay } = await import('../../src/admin/team/notify.js');
+  const { istDay } = await import('../../src/team/notify.js');
   const today = istDay();
   const later = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
@@ -727,7 +727,7 @@ test('leave: members request, another manager decides, managers\' own leave is a
 });
 
 test('the 10:30 reminder skips people who checked in or are on leave; attendance shows it', async () => {
-  const { istDay, isWorkingDay, sendStandupReminders } = await import('../../src/admin/team/notify.js');
+  const { istDay, isWorkingDay, sendStandupReminders } = await import('../../src/team/notify.js');
   const today = istDay();
   const before = (await call('/team/notifications', { token: riya.token })).body.data.filter((n) => n.type === 'standup_reminder').length;
   const run = await sendStandupReminders();
@@ -749,8 +749,8 @@ test('the 10:30 reminder skips people who checked in or are on leave; attendance
 });
 
 test('browser push: reaches each device, respects the setting, and forgets dead devices', async () => {
-  const { setPushSender } = await import('../../src/admin/team/push.js');
-  const { pushSettled } = await import('../../src/admin/team/notify.js');
+  const { setPushSender } = await import('../../src/team/push.js');
+  const { pushSettled } = await import('../../src/team/notify.js');
   const sent = [];
   let fail = null;
   setPushSender(async (subscription, body) => {
@@ -796,7 +796,7 @@ test('browser push: reaches each device, respects the setting, and forgets dead 
 });
 
 test('Leo summarises what you can read, drafts tasks for staff, reports for managers, and has a daily limit', async () => {
-  const { setLeoModel } = await import('../../src/admin/team/routes/leo.js');
+  const { setLeoModel } = await import('../../src/team/routes/leo.js');
   const prompts = [];
   setLeoModel(async ({ prompt, systemInstruction }) => {
     prompts.push(prompt);
@@ -837,7 +837,7 @@ test('Leo summarises what you can read, drafts tasks for staff, reports for mana
 
     // The 31st call of the day is refused
     const mongooseLib = (await import('mongoose')).default;
-    const { istDay } = await import('../../src/admin/team/notify.js');
+    const { istDay } = await import('../../src/team/notify.js');
     await mongooseLib.model('TeamAiUsage').updateOne({ adminId: priya.id, day: istDay() }, { count: 30 });
     const limited = await call('/team/leo/summary', { method: 'POST', token: priya.token, body: { channelId: general.id } });
     assert.equal(limited.status, 429);
@@ -876,7 +876,7 @@ test('only managers schedule meetings; invitees and managers can open them', asy
 
   const moved = await call(`/team/meetings/${m.id}`, { method: 'PATCH', token: owner.token, body: { scheduledAt: new Date(Date.now() + 5 * 60 * 1000).toISOString() } });
   assert.equal(moved.status, 200);
-  const { sendMeetingReminders } = await import('../../src/admin/team/meetings.js');
+  const { sendMeetingReminders } = await import('../../src/team/meetings.js');
   await sendMeetingReminders();
   assert.equal((await sendMeetingReminders()).reminded, 0, 'one reminder only');
   assert.ok((await call('/team/notifications', { token: kabir.token })).body.data.some((n) => n.type === 'meeting_soon'));
@@ -884,8 +884,8 @@ test('only managers schedule meetings; invitees and managers can open them', asy
 });
 
 test('a live meeting: join, relay setup, reactions, chat, captions, host controls, cap and end', async () => {
-  const { setLeoModel } = await import('../../src/admin/team/routes/leo.js');
-  const { notesSettled } = await import('../../src/admin/team/meetings.js');
+  const { setLeoModel } = await import('../../src/team/routes/leo.js');
+  const { notesSettled } = await import('../../src/team/meetings.js');
   setLeoModel(async () => ({ summary: 'We agreed to ship Friday.', decisions: ['Ship Friday'], actionItems: [{ text: 'Write release notes', owner: 'priya' }], openQuestions: [] }));
   const sockets = [];
   try {
@@ -991,7 +991,7 @@ test('recordings: the host uploads, people who can open the meeting see it in Me
 });
 
 test('TURN credentials come from Cloudflare when configured', async () => {
-  const { iceServers, setTurnFetch } = await import('../../src/admin/team/routes/meetings.js');
+  const { iceServers, setTurnFetch } = await import('../../src/team/routes/meetings.js');
   process.env.CF_TURN_KEY_ID = 'key';
   process.env.CF_TURN_API_TOKEN = 'token';
   let asked = '';
@@ -1012,7 +1012,7 @@ test('TURN credentials come from Cloudflare when configured', async () => {
 
 test('the admin panel sees attendance, check-ins, leave, meetings and tasks', async () => {
   const panel = await adminLogin('owner', 'owner-password-123');
-  const { istDay } = await import('../../src/admin/team/notify.js');
+  const { istDay } = await import('../../src/team/notify.js');
   const overview = (await call('/team/overview', { token: panel })).body.data;
   assert.equal(overview.today, istDay());
   assert.ok(overview.checkedIn >= 1);

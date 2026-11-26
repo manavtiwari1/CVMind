@@ -36,14 +36,14 @@ export default function MyPasswordForm({ onDone }: { onDone?: () => void }) {
       <div className="ad-field">
         <label htmlFor="mp-new">New password</label>
         <input id="mp-new" className="ad-input" type="password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" />
-        <span className="ad-hint">At least 10 characters.</span>
+        <span className="ad-hint">At least 14 characters.</span>
       </div>
       <div className="ad-field">
         <label htmlFor="mp-confirm">Repeat new password</label>
         <input id="mp-confirm" className="ad-input" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
         {mismatch && <span className="ad-hint" style={{ color: '#dc2626' }}>The passwords don't match.</span>}
       </div>
-      <button type="submit" className="ad-btn primary" style={{ marginTop: 18 }} disabled={!current || next.length < 10 || next !== confirm || busy === 'save'}>
+      <button type="submit" className="ad-btn primary" style={{ marginTop: 18 }} disabled={!current || next.length < 14 || next !== confirm || busy === 'save'}>
         {busy === 'save' && <Spinner size={14} />} Change password
       </button>
     </form>

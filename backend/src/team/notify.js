@@ -1,5 +1,5 @@
-import { AdminUser, AppSetting } from '../models.js';
-import { emailConfigured, escapeHtml, renderEmail, sendEmail } from '../mailer.js';
+import { AdminUser, AppSetting } from '../admin/models.js';
+import { emailConfigured, escapeHtml, renderEmail, sendEmail } from '../admin/mailer.js';
 import { sameId } from './access.js';
 import { pushConfigured, sendPush } from './push.js';
 import { emitToUser, isDoNotDisturb } from './realtime.js';
@@ -441,7 +441,7 @@ export function startTeamJobs() {
       await sendNotificationDigests();
       await onceADay('team.dailyReminderDay', REMINDER_UTC_MINUTES, sendDailyTaskReminders);
       await onceADay('team.standupReminderDay', STANDUP_UTC_MINUTES, sendStandupReminders);
-      const { runDailyErpJobs } = await import('../../erp/jobs.js');
+      const { runDailyErpJobs } = await import('../erp/jobs.js');
       await onceADay('erp.hrReminderDay', HR_REMINDER_UTC_MINUTES, runDailyErpJobs);
       const { sweepPendingFiles } = await import('./files.js');
       await sweepPendingFiles();

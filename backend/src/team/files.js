@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { httpError, isId } from '../util.js';
+import { httpError, isId } from '../admin/util.js';
 import { canJoinMeeting, canSeeTask, channelFor, isManager, meetingFor, readableChannelIds, sameId, visibleMeetingFilter, visibleTaskFilter } from './access.js';
 import { TeamFile, TeamMeeting, TeamTask } from './models.js';
 import { removeObject, storageConfigured } from './storage.js';
