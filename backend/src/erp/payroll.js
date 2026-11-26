@@ -1,7 +1,7 @@
 import { AdminUser, AppSetting } from '../admin/models.js';
 import { ROLES } from '../admin/permissions.js';
 import { httpError } from '../admin/util.js';
-import { TeamLeave, TeamStandup } from '../admin/team/models.js';
+import { TeamLeave, TeamStandup } from '../team/models.js';
 import { ErpPayHistory, ErpPayLine, ErpPayRun, ErpProfile } from './models.js';
 import { getSettings } from './settings.js';
 

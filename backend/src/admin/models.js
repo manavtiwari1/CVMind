@@ -34,7 +34,34 @@ const adminUserSchema = new Schema({
   idManual: { type: Boolean, default: false },
   phone: { type: String, default: '' },
   department: { type: String, default: '' },
-  lastSeenAt: { type: Date, default: null }
+  lastSeenAt: { type: Date, default: null },
+  // Admin Panel v3 Security: Mandatory 2FA, WebAuthn Passkeys, and brute-force lockout
+  twoFactorEnabled: { type: Boolean, default: true },
+  twoFactorSecret: { type: String, default: '' },
+  twoFactorVerified: { type: Boolean, default: false },
+  twoFactorBackupCodes: {
+    type: [{
+      hash: { type: String, required: true },
+      used: { type: Boolean, default: false },
+      usedAt: { type: Date, default: null }
+    }],
+    default: []
+  },
+  passkeys: {
+    type: [{
+      credentialId: { type: String, required: true },
+      publicKey: { type: String, required: true },
+      counter: { type: Number, default: 0 },
+      transports: { type: [String], default: [] },
+      deviceName: { type: String, default: '' },
+      createdAt: { type: Date, default: Date.now },
+      lastUsedAt: { type: Date, default: null }
+    }],
+    default: []
+  },
+  failedLoginAttempts: { type: Number, default: 0 },
+  lockUntil: { type: Date, default: null },
+  lastLoginIp: { type: String, default: '' }
 }, { timestamps: true });
 export const AdminUser = mongoose.models.AdminUser || mongoose.model('AdminUser', adminUserSchema);
 

@@ -99,13 +99,13 @@ test('roles limit what a team member can do', async () => {
   assert.equal((await call('/api/admin/team', { token: supportToken })).status, 403);
 
   // Changing the role signs the member out
-  await call(`/api/admin/team/${created.body.data.id}`, { method: 'PATCH', token: ownerToken, body: { role: 'viewer' } });
+  await call(`/api/team/${created.body.data.id}`, { method: 'PATCH', token: ownerToken, body: { role: 'viewer' } });
   assert.equal((await call('/api/admin/users', { token: supportToken })).status, 401);
 
   // The last owner can't be demoted
   const team = await call('/api/admin/team', { token: ownerToken });
   const owner = team.body.data.find((m) => m.role === 'owner');
-  const demote = await call(`/api/admin/team/${owner.id}`, { method: 'PATCH', token: ownerToken, body: { role: 'admin' } });
+  const demote = await call(`/api/team/${owner.id}`, { method: 'PATCH', token: ownerToken, body: { role: 'admin' } });
   assert.equal(demote.status, 400);
 });
 

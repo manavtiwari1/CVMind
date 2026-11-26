@@ -1,6 +1,6 @@
 import express from 'express';
-import { audit } from '../../audit.js';
-import { handle, httpError, isId } from '../../util.js';
+import { audit } from '../../admin/audit.js';
+import { handle, httpError, isId } from '../../admin/util.js';
 import { isManager, oid, requireTeam, sameId } from '../access.js';
 import { LEAVE_KINDS, TeamLeave, TeamStandup } from '../models.js';
 import { istDay, isWorkingDay, managerIds, notify, teamPeople } from '../notify.js';

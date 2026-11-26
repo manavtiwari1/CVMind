@@ -2,7 +2,8 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import { rateLimit } from 'express-rate-limit';
 import { AdminUser, AdminAuditLog } from '../models.js';
-import { loginAdmin, requireAdmin, requireDb, toPublicAdmin, invalidateAdminCache, endOtherSessions, renewCurrentToken } from '../auth.js';
+import { loginAdmin, issueMfaToken, requireAdmin, requireDb, toPublicAdmin, invalidateAdminCache, endOtherSessions, renewCurrentToken } from '../auth.js';
+import { maskEmail } from '../trio.js';
 import { ROLES, ROLE_KEYS, PERMISSIONS, FULL_ACCESS_ROLES, isFullAccess, isTeamOnlyRole } from '../permissions.js';
 import { audit } from '../audit.js';
 import { createAdminMember } from '../members.js';
@@ -22,13 +23,24 @@ const loginLimiter = rateLimit({
 router.post('/login', loginLimiter, handle(async (req, res) => {
   const { username, password } = req.body || {};
   const result = await loginAdmin(username, password);
-  if (!result) return res.status(401).json({ success: false, error: 'Invalid username or password.' });
+  if (!result) return res.status(401).json({ success: false, error: 'Invalid credentials or unauthorized account.' });
+  if (result.locked) {
+    return res.status(423).json({ success: false, error: 'Account temporarily locked due to repeated failed attempts. Try again in 15 minutes or reset via email.' });
+  }
   if (isTeamOnlyRole(result.admin.role)) {
     return res.status(403).json({ success: false, code: 'TEAM_ONLY', error: 'This account is for CVMind Team only. Sign in at team.cvmind.in.' });
   }
-  req.admin = result.admin;
-  if (result.admin.id !== 'env-owner') await audit(req, 'admin.login', { targetType: 'admin', targetId: result.admin.id, targetLabel: result.admin.username });
-  res.json({ success: true, token: result.token, admin: result.admin });
+  const mfaToken = issueMfaToken(result.adminDoc);
+  res.json({
+    success: true,
+    mfaRequired: true,
+    mfaToken,
+    needs2faSetup: !result.adminDoc.twoFactorVerified,
+    mustChangePassword: !!result.adminDoc.mustChangePassword,
+    hasPasskeys: (result.adminDoc.passkeys?.length || 0) > 0,
+    maskedEmail: maskEmail(result.adminDoc.email),
+    username: result.adminDoc.username
+  });
 }));
 
 router.get('/me', requireAdmin(), (req, res) => {
@@ -37,10 +49,10 @@ router.get('/me', requireAdmin(), (req, res) => {
 
 router.post('/me/password', requireAdmin(), requireDb, handle(async (req, res) => {
   const { currentPassword, newPassword } = req.body || {};
-  if (String(newPassword || '').length < 10) throw httpError(400, 'Use at least 10 characters for the new password.');
+  if (String(newPassword || '').length < 14) throw httpError(400, 'Use at least 14 characters for the new password.');
   const admin = await AdminUser.findById(req.admin.id);
   if (!admin || !(await bcrypt.compare(String(currentPassword || ''), admin.passwordHash))) throw httpError(400, 'Your current password is not correct.');
-  admin.passwordHash = await bcrypt.hash(String(newPassword), 10);
+  admin.passwordHash = await bcrypt.hash(String(newPassword), 12);
   admin.mustChangePassword = false;
   endOtherSessions(admin);
   await admin.save();

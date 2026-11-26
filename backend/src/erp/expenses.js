@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 import { AdminUser } from '../admin/models.js';
 import { clean, httpError, isId } from '../admin/util.js';
-import { TeamFile } from '../admin/team/models.js';
-import { istDay, notify } from '../admin/team/notify.js';
+import { TeamFile } from '../team/models.js';
+import { istDay, notify } from '../team/notify.js';
 import { EXPENSE_CATEGORIES, ErpExpense, ErpProfile } from './models.js';
 import { hrManagerIds } from './jobs.js';
 import { isLeadership } from './payroll.js';

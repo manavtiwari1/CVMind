@@ -1,7 +1,7 @@
 import express from 'express';
-import { AdminUser } from '../../models.js';
-import { audit } from '../../audit.js';
-import { clean, handle, httpError, isId } from '../../util.js';
+import { AdminUser } from '../../admin/models.js';
+import { audit } from '../../admin/audit.js';
+import { clean, handle, httpError, isId } from '../../admin/util.js';
 import { channelFor, isManager, meetingFor, oid, requireTeam, sameId, visibleMeetingFilter } from '../access.js';
 import { attachFiles } from '../files.js';
 import { TeamMeeting, TeamMeetingMessage } from '../models.js';

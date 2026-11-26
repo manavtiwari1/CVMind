@@ -1,7 +1,7 @@
 import { AdminUser } from '../admin/models.js';
 import { ROLES } from '../admin/permissions.js';
 import { clean, httpError, isId } from '../admin/util.js';
-import { istDay, notify } from '../admin/team/notify.js';
+import { istDay, notify } from '../team/notify.js';
 import { ASSET_CATEGORIES, ErpAsset, ErpExpense } from './models.js';
 import { nextDate } from './expenses.js';
 

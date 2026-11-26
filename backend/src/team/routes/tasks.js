@@ -1,7 +1,7 @@
 import express from 'express';
-import { AdminUser } from '../../models.js';
-import { audit } from '../../audit.js';
-import { clean, handle, httpError, isId, paging } from '../../util.js';
+import { AdminUser } from '../../admin/models.js';
+import { audit } from '../../admin/audit.js';
+import { clean, handle, httpError, isId, paging } from '../../admin/util.js';
 import { channelFor, isManager, oid, requireTeam, sameId, taskFor, visibleTaskFilter } from '../access.js';
 import { attachFiles, softDeleteFiles } from '../files.js';
 import { TASK_PRIORITIES, TASK_REPEATS, TeamChannel, TeamFile, TeamMessage, TeamSubmission, TeamTask, TeamTaskActivity, TeamTaskComment } from '../models.js';

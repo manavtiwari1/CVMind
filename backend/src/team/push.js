@@ -1,5 +1,5 @@
 import webpush from 'web-push';
-import { AdminUser } from '../models.js';
+import { AdminUser } from '../admin/models.js';
 import { TeamPushSubscription } from './models.js';
 
 // Browser push (Web Push with VAPID keys). Without the keys push is off and everything else works.

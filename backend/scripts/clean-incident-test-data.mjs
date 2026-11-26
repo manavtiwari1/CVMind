@@ -8,8 +8,9 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { connectDatabase, databaseDriver } from '@cvmind/tidb-store';
 import { AdminUser } from '../src/admin/models.js';
-import { TeamAnnouncement } from '../src/admin/team/models.js';
+import { TeamAnnouncement, TeamInvitation } from '../src/team/models.js';
 import { CollegeTemplate } from '../src/college/models.js';
+import { Subscription, PaymentOrder, RefundRequest } from '../src/billing/models.js';
 
 dotenv.config();
 
@@ -23,17 +24,31 @@ console.log(`Database Driver: ${databaseDriver() || 'default'}`);
 await connectDatabase(mongoose);
 console.log(`Connected to database.\n`);
 
-// 1. Clean 22 test admin accounts created with @cvmind.test or 'owner'
+// 1. Clean test admin accounts created with @cvmind.test or 'owner'
 const adminFilter = {
   $or: [
-    { email: { $regex: /@cvmind\.test$/i } },
-    { email: { $regex: /@example\.com$/i } },
+    { email: { $regex: /@cvmind\.test/i } },
+    { email: { $regex: /@example\.com/i } },
     { username: 'owner' }
   ]
 };
 const testAdmins = await AdminUser.find(adminFilter).select('_id username email role createdAt');
 console.log(`[1] Found ${testAdmins.length} test Admin accounts:`);
 testAdmins.forEach(a => console.log(`  - ${a.username} (${a.email}) [${a.role}] created ${a.createdAt}`));
+
+const allAdmins = await AdminUser.find({}).select('username email role');
+console.log(`  (Total AdminUser rows in DB: ${allAdmins.length} - ${allAdmins.map(a => a.username).join(', ')})`);
+
+// 1b. Clean test invitations
+const inviteFilter = {
+  $or: [
+    { email: { $regex: /@cvmind\.test/i } },
+    { email: { $regex: /@example\.com/i } }
+  ]
+};
+const testInvites = await TeamInvitation.find(inviteFilter).select('_id email role status');
+console.log(`\n[1b] Found ${testInvites.length} test Team Invitations:`);
+testInvites.forEach(inv => console.log(`  - ${inv.email} (${inv.role}) [${inv.status}]`));
 
 // 2. Clean fake college templates
 const templateFilter = {
@@ -68,15 +83,31 @@ const KNOWN_TEST_EMAILS = [
 ];
 const userFilter = {
   $or: [
-    { email: { $regex: /@cvmind\.test$/i } },
-    { email: { $regex: /@example\.com$/i } },
-    { email: { $in: KNOWN_TEST_EMAILS }, banned: true }
+    { email: { $regex: /@cvmind\.test/i } },
+    { email: { $regex: /@example\.com/i } },
+    { email: { $in: KNOWN_TEST_EMAILS } }
   ]
 };
 const testUsers = await User.find(userFilter).select('_id email name banned createdAt');
 console.log(`\n[4] Found ${testUsers.length} test Users:`);
 testUsers.slice(0, 15).forEach(u => console.log(`  - ${u.email} (banned: ${u.banned})`));
 if (testUsers.length > 15) console.log(`  ... and ${testUsers.length - 15} more`);
+
+// 5. Clean test billing/subscription orders
+const billingFilter = {
+  $or: [
+    { email: { $regex: /@cvmind\.test/i } },
+    { email: { $regex: /@example\.com/i } },
+    { email: { $in: ['riya@gmail.com', 'kabir@gmail.com', 'stranger@gmail.com', 'nobody@gmail.com'] } }
+  ]
+};
+const testSubs = await Subscription.find(billingFilter).select('_id email plan orderId');
+console.log(`\n[5] Found ${testSubs.length} test Subscriptions:`);
+testSubs.forEach(s => console.log(`  - ${s.email} (${s.plan}) [${s.orderId}]`));
+
+const testOrders = await PaymentOrder.find(billingFilter).select('_id email plan status');
+console.log(`\n[6] Found ${testOrders.length} test Payment Orders:`);
+testOrders.forEach(o => console.log(`  - ${o.email} (${o.plan}) [${o.status}]`));
 
 if (isDryRun) {
   console.log(`\n[DRY RUN COMPLETE] To delete these entries, run:`);
@@ -90,6 +121,10 @@ if (testAdmins.length > 0) {
   const res = await AdminUser.deleteMany(adminFilter);
   console.log(`✓ Deleted ${res.deletedCount} Admin accounts.`);
 }
+if (testInvites.length > 0) {
+  const res = await TeamInvitation.deleteMany(inviteFilter);
+  console.log(`✓ Deleted ${res.deletedCount} Team Invitations.`);
+}
 if (testTemplates.length > 0) {
   const res = await CollegeTemplate.deleteMany(templateFilter);
   console.log(`✓ Deleted ${res.deletedCount} fake College templates.`);
@@ -101,6 +136,14 @@ if (testAnnouncements.length > 0) {
 if (testUsers.length > 0) {
   const res = await User.deleteMany(userFilter);
   console.log(`✓ Deleted ${res.deletedCount} test Users.`);
+}
+if (testSubs.length > 0) {
+  const res = await Subscription.deleteMany(billingFilter);
+  console.log(`✓ Deleted ${res.deletedCount} test Subscriptions.`);
+}
+if (testOrders.length > 0) {
+  const res = await PaymentOrder.deleteMany(billingFilter);
+  console.log(`✓ Deleted ${res.deletedCount} test Payment Orders.`);
 }
 
 console.log(`\n=== Cleanup Complete! ===\n`);

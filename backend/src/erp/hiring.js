@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { AdminUser } from '../admin/models.js';
 import { clean, httpError, isEmail } from '../admin/util.js';
-import { TeamFile } from '../admin/team/models.js';
+import { TeamFile } from '../team/models.js';
 import { EMPLOYMENT_TYPES, ErpCandidate, ErpOpening, PAY_TYPES } from './models.js';
 import { longDate } from './pdf.js';
 import { SITE_URL } from './letters.js';

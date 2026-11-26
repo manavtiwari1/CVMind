@@ -1,4 +1,4 @@
-import { AdminUser, AppSetting } from '../models.js';
+import { AdminUser, AppSetting } from '../admin/models.js';
 import { TeamPastMember } from './models.js';
 
 // Team ID cards: employees get CVM/EMP/0001, interns get CVM/INTERNS/0001. Each series has its own

@@ -1,6 +1,7 @@
 import express from 'express';
 import '../db.js'; // registers the User, Work, PaymentLog, … models the admin routes read
 import teamRoutes from './routes/team.js';
+import securityRoutes from './routes/security.js';
 import analyticsRoutes from './routes/analytics.js';
 import userRoutes from './routes/users.js';
 import userActivityRoutes from './routes/userActivity.js';
@@ -19,7 +20,7 @@ import partnerRoutes from './routes/partners.js';
 import collegeRoutes from './routes/colleges.js';
 import systemRoutes from './routes/system.js';
 import exportRoutes, { REPORT_LIST } from './routes/exports.js';
-import teamWorkspaceRoutes from './team/router.js';
+import teamWorkspaceRoutes from '../team/router.js';
 import erpRoutes from '../erp/router.js';
 import { requireAdmin } from './auth.js';
 import { ContentReport, Ticket } from './models.js';
@@ -32,6 +33,7 @@ const router = express.Router();
 // Before teamRoutes: its PATCH /team/:id would otherwise catch PATCH /team/me
 router.use('/team', teamWorkspaceRoutes);
 router.use('/erp', erpRoutes);
+router.use('/', securityRoutes);
 router.use('/', teamRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/users', userRoutes);

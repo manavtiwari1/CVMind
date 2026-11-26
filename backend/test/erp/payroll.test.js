@@ -26,7 +26,7 @@ before(async () => {
   const http = await import('http');
   mongoose = (await import('mongoose')).default;
   const adminRouter = (await import('../../src/admin/router.js')).default;
-  models = await import('../../src/admin/team/models.js');
+  models = await import('../../src/team/models.js');
   while (mongoose.connection.readyState !== 1) await new Promise((r) => setTimeout(r, 50));
   const app = express();
   app.use(express.json());

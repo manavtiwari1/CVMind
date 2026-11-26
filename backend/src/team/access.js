@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
-import { adminFromToken, dbReady } from '../auth.js';
-import { httpError, isId } from '../util.js';
+import { adminFromToken, dbReady } from '../admin/auth.js';
+import { httpError, isId } from '../admin/util.js';
 import { TeamChannel, TeamChannelMember, TeamMeeting, TeamTask } from './models.js';
 
 export const MANAGE = 'teamchat.manage';

@@ -1,11 +1,11 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import { rateLimit } from 'express-rate-limit';
-import { AdminUser } from '../../models.js';
-import { endOtherSessions, invalidateAdminCache, loginAdmin, renewCurrentToken, toPublicAdmin } from '../../auth.js';
-import { audit } from '../../audit.js';
-import { clean, dateRange, escapeRegex, handle, httpError, isEmail, isId, paging } from '../../util.js';
-import { ROLES } from '../../permissions.js';
+import { AdminUser } from '../../admin/models.js';
+import { endOtherSessions, invalidateAdminCache, loginAdmin, renewCurrentToken, toPublicAdmin } from '../../admin/auth.js';
+import { audit } from '../../admin/audit.js';
+import { clean, dateRange, escapeRegex, handle, httpError, isEmail, isId, paging } from '../../admin/util.js';
+import { ROLES } from '../../admin/permissions.js';
 import { isManager, oid, readableChannelIds, requireTeam, visibleTaskFilter } from '../access.js';
 import { attachFiles, canOpenFile, checkUploadScope, newFileKey, publicFile, softDeleteFiles, visibleFileFilter } from '../files.js';
 import { TeamAnnouncement, TeamChannel, TeamChannelMember, TeamFile, TeamInvitation, TeamMessage, TeamNotification, TeamPushSubscription, TeamSubmission, TeamTask } from '../models.js';

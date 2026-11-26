@@ -24,7 +24,7 @@ before(async () => {
   const http = await import('http');
   mongoose = (await import('mongoose')).default;
   const adminRouter = (await import('../../src/admin/router.js')).default;
-  const { setStorageDriver } = await import('../../src/admin/team/storage.js');
+  const { setStorageDriver } = await import('../../src/team/storage.js');
   setStorageDriver({
     presignPut: async (key) => `https://r2.test/put/${key}`,
     presignGet: async (key) => `https://r2.test/get/${key}`,

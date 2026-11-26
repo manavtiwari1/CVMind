@@ -36,8 +36,8 @@ before(async () => {
   const http = await import('http');
   mongoose = (await import('mongoose')).default;
   const adminRouter = (await import('../../src/admin/router.js')).default;
-  const { setStorageDriver } = await import('../../src/admin/team/storage.js');
-  const realtime = await import('../../src/admin/team/realtime.js');
+  const { setStorageDriver } = await import('../../src/team/storage.js');
+  const realtime = await import('../../src/team/realtime.js');
   closeTeamRealtime = realtime.closeTeamRealtime;
   ioClient = (await import('socket.io-client')).io;
 
@@ -151,7 +151,7 @@ test('status: busy and do not disturb show in presence; DND stops push but keeps
   const people = await call('/team/members', { token: ana.token });
   assert.equal(people.body.data.find((p) => p.id === ben.id).presence, 'dnd');
 
-  const { isDoNotDisturb } = await import('../../src/admin/team/realtime.js');
+  const { isDoNotDisturb } = await import('../../src/team/realtime.js');
   assert.equal(isDoNotDisturb(ben.id), true);
   assert.equal((await call('/team/me', { method: 'PATCH', token: ben.token, body: { availability: 'nap' } })).status, 400);
   await call('/team/me', { method: 'PATCH', token: ben.token, body: { availability: 'auto' } });

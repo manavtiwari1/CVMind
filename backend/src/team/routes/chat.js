@@ -1,8 +1,8 @@
 import express from 'express';
 import { rateLimit } from 'express-rate-limit';
-import { AdminUser } from '../../models.js';
-import { audit } from '../../audit.js';
-import { clean, handle, httpError, isId } from '../../util.js';
+import { AdminUser } from '../../admin/models.js';
+import { audit } from '../../admin/audit.js';
+import { clean, handle, httpError, isId } from '../../admin/util.js';
 import { channelFor, isManager, oid, readableChannelIds, requireTeam, sameId } from '../access.js';
 import { attachFiles, softDeleteFiles } from '../files.js';
 import { TeamChannel, TeamChannelMember, TeamMessage, TeamSavedMessage } from '../models.js';

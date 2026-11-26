@@ -1,8 +1,8 @@
 import express from 'express';
-import { AdminUser } from '../../models.js';
-import { audit } from '../../audit.js';
-import { emailConfigured, renderEmail, sendEmailBatch } from '../../mailer.js';
-import { clean, handle, httpError, isId, paging } from '../../util.js';
+import { AdminUser } from '../../admin/models.js';
+import { audit } from '../../admin/audit.js';
+import { emailConfigured, renderEmail, sendEmailBatch } from '../../admin/mailer.js';
+import { clean, handle, httpError, isId, paging } from '../../admin/util.js';
 import { requireTeam, sameId } from '../access.js';
 import { attachFiles, softDeleteFiles } from '../files.js';
 import { TeamAnnouncement } from '../models.js';

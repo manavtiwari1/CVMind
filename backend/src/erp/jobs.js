@@ -1,9 +1,9 @@
 import { AdminUser } from '../admin/models.js';
 import { ROLES } from '../admin/permissions.js';
-import { istDay, notify, teamPeopleFilter } from '../admin/team/notify.js';
+import { istDay, notify, teamPeopleFilter } from '../team/notify.js';
 import { ErpProfile } from './models.js';
 
-// Daily ERP jobs, run from the Team background worker (admin/team/notify.js → startTeamJobs).
+// Daily ERP jobs, run from the Team background worker (team/notify.js → startTeamJobs).
 
 export async function runDailyErpJobs(now = new Date()) {
   await sendHrReminders(now);

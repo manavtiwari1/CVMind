@@ -29,23 +29,48 @@ const PERMISSION_LABELS: Record<string, string> = {
   'finance.view': 'See the profit & loss page'
 };
 
-type View = 'members' | 'roles' | 'me';
+const ADMIN_ROLES = new Set(['owner', 'ceo', 'cmo', 'cto', 'admin']);
+const isAdminRole = (role: string) => ADMIN_ROLES.has(role);
+
+type View = 'admins' | 'members' | 'roles' | 'me';
 
 export default function Team() {
-  const [view, setView] = useState<View>('members');
+  const [view, setView] = useState<View>('admins');
   const { data, error, loading, reload } = useApi<TeamResponse>('/team');
+  const adminRows = data?.data.filter((m) => isAdminRole(m.role));
+  const teamRows = data?.data.filter((m) => !isAdminRole(m.role));
   return (
     <>
       <PageHeader title="Team & roles" description="Give each person only the access their job needs. Changing someone's role or turning them off signs them out right away." />
-      <Tabs<View> active={view} onChange={setView} tabs={[{ id: 'members', label: 'Members', count: data?.data.length }, { id: 'roles', label: 'Roles & permissions' }, { id: 'me', label: 'My password' }]} />
-      {view === 'members' && <Members data={data} error={error} loading={loading} reload={reload} />}
+      <Tabs<View>
+        active={view}
+        onChange={setView}
+        tabs={[
+          { id: 'admins', label: 'Admins', count: adminRows?.length },
+          { id: 'members', label: 'Team members', count: teamRows?.length },
+          { id: 'roles', label: 'Roles & permissions' },
+          { id: 'me', label: 'My password' }
+        ]}
+      />
+      {view === 'admins' && <Members title="Admins" rows={adminRows} emptyTitle="No admins found" addLabel="Add admin" defaultRole="admin" data={data} error={error} loading={loading} reload={reload} />}
+      {view === 'members' && <Members title="Team members" rows={teamRows} emptyTitle="No team members yet" addLabel="Add member" defaultRole="support" data={data} error={error} loading={loading} reload={reload} />}
       {view === 'roles' && data && <RoleMatrix data={data} />}
       {view === 'me' && <Card title="Change my password" description="If you signed in with the owner account from the server settings, that password keeps working too."><MyPasswordForm /></Card>}
     </>
   );
 }
 
-function Members({ data, error, loading, reload }: { data?: TeamResponse; error?: string; loading: boolean; reload: () => void }) {
+function Members({ title, rows, emptyTitle, addLabel, defaultRole, data, error, loading, reload }: {
+  title: string;
+  rows?: Member[];
+  emptyTitle: string;
+  addLabel: string;
+  defaultRole: string;
+  data?: TeamResponse;
+  error?: string;
+  loading: boolean;
+  reload: () => void;
+}) {
   const { admin } = useAdmin();
   const { busy, run } = useAction();
   const [adding, setAdding] = useState(false);
@@ -60,16 +85,16 @@ function Members({ data, error, loading, reload }: { data?: TeamResponse; error?
     <>
       <Card
         bodyClass={false}
-        title="Members"
-        actions={<button type="button" className="ad-btn primary sm" onClick={() => setAdding(true)}><Plus size={14} /> Add member</button>}
+        title={title}
+        actions={<button type="button" className="ad-btn primary sm" onClick={() => setAdding(true)}><Plus size={14} /> {addLabel}</button>}
       >
         <DataTable
-          rows={data?.data}
+          rows={rows}
           loading={loading}
           error={error}
           onRetry={reload}
           rowKey={(m) => m.id}
-          empty={<Empty icon={<UserCog size={20} />} title="Only you so far" />}
+          empty={<Empty icon={<UserCog size={20} />} title={emptyTitle} />}
           columns={[
             { key: 'who', header: 'Member', render: (m) => (
               <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -97,7 +122,7 @@ function Members({ data, error, loading, reload }: { data?: TeamResponse; error?
           ]}
         />
       </Card>
-      {adding && <AddMember roles={roles} onClose={() => setAdding(false)} onAdded={() => { setAdding(false); reload(); }} />}
+      {adding && <AddMember roles={roles} defaultRole={defaultRole} onClose={() => setAdding(false)} onAdded={() => { setAdding(false); reload(); }} />}
       {resetting && <ResetPassword member={resetting} onClose={() => setResetting(null)} onDone={() => { setResetting(null); reload(); }} />}
       {removing && (
         <ConfirmDialog
@@ -118,9 +143,9 @@ function Members({ data, error, loading, reload }: { data?: TeamResponse; error?
   );
 }
 
-function AddMember({ roles, onClose, onAdded }: { roles: Record<string, Role>; onClose: () => void; onAdded: () => void }) {
+function AddMember({ roles, defaultRole = 'support', onClose, onAdded }: { roles: Record<string, Role>; defaultRole?: string; onClose: () => void; onAdded: () => void }) {
   const { busy, run } = useAction();
-  const [form, setForm] = useState({ name: '', username: '', email: '', role: 'support', password: '' });
+  const [form, setForm] = useState({ name: '', username: '', email: '', role: defaultRole, password: '' });
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const submit = async (e: FormEvent) => {
