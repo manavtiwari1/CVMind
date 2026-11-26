@@ -71,7 +71,7 @@ const DEFAULTS = {
   versions: Object.fromEntries(Object.keys(VERSION_CLIENTS).map((key) => [key, { minVersion: '', latestVersion: '', message: '', updateUrl: '' }])),
   productAccess: { locked: [] },
   leo: {
-    model: 'claude-opus-5-5',
+    model: 'deepseek-chat',
     ...Object.fromEntries(Object.entries(LEO_LIMITS).map(([key, limit]) => [key, limit.default])),
     // US dollars; 0 turns the spend alert off. Prices are per million tokens, used to estimate cost.
     dailyBudgetUsd: 0,

@@ -540,20 +540,20 @@ export async function callClaude({
   jsonMode = false,
   rejectTruncated = false,
   plainStyle = true,
-  effort = 'medium',
   onText
 }) {
   const wantsJson = jsonMode || Boolean(responseSchema);
-  const system = [
-    systemInstruction,
-    systemInstruction && plainStyle ? WRITING_STYLE : '',
-    responseSchema ? `You MUST strictly respond with a JSON object that conforms to this JSON schema: ${JSON.stringify(responseSchema)}` : '',
-    wantsJson ? 'Reply with only the JSON, with no code fences and no words before or after it.' : ''
-  ].filter(Boolean).join('\n\n');
-
-  const { text, truncated } = await completeClaude({ system: system || undefined, prompt, effort, onText });
-  if (rejectTruncated && truncated) throw new Error('The AI reply was cut off before it finished. Please try again.');
-  return wantsJson ? parseClaudeJson(text) : text;
+  const result = await callDeepSeek({
+    systemInstruction: systemInstruction || (wantsJson ? 'Reply with valid JSON.' : undefined),
+    prompt,
+    responseSchema,
+    maxTokens: 8192,
+    jsonMode,
+    rejectTruncated,
+    plainStyle
+  });
+  if (onText && typeof result === 'string') onText(result);
+  return result;
 }
 
 // Each theme is a different layout and type system, not only a different colour
