@@ -9,8 +9,9 @@ import { claudeConfigured, claudeModel, claudeTokens, openClaudeStream, toClaude
 const DEEPSEEK_URL = 'https://api.deepseek.com/v1/chat/completions';
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 
-// Leo runs on Claude unless a custom endpoint or a Gemini model is set. A stored 'deepseek-chat' setting counts as Claude.
-const usesClaude = (model) => claudeConfigured()
+// Leo runs on DeepSeek by default (Claude only when USE_CLAUDE=true and ANTHROPIC_API_KEY is set).
+const usesClaude = (model) => process.env.USE_CLAUDE === 'true'
+  && claudeConfigured()
   && !(process.env.LEO_LLM_BASE_URL && process.env.LEO_LLM_API_KEY)
   && !/^gemini/i.test(model);
 
@@ -51,7 +52,9 @@ export function resolveProvider(model) {
     return { url: `${process.env.LEO_LLM_BASE_URL.replace(/\/$/, '')}/chat/completions`, key: process.env.LEO_LLM_API_KEY, model };
   }
   const wantsGemini = /^gemini/i.test(model);
-  if (!wantsGemini && process.env.DEEPSEEK_API_KEY) return { url: DEEPSEEK_URL, key: process.env.DEEPSEEK_API_KEY, model };
+  if (!wantsGemini && process.env.DEEPSEEK_API_KEY) {
+    return { url: DEEPSEEK_URL, key: process.env.DEEPSEEK_API_KEY, model: /^deepseek/i.test(model) ? model : 'deepseek-chat' };
+  }
   if (process.env.GEMINI_API_KEY) {
     return { url: GEMINI_URL, key: process.env.GEMINI_API_KEY, model: wantsGemini ? model : process.env.GEMINI_MODEL || 'gemini-3.5-flash' };
   }
